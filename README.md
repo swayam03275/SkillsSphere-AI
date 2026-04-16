@@ -163,3 +163,31 @@ These checks validate docs/workflows and, once app code is added, automatically 
 ## Current Repository Status
 
 This repository currently includes a scalable folder scaffold for frontend, backend, AI/ML, and docs. Implementation code can now be added module-by-module while preserving clear boundaries.
+
+## 🚀 Running the Project
+
+### Client
+
+```bash
+cd client
+npm install
+npm run dev
+```
+
+### Server
+
+```bash
+cd server
+npm install
+npm run dev
+```
+
+### Health Check
+
+Open: http://localhost:5000/health
+Expected response:
+
+```json
+{ "status": "OK" }
+```
+
