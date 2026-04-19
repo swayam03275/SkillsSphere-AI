@@ -91,3 +91,24 @@ Scaffolded placeholders:
 
 - Empty directories intentionally use `.gitkeep` so module structure remains versioned.
 - As each placeholder module is implemented, add module-level documentation under `docs/features` or inside module folders.
+
+
+- Authentication system (Feature #45):
+  - JWT-based login and registration flow
+  - Password hashing using bcrypt
+  - Token generation and verification middleware
+  - Role-based access control (RBAC) middleware
+
+- Auth module implementation:
+  - src/modules/auth/controller.js → login & register logic
+  - src/modules/auth/service.js → token generation & auth business logic
+  - src/modules/auth/routes.js → auth API routes (/login, /register)
+
+- Security middleware:
+  - src/middleware/auth.middleware.js → JWT verification (protect middleware)
+  - src/middleware/role.middleware.js → role-based route protection (authorizeRoles)
+
+- Supported roles:
+  - student → resume features access
+  - tutor → classroom features access
+  - recruiter → matching system access

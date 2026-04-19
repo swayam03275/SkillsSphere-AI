@@ -372,3 +372,57 @@ Example local development values:
 
 
 ```
+##  Authentication & Role-Based Access (Feature #45)
+
+### Implemented Features
+
+- User Login with email & password
+- JWT-based authentication system
+- Password hashing using bcrypt
+- Secure token generation on login/register
+- Middleware-based token verification
+- Role-based access control (RBAC)
+
+---
+
+###  User Roles Supported
+
+- **Student**
+  - Access resume analyzer
+  - Upload and analyze resumes
+
+- **Tutor**
+  - Access classroom management features
+
+- **Recruiter**
+  - Access candidate matching APIs
+
+---
+
+###  Authentication Flow
+
+1. User registers/login via:
+   - `POST /api/auth/register`
+   - `POST /api/auth/login`
+
+2. On successful login:
+   - JWT token is generated
+   - User info + token returned
+
+3. Protected routes require:
+   - Valid JWT token in headers
+   - Role validation via middleware
+
+---
+
+###  Middleware
+
+#### 1. Authentication Middleware
+- Verifies JWT token
+- Attaches user data to request
+
+#### 2. Role Authorization Middleware
+- Restricts access based on roles
+- Example:
+  ```js
+  authorizeRoles("student", "tutor")

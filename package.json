@@ -1,0 +1,36 @@
+{
+  "name": "skillssphere-ai-login-page",
+  "version": "1.0.0",
+  "description": "<a name=\"top\"></a>\r ![----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/rainbow.png)",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deepshikhatutorials/SkillsSphere-AI-login-page.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/deepshikhatutorials/SkillsSphere-AI-login-page/issues"
+  },
+  "homepage": "https://github.com/deepshikhatutorials/SkillsSphere-AI-login-page#readme",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.4.1",
+    "multer": "^2.1.1",
+    "pdf-parse": "^2.4.5",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}

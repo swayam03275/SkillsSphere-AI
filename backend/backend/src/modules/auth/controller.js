@@ -1,6 +1,7 @@
 import { validateRegisterInput } from "../../validations/authValidation.js";
-import { registerUserAndIssueToken } from "./service.js";
+import { registerUserAndIssueToken, loginUserAndIssueToken } from "./service.js";
 
+// REGISTER
 export const register = async (req, res) => {
   const validation = validateRegisterInput(req.body);
 
@@ -18,11 +19,13 @@ export const register = async (req, res) => {
     return res.status(201).json({
       success: true,
       message: "User registered successfully",
-      token: authResult.token,
-      user: authResult.user
+      data: authResult
     });
   } catch (error) {
-    if (error.code === "USER_ALREADY_EXISTS" || error?.code === 11000) {
+    const isDuplicate =
+      error.code === "USER_ALREADY_EXISTS" || error?.code === 11000;
+
+    if (isDuplicate) {
       return res.status(409).json({
         success: false,
         message: "A user with this email already exists"
@@ -39,6 +42,40 @@ export const register = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Unable to register user right now"
+    });
+  }
+};
+
+// LOGIN
+export const login = async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({
+      success: false,
+      message: "Email and password are required"
+    });
+  }
+
+  try {
+    const authResult = await loginUserAndIssueToken({ email, password });
+
+    return res.status(200).json({
+      success: true,
+      message: "Login successful",
+      data: authResult
+    });
+  } catch (error) {
+    if (error.code === "INVALID_CREDENTIALS") {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password"
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to login right now"
     });
   }
 };
