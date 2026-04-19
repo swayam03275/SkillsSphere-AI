@@ -243,7 +243,43 @@ Example local development values:
 
 
 ```
+### Authentication System
 
+Implemented secure authentication system for SkillSphere AI backend using JWT and bcrypt.
+
+#### Features Added:
+
+- User registration with password hashing (bcrypt)
+- Secure login with email & password validation
+- JWT token generation for authenticated sessions
+- Token verification using middleware
+- Role-based access control (RBAC)
+
+#### User Roles:
+
+- **Student**
+  - Access: Resume Analyzer APIs only
+
+- **Tutor**
+  - Access: Classroom management APIs only
+
+- **Recruiter**
+  - Access: Candidate matching APIs only
+
+#### Security Implementation:
+
+- `JWT Authentication Middleware` → verifies token from request headers
+- `Role Authorization Middleware` → restricts access based on user role
+- Protected routes implemented across modules:
+  - `/api/resume/*` → Student only
+  - `/api/classrooms/*` → Tutor only
+  - `/api/matching/*` → Recruiter only
+
+#### Tech Stack Used:
+
+- Node.js + Express.js
+- JSON Web Token (jsonwebtoken)
+- bcryptjs for password hashing
 
 
 

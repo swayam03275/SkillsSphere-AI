@@ -4,6 +4,7 @@ import User from "../../database/models/User.js";
 
 const SALT_ROUNDS = 12;
 
+
 const buildAuthToken = (user) => {
   if (!process.env.JWT_SECRET) {
     const error = new Error("Missing JWT_SECRET in environment variables");
@@ -22,6 +23,7 @@ const buildAuthToken = (user) => {
     }
   );
 };
+
 
 export const registerUserAndIssueToken = async ({ name, email, password, role }) => {
   const existingUser = await User.findOne({ email });
@@ -51,6 +53,35 @@ export const registerUserAndIssueToken = async ({ name, email, password, role })
       email: user.email,
       role: user.role,
       createdAt: user.createdAt
+    }
+  };
+};
+export const loginUserAndIssueToken = async ({ email, password }) => {
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    const error = new Error("Invalid credentials");
+    error.code = "INVALID_CREDENTIALS";
+    throw error;
+  }
+
+  const isMatch = await bcrypt.compare(password, user.password);
+
+  if (!isMatch) {
+    const error = new Error("Invalid credentials");
+    error.code = "INVALID_CREDENTIALS";
+    throw error;
+  }
+
+  const token = buildAuthToken(user);
+
+  return {
+    token,
+    user: {
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      role: user.role
     }
   };
 };

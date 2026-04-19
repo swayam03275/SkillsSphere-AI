@@ -45,3 +45,39 @@ This document mirrors the repository layout and explains where contributors shou
 
 - Empty folders intentionally contain `.gitkeep` so structure is versioned.
 - As implementation begins, add module-level README files where needed.
+
+##  Authentication & Role-Based Access (Issue #45)
+
+Implemented secure authentication system for backend with JWT and role-based access control.
+
+### Changes Added:
+
+- Login controller implemented for user authentication
+- Password verification using bcrypt
+- JWT token generation and validation system
+- Auth middleware (protect) for route security
+- Role-based middleware for access control
+
+### Role Permissions:
+
+- **Student**
+  - Resume Analyzer APIs access
+
+- **Tutor**
+  - Classroom management APIs access
+
+- **Recruiter**
+  - Candidate matching APIs access
+
+### Protected Routes Updated:
+
+- `/api/auth` → Authentication routes (register/login)
+- `/api/resume` → Student only access
+- `/api/classrooms` → Tutor only access
+- `/api/matching` → Recruiter only access
+
+### Security Enhancements:
+
+- Token-based authentication (JWT)
+- Middleware-based route protection
+- Role-based authorization system (RBAC)
