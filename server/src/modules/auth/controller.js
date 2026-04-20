@@ -1,18 +1,20 @@
-import { 
-  validateRegisterInput, 
-  validateVerifyEmailInput, 
-  validateForgotPasswordInput, 
+import {
+  validateRegisterInput,
+  validateVerifyEmailInput,
+  validateForgotPasswordInput,
   validateResetPasswordInput,
-  validateResendOTPInput 
+  validateResendOTPInput,
+  validateLoginInput
 } from "../../validations/authValidation.js";
 
-import { 
-  registerUserAndIssueToken, 
-  verifyUserEmail, 
-  forgotPasswordRequest, 
+import {
+  registerUserAndIssueToken,
+  verifyUserEmail,
+  forgotPasswordRequest,
   resetUserPassword,
   resendUserOTP,
-  verifyGoogleToken
+  verifyGoogleToken,
+  loginUser
 } from "./service.js";
 
 import asyncHandler from "../../utils/asyncHandler.js";
@@ -94,6 +96,25 @@ export const resendOTP = asyncHandler(async (req, res, next) => {
 
   const result = await resendUserOTP(validation.data.email);
   return res.status(200).json(result);
+});
+
+
+// 🔑 Login User
+export const login = asyncHandler(async (req, res, next) => {
+  const validation = validateLoginInput(req.body);
+
+  if (!validation.isValid) {
+    return next(new AppError("Invalid email or password format", 400));
+  }
+
+  const result = await loginUser(validation.data.email, validation.data.password);
+
+  return res.status(200).json({
+    success: true,
+    message: "Login successful",
+    token: result.token,
+    user: result.user,
+  });
 });
 
 

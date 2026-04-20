@@ -59,6 +59,8 @@ SkillSphere AI aims to simplify the path from learning to hiring by giving users
    - Secure Password Reset (Forgot Password) flow
    - Protection against user enumeration
    - OTP attempt limiting for security
+   - JWT-based login with bcrypt password comparison
+   - Role-based access control (Student, Tutor, Recruiter)
 
 ---
 
@@ -329,6 +331,43 @@ Implemented:
 - Brute-force protection via OTP attempt limiting (max 5 attempts)
 - Reusable `sendEmail` utility for system-wide notifications
 - Input validation using Zod schemas for all auth flows
+- JWT-based login (`POST /api/auth/login`) with bcrypt credential verification
+- `authenticate` middleware to protect routes — extracts and verifies Bearer tokens
+- `authorizeRoles(...roles)` middleware for role-based access control (student, tutor, recruiter)
+
+#### Protected Route Usage
+
+```js
+import authenticate from "./src/middleware/authenticate.js";
+import authorizeRoles from "./src/middleware/authorizeRoles.js";
+
+// Only recruiters
+router.get("/candidates", authenticate, authorizeRoles("recruiter"), handler);
+
+// Only tutors
+router.post("/classrooms", authenticate, authorizeRoles("tutor"), handler);
+
+// Students and tutors
+router.get("/resume-analyzer", authenticate, authorizeRoles("student", "tutor"), handler);
+```
+
+#### Login API
+
+```
+POST /api/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "yourpassword"
+}
+```
+
+**Responses:**
+- `200` — `{ success, message, token, user: { id, name, email, role } }`
+- `400` — Invalid email/password format
+- `401` — Wrong credentials
+- `403` — Email not verified yet
 ```
 
 ## For Open-Source Contributors
