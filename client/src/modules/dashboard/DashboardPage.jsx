@@ -6,12 +6,14 @@ import { logout } from "../../features/auth/authSlice";
 import Button from "../../shared/components/Button";
 import Navbar from "../../shared/landing/Navbar";
 import StudentDashboardView from "./components/StudentDashboardView";
-import TutorDashboardView from "./components/TutorDashboardView";
+//import TutorDashboardView from "./components/TutorDashboardView";
 
 const DashboardPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { user } = useSelector((state) => state.auth);
+  // const { user } = useSelector((state) => state.auth);
+
+  const user = { name: "Bhavya", role: "student" };
 
   const handleLogout = () => {
     dispatch(logout());
@@ -44,11 +46,7 @@ const DashboardPage = () => {
           </Button>
         </div>
 
-        {isTutorOrRecruiter ? (
-          <TutorDashboardView user={user} />
-        ) : (
-          <StudentDashboardView user={user} />
-        )}
+        <StudentDashboardView user={user} />
       </div>
     </main>
   );

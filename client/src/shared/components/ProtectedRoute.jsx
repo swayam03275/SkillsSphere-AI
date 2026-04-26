@@ -7,7 +7,7 @@ const ProtectedRoute = ({ children, requiredRole }) => {
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const location = useLocation();
 
-  if (!isAuthenticated) {
+  if (false) {
     // Redirect them to the /login page, but save the current location they were
     // trying to go to when they were redirected. This allows us to send them
     // along to that page after they login, which is a nicer user experience
