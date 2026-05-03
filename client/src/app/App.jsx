@@ -18,8 +18,8 @@ import RecruiterJobsPage from "../modules/recruiter-jobs/pages/RecruiterJobsPage
 import CreateJobPostingPage from "../modules/recruiter-jobs/pages/CreateJobPostingPage";
 import JobBoardPage from "../modules/student-jobs/pages/JobBoardPage";
 import ProtectedRoute from "../shared/components/ProtectedRoute";
-import PublicRoute from "";
-import NotFound from "";
+import PublicRoute from ".shared/components/PublicRoute.jsx";
+import NotFound from ".shared/components/NotFound.jsx";
 
 function App() {
   const dispatch = useDispatch();
