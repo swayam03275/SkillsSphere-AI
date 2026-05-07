@@ -12,6 +12,7 @@ import Login from "../modules/auth/Login";
 import Register from "../modules/auth/Register";
 import OAuthCallback from "../modules/auth/OAuthCallback";
 import ResetPassword from "../modules/auth/ResetPassword";
+import ForgotPassword from "../modules/auth/ForgotPassword";
 import VerifyEmail from "../modules/auth/VerifyEmail";
 import ProfilePage from "../modules/profile/ProfilePage";
 import RecruiterJobsPage from "../modules/recruiter-jobs/pages/RecruiterJobsPage";
@@ -63,6 +64,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/auth/callback" element={<OAuthCallback />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route

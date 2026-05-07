@@ -1,11 +1,15 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import Input from "../../shared/components/Input";
 import Button from "../../shared/components/Button";
 import { KeyRound, ArrowLeft, CheckCircle } from "lucide-react";
+import { useToast } from "../../shared/components";
+
 
 const ResetPassword = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { success: showSuccessToast, error: showErrorToast } = useToast();
 
   const [form, setForm] = useState({
     email: "",
@@ -13,6 +17,15 @@ const ResetPassword = () => {
     newPassword: "",
     confirmPassword: "",
   });
+
+  // Extract email from URL if present
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const emailParam = params.get("email");
+    if (emailParam) {
+      setForm((prev) => ({ ...prev, email: emailParam }));
+    }
+  }, [location]);
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -58,23 +71,43 @@ const ResetPassword = () => {
     return newErrors;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = validate();
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
       setLoading(true);
-      // Mock loading — no backend call
-      setTimeout(() => {
-        setLoading(false);
-        setSuccess(true);
-        console.log("Reset password payload:", {
-          email: form.email,
-          otp: form.otp,
-          newPassword: form.newPassword,
+      try {
+        const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+        const response = await fetch(`${API_URL}/api/auth/reset-password`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: form.email,
+            otp: form.otp,
+            newPassword: form.newPassword,
+          }),
         });
-      }, 2000);
+
+        const data = await response.json();
+
+        if (response.ok) {
+          setSuccess(true);
+          showSuccessToast("Password reset successfully!");
+        } else {
+          const errorMessage = data.message || "Failed to reset password";
+          showErrorToast(errorMessage);
+          setErrors({ form: errorMessage });
+        }
+      } catch (err) {
+        showErrorToast("Connection error. Please check if the server is running.");
+        console.error("Reset password error:", err);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
