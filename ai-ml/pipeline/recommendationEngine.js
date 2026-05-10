@@ -12,31 +12,39 @@ export async function generateRecommendations(resumeData, jobs = []) {
     return [];
   }
 
-  // Use Promise.all to process matches in parallel for performance
-  const matchPromises = jobs.map(async (job) => {
-    try {
-      const result = await runPipeline({
-        resumeData,
-        jobSkills: job.skills || [],
-        jobDescription: job.description || "",
-      });
+  // Process matches in parallel batches to optimize performance without exhausting resources
+  const recommendations = [];
+  const CONCURRENCY_LIMIT = 5;
 
-      return {
-        jobId: job._id,
-        score: result.score,
-        breakdown: result.breakdown,
-        skillMatch: result.skillMatch.score,
-        experienceMatch: result.experienceMatch.score,
-        relevanceInsights: result.gapAnalysis?.summary || "Good match based on your background.",
-        matchLevel: result.classification?.label || "Potential Match"
-      };
-    } catch (err) {
-      console.error(`[recommendationEngine] Error matching job ${job._id}:`, err);
-      return { jobId: job._id, score: 0, error: true };
-    }
-  });
+  for (let i = 0; i < jobs.length; i += CONCURRENCY_LIMIT) {
+    const batch = jobs.slice(i, i + CONCURRENCY_LIMIT);
 
-  const recommendations = await Promise.all(matchPromises);
+    const batchResults = await Promise.all(
+      batch.map(async (job) => {
+        try {
+          const result = await runPipeline({
+            resumeData,
+            jobSkills: job.skills || [],
+            jobDescription: job.description || "",
+          });
+
+          return {
+            jobId: job._id,
+            score: result.score,
+            breakdown: result.breakdown,
+            skillMatch: result.skillMatch.score,
+            experienceMatch: result.experienceMatch.score,
+            relevanceInsights: result.gapAnalysis?.summary || "Good match based on your background.",
+            matchLevel: result.classification?.label || "Potential Match"
+          };
+        } catch (err) {
+          console.error(`[recommendationEngine] Error matching job ${job._id}:`, err);
+          return { jobId: job._id, score: 0, error: true };
+        }
+      })
+    );
+    recommendations.push(...batchResults);
+  }
 
   // Filter out errors and sort by score descending
   return recommendations

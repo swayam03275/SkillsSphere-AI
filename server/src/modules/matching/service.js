@@ -15,22 +15,40 @@ export const evaluateMatches = async (user, resume) => {
 
   const recommendations = [];
 
-  // 2. Evaluate each job using the AI/ML pipeline
-  for (const job of openJobs) {
-    const pipelineResult = await runPipeline({
-      resumeData: resume,
-      jobSkills: job.skills,
-      jobDescription: job.description,
-    });
+  // 2. Evaluate each job using the AI/ML pipeline (with controlled concurrency)
+  const CONCURRENCY_LIMIT = 5;
+  for (let i = 0; i < openJobs.length; i += CONCURRENCY_LIMIT) {
+    const batch = openJobs.slice(i, i + CONCURRENCY_LIMIT);
+    
+    const batchResults = await Promise.all(
+      batch.map(async (job) => {
+        try {
+          const pipelineResult = await runPipeline({
+            resumeData: resume,
+            jobSkills: job.skills,
+            jobDescription: job.description,
+          });
 
-    recommendations.push({
-      job: job._id,
-      score: pipelineResult.score,
-      breakdown: pipelineResult.breakdown,
-      skillMatch: pipelineResult.skillMatch,
-      keywordMatch: pipelineResult.keywordMatch,
-      experienceMatch: pipelineResult.experienceMatch,
-    });
+          return {
+            job: job._id,
+            score: pipelineResult.score,
+            breakdown: pipelineResult.breakdown,
+            skillMatch: pipelineResult.skillMatch,
+            keywordMatch: pipelineResult.keywordMatch,
+            experienceMatch: pipelineResult.experienceMatch,
+          };
+        } catch (err) {
+          console.error(`Error evaluating job ${job._id}:`, err);
+          return null;
+        }
+      })
+    );
+
+    for (const result of batchResults) {
+      if (result) {
+        recommendations.push(result);
+      }
+    }
   }
 
   // 3. Sort by score (highest first)
