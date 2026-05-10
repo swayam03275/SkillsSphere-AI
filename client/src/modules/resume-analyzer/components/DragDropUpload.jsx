@@ -117,7 +117,7 @@ const DragDropUpload = ({ onFileUpload }) => {
       </div>
 
       <div className="text-center space-y-2">
-        <p className="text-2xl font-heading font-bold text-text-main italic">
+        <p className="text-2xl font-heading font-bold text-gray-800 dark:text-text-main italic">
           Drag & Drop your resume here
         </p>
         <p className="text-text-muted">
@@ -138,11 +138,11 @@ const DragDropUpload = ({ onFileUpload }) => {
       </div>
 
       <div className="my-4 flex items-center justify-center space-x-4 w-full max-w-sm px-4">
-        <div className="h-px bg-border flex-1"></div>
+        <div className="h-px bg-gray-300 dark:bg-border flex-1"></div>
         <span className="text-[10px] text-text-muted uppercase font-black tracking-[0.3em]">
           OR
         </span>
-        <div className="h-px bg-border flex-1"></div>
+        <div className="h-px bg-gray-300 dark:bg-border flex-1"></div>
       </div>
 
       <div className="relative group">
