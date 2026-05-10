@@ -45,10 +45,25 @@ export const getMyAppliedJobIds = async (token) => {
 };
 
 /**
- * Get current student's applied jobs with full details
+ * Get current student's applied jobs with full details (paginated)
  * @param {string} token - Auth token
- * @returns {Promise<Object>} - API response with applications array
+ * @param {number} page - Page number
+ * @param {number} limit - Items per page
+ * @returns {Promise<Object>} - API response with applications, pagination info
  */
-export const getMyApplicationsDetailed = async (token) => {
-  return apiRequest("/api/jobs/my-applications/details", { token });
+export const getMyApplicationsDetailed = async (token, page = 1, limit = 10) => {
+  return apiRequest(`/api/jobs/my-applications/details?page=${page}&limit=${limit}`, { token });
+};
+
+/**
+ * Withdraw a job application
+ * @param {string} jobId - Job ID
+ * @param {string} token - Auth token
+ * @returns {Promise<Object>} - API response
+ */
+export const withdrawApplication = async (jobId, token) => {
+  return apiRequest(`/api/jobs/${jobId}/withdraw`, {
+    method: "PATCH",
+    token,
+  });
 };
