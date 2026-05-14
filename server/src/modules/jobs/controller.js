@@ -12,6 +12,7 @@ import {
   updateJob as updateJobService,
   deleteJob as deleteJobService,
   getSkillTrends as getSkillTrendsService,
+  updateApplicationStatus as updateApplicationStatusService,
 } from "./service.js";
 import AppError from "../../utils/AppError.js";
 import asyncHandler from "../../utils/asyncHandler.js";
@@ -321,5 +322,30 @@ export const getSkillTrends = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     trends,
+  });
+});
+
+/**
+ * @desc    Update the status of a job application
+ * @route   PATCH /api/jobs/applications/:id/status
+ * @access  Private (Recruiters only)
+ */
+export const updateApplicationStatus = asyncHandler(async (req, res) => {
+  const { status, comment } = req.body;
+
+  if (!status) {
+    throw new AppError("Status is required", 400);
+  }
+
+  const application = await updateApplicationStatusService(
+    req.params.id,
+    req.user._id,
+    { status, comment }
+  );
+
+  res.status(200).json({
+    success: true,
+    message: `Application status updated to ${status}`,
+    application,
   });
 });

@@ -386,6 +386,7 @@ export const applyToJob = async (jobId, applicantId, options = {}) => {
     resume: options.resumeId || null,
     resumeLink: options.resumeLink.trim(),
     coverNote: options.coverNote?.trim() || "",
+    statusHistory: [{ status: "pending", comment: "Application submitted" }],
   });
 
   return application;
@@ -553,7 +554,42 @@ export const withdrawApplication = async (jobId, applicantId) => {
   }
 
   application.status = "withdrawn";
+  application.statusHistory.push({
+    status: "withdrawn",
+    comment: "Application withdrawn by candidate",
+    updatedAt: Date.now(),
+  });
   await application.save();
 
+  return application;
+};
+
+/**
+ * Update the status of a job application (for recruiters)
+ * @param {string} applicationId - ID of the application
+ * @param {string} recruiterId - ID of the recruiter (for ownership check)
+ * @param {Object} updateData - { status, comment }
+ * @returns {Promise<Object>} - Updated application
+ */
+export const updateApplicationStatus = async (applicationId, recruiterId, { status, comment }) => {
+  const application = await JobApplication.findById(applicationId).populate("job");
+  if (!application) {
+    throw new AppError("Application not found", 404);
+  }
+
+  // Check if the recruiter owns the job associated with this application
+  if (application.job.recruiter.toString() !== recruiterId.toString()) {
+    throw new AppError("You do not have permission to update this application", 403);
+  }
+
+  // Update top-level status and push to history
+  application.status = status;
+  application.statusHistory.push({
+    status,
+    comment: comment || `Status updated to ${status}`,
+    updatedAt: Date.now(),
+  });
+
+  await application.save();
   return application;
 };

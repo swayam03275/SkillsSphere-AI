@@ -14,6 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+
   docs_and_workflow_checks:
     name: Docs and Workflow Checks
     runs-on: ubuntu-latest
@@ -31,6 +32,7 @@ jobs:
 
       - name: Lint GitHub Actions workflow syntax
         uses: reviewdog/action-actionlint@v1
+
 
   repo_guardrails:
     name: Repository Guardrails
@@ -50,83 +52,124 @@ jobs:
           test -f .github/ISSUE_TEMPLATE/feature_request.md
           test -f .github/ISSUE_TEMPLATE/config.yml
 
+
   client_checks:
     name: Client Checks
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('client/package.json') != '' }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Check client exists
+        id: client_check
+        run: |
+          if [ -f client/package.json ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Setup Node.js
+        if: steps.client_check.outputs.exists == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
       - name: Install dependencies
+        if: steps.client_check.outputs.exists == 'true'
         working-directory: client
         run: npm ci
 
       - name: Run lint
+        if: steps.client_check.outputs.exists == 'true'
         working-directory: client
         run: npm run lint --if-present
 
       - name: Run tests
+        if: steps.client_check.outputs.exists == 'true'
         working-directory: client
         run: npm test --if-present
 
       - name: Run build
+        if: steps.client_check.outputs.exists == 'true'
         working-directory: client
         run: npm run build --if-present
+
 
   server_checks:
     name: Server Checks
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('server/package.json') != '' }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Check server exists
+        id: server_check
+        run: |
+          if [ -f server/package.json ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Setup Node.js
+        if: steps.server_check.outputs.exists == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
       - name: Install dependencies
+        if: steps.server_check.outputs.exists == 'true'
         working-directory: server
         run: npm ci
 
       - name: Run lint
+        if: steps.server_check.outputs.exists == 'true'
         working-directory: server
         run: npm run lint --if-present
 
       - name: Run tests
+        if: steps.server_check.outputs.exists == 'true'
         working-directory: server
         run: npm test --if-present
 
       - name: Run build
+        if: steps.server_check.outputs.exists == 'true'
         working-directory: server
         run: npm run build --if-present
+
 
   aiml_checks:
     name: AI-ML Checks
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('ai-ml/requirements.txt', 'ai-ml/pyproject.toml') != '' }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Check AI-ML exists
+        id: aiml_check
+        run: |
+          if [ -f ai-ml/requirements.txt ] || [ -f ai-ml/pyproject.toml ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Setup Python
+        if: steps.aiml_check.outputs.exists == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
       - name: Install dependencies (requirements)
-        if: ${{ hashFiles('ai-ml/requirements.txt') != '' }}
+        if: steps.aiml_check.outputs.exists == 'true' && hashFiles('ai-ml/requirements.txt') != ''
         run: pip install -r ai-ml/requirements.txt
 
       - name: Install dependencies (pyproject)
-        if: ${{ hashFiles('ai-ml/pyproject.toml') != '' }}
+        if: steps.aiml_check.outputs.exists == 'true' && hashFiles('ai-ml/pyproject.toml') != ''
         working-directory: ai-ml
         run: |
           pip install poetry

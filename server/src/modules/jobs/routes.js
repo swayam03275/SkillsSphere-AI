@@ -16,6 +16,7 @@ import {
   updateJobPosting,
   deleteJobPosting,
   getSkillTrends,
+  updateApplicationStatus,
 } from "./controller.js";
 
 const router = express.Router();
@@ -48,5 +49,6 @@ router
 router.post("/:id/apply", authorizeRoles("student"), applyToJobPosting);
 router.patch("/:id/withdraw", authorizeRoles("student"), withdrawJobApplication);
 router.get("/:id/applications", authorizeRoles("recruiter"), getApplications);
+router.patch("/applications/:id/status", authorizeRoles("recruiter"), updateApplicationStatus);
 
 export default router;

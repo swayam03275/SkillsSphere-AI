@@ -53,6 +53,25 @@ const jobApplicationSchema = new mongoose.Schema(
       maxlength: [1000, "Cover note cannot exceed 1000 characters"],
       default: "",
     },
+
+    statusHistory: [
+      {
+        status: {
+          type: String,
+          enum: ["pending", "reviewed", "shortlisted", "rejected", "withdrawn"],
+          required: true,
+        },
+        comment: {
+          type: String,
+          trim: true,
+          default: "",
+        },
+        updatedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   { timestamps: true }
 );
