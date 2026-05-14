@@ -113,6 +113,15 @@ const Register = () => {
     { value: "recruiter", label: "Recruiter" },
   ];
 
+  const passwordsMatch =
+    form.password && form.confirmPassword && form.password === form.confirmPassword;
+
+  const isSubmitDisabled =
+    loading ||
+    !form.password ||
+    !form.confirmPassword ||
+    form.password !== form.confirmPassword;
+
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] overflow-hidden relative px-3 py-6 box-border">
       <div className="relative z-10 w-full max-w-[380px]">
@@ -172,6 +181,11 @@ const Register = () => {
               error={errors.confirmPassword}
               disabled={loading}
             />
+            {passwordsMatch && (
+              <p className="text-green-400 text-xs sm:text-sm -mt-1">
+                ✓ Password matches
+              </p>
+            )}
 
             <Select
               id="role"
@@ -187,7 +201,7 @@ const Register = () => {
             type="submit"
             fullWidth
             loading={loading}
-            disabled={loading}
+            disabled={isSubmitDisabled}
             className="mt-3 sm:mt-4 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 border-none font-bold text-sm sm:text-base hover:scale-105 hover:shadow-[0_0_20px_rgba(59,130,246,0.6)] transition-all duration-300 min-h-[44px]"
           >
             {loading ? "Creating Account..." : "Sign Up"}
@@ -200,7 +214,7 @@ const Register = () => {
           )}
           <div className="mt-4">
             <button
-              type="button" //prevents from validation,so that the toast notification doesnt show up when we click on the continue with google button
+              type="button"
               onClick={() => {
                 const API_URL =
                   import.meta.env.VITE_API_URL || "http://localhost:5000";
