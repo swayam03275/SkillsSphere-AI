@@ -181,3 +181,48 @@ export const deleteJobPosting = async (id, token) => {
     throw normalizedError;
   }
 };
+
+/**
+ * Fetch all applications for a specific job posting
+ * @param {string} jobId - Job posting ID
+ * @param {string} token - Auth bearer token
+ * @returns {Promise<{success: boolean, applications: Array}>}
+ */
+export const getJobApplications = async (jobId, token) => {
+  try {
+    const response = await apiRequest(`/api/jobs/${jobId}/applications`, { token });
+    return {
+      success: true,
+      applications: response.applications || [],
+    };
+  } catch (error) {
+    const normalizedError = handleServiceError(error);
+    throw normalizedError;
+  }
+};
+
+/**
+ * Update the status of a job application
+ * @param {string} applicationId - Application ID
+ * @param {string} status - New status (reviewed, shortlisted, rejected)
+ * @param {string} comment - Feedback comment
+ * @param {string} token - Auth bearer token
+ * @returns {Promise<{success: boolean, application: Object}>}
+ */
+export const updateApplicationStatus = async (applicationId, status, comment, token) => {
+  try {
+    const response = await apiRequest(`/api/jobs/applications/${applicationId}/status`, {
+      method: "PATCH",
+      body: { status, comment },
+      token,
+    });
+
+    return {
+      success: true,
+      application: response.application,
+    };
+  } catch (error) {
+    const normalizedError = handleServiceError(error);
+    throw normalizedError;
+  }
+};

@@ -112,6 +112,10 @@ const RecruiterJobsPage = () => {
     console.log("View recommendations", job);
   };
 
+  const handleViewApplicants = (job) => {
+    navigate(`/recruiter/jobs/${job._id || job.id}/applicants`);
+  };
+
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] p-3 sm:p-5 pt-20 sm:pt-28 text-slate-100">
       <Navbar />
@@ -169,6 +173,7 @@ const RecruiterJobsPage = () => {
                 onEdit={handleEditJob}
                 onDelete={handleDeleteJob}
                 onViewStats={handleViewRecommendations}
+                onViewApplicants={handleViewApplicants}
               />
             ))}
           </div>

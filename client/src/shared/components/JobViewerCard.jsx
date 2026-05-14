@@ -13,6 +13,7 @@ import {
   Trash2,
   BarChart3,
   Globe,
+  Users,
 } from "lucide-react";
 import Button from "./Button";
 
@@ -124,6 +125,7 @@ const JobViewerCard = ({
   onEdit,
   onDelete,
   onViewStats,
+  onViewApplicants,
   isApplied = false,
   className = "",
 }) => {
@@ -427,6 +429,19 @@ const JobViewerCard = ({
                       >
                         <BarChart3 size={16} />
                         View Recommendations
+                      </Button>
+                    )}
+                    {onViewApplicants && (
+                      <Button
+                        fullWidth
+                        className="bg-purple-600 hover:bg-purple-500 flex items-center justify-center gap-2"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onViewApplicants(job);
+                        }}
+                      >
+                        <Users size={16} />
+                        View Applicants
                       </Button>
                     )}
                     <div className="flex gap-2">

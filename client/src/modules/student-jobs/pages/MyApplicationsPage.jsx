@@ -19,6 +19,7 @@ import {
   getMyApplicationsDetailed,
   withdrawApplication,
 } from "../services/jobService";
+import { StatusTimeline } from "../../../shared/components";
 
 const statusConfig = {
   pending: { label: "Pending", bg: "bg-yellow-500/15", text: "text-yellow-300", border: "border-yellow-500/25" },
@@ -41,6 +42,7 @@ const MyApplicationsPage = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [withdrawingId, setWithdrawingId] = useState(null);
   const [confirmJobId, setConfirmJobId] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
 
   const fetchApplications = async (page = 1) => {
     setLoading(true);
@@ -169,9 +171,16 @@ const MyApplicationsPage = () => {
               return (
                 <div
                   key={app._id}
-                  className="p-5 bg-slate-900/50 rounded-2xl border border-white/5 hover:border-white/10 transition-colors"
+                  className={`p-5 bg-slate-900/50 rounded-2xl border transition-all duration-300 ${
+                    expandedId === app._id 
+                      ? "border-blue-500/30 bg-slate-900/80 shadow-lg" 
+                      : "border-white/5 hover:border-white/10"
+                  }`}
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                  <div 
+                    className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 cursor-pointer"
+                    onClick={() => setExpandedId(expandedId === app._id ? null : app._id)}
+                  >
                     {/* Job info */}
                     <div className="flex-1 min-w-0">
                       <h3 className="text-lg font-bold text-white truncate">
@@ -259,6 +268,18 @@ const MyApplicationsPage = () => {
                       </span>
                     )}
                   </div>
+
+                  {/* Expanded Timeline Section */}
+                  {expandedId === app._id && (
+                    <div className="mt-8 pt-8 border-t border-white/5 animate-in slide-in-from-top-2 duration-300">
+                      <h4 className="text-sm font-bold text-blue-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                        <Clock size={16} /> Application Journey
+                      </h4>
+                      <div className="px-2">
+                        <StatusTimeline history={app.statusHistory} />
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}

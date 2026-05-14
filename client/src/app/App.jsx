@@ -19,6 +19,7 @@ import RecruiterJobsPage from "../modules/recruiter-jobs/pages/RecruiterJobsPage
 import RecruiterAnalyticsPage from "../modules/recruiter-jobs/pages/RecruiterAnalyticsPage";
 import CreateJobPostingPage from "../modules/recruiter-jobs/pages/CreateJobPostingPage";
 import EditJobPostingPage from "../modules/recruiter-jobs/pages/EditJobPostingPage";
+import RecruiterApplicantsPage from "../modules/recruiter-jobs/pages/RecruiterApplicantsPage";
 import JobBoardPage from "../modules/student-jobs/pages/JobBoardPage";
 import MyApplicationsPage from "../modules/student-jobs/pages/MyApplicationsPage";
 import ClassroomsDashboard from "../modules/classrooms/pages/ClassroomsDashboard";
@@ -109,6 +110,14 @@ function App() {
           element={
             <ProtectedRoute requiredRole="recruiter">
               <RecruiterAnalyticsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/recruiter/jobs/:id/applicants"
+          element={
+            <ProtectedRoute requiredRole="recruiter">
+              <RecruiterApplicantsPage />
             </ProtectedRoute>
           }
         />
