@@ -5,6 +5,7 @@ import { loginUser } from "../../features/auth/authSlice";
 import Input from "../../shared/components/Input";
 import Button from "../../shared/components/Button";
 import { useToast } from "../../shared/components";
+import Navbar from "../../shared/landing/Navbar";
 
 const Login = () => {
   const dispatch = useDispatch();
@@ -75,6 +76,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] overflow-hidden relative px-3 py-6 box-border">
+      <Navbar />
       <div className="relative z-10 w-full max-w-[380px]">
         {/* Background glow */}
         <div className="hidden sm:block absolute w-[500px] h-[500px] bg-blue-500/40 rounded-full blur-[120px] -top-[150px] -left-[150px] -z-10 animate-pulse"></div>
