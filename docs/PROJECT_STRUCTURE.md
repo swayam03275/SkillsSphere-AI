@@ -1,145 +1,205 @@
 # Project Structure
 
-This document reflects the current repository structure and progress implemented so far.
+This document reflects the **currently implemented** state of SkillSphere AI. Scaffolded but unimplemented modules are marked clearly.
 
-## Top-Level Layout
+---
 
-- `client/`: React frontend application
-- `server/`: Node.js + Express backend
-- `ai-ml/`: AI and ML evaluators and domain placeholders
-- `docs/`: Architecture, API, feature, and quality documents
+## Root
 
-## Current Implementation Progress
+```
+SkillsSphere-AI/
+├── .github/                        # GitHub configuration
+│   ├── workflows/
+│   │   └── pr-quality-checks.yml  # Automated PR lint/test/build checks
+│   ├── ISSUE_TEMPLATE/            # Issue templates for contributors
+│   └── PULL_REQUEST_TEMPLATE.md   # PR description template
+├── ai-ml/                         # AI/ML evaluation logic
+├── client/                        # React frontend
+├── server/                        # Node.js + Express backend
+├── docs/                          # Project documentation
+├── .gitignore
+├── CODE_OF_CONDUCT.md
+├── CONTRIBUTING.md
+├── LICENSE
+├── README.md
+├── SECURITY.md
+└── package-lock.json
+```
 
-### Frontend (`client`)
+---
 
-Implemented:
+## `server/` — Backend (Implemented)
 
-- App shell and route configuration in `src/app/App.jsx`
-- Landing page module in `src/modules/landing/`
-- Auth UI and API integration:
-  - `src/modules/auth/Login.jsx`
-  - `src/modules/auth/Register.jsx`
-  - `src/modules/auth/VerifyEmail.jsx`
-  - `src/modules/auth/components/ComponentDemo.jsx`
-- Redux auth state in `src/features/auth/authSlice.js`
-- API client helpers:
-  - `src/services/apiClient.js`
-  - `src/services/authService.js`
-- Protected dashboard route:
-  - `src/modules/dashboard/DashboardPage.jsx`
-- Resume Analyzer UI flow:
-  - `src/modules/resume-analyzer/components/DragDropUpload.jsx`
-  - `src/modules/resume-analyzer/components/AnalysisResult.jsx`
-  - `src/modules/resume-analyzer/pages/ResumeAnalyzerPage.jsx` (Updated: integrated Job Description input)
-  - `src/modules/resume-analyzer/services/resumeService.js` (Updated: real API integration with JD support)
-- User Profile UI:
-  - `src/modules/profile/ProfilePage.jsx`
-  - `src/modules/profile/components/ProfileField.jsx`
-- Recruiter Job Management:
-  - `src/modules/recruiter-jobs/pages/RecruiterJobsPage.jsx`
-  - `src/modules/recruiter-jobs/pages/CreateJobPostingPage.jsx`
-  - `src/modules/recruiter-jobs/components/JobPostingForm.jsx`
-  - `src/modules/recruiter-jobs/components/JobPostingCard.jsx`
-  - `src/modules/recruiter-jobs/services/jobPostingService.js`
-- Shared UI primitives:
-  - `src/shared/components/Button.jsx`
-  - `src/shared/components/Input.jsx`
-  - `src/shared/components/Select.jsx`
-  - `src/shared/components/TextArea.jsx` (New: Multi-line text input)
-  - `src/shared/components/LoadingState.jsx`
-  - `src/shared/components/ErrorState.jsx`
-  - `src/shared/components/EmptyState.jsx`
-  - `src/shared/components/PageHeader.jsx`
+```
+server/
+├── index.js                        # Server entry point, mounts all routes
+├── example.env                     # Environment variable reference
+├── package.json
+└── src/
+    ├── config/                     # App and environment configuration
+    ├── database/
+    │   ├── db.js                   # MongoDB connection setup
+    │   └── models/
+    │       ├── User.js             # User schema (name, email, OTP fields, password)
+    │       └── Resume.js           # Resume schema (file metadata, parsed candidate data)
+    ├── middleware/
+    │   └── uploadResume.js         # Multer middleware for resume file uploads
+    ├── modules/
+    │   ├── auth/
+    │   │   ├── controller.js       # Handles register, verify-email, resend-otp, forgot/reset-password
+    │   │   ├── routes.js           # Auth API route definitions
+    │   │   └── service.js          # OTP generation, email dispatch, password reset logic
+    │   ├── resumes/
+    │   │   ├── controller.js       # Handles upload, analyze, and result fetch endpoints
+    │   │   └── routes.js           # Resume API route definitions
+    │   ├── analytics/              # Scaffolded — not implemented
+    │   ├── classrooms/             # Scaffolded — not implemented
+    │   ├── interviews/             # Scaffolded — not implemented
+    │   ├── matching/               # Scaffolded — not implemented
+    │   └── users/                  # Scaffolded — not implemented
+    ├── uploads/                    # Stores uploaded resume files at runtime
+    ├── utils/
+    │   └── parseResume.js          # PDF parsing and candidate information extraction
+    ├── validations/
+    │   └── authValidation.js       # Zod schemas for all auth request bodies
+    ├── integrations/               # Scaffolded — third-party AI/service integrations
+    └── app/                        # App bootstrap and middleware setup
+```
 
-Scaffolded placeholders:
+### Implemented API Endpoints
 
-- `classrooms/`
-- `job-matcher/`
-- `mock-interview/`
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/health` | Server health check |
+| POST | `/api/auth/register` | Register user, triggers OTP email |
+| POST | `/api/auth/verify-email` | Verify 6-digit OTP (max 5 attempts, 5-min expiry) |
+| POST | `/api/auth/resend-otp` | Resend OTP to registered email |
+| POST | `/api/auth/forgot-password` | Initiate password reset (enum-safe) |
+| POST | `/api/auth/reset-password` | Complete password reset with token |
+| POST | `/api/resume/upload` | Upload resume PDF via multipart form |
+| POST | `/api/resume/analyze` | Parse + evaluate resume (skills, keywords, experience) |
+| GET | `/api/resume/result/:id` | Fetch stored resume analysis by ID |
+| GET | `/uploads/:filename` | Serve uploaded resume file statically |
 
-### Backend (`server`)
+### Environment Variables (from `example.env`)
 
-Implemented:
+| Variable | Purpose |
+|----------|---------|
+| `MONGO_URI` / `MONGODB_URI` | MongoDB connection string |
+| `PORT` | Server port (default: `5000`) |
+| `JWT_SECRET` | JWT signing secret |
+| `JWT_EXPIRES_IN` | Token expiry (default: `7d`) |
+| `EMAIL_SERVICE_MODE` | `console` (dev) or `smtp` (production) |
+| `EMAIL_HOST` | SMTP host |
+| `EMAIL_PORT` | SMTP port |
+| `EMAIL_USER` | SMTP username |
+| `EMAIL_PASS` | SMTP password |
 
-- Express server bootstrap in `server/index.js`
-- MongoDB connection setup in `src/database/db.js`
-- Database Models:
-  - `src/database/models/User.js` — User model for authentication and role management
-  - `src/database/models/Resume.js` — Resume model for parsed resume data and skill matching
-  - `src/database/models/JobPosting.js` — Mongoose model for recruiter-owned job postings with status, location, skills, and salary constraints
-- Auth registration & Login flow:
-  - `src/modules/auth/routes.js`
-  - `src/modules/auth/controller.js`
-  - `src/modules/auth/service.js`
-  - `src/validations/authValidation.js`
-- Auth & RBAC Middleware:
-  - `src/middleware/authMiddleware.js` (JWT & Role verification)
-- Resume upload and analysis flow:
-  - `src/modules/resumes/routes.js`
-  - `src/modules/resumes/controller.js`
-  - `src/modules/resumes/service.js` (New: Singleton resume logic and ownership enforcement)
-  - `src/middleware/uploadResume.js`
+---
 
-  - `src/utils/parseResume.js`
-- Evaluator configuration:
-  - `src/config/evaluatorConfig.js`
-- Static upload serving via `app.use("/uploads", ...)`
-- Recruiter Job Posting system:
-  - `src/modules/jobs/routes.js`
-  - `src/modules/jobs/controller.js`
-  - `src/modules/jobs/service.js`
-  - `src/database/models/JobPosting.js`
+## `ai-ml/` — Evaluators (Implemented)
 
-Scaffolded placeholders:
+```
+ai-ml/
+└── evaluators/
+    ├── skillEvaluator.js           # Resume skills vs JD skills: matched, missing, extra, weighted score
+    ├── keywordEvaluator.js         # Resume text vs JD keywords: matched, missing, weighted score (weight: 0.2)
+    ├── experienceEvaluator.js      # Candidate vs required experience: score, gap, feedback
+    │                               # Supports: "18 months", "1 year 6 months", "2+ years"
+    └── __tests__/
+        └── experienceEvaluator.test.js   # Unit tests for experience evaluator
+```
 
-- `modules/analytics/`
-- `modules/classrooms/`
-- `modules/interviews/`
-- `modules/matching/`
-- `modules/users/`
-
-### AI/ML (`ai-ml`)
-
-Implemented:
-
-- Skill evaluator test coverage in `evaluators/__tests__/skillEvaluator.test.js`
-- Keyword evaluator test coverage in `evaluators/__tests__/keywordEvaluator.test.js`
-- Resume analysis pipeline helpers:
-  - `pipeline/evaluatorContract.js`: shared evaluator output schema
-  - `pipeline/runPipeline.js`: unified evaluator execution runner
-  - `pipeline/aggregator.js`: weighted scoring and breakdown aggregation
-
-Scaffolded placeholders:
-
+Scaffolded (no logic yet):
 - `resume-analysis/`
 - `jd-matching/`
 - `interview-feedback/`
 - `shared/`
 
-## API Surface (Implemented)
+---
 
-- `GET /health`: server health check
-- `POST /api/auth/register`: user registration and initial token issuance
-- `POST /api/auth/login`: credential verification and JWT issuance
-- `POST /api/auth/verify-email`: verify user account via OTP
-- `POST /api/auth/resend-otp`: resend email verification OTP
-- `POST /api/resume/upload`: upload resume file
-- `POST /api/resume/analyze`: parse PDF resume, latest-only upsert flow, optional skill/keyword/experience match
-- `GET /api/resume/me/latest`: fetch user's latest parsed resume (no raw resumeText)
-- `GET /api/resume/result/:id`: fetch stored resume record by ID
+## `client/` — Frontend (Implemented)
 
-- `GET /uploads/:filename`: static file access for uploaded files
-- `POST /api/jobs`: create a new job (Recruiter only)
-- `GET /api/jobs`: list all published jobs
-- `GET /api/jobs/:id`: get job details
-- `PATCH /api/jobs/:id`: update a job (Owner Recruiter only)
-- `DELETE /api/jobs/:id`: delete a job (Owner Recruiter only)
+```
+client/
+├── index.html
+├── package.json
+├── vite.config.js
+├── tailwind.config.cjs
+├── postcss.config.cjs
+└── src/
+    ├── app/
+    │   ├── App.jsx                 # Root router — defines all routes
+    │   ├── App.css
+    │   ├── main.jsx                # React entry point
+    │   └── index.css
+    ├── modules/
+    │   ├── auth/
+    │   │   ├── Login.jsx           # Login page
+    │   │   ├── Register.jsx        # Registration page
+    │   │   └── components/
+    │   │       └── ComponentDemo.jsx   # Shared component showcase (route: /demo)
+    │   ├── landing/
+    │   │   ├── LandingPage.jsx     # Main landing page (route: /)
+    │   │   └── components/
+    │   │       ├── css/            # Landing-specific styles
+    │   │       └── jsx/            # Landing-specific components
+    │   ├── resume-analyzer/
+    │   │   ├── components/
+    │   │   │   ├── DragDropUpload.jsx    # Drag & drop / paste resume upload
+    │   │   │   └── AnalysisResult.jsx   # Resume analysis results display
+    │   │   ├── pages/
+    │   │   │   └── ResumeAnalyzerPage.jsx  # Page wrapper (route: /resume-analyzer)
+    │   │   └── services/
+    │   │       └── resumeService.js     # API calls for resume upload and analysis
+    │   ├── classrooms/             # Scaffolded — not implemented
+    │   ├── dashboard/              # Scaffolded — not implemented
+    │   ├── job-matcher/            # Scaffolded — not implemented
+    │   └── mock-interview/         # Scaffolded — not implemented
+    ├── shared/
+    │   ├── components/             # Reusable form primitives
+    │   │   ├── Input.jsx           # Text input with label, error state, icons, disabled
+    │   │   ├── Button.jsx          # Button with variants, sizes, loading state
+    │   │   ├── Select.jsx          # Dropdown with label, error, disabled
+    │   │   └── index.js            # Barrel export
+    │   └── landing_components/     # Landing page shared components
+    │       ├── Navbar.jsx + Navbar.css
+    │       ├── Card.jsx + Card.css
+    │       └── Button.jsx + Button.css
+    ├── services/                   # Global API service layer (scaffolded)
+    ├── utils/                      # Frontend helper utilities (scaffolded)
+    └── assets/                     # Images, icons, static resources
+```
 
-## Notes
+---
 
-- Empty folders intentionally contain `.gitkeep` so structure is versioned.
-- As implementation begins, add module-level README files where needed.
+## `docs/` — Documentation
 
+```
+docs/
+├── PROJECT_STRUCTURE.md    # This file — implemented features reference
+├── QUALITY_GATES.md        # PR quality gate rules and automation notes
+├── api/                    # API documentation (in progress)
+├── architecture/           # System architecture diagrams (in progress)
+└── features/               # Feature-level documentation (in progress)
+```
 
-- `job-matcher/` module now includes the Resume-First Job Recommendation UI with components for resume selection, match score, missing skills, and recommended jobs, following a modular and scalable structure.
+---
+
+## Running the Project
+
+### Client
+```bash
+cd client
+npm install
+npm run dev
+```
+
+### Server
+```bash
+cd server
+npm install
+npm run dev
+```
+
+> Copy `server/example.env` to `server/.env` and fill in your values before starting the server.
