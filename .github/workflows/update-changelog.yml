@@ -1,0 +1,50 @@
+name: Auto Update Changelog
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  update-changelog:
+    # Only run when a PR is actually merged (not just closed)
+    if: github.event.pull_request.merged == true
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Fetch full history so we can push back
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run changelog updater
+        env:
+          PR_NUMBER:    ${{ github.event.pull_request.number }}
+          PR_TITLE:     ${{ github.event.pull_request.title }}
+          PR_BODY:      ${{ github.event.pull_request.body }}
+          PR_LABELS:    ${{ join(github.event.pull_request.labels.*.name, ',') }}
+          PR_AUTHOR:    ${{ github.event.pull_request.user.login }}
+          PR_URL:       ${{ github.event.pull_request.html_url }}
+          MERGED_AT:    ${{ github.event.pull_request.merged_at }}
+        run: python .github/scripts/update_changelog.py
+
+      - name: Commit updated CHANGELOG.md
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/CHANGELOG.md
+          # Only commit if there's actually a diff
+          git diff --cached --quiet || git commit -m "docs: auto-update CHANGELOG for PR #${{ github.event.pull_request.number }}"
+          git push
