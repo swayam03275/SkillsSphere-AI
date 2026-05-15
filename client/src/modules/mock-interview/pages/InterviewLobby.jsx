@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import CameraCheck from "../components/CameraCheck";
 import PersonaSelector from "../components/PersonaSelector";
 import Button from "../../../shared/components/Button";
 import Select from "../../../shared/components/Select";
@@ -15,6 +16,7 @@ const DIFFICULTY_LEVELS = [
 
 const InterviewLobby = () => {
   const navigate = useNavigate();
+  const [isMediaReady, setIsMediaReady] = useState(false);
   const [selectedPersona, setSelectedPersona] = useState("friendly");
   const [topic, setTopic] = useState("");
   const [difficulty, setDifficulty] = useState("medium");
@@ -84,6 +86,8 @@ const InterviewLobby = () => {
 
       <div className="lobby-grid">
         <div className="lobby-column">
+          <CameraCheck onStreamReady={setIsMediaReady} />
+          
           <div className="setup-card">
             <h3 className="setup-card-title">
               <GraduationCap className="text-indigo-500" /> Focus Area
@@ -121,34 +125,40 @@ const InterviewLobby = () => {
             selectedPersona={selectedPersona} 
             onSelect={setSelectedPersona} 
           />
-        </div>
-      </div>
 
-      <div className="start-section" style={{ marginTop: "2rem" }}>
-        <Button
-          variant="primary"
-          size="lg"
-          className="start-button"
-          disabled={starting || loading}
-          onClick={handleStartInterview}
-        >
-          {starting ? (
-            <>
-              <Loader2 className="spin-icon" /> Preparing Session...
-            </>
-          ) : (
-            <>
-              <Play fill="currentColor" /> Start Interview Session
-            </>
+          <div className="start-section">
+            <Button
+              variant="primary"
+              size="lg"
+              className="start-button"
+              disabled={starting || loading}
+              onClick={handleStartInterview}
+            >
+              {starting ? (
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Loader2 className="spin-icon" /> Preparing Session...
+                </span>
+              ) : (
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Play fill="currentColor" /> Start Interview Session
+                </span>
+              )}
+            </Button>
+
+            <button
+              className="history-link"
+              onClick={() => navigate("/mock-interview/history")}
+            >
+              <History size={16} /> View Interview History
+            </button>
+          </div>
+          
+          {!isMediaReady && (
+            <p className="media-warning">
+              Please enable Camera & Microphone to proceed
+            </p>
           )}
-        </Button>
-
-        <button
-          className="history-link"
-          onClick={() => navigate("/mock-interview/history")}
-        >
-          <History size={16} /> View Interview History
-        </button>
+        </div>
       </div>
     </div>
   );
