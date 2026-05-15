@@ -81,9 +81,9 @@ const AnalysisResult = ({ result, file, onReset }) => {
       </div>
 
       {/* Main Score & Metrics Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="flex flex-col">
         {/* Main Trust Score */}
-        <div className="lg:col-span-1 bg-surface border border-border rounded-[2rem] p-8 flex flex-col items-center justify-center relative overflow-hidden group shadow-2xl">
+        <div className="mb-7 lg:col-span-1 bg-surface border border-border rounded-[2rem] p-8 flex flex-col items-center justify-center relative overflow-hidden group shadow-2xl">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-50"></div>
           <div className="relative z-10 text-center">
              <div className="p-3 bg-primary/10 rounded-2xl text-primary inline-block mb-4 border border-primary/20">
@@ -114,7 +114,7 @@ const AnalysisResult = ({ result, file, onReset }) => {
         </div>
 
         {/* Impact Score Widget */}
-        <div className="bg-surface border border-border rounded-[2rem] p-8 relative overflow-hidden group shadow-xl">
+        <div className="mb-7 bg-surface border border-border rounded-[2rem] p-8 relative overflow-hidden group shadow-xl">
            <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-yellow-400/10 rounded-lg">
