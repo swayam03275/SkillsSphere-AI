@@ -196,6 +196,17 @@ export const loginUser = async (email, password) => {
     throw new AppError("Invalid email or password", 401);
   }
 
+  if (isLocalPasswordAccount(user) && !user.password) {
+    throw new AppError("Invalid email or password", 401);
+  }
+
+  if (!isLocalPasswordAccount(user)) {
+    throw new AppError(
+      "This account uses Google Sign-In. Please use Continue with Google.",
+      400,
+    );
+  }
+
   const isPasswordMatch = await bcrypt.compare(password, user.password);
   if (!isPasswordMatch) {
     throw new AppError("Invalid email or password", 401);

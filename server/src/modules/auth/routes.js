@@ -2,6 +2,11 @@ import express from "express";
 import { protect } from "../../middleware/authMiddleware.js";
 import { authRateLimiter } from "../../middleware/rateLimiter.js";
 import {
+  buildGoogleAuthUrl,
+  GOOGLE_OAUTH_NOT_CONFIGURED_MESSAGE,
+  isGoogleOAuthConfigured,
+} from "../../config/googleOAuth.js";
+import {
   forgotPassword,
   getMe,
   googleLogin,
@@ -21,7 +26,7 @@ router.get("/me", protect, getMe);
 
 // Initiate Google OAuth
 router.get("/google", (req, res) => {
-  const envFrontendOrigin = process.env.FRONTEND_URL || "http://localhost:5173";
+  const envFrontendOrigin = process.env.FRONTEND_URL || "http://localhost:5174";
   const refererHeader = req.get("referer");
   let inferredFrontendOrigin = envFrontendOrigin;
 
@@ -42,8 +47,15 @@ router.get("/google", (req, res) => {
   const state = encodeURIComponent(
     Buffer.from(redirectTarget, "utf8").toString("base64"),
   );
-  const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${process.env.GOOGLE_CALLBACK_URL}&response_type=code&scope=email%20profile&state=${state}`;
-  res.redirect(url);
+
+  if (!isGoogleOAuthConfigured()) {
+    console.error("[AUTH] Google OAuth env vars are missing in server/.env");
+    return res.redirect(
+      `${redirectTarget}?error=${encodeURIComponent(GOOGLE_OAUTH_NOT_CONFIGURED_MESSAGE)}`,
+    );
+  }
+
+  res.redirect(buildGoogleAuthUrl({ state }));
 });
 
 // Callback from Google

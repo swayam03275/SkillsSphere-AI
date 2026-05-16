@@ -22,6 +22,11 @@ import {
 import jwt from "jsonwebtoken";
 import AppError from "../../utils/AppError.js";
 import asyncHandler from "../../utils/asyncHandler.js";
+import {
+  getGoogleOAuthConfig,
+  GOOGLE_OAUTH_NOT_CONFIGURED_MESSAGE,
+  isGoogleOAuthConfigured,
+} from "../../config/googleOAuth.js";
 
 // 📝 Register User
 export const register = asyncHandler(async (req, res, next) => {
@@ -157,7 +162,7 @@ export const googleLogin = asyncHandler(async (req, res, next) => {
 export const googleOAuthCallback = asyncHandler(async (req, res, next) => {
   const { code, state } = req.query;
   const frontendRedirectBase =
-    process.env.FRONTEND_URL || "http://localhost:5173";
+    process.env.FRONTEND_URL || "http://localhost:5174";
   const fallbackCallbackUrl = `${frontendRedirectBase}/auth/callback`;
   let callbackUrl = fallbackCallbackUrl;
 
@@ -186,15 +191,23 @@ export const googleOAuthCallback = asyncHandler(async (req, res, next) => {
     );
   }
 
+  if (!isGoogleOAuthConfigured()) {
+    return res.redirect(
+      `${callbackUrl}?error=${encodeURIComponent(GOOGLE_OAUTH_NOT_CONFIGURED_MESSAGE)}`,
+    );
+  }
+
+  const { clientId, clientSecret, redirectUri } = getGoogleOAuthConfig();
+
   // Exchange code for access token
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       code,
-      client_id: process.env.GOOGLE_CLIENT_ID,
-      client_secret: process.env.GOOGLE_CLIENT_SECRET,
-      redirect_uri: process.env.GOOGLE_CALLBACK_URL,
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: redirectUri,
       grant_type: "authorization_code",
     }),
   });

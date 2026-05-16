@@ -1,10 +1,13 @@
 const getApiBaseUrl = () => {
-  // Optional: override API host in production builds
-  // Example: VITE_API_BASE_URL=https://api.example.com
   try {
-    return import.meta?.env?.VITE_API_BASE_URL || "";
+    const env = import.meta?.env;
+    return (
+      env?.VITE_API_URL ||
+      env?.VITE_API_BASE_URL ||
+      "http://localhost:5000"
+    );
   } catch {
-    return "";
+    return "http://localhost:5000";
   }
 };
 
