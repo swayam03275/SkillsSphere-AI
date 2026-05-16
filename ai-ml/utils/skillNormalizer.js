@@ -57,7 +57,19 @@ const SKILL_MAP = {
   'azure': 'azure',
   'terraform': 'terraform',
   'ansible': 'ansible',
-
+// AI / ML & Data Science
+  'tensorflow': 'tensorflow',
+  'tf': 'tensorflow',
+  'pytorch': 'pytorch',
+  'opencv': 'opencv',
+  'scikit-learn': 'scikit-learn',
+  'sklearn': 'scikit-learn',
+  'tflite': 'tensorflow lite',
+  'fastapi': 'fastapi',
+  'pydantic': 'pydantic',
+  'cryptography': 'cryptography',
+  'crypto': 'cryptography',
+  'steganography': 'steganography'
   // Others
   'dotnet': 'dotnet',
   '.net': 'dotnet',
@@ -87,7 +99,7 @@ export const normalizeSkill = (skill) => {
   if (SKILL_MAP[trimmed]) return SKILL_MAP[trimmed];
 
   // Tier 2: Collapsed match (remove spaces, dots, hyphens, etc.)
-  const collapsed = trimmed.replace(/[^a-z0-9]/g, '');
+  const collapsed = trimmed.replace(/[^a-z0-9+#]/g, '');
   if (SKILL_MAP[collapsed]) return SKILL_MAP[collapsed];
 
   // Tier 3: Robust Fallback
