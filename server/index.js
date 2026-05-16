@@ -9,6 +9,7 @@ import connectDB from "./src/database/db.js";
 import authRoutes from "./src/modules/auth/routes.js";
 import resumeRoutes from "./src/modules/resumes/routes.js";
 import jobRoutes from "./src/modules/jobs/routes.js";
+import roadmapRoutes from "./src/modules/roadmap/routes.js";
 import matchingRoutes from "./src/modules/matching/routes.js";
 import dashboardRoutes from "./src/modules/dashboard/routes.js";
 import classroomRoutes from "./src/modules/classrooms/routes.js";
@@ -77,6 +78,7 @@ app.post("/api/chat", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/resume", resumeRoutes);
 app.use("/api/jobs", jobRoutes);
+app.use("/api/roadmap", roadmapRoutes);
 app.use("/api/matching", matchingRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/classrooms", classroomRoutes);
