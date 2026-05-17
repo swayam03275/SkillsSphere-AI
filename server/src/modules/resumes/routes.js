@@ -7,7 +7,7 @@ import {
   getLatestResume,
   compareVersions
 } from "./controller.js";
-
+import { resumeAnalysisLimiter } from "../../middleware/rateLimiter.js";
 
 import { protect, authorizeRoles } from "../../middleware/authMiddleware.js";
 
@@ -35,7 +35,7 @@ const router = express.Router();
  *       200:
  *         description: Resume uploaded successfully
  */
-router.post("/upload", protect, authorizeRoles("student"), uploadResumeMiddleware, uploadResume);
+router.post("/upload", protect, authorizeRoles("student"), resumeAnalysisLimiter, uploadResumeMiddleware, uploadResume);
 
 /**
  * @openapi
@@ -62,7 +62,7 @@ router.post("/upload", protect, authorizeRoles("student"), uploadResumeMiddlewar
  *       200:
  *         description: Analysis complete
  */
-router.post("/analyze", protect, authorizeRoles("student"), uploadResumeMiddleware, analyzeResume);
+router.post("/analyze", protect, authorizeRoles("student"), resumeAnalysisLimiter, uploadResumeMiddleware, analyzeResume);
 
 /**
  * @openapi
