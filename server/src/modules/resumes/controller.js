@@ -70,6 +70,27 @@ export const uploadResume = asyncHandler(async (req, res, next) => {
   });
 });
 
+const normalizeJobSkills = (rawSkills) => {
+  if (rawSkills === undefined || rawSkills === null || rawSkills === "") {
+    return [];
+  }
+
+  if (Array.isArray(rawSkills)) {
+    return rawSkills;
+  }
+
+  if (typeof rawSkills !== "string") {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(rawSkills);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
 export const analyzeResume = async (req, res) => {
   try {
     const file = req.file;
@@ -88,7 +109,13 @@ export const analyzeResume = async (req, res) => {
     console.timeEnd("ResumeParsing");
 
     // Parse job inputs
-    const jobSkills = JSON.parse(req.body.jobSkills || "[]");
+    const jobSkills = normalizeJobSkills(req.body.jobSkills);
+    if (jobSkills === null) {
+      return res.status(400).json({
+        success: false,
+        message: "jobSkills must be a valid JSON array",
+      });
+    }
     const jobDescription = req.body.jobDescription || "";
 
     // 🧠 RUN PIPELINE (ONLY LOGIC ENTRY)

@@ -112,10 +112,10 @@ Notes for contract tests:
 - `keywordMatch` may be `{}` when no non-empty `jobDescription` is supplied or parsed resume text is unavailable.
 - `experienceMatch` is currently always an object from `experienceEvaluator`.
 - `evaluatorBreakdown` and `overallScore` are additive pipeline fields from the refactor; existing top-level fields remain unchanged for backward compatibility.
-- If `jobSkills` starts with `[` but is invalid JSON, the request can still succeed with this message:
+- If `jobSkills` is invalid JSON or not an array, the request returns `400` with this message:
 
 ```json
 {
-  "message": "Resume parsed and saved, but jobSkills JSON format is invalid"
+  "message": "jobSkills must be a valid JSON array"
 }
 ```

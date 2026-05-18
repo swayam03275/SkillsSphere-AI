@@ -142,6 +142,18 @@ test("analyze with jobDescription preserves legacy fields and includes evaluator
   assert.deepEqual(savedPayloads[0].evaluatorBreakdown, body.evaluatorBreakdown);
 });
 
+test("analyze rejects invalid jobSkills JSON", async () => {
+  stubControllerDependencies();
+
+  const { status, body } = await postAnalyze({
+    jobSkills: "foo",
+  });
+
+  assert.equal(status, 400);
+  assert.equal(body.success, false);
+  assert.equal(body.message, "jobSkills must be a valid JSON array");
+});
+
 test("analyze without jobDescription still works with empty optional evaluator fields", async () => {
   const savedPayloads = stubControllerDependencies();
 
