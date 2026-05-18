@@ -47,6 +47,11 @@ const io = new Server(server, {
   },
 });
 
+/**
+ * Socket.io authentication middleware.
+ * Every WebSocket connection must present a valid JWT in the handshake.
+ * The verified user is attached to socket.user for use in event handlers.
+ */
 io.use(async (socket, next) => {
   try {
     const token = socket.handshake.auth?.token;
