@@ -58,3 +58,18 @@ export const authorizeRoles = (...roles) => {
     next();
   };
 };
+
+/**
+ * Verify a JWT token and return the matching User document.
+ * Used by Socket.io io.use() middleware to authenticate WebSocket connections.
+ * @param {string} token - JWT string from the socket handshake
+ * @returns {Promise<Object>} Authenticated user document (without password)
+ * @throws {Error} If token is missing, invalid, or user no longer exists
+ */
+export const verifySocketToken = async (token) => {
+  if (!token) throw new Error("Authentication required");
+  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  const user = await User.findById(decoded.userId).select("-password");
+  if (!user) throw new Error("User not found");
+  return user;
+};

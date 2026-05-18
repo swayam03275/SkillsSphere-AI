@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  submitAnswer,
-  completeInterview,
-} from "../services/interviewService";
+import { submitAnswer, completeInterview } from "../services/interviewService";
 import { apiRequest } from "../../../services/apiClient";
+import InterviewSessionSkeleton from "../components/InterviewSessionSkeleton";
 import {
   Send,
   CheckCircle,
@@ -52,8 +50,7 @@ const InterviewSession = () => {
     const fetchSession = async () => {
       try {
         const token =
-          localStorage.getItem(TOKEN_KEY) ||
-          sessionStorage.getItem(TOKEN_KEY);
+          localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
         const res = await apiRequest(`/api/interviews/${sessionId}`, {
           method: "GET",
           token,
@@ -63,7 +60,7 @@ const InterviewSession = () => {
 
         // Find the first unanswered question
         const unansweredIdx = data.answers.findIndex(
-          (a) => !a.transcript && !a.scores
+          (a) => !a.transcript && !a.scores,
         );
         const idx = unansweredIdx >= 0 ? unansweredIdx : 0;
         setCurrentIndex(idx);
@@ -143,14 +140,7 @@ const InterviewSession = () => {
   };
 
   if (loading) {
-    return (
-      <div className="session-container">
-        <div className="session-loading">
-          <Loader2 className="spin-icon" size={48} />
-          <p>Loading interview session...</p>
-        </div>
-      </div>
-    );
+    return <InterviewSessionSkeleton />;
   }
 
   if (error && !session) {
@@ -177,9 +167,7 @@ const InterviewSession = () => {
       {/* Header Bar */}
       <div className="session-header">
         <div className="session-meta">
-          <span className="session-topic">
-            {session?.topic?.toUpperCase()}
-          </span>
+          <span className="session-topic">{session?.topic?.toUpperCase()}</span>
           <span className="session-difficulty">{session?.difficulty}</span>
         </div>
 

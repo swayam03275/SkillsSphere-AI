@@ -50,13 +50,14 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] overflow-hidden relative px-3 py-6 box-border">
+    <div className="min-h-screen flex flex-col justify-center items-center bg-slate-50 dark:bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] overflow-hidden relative px-3 py-6 box-border">
       <div className="relative z-10 w-full max-w-[400px]">
         {/* Background glow */}
-        <div className="hidden sm:block absolute w-[500px] h-[500px] bg-blue-500/30 rounded-full blur-[120px] -top-[150px] -left-[150px] -z-10 animate-pulse"></div>
+        <div className="hidden sm:block absolute w-[520px] h-[520px] bg-blue-400/40 dark:bg-blue-500/30 rounded-full blur-[140px] dark:blur-[120px] -top-[150px] -left-[150px] -z-10 animate-pulse"></div>
+        <div className="hidden sm:block absolute w-[400px] h-[400px] bg-purple-400/35 dark:bg-transparent rounded-full blur-[140px] -bottom-[120px] -right-[120px] -z-10 animate-pulse"></div>
 
         <form
-          className="p-6 sm:p-8 rounded-[24px] backdrop-blur-[20px] bg-slate-900/70 border border-white/10 shadow-[0_0_40px_rgba(0,0,0,0.6)] animate-[fadeIn_0.8s_ease] w-full"
+          className="p-6 sm:p-8 rounded-[24px] backdrop-blur-[20px] bg-white/95 dark:bg-slate-900/70 border border-slate-200 dark:border-white/10 shadow-[0_20px_60px_rgba(15,23,42,0.14)] dark:shadow-[0_0_40px_rgba(0,0,0,0.6)] animate-[fadeIn_0.8s_ease] w-full"
           onSubmit={handleSubmit}
           noValidate
         >
@@ -68,10 +69,10 @@ const ForgotPassword = () => {
             </div>
           </div>
 
-          <h2 className="text-center text-white mb-2 text-2xl font-bold tracking-tight">
+          <h2 className="text-center text-gray-900 dark:text-white mb-2 text-2xl font-bold tracking-tight">
             Forgot Password?
           </h2>
-          <p className="text-center text-slate-400 mb-8 text-sm leading-relaxed">
+          <p className="text-center text-slate-600 dark:text-slate-400 mb-8 text-sm leading-relaxed">
             Enter your email address and we'll send you a 6-digit code to reset your password.
           </p>
 
@@ -104,7 +105,7 @@ const ForgotPassword = () => {
           <div className="mt-8 text-center">
             <Link
               to="/login"
-              className="text-slate-400 hover:text-white transition-colors duration-200 text-sm flex items-center justify-center gap-2"
+              className="text-slate-600 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white transition-colors duration-200 text-sm flex items-center justify-center gap-2"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />

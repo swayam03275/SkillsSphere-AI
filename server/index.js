@@ -21,6 +21,7 @@ import globalErrorHandler from "./src/middleware/errorMiddleware.js";
 import { logEvaluatorConfig } from "./src/config/evaluatorConfig.js";
 import { setIO } from "./src/utils/socketIO.js";
 import { initNotificationSockets } from "./src/modules/notifications/socket.js";
+import { verifySocketToken } from "./src/middleware/authMiddleware.js";
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './src/config/swaggerConfig.js';
 
@@ -29,10 +30,32 @@ const PORT = process.env.PORT || 5000;
 
 // Create HTTP server for Socket.io
 const server = http.createServer(app);
+
+const ALLOWED_ORIGINS = [
+  process.env.FRONTEND_URL || "http://localhost:5174",
+  "http://localhost:5173",
+];
+
 const io = new Server(server, {
   cors: {
-    origin: "*", // allow frontend access
-    methods: ["GET", "POST"]
+    origin: ALLOWED_ORIGINS,
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+});
+
+/**
+ * Socket.io authentication middleware.
+ * Every WebSocket connection must present a valid JWT in the handshake.
+ * The verified user is attached to socket.user for use in event handlers.
+ */
+io.use(async (socket, next) => {
+  try {
+    const token = socket.handshake.auth?.token;
+    socket.user = await verifySocketToken(token);
+    next();
+  } catch (err) {
+    next(new Error(`Socket authentication failed: ${err.message}`));
   }
 });
 

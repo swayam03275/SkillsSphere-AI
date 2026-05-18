@@ -1,10 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { Home, FileText, LayoutDashboard, MessageSquare, LogIn, UserPlus, X, Menu, LogOut, User, ChevronDown, Briefcase, Moon, Sun, Sparkles, Rocket } from 'lucide-react';
+import { Home, FileText, LayoutDashboard, MessageSquare, LogIn, UserPlus, X, Menu, LogOut, User, ChevronDown, Briefcase, Moon, Sun, Sparkles, Rocket, Video } from 'lucide-react';
 import Button from './Button';
 import { logout } from '../../features/auth/authSlice';
 import { getProtectedAssetUrl } from '../../utils/protectedAssetUrl';
+
+const getStoredTheme = () => {
+  try {
+    return window?.localStorage?.getItem('skillssphere.theme') || 'dark';
+  } catch {
+    return 'dark';
+  }
+};
+
+const storeTheme = (theme) => {
+  try {
+    window?.localStorage?.setItem('skillssphere.theme', theme);
+  } catch {
+    // Storage can be unavailable in test or privacy-restricted environments.
+  }
+};
 
 const Navbar = () => {
   const { isAuthenticated, user, token } = useSelector((state) => state.auth);
@@ -15,10 +31,7 @@ const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [theme, setTheme] = useState(() => {
-    if (typeof window === 'undefined') return 'dark';
-    return window.localStorage.getItem('skillssphere.theme') || 'dark';
-  });
+  const [theme, setTheme] = useState(getStoredTheme);
   const location = useLocation();
 
   const handleLogout = () => {
@@ -46,7 +59,7 @@ const Navbar = () => {
     const root = document.documentElement;
     root.classList.toggle('dark', theme === 'dark');
     root.classList.toggle('light', theme === 'light');
-    window.localStorage.setItem('skillssphere.theme', theme);
+    storeTheme(theme);
   }, [theme]);
 
   const toggleTheme = () => setTheme((current) => (current === 'dark' ? 'light' : 'dark'));
@@ -55,6 +68,8 @@ const Navbar = () => {
     { name: 'Home', path: '/', icon: <Home size={20} /> },
     ...(user?.role === 'recruiter' 
       ? [{ name: 'Manage Jobs', path: '/recruiter/jobs', icon: <Briefcase size={20} /> }]
+      : user?.role === 'tutor'
+      ? [{ name: 'Live Classrooms', path: '/classrooms', icon: <Video size={20} /> }]
       : [
           { name: 'Job Board', path: '/jobs', icon: <Briefcase size={20} /> },
           { name: 'Job Match', path: '/job-matcher', icon: <Sparkles size={20} /> },
@@ -63,10 +78,16 @@ const Navbar = () => {
         ]
     ),
     { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
-    { name: 'Mock Interview', path: '/mock-interview', icon: <MessageSquare size={20} /> },
+    ...(user?.role === 'student'
+      ? [{ name: 'Mock Interview', path: '/mock-interview', icon: <MessageSquare size={20} /> }]
+      : []
+    ),
   ];
 
   const isActive = (path) => location.pathname === path;
+  const topLevelTextClass = 'text-slate-900 dark:text-white';
+  const topLevelMutedTextClass = 'text-slate-800 hover:text-slate-950 dark:text-white dark:hover:text-white';
+  const loginButtonClass = '!text-slate-900 hover:!bg-slate-100 dark:!text-white dark:hover:!bg-slate-800';
 
   return (
     <nav className={`fixed top-0 left-0 w-full z-[1000] transition-all duration-300
@@ -78,8 +99,8 @@ const Navbar = () => {
       max-sm:py-3`}>
 
       <div className="container flex justify-between items-center px-4 sm:px-3">
-        <Link to="/" className="font-heading text-2xl font-extrabold tracking-normal text-[var(--text-main)] z-[1001] flex items-center min-h-[44px] sm:text-xl max-sm:text-lg">
-          <span className="text-gradient">SkillSphere</span>&nbsp;AI
+        <Link to="/" className={`font-heading text-2xl font-extrabold tracking-normal ${topLevelTextClass} z-[1001] flex items-center min-h-[44px] sm:text-xl max-sm:text-lg`}>
+          <span>SkillSphere</span>&nbsp;AI
         </Link>
 
         {/* Desktop Navigation */}
@@ -90,8 +111,8 @@ const Navbar = () => {
               to={link.path}
               className={`relative font-medium transition-all duration-300 py-2
                 ${isActive(link.path)
-                  ? 'text-[var(--text-main)] font-semibold'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                  ? `${topLevelTextClass} font-semibold`
+                  : topLevelMutedTextClass
                 }`}
             >
               {link.name}
@@ -106,7 +127,7 @@ const Navbar = () => {
           <button
             type="button"
             onClick={toggleTheme}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--text-main)] shadow-[var(--shadow-soft)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[var(--surface-hover)]"
+            className={`inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] ${topLevelTextClass} shadow-[var(--shadow-soft)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[var(--surface-hover)]`}
             aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
             title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
           >
@@ -125,9 +146,9 @@ const Navbar = () => {
                   }
                 </div>
                 <div className="text-left hidden xl:block">
-                  <p className="text-sm font-medium text-[var(--text-main)]">{user?.name || 'User'}</p>
+                  <p className={`text-sm font-medium ${topLevelTextClass}`}>{user?.name || 'User'}</p>
                 </div>
-                <ChevronDown size={16} className={`text-[var(--text-muted)] transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown size={16} className={`${topLevelTextClass} transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {isProfileOpen && (
@@ -174,7 +195,7 @@ const Navbar = () => {
             </div>
           ) : (
             <>
-              <Button variant="ghost" size="sm" to="/login">Login</Button>
+              <Button variant="ghost" size="sm" to="/login" className={loginButtonClass}>Login</Button>
               <Button variant="primary" size="sm" to="/register">Get Started</Button>
             </>
           )}
@@ -182,7 +203,7 @@ const Navbar = () => {
 
         {/* Mobile Toggle */}
         <button
-          className="lg:hidden flex items-center justify-center bg-transparent border-none text-[var(--text-main)] cursor-pointer z-[1001] transition-transform duration-300 min-h-[44px] min-w-[44px] p-2 active:scale-90"
+          className={`lg:hidden flex items-center justify-center bg-transparent border-none ${topLevelTextClass} cursor-pointer z-[1001] transition-transform duration-300 min-h-[44px] min-w-[44px] p-2 active:scale-90`}
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           aria-label="Toggle navigation"
         >
@@ -210,11 +231,11 @@ const Navbar = () => {
 
           {/* Drawer Header */}
           <div className="flex justify-between items-center mb-8 pb-4 sm:mb-6">
-            <Link to="/" className="font-heading text-xl font-extrabold tracking-normal text-[var(--text-main)]">
-              <span className="text-gradient">SkillSphere</span>&nbsp;AI
+            <Link to="/" className="font-heading text-xl font-extrabold tracking-normal text-slate-900 dark:text-white">
+              <span>SkillSphere</span>&nbsp;AI
             </Link>
             <button
-              className="bg-[var(--surface-soft)] border border-[var(--border)] w-10 h-10 rounded-xl flex items-center justify-center text-[var(--text-main)] cursor-pointer min-h-[44px] min-w-[44px]"
+              className="bg-[var(--surface-soft)] border border-[var(--border)] w-10 h-10 rounded-xl flex items-center justify-center text-slate-900 dark:text-white cursor-pointer min-h-[44px] min-w-[44px]"
               onClick={() => setIsMenuOpen(false)}
             >
               <X size={24} />
@@ -226,7 +247,7 @@ const Navbar = () => {
             <button
               type="button"
               onClick={toggleTheme}
-              className="flex items-center gap-4 px-4 py-4 rounded-xl text-base font-medium text-[var(--text-main)] bg-[var(--surface-soft)] border border-[var(--border)] transition-all duration-300 min-h-[44px]"
+              className="flex items-center gap-4 px-4 py-4 rounded-xl text-base font-medium text-slate-900 dark:text-white bg-[var(--surface-soft)] border border-[var(--border)] transition-all duration-300 min-h-[44px]"
             >
               <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-[var(--surface)]">
                 {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
@@ -244,8 +265,8 @@ const Navbar = () => {
                   max-sm:px-3 max-sm:py-3 max-sm:text-[0.95rem] max-sm:gap-3
                   ${isMenuOpen ? 'animate-[slideFadeIn_0.5s_ease_forwards]' : 'opacity-0 translate-y-5'}
                   ${isActive(link.path)
-                    ? 'bg-primary/15 text-primary font-bold'
-                    : 'text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-main)]'
+                    ? 'bg-primary/15 text-slate-900 dark:text-white font-bold'
+                    : 'text-slate-800 hover:bg-[var(--surface-hover)] hover:text-slate-950 dark:text-white dark:hover:text-white'
                   }`}
               >
                 <span className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 flex-shrink-0
@@ -283,7 +304,7 @@ const Navbar = () => {
                 <Button variant="primary" size="lg" to="/dashboard" className="w-full justify-center">
                   Go to Dashboard
                 </Button>
-                <Button variant="outline" size="lg" to="/profile" className="w-full justify-center border-[var(--border)] text-[var(--text-main)] hover:bg-[var(--surface-hover)]">
+                <Button variant="outline" size="lg" to="/profile" className="w-full justify-center border-[var(--border)] text-slate-900 dark:text-white hover:bg-[var(--surface-hover)]">
                   <User size={20} /> View Profile
                 </Button>
                 <Button variant="ghost" size="lg" onClick={handleLogout} className="w-full justify-center text-red-400 hover:text-red-300 hover:bg-red-400/10">
@@ -292,7 +313,7 @@ const Navbar = () => {
               </div>
             ) : (
               <div className="flex flex-col gap-3">
-                <Button variant="secondary" size="lg" to="/login" className="w-full justify-center">
+                <Button variant="secondary" size="lg" to="/login" className="w-full justify-center !text-slate-900 dark:!text-white">
                   <LogIn size={20} /> Login
                 </Button>
                 <Button variant="primary" size="lg" to="/register" className="w-full justify-center">

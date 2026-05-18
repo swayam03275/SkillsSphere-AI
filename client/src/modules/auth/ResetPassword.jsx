@@ -112,24 +112,24 @@ const ResetPassword = () => {
   };
 
   return (
-    <div className="min-h-screen flex justify-center items-center bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] overflow-hidden relative p-5 box-border">
+    <div className="min-h-screen flex justify-center items-center bg-slate-50 dark:bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] overflow-hidden relative p-5 box-border">
       <div className="relative z-10 w-full max-w-[420px]">
         {/* Background glow */}
-        <div className="absolute w-[500px] h-[500px] bg-blue-500/40 rounded-full blur-[120px] -top-[150px] -left-[150px] -z-10 animate-pulse"></div>
-        <div className="absolute w-[400px] h-[400px] bg-purple-500/40 rounded-full blur-[120px] -bottom-[120px] -right-[120px] -z-10 animate-pulse"></div>
+        <div className="absolute w-[520px] h-[520px] bg-blue-400/45 dark:bg-blue-500/40 rounded-full blur-[140px] dark:blur-[120px] -top-[150px] -left-[150px] -z-10 animate-pulse"></div>
+        <div className="absolute w-[420px] h-[420px] bg-purple-400/45 dark:bg-purple-500/40 rounded-full blur-[140px] dark:blur-[120px] -bottom-[120px] -right-[120px] -z-10 animate-pulse"></div>
 
         {success ? (
           /* ── Success State ── */
-          <div className="p-6 sm:p-[30px] rounded-[20px] backdrop-blur-[20px] bg-slate-900/70 border border-white/10 shadow-[0_0_40px_rgba(0,0,0,0.6)] animate-[fadeIn_0.8s_ease] text-center">
+          <div className="p-6 sm:p-[30px] rounded-[20px] backdrop-blur-[20px] bg-white/95 dark:bg-slate-900/70 border border-slate-200 dark:border-white/10 shadow-[0_20px_60px_rgba(15,23,42,0.14)] dark:shadow-[0_0_40px_rgba(0,0,0,0.6)] animate-[fadeIn_0.8s_ease] text-center">
             <div className="flex justify-center mb-4">
               <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
                 <CheckCircle className="w-8 h-8 text-green-400" />
               </div>
             </div>
-            <h2 className="text-white text-2xl font-semibold mb-2">
+            <h2 className="text-gray-900 dark:text-white text-2xl font-semibold mb-2">
               Password Reset Successful
             </h2>
-            <p className="text-slate-400 text-sm mb-6">
+            <p className="text-slate-600 dark:text-slate-400 text-sm mb-6">
               Your password has been updated successfully. You can now log in
               with your new password.
             </p>
@@ -144,7 +144,7 @@ const ResetPassword = () => {
         ) : (
           /* ── Reset Password Form ── */
           <form
-            className="p-6 sm:p-[30px] rounded-[20px] backdrop-blur-[20px] bg-slate-900/70 border border-white/10 shadow-[0_0_40px_rgba(0,0,0,0.6)] animate-[fadeIn_0.8s_ease]"
+            className="p-6 sm:p-[30px] rounded-[20px] backdrop-blur-[20px] bg-white/95 dark:bg-slate-900/70 border border-slate-200 dark:border-white/10 shadow-[0_20px_60px_rgba(15,23,42,0.14)] dark:shadow-[0_0_40px_rgba(0,0,0,0.6)] animate-[fadeIn_0.8s_ease]"
             onSubmit={handleSubmit}
             noValidate
           >
@@ -154,10 +154,10 @@ const ResetPassword = () => {
                 <KeyRound className="w-7 h-7 text-blue-400" />
               </div>
             </div>
-            <h2 className="text-center text-white mb-1 text-2xl font-semibold">
+            <h2 className="text-center text-gray-900 dark:text-white mb-1 text-2xl font-semibold">
               Reset Password
             </h2>
-            <p className="text-center text-slate-400 text-sm mb-6">
+            <p className="text-center text-slate-600 dark:text-slate-400 text-sm mb-6">
               Enter the details below to reset your password
             </p>
 
@@ -222,7 +222,7 @@ const ResetPassword = () => {
             </Button>
 
             {/* Footer */}
-            <p className="text-center mt-5 text-slate-400 text-[14px] flex items-center justify-center gap-1">
+            <p className="text-center mt-5 text-slate-600 dark:text-slate-400 text-[14px] flex items-center justify-center gap-1">
               <ArrowLeft className="w-4 h-4" />
               <Link to="/login" className="text-blue-400 hover:underline">
                 Back to Login

@@ -8,8 +8,12 @@ import Input from "../../../shared/components/Input";
 import LoadingState from "../../../shared/components/LoadingState";
 import ErrorState from "../../../shared/components/ErrorState";
 import EmptyState from "../../../shared/components/EmptyState";
+import JobCardSkeleton from "../../student-jobs/components/JobCardSkeleton";
 import { JobViewerCard, Pagination } from "../../../shared/components";
-import { getRecruiterJobs, deleteJobPosting } from "../services/jobPostingService";
+import {
+  getRecruiterJobs,
+  deleteJobPosting,
+} from "../services/jobPostingService";
 
 const RecruiterJobsPage = () => {
   const navigate = useNavigate();
@@ -33,7 +37,9 @@ const RecruiterJobsPage = () => {
       setTotalPages(response.totalPages || 1);
       setTotalCount(response.totalCount || 0);
     } catch (err) {
-      setError(err.message || "Failed to load job postings. Please try again later.");
+      setError(
+        err.message || "Failed to load job postings. Please try again later.",
+      );
       console.error("Failed to fetch jobs:", err);
     } finally {
       setLoading(false);
@@ -57,7 +63,10 @@ const RecruiterJobsPage = () => {
         }
       } catch (err) {
         if (!ignore) {
-          setError(err.message || "Failed to load job postings. Please try again later.");
+          setError(
+            err.message ||
+              "Failed to load job postings. Please try again later.",
+          );
         }
         console.error("Failed to fetch jobs:", err);
       } finally {
@@ -100,7 +109,7 @@ const RecruiterJobsPage = () => {
       try {
         await deleteJobPosting(job._id || job.id, token);
         // Refresh the jobs list
-        setJobs(jobs.filter(j => (j._id || j.id) !== (job._id || job.id)));
+        setJobs(jobs.filter((j) => (j._id || j.id) !== (job._id || job.id)));
       } catch (err) {
         alert(err.message || "Failed to delete job posting.");
       }
@@ -123,11 +132,19 @@ const RecruiterJobsPage = () => {
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 py-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-white">Manage Job Postings</h1>
-            <p className="text-slate-400 mt-1">View and manage your active job listings and recommendations.</p>
+            <h1 className="text-3xl font-bold text-white">
+              Manage Job Postings
+            </h1>
+            <p className="text-slate-400 mt-1">
+              View and manage your active job listings and recommendations.
+            </p>
           </div>
           <Link to="/recruiter/jobs/new">
-            <Button variant="primary" leftIcon={<Plus size={18} />} className="bg-blue-600 hover:bg-blue-500">
+            <Button
+              variant="primary"
+              leftIcon={<Plus size={18} />}
+              className="bg-blue-600 hover:bg-blue-500"
+            >
               Post New Job
             </Button>
           </Link>
@@ -145,23 +162,36 @@ const RecruiterJobsPage = () => {
         </div>
 
         {loading ? (
-          <div className="py-20">
-            <LoadingState message="Fetching your job postings..." />
+          <div className="grid grid-cols-1 gap-5">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <JobCardSkeleton key={index} />
+            ))}
           </div>
         ) : error ? (
           <ErrorState message={error} onRetry={fetchJobs} />
         ) : filteredJobs.length === 0 ? (
           <EmptyState
             icon={<Briefcase size={48} className="text-slate-600" />}
-            title={searchTerm ? "No matching jobs found" : "No job postings yet"}
-            description={searchTerm ? "Try adjusting your search filters." : "Get started by creating your first job posting to find the best candidates."}
-            action={!searchTerm && (
-              <Link to="/recruiter/jobs/new">
-                <Button variant="primary" className="bg-blue-600 hover:bg-blue-500 mt-4">
-                  Create First Posting
-                </Button>
-              </Link>
-            )}
+            title={
+              searchTerm ? "No matching jobs found" : "No job postings yet"
+            }
+            description={
+              searchTerm
+                ? "Try adjusting your search filters."
+                : "Get started by creating your first job posting to find the best candidates."
+            }
+            action={
+              !searchTerm && (
+                <Link to="/recruiter/jobs/new">
+                  <Button
+                    variant="primary"
+                    className="bg-blue-600 hover:bg-blue-500 mt-4"
+                  >
+                    Create First Posting
+                  </Button>
+                </Link>
+              )
+            }
           />
         ) : (
           <div className="grid grid-cols-1 gap-4">

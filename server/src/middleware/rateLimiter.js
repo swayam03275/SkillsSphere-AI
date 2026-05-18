@@ -37,3 +37,22 @@ export const jobCreationLimiter = rateLimit({
     res.status(429).json(options.message);
   }
 });
+
+/**
+ * Rate Limiter for Resume Uploads and Analysis
+ * Prevents API quota abuse and CPU starvation from excessive file processing
+ */
+export const resumeAnalysisLimiter = rateLimit({
+  windowMs: parseInt(process.env.RESUME_LIMIT_WINDOW) || 60 * 60 * 1000, // Default 1 hour
+  max: parseInt(process.env.RESUME_LIMIT_MAX) || 10, // Default 10 resume analyses per window
+  message: {
+    success: false,
+    message: "Too many resume analysis attempts. Please try again later.",
+    error: "RATE_LIMIT_EXCEEDED"
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res, next, options) => {
+    res.status(429).json(options.message);
+  }
+});

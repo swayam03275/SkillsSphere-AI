@@ -124,19 +124,19 @@ const Register = () => {
     form.password !== form.confirmPassword;
 
   return (
-    <div className="h-[125vh] flex flex-col justify-center items-center bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] overflow-hidden relative px-3 py-6 box-border">
+    <div className="h-[125vh] flex flex-col justify-center items-center bg-slate-50 dark:bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] overflow-hidden relative px-3 py-6 box-border">
       <Navbar />
       <div className="relative z-10 w-full max-w-[380px]">
         {/* Background glow */}
-        <div className="hidden sm:block absolute w-[500px] h-[500px] bg-blue-500/40 rounded-full blur-[120px] -top-[150px] -left-[150px] -z-10 animate-pulse"></div>
-        <div className="hidden sm:block absolute w-[400px] h-[400px] bg-purple-500/40 rounded-full blur-[120px] -bottom-[120px] -right-[120px] -z-10 animate-pulse"></div>
+        <div className="hidden sm:block absolute w-[520px] h-[520px] bg-blue-400/45 dark:bg-blue-500/40 rounded-full blur-[140px] dark:blur-[120px] -top-[150px] -left-[150px] -z-10 animate-pulse"></div>
+        <div className="hidden sm:block absolute w-[420px] h-[420px] bg-purple-400/45 dark:bg-purple-500/40 rounded-full blur-[140px] dark:blur-[120px] -bottom-[120px] -right-[120px] -z-10 animate-pulse"></div>
 
         <form
-          className="p-4 sm:p-[30px] rounded-[20px] backdrop-blur-[20px] bg-slate-900/70 border border-white/10 shadow-[0_0_40px_rgba(0,0,0,0.6)] animate-[fadeIn_0.8s_ease] w-full"
+          className="p-4 sm:p-[30px] rounded-[20px] backdrop-blur-[20px] bg-white/95 dark:bg-slate-900/70 border border-slate-200 dark:border-white/10 shadow-[0_20px_60px_rgba(15,23,42,0.14)] dark:shadow-[0_0_40px_rgba(0,0,0,0.6)] animate-[fadeIn_0.8s_ease] w-full"
           onSubmit={handleSubmit}
           noValidate
         >
-          <h2 className="text-center text-white mb-5 sm:mb-6 text-xl sm:text-2xl font-semibold">
+          <h2 className="text-center text-gray-900 dark:text-white mb-5 sm:mb-6 text-xl sm:text-2xl font-semibold">
             Create Account
           </h2>
 
@@ -226,8 +226,8 @@ const Register = () => {
                 window.location.href = `${API_URL}/api/auth/google?redirect=${redirect}`;
               }}
               className="w-full flex items-center justify-center gap-3 px-4 py-2.5 
-                          bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl
-                          text-white font-medium transition-all duration-200
+                          bg-white hover:bg-slate-50 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 rounded-xl
+                          text-gray-900 dark:text-white font-medium transition-all duration-200
                           hover:scale-[1.02] active:scale-[0.98]"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -253,7 +253,7 @@ const Register = () => {
           </div>
         </form>
         {/* Footer */}
-        <p className="text-center mt-4 sm:mt-5 text-slate-400 text-xs sm:text-sm">
+        <p className="text-center mt-4 sm:mt-5 text-slate-600 dark:text-slate-400 text-xs sm:text-sm">
           Already have an account?{" "}
           <span
             className="text-blue-400 cursor-pointer hover:underline"

@@ -17,8 +17,6 @@ import {
 import * as resumeService from "./service.js";
 import AnalysisHistory from "../../database/models/AnalysisHistory.js";
 import { verifyLinks } from "../../utils/linkVerifier.js";
-import { buildResumeFileUrl } from "../../utils/uploadPaths.js";
-import { generateComparisonInsights } from "../../utils/aiComparison.js";
 
 const defaultDependencies = {
   parseResume,
@@ -181,9 +179,20 @@ export const analyzeResume = async (req, res) => {
     });
   } catch (error) {
     console.error("Analyze Resume Error:", error);
-    return res.status(500).json({
+    if (req.file?.path) {
+      removeUploadedFile(req.file.path);
+    }
+
+    const message =
+      typeof error?.message === "string" ? error.message : "Failed to process resume file";
+    const isValidationOrParseError =
+      /not a valid|Only PDF|Unable to extract|extract text|Invalid file|malformed|corrupt/i.test(
+        message
+      );
+
+    return res.status(isValidationOrParseError ? 400 : 500).json({
       success: false,
-      message: "Internal Server Error",
+      message: isValidationOrParseError ? message : "Internal Server Error",
     });
   }
 };

@@ -54,7 +54,7 @@ const Select = ({
       {label && (
         <label
           htmlFor={id}
-          className="text-sm font-medium text-gray-300 select-none"
+          className="text-sm font-medium text-gray-700 dark:text-gray-300 select-none"
         >
           {label}
           {required && (

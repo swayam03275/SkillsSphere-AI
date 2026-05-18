@@ -28,14 +28,18 @@ const SocketNotificationListener = () => {
 
     // Initialize socket connection
     if (!socketRef.current) {
-      // Connect to relative path (uses Vite proxy)
+      // Connect to relative path (uses Vite proxy).
+      // The JWT token is sent in the handshake auth object so the server
+      // can verify identity in io.use() before any events are processed.
       socketRef.current = io("/", {
         transports: ["websocket"],
-        path: "/socket.io"
+        path: "/socket.io",
+        auth: { token },
       });
 
       socketRef.current.on("connect", () => {
-        socketRef.current.emit("join-notifications", userId);
+        // No userId needed — the server reads it from the verified JWT
+        socketRef.current.emit("join-notifications");
       });
 
       socketRef.current.on("notification-ready", (data) => {
@@ -58,8 +62,16 @@ const SocketNotificationListener = () => {
       socketRef.current.on("disconnect", (reason) => {
         // Handled
       });
+
+      socketRef.current.on("connect_error", (err) => {
+        // Server rejected the connection (e.g. invalid or expired token)
+        console.warn("[Socket] Connection refused:", err.message);
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      });
     } else {
-      socketRef.current.emit("join-notifications", userId);
+      // Socket already exists — re-join the room (e.g. after a user state update)
+      socketRef.current.emit("join-notifications");
     }
 
     return () => {};

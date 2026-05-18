@@ -65,7 +65,7 @@ const Input = ({
       {label && (
         <label
           htmlFor={id}
-          className="text-sm font-medium text-gray-300 select-none"
+          className="text-sm font-medium text-gray-700 dark:text-gray-300 select-none"
         >
           {label}
           {required && (
@@ -103,7 +103,7 @@ const Input = ({
         {isPassword && !rightIcon ? (
           <button
             type="button"
-            className="absolute right-3 flex items-center text-slate-400 hover:text-slate-200 transition-colors bg-transparent border-none p-0 cursor-pointer"
+            className="absolute right-3 flex items-center text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors bg-transparent border-none p-0 cursor-pointer"
             onClick={() => setShowPassword(!showPassword)}
             aria-label={showPassword ? "Hide password" : "Show password"}
           >

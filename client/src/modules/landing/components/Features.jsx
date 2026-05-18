@@ -234,6 +234,21 @@ const Features = () => {
 
   return (
     <section className="py-28 px-4 bg-[var(--surface)] relative sm:py-16 max-sm:py-10">
+      {/* Light mode gradient background */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden -z-0">
+        <style>{`
+          html:not(.dark) .feat-orb-1 { opacity: 1 !important; }
+          html:not(.dark) .feat-orb-2 { opacity: 1 !important; }
+          html:not(.dark) .feat-section-bg { background: linear-gradient(160deg, #faf5ff 0%, #ffffff 50%, #f0fdf4 100%) !important; }
+        `}</style>
+        <div className="feat-section-bg absolute inset-0" style={{ opacity: 0 }} />
+        <div className="feat-orb-1 absolute -top-20 left-1/4 w-[400px] h-[400px] rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(124,58,237,0.10) 0%, transparent 70%)', filter: 'blur(50px)', opacity: 0 }}
+        />
+        <div className="feat-orb-2 absolute bottom-0 right-1/4 w-[350px] h-[350px] rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(5,150,105,0.09) 0%, transparent 70%)', filter: 'blur(50px)', opacity: 0 }}
+        />
+      </div>
       <div className="container">
         <div className="text-center mb-16 max-w-[700px] mx-auto sm:mb-12 max-sm:mb-8">
           <h2 className="text-[clamp(1.5rem,4vw,2.5rem)] font-bold mb-4 leading-tight">

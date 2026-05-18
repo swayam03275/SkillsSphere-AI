@@ -4,6 +4,26 @@ import Button from "../../../shared/landing/Button";
 const Hero = () => {
   return (
     <section className="relative min-h-[92vh] flex items-center px-4 pt-32 pb-20 overflow-visible animate-slide-up sm:pt-28 sm:pb-14">
+      {/* Light mode gradient orbs */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full opacity-0 dark:opacity-0"
+          style={{ background: 'radial-gradient(circle, rgba(124,58,237,0.18) 0%, rgba(79,70,229,0.08) 40%, transparent 70%)', filter: 'blur(60px)' }}
+        />
+        <div className="absolute top-1/2 -right-40 w-[500px] h-[500px] rounded-full opacity-0 dark:opacity-0"
+          style={{ background: 'radial-gradient(circle, rgba(5,150,105,0.15) 0%, rgba(16,185,129,0.06) 40%, transparent 70%)', filter: 'blur(60px)' }}
+        />
+        {/* Only show in light mode */}
+        <style>{`
+          html:not(.dark) .hero-orb-purple { opacity: 1 !important; }
+          html:not(.dark) .hero-orb-green  { opacity: 1 !important; }
+        `}</style>
+        <div className="hero-orb-purple absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(124,58,237,0.18) 0%, rgba(79,70,229,0.08) 40%, transparent 70%)', filter: 'blur(60px)', opacity: 0 }}
+        />
+        <div className="hero-orb-green absolute top-1/2 -right-40 w-[500px] h-[500px] rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(5,150,105,0.15) 0%, rgba(16,185,129,0.06) 40%, transparent 70%)', filter: 'blur(60px)', opacity: 0 }}
+        />
+      </div>
       <div className="container grid grid-cols-[minmax(0,0.82fr)_minmax(540px,1.18fr)] items-center gap-12 max-[1050px]:grid-cols-1 max-[1050px]:gap-10">
         <div className="max-w-2xl relative max-[1050px]:text-center max-[1050px]:mx-auto">
           {/* decorative radial glow behind heading for reliable halo */}
@@ -55,14 +75,42 @@ const Hero = () => {
           </div>
         </div>
 
-        <div className="relative justify-self-end hero-demo-grid w-full max-w-[760px] rounded-lg p-5 overflow-hidden max-[1050px]:justify-self-center bg-[rgba(255,255,255,0.04)] dark:bg-[rgba(255,255,255,0.02)] backdrop-blur-md border border-[rgba(255,255,255,0.06)] shadow-[0_20px_50px_-20px_rgba(0,0,0,0.6)]">
-          <div className="rounded-lg bg-[transparent] p-5">
+        <div className="animated-gradient-box relative justify-self-end hero-demo-grid w-full max-w-[760px] rounded-[18px] p-5 overflow-hidden max-[1050px]:justify-self-center backdrop-blur-md border border-[rgba(255,255,255,0.06)] shadow-[0_20px_50px_-20px_rgba(0,0,0,0.6)] transition-transform duration-300 will-change-transform hover:-translate-y-1 bg-[linear-gradient(145deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] dark:bg-[linear-gradient(145deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))]">
+          {/* Ambient glow + shimmer */}
+          <div aria-hidden className="pointer-events-none absolute -inset-6 opacity-80 dark:opacity-95 blur-3xl motion-safe:animate-cockpit-glow"
+            style={{
+              background:
+                "radial-gradient(circle at 20% 20%, rgba(124,58,237,0.26) 0%, transparent 58%), radial-gradient(circle at 80% 35%, rgba(79,70,229,0.24) 0%, transparent 58%), radial-gradient(circle at 55% 85%, rgba(5,150,105,0.22) 0%, transparent 60%)",
+            }}
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 rounded-[18px] opacity-90 dark:opacity-100"
+            style={{
+              padding: "1px",
+              background:
+                "linear-gradient(135deg, rgba(124,58,237,0.35), rgba(79,70,229,0.28), rgba(5,150,105,0.30))",
+              WebkitMask:
+                "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+              WebkitMaskComposite: "xor",
+              maskComposite: "exclude",
+            }}
+          />
+          <div aria-hidden className="pointer-events-none absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-500">
+            <div className="absolute -inset-10 bg-gradient-to-r from-transparent via-white/12 to-transparent blur-xl motion-safe:animate-shimmer-sweep" />
+          </div>
+
+          <div className="relative rounded-[14px] bg-[transparent] p-5">
             <div className="mb-5 flex items-center justify-between">
               <div>
                 <p className="text-base font-semibold text-[var(--text-main)]">Career cockpit</p>
                 <p className="text-sm text-[var(--text-muted)]">From learning signal to hiring readiness</p>
               </div>
-              <div className="hidden rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1 text-xs font-semibold text-[var(--secondary)] animate-pulse-soft sm:block">
+              <div className="hidden sm:flex items-center gap-2 rounded-full border border-[var(--border)] bg-[linear-gradient(135deg,var(--surface),rgba(79,70,229,0.05))] dark:bg-[linear-gradient(135deg,rgba(255,255,255,0.04),rgba(16,185,129,0.05))] px-3 py-1 text-xs font-semibold text-[var(--secondary)]">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-[var(--secondary)] opacity-75 motion-safe:animate-ping" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[var(--secondary)] motion-safe:animate-pulse-soft" />
+                </span>
                 AI active
               </div>
             </div>
@@ -78,11 +126,14 @@ const Hero = () => {
                   return (
                     <div
                       key={item.label}
-                      className="animate-float-panel rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[var(--shadow-soft)]"
-                      style={{ animationDelay: `${index * 0.45}s` }}
+                      className="group rounded-xl border border-[var(--border)] bg-[linear-gradient(145deg,var(--surface),rgba(124,58,237,0.05))] dark:bg-[linear-gradient(145deg,rgba(255,255,255,0.03),rgba(79,70,229,0.06))] p-4 shadow-[var(--shadow-soft)] transition-transform duration-300 hover:-translate-y-0.5 motion-safe:animate-float-panel"
+                      style={{ animationDelay: `${index * 0.45}s`, animationDuration: "5.6s" }}
                     >
                       <div className="flex items-center gap-3">
-                        <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-[var(--surface-soft)] text-[var(--primary)]">
+                        <span className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--surface-soft)] text-[var(--primary)] overflow-hidden">
+                          <span aria-hidden className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                            style={{ background: "radial-gradient(circle at 30% 30%, rgba(79,70,229,0.25), transparent 60%)" }}
+                          />
                           <Icon size={20} />
                         </span>
                         <div>
@@ -95,9 +146,15 @@ const Hero = () => {
                 })}
               </div>
 
-              <div className="relative min-h-[390px] rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5 overflow-hidden max-sm:min-h-[340px]">
-                <div className="absolute left-0 right-0 top-0 h-12 bg-gradient-to-b from-[var(--surface-soft)] to-transparent" />
-                <div className="animate-scan-line absolute left-4 right-4 top-10 h-1 rounded-full bg-[var(--secondary)] opacity-70 shadow-[0_0_22px_var(--secondary)]" />
+              <div className="relative min-h-[390px] rounded-xl border border-[var(--border)] bg-[linear-gradient(145deg,var(--surface),rgba(16,185,129,0.04))] dark:bg-[linear-gradient(145deg,rgba(255,255,255,0.03),rgba(124,58,237,0.08))] p-5 overflow-hidden max-sm:min-h-[340px]">
+                <div aria-hidden className="absolute inset-0 opacity-70"
+                  style={{
+                    background:
+                      "radial-gradient(circle at 25% 15%, rgba(124,58,237,0.12) 0%, transparent 58%), radial-gradient(circle at 80% 40%, rgba(16,185,129,0.12) 0%, transparent 62%), radial-gradient(circle at 55% 85%, rgba(79,70,229,0.08) 0%, transparent 60%)",
+                  }}
+                />
+                <div className="absolute left-0 right-0 top-0 h-14 bg-gradient-to-b from-[var(--surface-soft)] to-transparent" />
+                <div className="motion-safe:animate-scan-line absolute left-4 right-4 top-10 h-1 rounded-full bg-[var(--secondary)] opacity-70 shadow-[0_0_22px_var(--secondary)]" />
                 <div className="relative z-10 space-y-4">
                   <div className="flex items-start justify-between gap-4">
                     <div>
@@ -113,7 +170,7 @@ const Hero = () => {
                       ["Role fit", "92%"],
                       ["Growth", "+18%"],
                     ].map(([label, value]) => (
-                      <div key={label} className="rounded-lg border border-[var(--border)] bg-[var(--background)] p-3 text-center">
+                      <div key={label} className="group rounded-xl border border-[var(--border)] bg-[linear-gradient(145deg,var(--background),rgba(79,70,229,0.06))] dark:bg-[linear-gradient(145deg,rgba(0,0,0,0.10),rgba(16,185,129,0.07))] p-3 text-center transition-transform duration-300 hover:-translate-y-0.5">
                         <p className="text-lg font-bold text-[var(--text-main)]">{value}</p>
                         <p className="text-[0.7rem] font-semibold uppercase text-[var(--text-muted)]">{label}</p>
                       </div>
@@ -133,7 +190,7 @@ const Hero = () => {
                         </div>
                         <div className="h-2 overflow-hidden rounded-full bg-[var(--surface-soft)]">
                           <div
-                            className="h-full rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] animate-flow-across"
+                            className="h-full rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] motion-safe:animate-flow-across"
                             style={{ width: value, animationDelay: `${index * 0.35}s` }}
                           />
                         </div>
@@ -141,16 +198,22 @@ const Hero = () => {
                     ))}
                   </div>
 
-                  <div className="rounded-lg border border-[var(--border)] bg-[var(--background)] p-4">
+                  <div className="rounded-xl border border-[var(--border)] bg-[linear-gradient(145deg,var(--background),rgba(124,58,237,0.05))] dark:bg-[linear-gradient(145deg,rgba(0,0,0,0.10),rgba(79,70,229,0.08))] p-4">
                     <p className="text-xs font-semibold uppercase text-[var(--text-muted)]">Suggested next step</p>
                     <p className="mt-2 text-sm font-semibold text-[var(--text-main)]">Practice behavioral interview round</p>
                     <div className="mt-4 grid grid-cols-[1fr_auto] items-center gap-3">
                       <div className="h-2 overflow-hidden rounded-full bg-[var(--surface-soft)]">
-                        <span className="block h-full w-3/4 rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] animate-flow-across" />
+                        <span className="block h-full w-3/4 rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] motion-safe:animate-flow-across" />
                       </div>
-                      <span className="rounded-lg bg-[var(--surface-soft)] px-3 py-2 text-xs font-bold text-[var(--text-main)]">
-                        Start
-                      </span>
+                      <button
+                        type="button"
+                        className="relative rounded-lg bg-[var(--surface-soft)] px-3 py-2 text-xs font-bold text-[var(--text-main)] shadow-[0_10px_30px_-18px_rgba(79,70,229,0.6)] transition-transform duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_45px_-22px_rgba(79,70,229,0.8)]"
+                      >
+                        <span aria-hidden className="pointer-events-none absolute -inset-1 rounded-lg opacity-0 hover:opacity-100 transition-opacity duration-300"
+                          style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.22), rgba(16,185,129,0.18))", filter: "blur(10px)" }}
+                        />
+                        <span className="relative">Start</span>
+                      </button>
                     </div>
                   </div>
                 </div>

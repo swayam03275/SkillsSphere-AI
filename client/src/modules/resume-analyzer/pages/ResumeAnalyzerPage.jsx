@@ -1,9 +1,15 @@
 import { useState } from "react";
-import { useToast, LoadingState, ErrorState, PageHeader } from "../../../shared/components";
+import {
+  useToast,
+  LoadingState,
+  ErrorState,
+  PageHeader,
+} from "../../../shared/components";
 import Navbar from "../../../shared/landing/Navbar";
 import AnalysisResult from "../components/AnalysisResult";
 import DragDropUpload from "../components/DragDropUpload";
 import JobDescriptionInput from "../components/JobDescriptionInput";
+import ResumeSkeleton from "../components/ResumeSkeleton";
 import { analyzeResume } from "../services/resumeService";
 import { syncRoadmap } from "../../roadmap/services/roadmapService";
 import { FileText, Sparkles } from "lucide-react";
@@ -32,13 +38,15 @@ const ResumeAnalyzerPage = () => {
     try {
       const result = await analyzeResume(selectedFile, jobDescription);
       setResult(result);
-      
+
       // Sync Roadmap if classification and suggestions exist
       if (result.classification?.level && result.gapAnalysis?.suggestions) {
-        const topics = result.gapAnalysis.suggestions.map(s => s.text).slice(0, 5);
+        const topics = result.gapAnalysis.suggestions
+          .map((s) => s.text)
+          .slice(0, 5);
         await syncRoadmap(result.classification.level, topics);
       }
-      
+
       success("Resume analyzed successfully.");
     } catch (err) {
       const msg = err.message || "Failed to analyze resume. Please try again.";
@@ -61,9 +69,14 @@ const ResumeAnalyzerPage = () => {
   return (
     <div className="min-h-screen bg-white dark:bg-dark-bg text-gray-900 dark:text-text-main font-sans">
       <Navbar />
+
       <div className="max-w-4xl mx-auto pt-32 pb-12 px-4 sm:px-6 lg:px-8 space-y-8 animate-slide-up">
-        <PageHeader 
-          title={<><span className="text-gradient">Resume</span> Analyzer</>}
+        <PageHeader
+          title={
+            <>
+              <span className="text-gradient">Resume</span> Analyzer
+            </>
+          }
           subtitle="Upload your resume and get instant AI-powered insights to optimize your professional profile for top recruiters."
         />
 
@@ -74,15 +87,9 @@ const ResumeAnalyzerPage = () => {
 
           <div className="relative z-10">
             {loading ? (
-              <LoadingState 
-                title="Analyzing your resume..."
-                description="Scanning for skills, impact, and ATS optimization"
-              />
+              <ResumeSkeleton />
             ) : error ? (
-              <ErrorState 
-                description={error}
-                onRetry={resetAnalyzer}
-              />
+              <ErrorState description={error} onRetry={resetAnalyzer} />
             ) : result ? (
               <AnalysisResult
                 result={result}
@@ -106,7 +113,7 @@ const ResumeAnalyzerPage = () => {
                     <h3 className="text-lg font-bold">Upload Resume</h3>
                   </div>
                   <DragDropUpload onFileUpload={handleFileUpload} />
-                  
+
                   {/* Post-Upload Actions */}
                   {selectedFile && (
                     <div className="flex flex-col items-center gap-4 py-6 px-8 bg-primary/5 border border-primary/20 rounded-2xl animate-in fade-in zoom-in duration-300">
@@ -115,11 +122,16 @@ const ResumeAnalyzerPage = () => {
                           <FileText className="w-5 h-5 text-primary" />
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-text-main">{selectedFile.name}</p>
-                          <p className="text-xs text-text-muted">{(selectedFile.size / 1024).toFixed(1)} KB • Ready for analysis</p>
+                          <p className="text-sm font-bold text-text-main">
+                            {selectedFile.name}
+                          </p>
+                          <p className="text-xs text-text-muted">
+                            {(selectedFile.size / 1024).toFixed(1)} KB • Ready
+                            for analysis
+                          </p>
                         </div>
                       </div>
-                      
+
                       <button
                         onClick={handleAnalyze}
                         disabled={loading}
