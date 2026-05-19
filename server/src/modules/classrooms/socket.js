@@ -143,6 +143,51 @@ export function initClassroomSockets(io) {
       });
     });
 
+    // --- Whiteboard & Shared Coding Events ---
+
+    // Draw stroke event
+    socket.on("draw-stroke", ({ roomId, strokeData }) => {
+      if (!socket.data || socket.data.roomId !== roomId) {
+        socket.emit("unauthorized", { message: "Cross-classroom action detected" });
+        return;
+      }
+      socket.to(roomId).emit("draw-stroke", {
+        strokeData,
+        sender: socket.data.user
+      });
+    });
+
+    // Clear canvas event
+    socket.on("clear-canvas", ({ roomId }) => {
+      if (!socket.data || socket.data.roomId !== roomId) {
+        socket.emit("unauthorized", { message: "Cross-classroom action detected" });
+        return;
+      }
+      socket.to(roomId).emit("clear-canvas");
+    });
+
+    // Code change event
+    socket.on("code-change", ({ roomId, code }) => {
+      if (!socket.data || socket.data.roomId !== roomId) {
+        socket.emit("unauthorized", { message: "Cross-classroom action detected" });
+        return;
+      }
+      socket.to(roomId).emit("code-change", { code });
+    });
+
+    // Code cursor event
+    socket.on("code-cursor", ({ roomId, cursorPosition }) => {
+      if (!socket.data || socket.data.roomId !== roomId) {
+        socket.emit("unauthorized", { message: "Cross-classroom action detected" });
+        return;
+      }
+      socket.to(roomId).emit("code-cursor", {
+        cursorPosition,
+        senderId: socket.id,
+        senderName: socket.data.user?.name || "Participant"
+      });
+    });
+
     // Disconnect
     socket.on("disconnect", () => {
       console.log(`Socket disconnected: ${socket.id}`);
