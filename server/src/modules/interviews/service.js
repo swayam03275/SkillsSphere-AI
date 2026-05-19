@@ -372,3 +372,43 @@ export const listAvailableTopics = async () => {
 
   return topics;
 };
+
+export const getTutorSessionsList = async (page, limit) => {
+  const skip = (page - 1) * limit;
+  const [sessions, total] = await Promise.all([
+    InterviewSession.find({ status: 'completed' })
+      .populate('userId', 'name email')
+      .select('topic difficulty status overallScore tutorOverallScore duration createdAt')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    InterviewSession.countDocuments({ status: 'completed' }),
+  ]);
+  return { sessions, total, page, pages: Math.ceil(total / limit) };
+};
+
+export const getTutorSessionDetails = async (sessionId) => {
+  return await InterviewSession.findById(sessionId).populate('userId', 'name email').lean();
+};
+
+export const addTutorFeedback = async (sessionId, { tutorOverallScore, tutorOverallFeedback, answersFeedback }) => {
+  const session = await InterviewSession.findById(sessionId);
+  if (!session) throw new AppError('Session not found', 404);
+  
+  if (tutorOverallScore !== undefined) session.tutorOverallScore = tutorOverallScore;
+  if (tutorOverallFeedback !== undefined) session.tutorOverallFeedback = tutorOverallFeedback;
+  
+  if (answersFeedback && Array.isArray(answersFeedback)) {
+    answersFeedback.forEach(fb => {
+      const answer = session.answers.find(a => a.questionId.toString() === fb.questionId);
+      if (answer) {
+        if (fb.tutorScores) answer.tutorScores = fb.tutorScores;
+        if (fb.tutorFeedback) answer.tutorFeedback = fb.tutorFeedback;
+      }
+    });
+  }
+  
+  await session.save();
+  return session;
+};

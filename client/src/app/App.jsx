@@ -30,6 +30,8 @@ import InterviewLobby from "../modules/mock-interview/pages/InterviewLobby";
 import InterviewSession from "../modules/mock-interview/pages/InterviewSession";
 import InterviewResults from "../modules/mock-interview/pages/InterviewResults";
 import InterviewHistory from "../modules/mock-interview/pages/InterviewHistory";
+import TutorInterviewConsole from "../modules/mock-interview/pages/TutorInterviewConsole";
+import TutorInterviewsList from "../modules/mock-interview/pages/TutorInterviewsList";
 import TutorAnalyticsDashboard from "../modules/analytics/TutorAnalyticsDashboard";
 import ProtectedRoute from "../shared/components/ProtectedRoute";
 import ThemeToggle from "../shared/components/ThemeToggle";
@@ -215,6 +217,24 @@ function App() {
           element={
             <ProtectedRoute requiredRole="student">
               <InterviewResults />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Tutor Interview Console */}
+        <Route
+          path="/tutor/interviews"
+          element={
+            <ProtectedRoute requiredRole="tutor">
+              <TutorInterviewsList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/tutor/interviews/:id"
+          element={
+            <ProtectedRoute requiredRole="tutor">
+              <TutorInterviewConsole />
             </ProtectedRoute>
           }
         />

@@ -6,6 +6,9 @@ import {
   getUserInterviewHistory,
   getSessionResults as getResults,
   listAvailableTopics,
+  getTutorSessionsList,
+  getTutorSessionDetails,
+  addTutorFeedback,
 } from "./service.js";
 import { getServiceStatus } from "../../integrations/aiInterviewService.js";
 import asyncHandler from "../../utils/asyncHandler.js";
@@ -171,5 +174,54 @@ export const getAIServiceStatus = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     data: status,
+  });
+});
+
+/**
+ * @desc    Tutor: Get all completed interview sessions
+ * @route   GET /api/interviews/tutor/sessions
+ * @access  Private (Tutor)
+ */
+export const getTutorSessions = asyncHandler(async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const data = await getTutorSessionsList(page, limit);
+
+  res.status(200).json({
+    success: true,
+    data,
+  });
+});
+
+/**
+ * @desc    Tutor: Get details of a completed interview session
+ * @route   GET /api/interviews/tutor/sessions/:id
+ * @access  Private (Tutor)
+ */
+export const getTutorSession = asyncHandler(async (req, res) => {
+  const session = await getTutorSessionDetails(req.params.id);
+
+  if (!session) {
+    throw new AppError("Interview session not found", 404);
+  }
+
+  res.status(200).json({
+    success: true,
+    data: session,
+  });
+});
+
+/**
+ * @desc    Tutor: Submit manual feedback for an interview
+ * @route   POST /api/interviews/tutor/sessions/:id/feedback
+ * @access  Private (Tutor)
+ */
+export const submitTutorFeedback = asyncHandler(async (req, res) => {
+  const session = await addTutorFeedback(req.params.id, req.body);
+
+  res.status(200).json({
+    success: true,
+    message: "Feedback submitted successfully",
+    data: session,
   });
 });

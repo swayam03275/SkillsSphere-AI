@@ -1,0 +1,248 @@
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { PlayCircle, PauseCircle, Save, ArrowLeft, MessageSquare, CheckCircle, AlertCircle } from "lucide-react";
+import { apiRequest } from "../../../services/apiClient.js";
+
+const TutorInterviewConsole = () => {
+  const { id } = useParams(); // wait, react-router-dom provides this
+  const navigate = useNavigate();
+  const { token } = useSelector((state) => state.auth);
+  const [session, setSession] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  
+  // Feedback state
+  const [overallScore, setOverallScore] = useState("");
+  const [overallFeedback, setOverallFeedback] = useState("");
+  const [answersFeedback, setAnswersFeedback] = useState({});
+  const [activeAudio, setActiveAudio] = useState(null);
+  
+  useEffect(() => {
+    const fetchSession = async () => {
+      try {
+        const result = await apiRequest(`/api/interviews/tutor/sessions/${id}`, { token });
+        if (result.success) {
+          setSession(result.data);
+          setOverallScore(result.data.tutorOverallScore || result.data.overallScore || "");
+          setOverallFeedback(result.data.tutorOverallFeedback || "");
+          
+          const initialFeedback = {};
+          result.data.answers.forEach(ans => {
+            initialFeedback[ans.questionId] = {
+              tutorScores: ans.tutorScores || { ...ans.scores },
+              tutorFeedback: ans.tutorFeedback || ""
+            };
+          });
+          setAnswersFeedback(initialFeedback);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (id) fetchSession();
+  }, [id, token]);
+
+  const handleAnswerFeedbackChange = (questionId, field, value, subfield = null) => {
+    setAnswersFeedback(prev => {
+      const updated = { ...prev };
+      if (!updated[questionId]) updated[questionId] = {};
+      
+      if (subfield) {
+        updated[questionId][field] = {
+          ...updated[questionId][field],
+          [subfield]: value
+        };
+      } else {
+        updated[questionId][field] = value;
+      }
+      return updated;
+    });
+  };
+
+  const submitFeedback = async () => {
+    setSaving(true);
+    try {
+      const feedbackData = {
+        tutorOverallScore: parseInt(overallScore, 10),
+        tutorOverallFeedback: overallFeedback,
+        answersFeedback: Object.entries(answersFeedback).map(([qId, data]) => ({
+          questionId: qId,
+          ...data
+        }))
+      };
+      
+      const result = await apiRequest(`/api/interviews/tutor/sessions/${id}/feedback`, {
+        method: "POST",
+        token,
+        body: feedbackData
+      });
+      
+      if (result.success) {
+        alert("Feedback saved successfully!");
+      }
+    } catch (err) {
+      alert("Failed to save feedback");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleAudio = (url) => {
+    if (activeAudio?.src === url) {
+      if (activeAudio.paused) activeAudio.play();
+      else activeAudio.pause();
+    } else {
+      if (activeAudio) activeAudio.pause();
+      const audio = new Audio(`http://localhost:5000/${url.replace(/\\/g, "/")}`);
+      audio.play();
+      setActiveAudio(audio);
+    }
+  };
+
+  if (loading) return <div className="p-10 text-center">Loading session data...</div>;
+  if (!session) return <div className="p-10 text-center">Session not found</div>;
+
+  return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6">
+      <div className="max-w-5xl mx-auto space-y-6">
+        
+        <div className="flex items-center justify-between">
+          <div>
+            <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-indigo-600 mb-2">
+              <ArrowLeft size={16} /> Back
+            </button>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Interview Player Console</h1>
+            <p className="text-slate-500">Evaluating {session.userId?.name}'s mock interview on {session.topic}</p>
+          </div>
+          <button 
+            onClick={submitFeedback}
+            disabled={saving}
+            className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700"
+          >
+            <Save size={18} /> {saving ? "Saving..." : "Save Override"}
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="md:col-span-1 space-y-6">
+            <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+              <h2 className="text-lg font-bold mb-4 border-b pb-2 dark:border-slate-700">Overall Grading</h2>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">AI Overall Score: {session.overallScore}%</label>
+                <label className="block text-sm font-medium mb-1 mt-4">Tutor Override Score (%)</label>
+                <input 
+                  type="number" 
+                  min="0" max="100"
+                  value={overallScore}
+                  onChange={(e) => setOverallScore(e.target.value)}
+                  className="w-full p-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Tutor Summary Feedback</label>
+                <textarea 
+                  rows="4"
+                  value={overallFeedback}
+                  onChange={(e) => setOverallFeedback(e.target.value)}
+                  placeholder="Provide overall impressions..."
+                  className="w-full p-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
+                />
+              </div>
+            </div>
+            
+            <div className="bg-indigo-50 dark:bg-indigo-900/20 p-6 rounded-xl border border-indigo-100 dark:border-indigo-800">
+              <h3 className="font-bold text-indigo-800 dark:text-indigo-300 mb-2 flex items-center gap-2">
+                <AlertCircle size={18} /> Weak Concepts Detected
+              </h3>
+              <ul className="list-disc pl-5 text-sm text-indigo-700 dark:text-indigo-400">
+                {session.weakConcepts?.map((c, i) => <li key={i}>{c}</li>)}
+              </ul>
+            </div>
+          </div>
+
+          <div className="md:col-span-2 space-y-6">
+            <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200">Answer Transcripts & Scoring</h2>
+            
+            {session.answers.map((ans, idx) => (
+              <div key={idx} className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <div className="flex items-start justify-between mb-4">
+                  <h3 className="font-bold text-lg">Q{idx + 1}: {ans.questionText}</h3>
+                  {ans.audioPath && (
+                    <button 
+                      onClick={() => toggleAudio(ans.audioPath)}
+                      className="flex items-center gap-1 text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full text-sm font-medium"
+                    >
+                      <PlayCircle size={16} /> Play Audio
+                    </button>
+                  )}
+                </div>
+                
+                <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg text-sm text-slate-700 dark:text-slate-300 italic mb-6 border-l-4 border-slate-300 dark:border-slate-600">
+                  "{ans.transcript || "No transcript available."}"
+                </div>
+                
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-semibold text-sm mb-3">AI Scores</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between"><span>Technical:</span> <span>{ans.scores?.technical}%</span></div>
+                      <div className="flex justify-between"><span>Communication:</span> <span>{ans.scores?.communication}%</span></div>
+                      <div className="flex justify-between"><span>Relevance:</span> <span>{ans.scores?.relevance}%</span></div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold text-sm mb-3 text-indigo-600 dark:text-indigo-400">Tutor Overrides</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between items-center">
+                        <span>Technical:</span> 
+                        <input type="number" className="w-16 p-1 border rounded dark:bg-slate-900" 
+                          value={answersFeedback[ans.questionId]?.tutorScores?.technical || ""}
+                          onChange={(e) => handleAnswerFeedbackChange(ans.questionId, "tutorScores", parseInt(e.target.value) || 0, "technical")}
+                        />
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span>Communication:</span> 
+                        <input type="number" className="w-16 p-1 border rounded dark:bg-slate-900" 
+                          value={answersFeedback[ans.questionId]?.tutorScores?.communication || ""}
+                          onChange={(e) => handleAnswerFeedbackChange(ans.questionId, "tutorScores", parseInt(e.target.value) || 0, "communication")}
+                        />
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span>Relevance:</span> 
+                        <input type="number" className="w-16 p-1 border rounded dark:bg-slate-900" 
+                          value={answersFeedback[ans.questionId]?.tutorScores?.relevance || ""}
+                          onChange={(e) => handleAnswerFeedbackChange(ans.questionId, "tutorScores", parseInt(e.target.value) || 0, "relevance")}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mt-4 pt-4 border-t dark:border-slate-700">
+                  <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                    <MessageSquare size={16} /> Question Feedback
+                  </label>
+                  <textarea 
+                    rows="2"
+                    placeholder="Specific feedback for this answer..."
+                    value={answersFeedback[ans.questionId]?.tutorFeedback || ""}
+                    onChange={(e) => handleAnswerFeedbackChange(ans.questionId, "tutorFeedback", e.target.value)}
+                    className="w-full p-2 border rounded-md dark:bg-slate-900 dark:border-slate-700 text-sm"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TutorInterviewConsole;
