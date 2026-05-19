@@ -1,11 +1,14 @@
 import express from "express";
-import { uploadResumeMiddleware } from "../../middleware/uploadResume.js";
+import {
+  parseResumeUpload,
+  validateAndPersistResumeFile,
+} from "../../middleware/uploadResume.js";
 import {
   uploadResume,
   analyzeResume,
   getResumeResult,
   getLatestResume,
-  compareVersions
+  compareVersions,
 } from "./controller.js";
 import { resumeAnalysisLimiter } from "../../middleware/rateLimiter.js";
 
@@ -28,14 +31,23 @@ const router = express.Router();
  *           schema:
  *             type: object
  *             properties:
- *               file:
+ *               resume:
  *                 type: string
  *                 format: binary
  *     responses:
  *       200:
  *         description: Resume uploaded successfully
+ *       400:
+ *         description: Invalid or spoofed file (magic-byte validation failed)
  */
-router.post("/upload", protect, authorizeRoles("student"), resumeAnalysisLimiter, uploadResumeMiddleware, uploadResume);
+router.post(
+  "/upload",
+  protect,
+  authorizeRoles("student"),
+  parseResumeUpload,
+  validateAndPersistResumeFile,
+  uploadResume
+);
 
 /**
  * @openapi
@@ -52,7 +64,7 @@ router.post("/upload", protect, authorizeRoles("student"), resumeAnalysisLimiter
  *           schema:
  *             type: object
  *             properties:
- *               file:
+ *               resume:
  *                 type: string
  *                 format: binary
  *               jobDescription:
@@ -61,8 +73,17 @@ router.post("/upload", protect, authorizeRoles("student"), resumeAnalysisLimiter
  *     responses:
  *       200:
  *         description: Analysis complete
+ *       400:
+ *         description: Invalid or spoofed file (magic-byte validation failed)
  */
-router.post("/analyze", protect, authorizeRoles("student"), resumeAnalysisLimiter, uploadResumeMiddleware, analyzeResume);
+router.post(
+  "/analyze",
+  protect,
+  authorizeRoles("student"),
+  parseResumeUpload,
+  validateAndPersistResumeFile,
+  analyzeResume
+);
 
 /**
  * @openapi
@@ -98,7 +119,6 @@ router.get("/me/latest", protect, getLatestResume);
  */
 router.get("/result/:id", protect, getResumeResult);
 
-
 /**
  * @openapi
  * /api/resume/compare:
@@ -126,6 +146,5 @@ router.get("/result/:id", protect, getResumeResult);
  *         description: Strategic comparison generated
  */
 router.post("/compare", protect, compareVersions);
-
 
 export default router;

@@ -1,7 +1,10 @@
 import express from "express";
 import * as controller from "./controller.js";
 import { protect } from "../../middleware/authMiddleware.js";
-import { uploadResumeMiddleware } from "../../middleware/uploadResume.js";
+import {
+  parseResumeUpload,
+  validateAndPersistResumeFile,
+} from "../../middleware/uploadResume.js";
 
 const router = express.Router();
 
@@ -15,7 +18,12 @@ router.use(protect);
  * Evaluates a resume against available jobs.
  * Supports optional file upload (field name: 'resume').
  */
-router.post("/evaluate", uploadResumeMiddleware, controller.evaluate);
+router.post(
+  "/evaluate",
+  parseResumeUpload,
+  validateAndPersistResumeFile,
+  controller.evaluate
+);
 
 /**
  * GET /api/matching/recommended
