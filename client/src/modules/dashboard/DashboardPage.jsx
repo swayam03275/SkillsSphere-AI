@@ -823,6 +823,22 @@ const DashboardPage = () => {
                           className="text-emerald-300 group-hover/link:translate-x-1 transition-transform"
                         />
                       </Link>
+
+                      <Link
+                        to="/tutor/roadmaps"
+                        className="flex items-center justify-between group/link w-full p-4 rounded-xl bg-white/10 border border-gray-200 dark:border-white/10 hover:bg-white/20 transition-all"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Target size={18} className="text-indigo-300" />
+                          <span className="font-semibold text-sm">
+                            Student Learning Roadmaps
+                          </span>
+                        </div>
+                        <ArrowRight
+                          size={16}
+                          className="text-indigo-300 group-hover/link:translate-x-1 transition-transform"
+                        />
+                      </Link>
                     </>
                   ) : (
                     <>

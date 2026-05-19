@@ -13,11 +13,30 @@ const topicProgressSchema = new mongoose.Schema({
   completedAt: {
     type: Date,
   },
+  isVerified: {
+    type: Boolean,
+    default: false,
+  },
+  verifiedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  },
+  verifiedAt: {
+    type: Date,
+  },
   resources: [
     {
       title: String,
       url: String,
-      type: { type: String, enum: ["video", "article", "documentation"] }
+      type: { type: String, enum: ["video", "article", "documentation"] },
+      tutorAssigned: {
+        type: Boolean,
+        default: false,
+      },
+      assignedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      }
     }
   ]
 });

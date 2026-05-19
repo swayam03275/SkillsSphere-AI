@@ -23,6 +23,7 @@ import RecruiterApplicantsPage from "../modules/recruiter-jobs/pages/RecruiterAp
 import JobBoardPage from "../modules/student-jobs/pages/JobBoardPage";
 import MyApplicationsPage from "../modules/student-jobs/pages/MyApplicationsPage";
 import RoadmapPage from "../modules/roadmap/pages/RoadmapPage";
+import TutorRoadmapLobby from "../modules/roadmap/pages/TutorRoadmapLobby";
 import ClassroomsDashboard from "../modules/classrooms/pages/ClassroomsDashboard";
 import ClassroomRoom from "../modules/classrooms/pages/ClassroomRoom";
 import InterviewLobby from "../modules/mock-interview/pages/InterviewLobby";
@@ -152,6 +153,16 @@ function App() {
           element={
             <ProtectedRoute requiredRole="tutor">
               <TutorAnalyticsDashboard />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Tutor Roadmap Lobby */}
+        <Route
+          path="/tutor/roadmaps"
+          element={
+            <ProtectedRoute requiredRole="tutor">
+              <TutorRoadmapLobby />
             </ProtectedRoute>
           }
         />

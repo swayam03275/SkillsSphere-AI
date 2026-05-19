@@ -1,6 +1,6 @@
 import express from "express";
 import * as roadmapController from "./controller.js";
-import { protect } from "../../middleware/authMiddleware.js";
+import { protect, authorizeRoles } from "../../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -60,5 +60,11 @@ router.post("/sync", roadmapController.syncRoadmap);
  *         description: Topic updated
  */
 router.patch("/update-topic", roadmapController.updateTopicStatus);
+
+// Tutor endpoints
+router.get("/tutor/students", authorizeRoles("tutor"), roadmapController.getStudentsRoadmaps);
+router.get("/tutor/students/:studentId", authorizeRoles("tutor"), roadmapController.getStudentRoadmap);
+router.post("/tutor/assign-resource", authorizeRoles("tutor"), roadmapController.assignTutorResource);
+router.post("/tutor/verify-topic", authorizeRoles("tutor"), roadmapController.verifyTopic);
 
 export default router;
