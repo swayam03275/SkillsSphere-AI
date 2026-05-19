@@ -39,6 +39,25 @@ export const jobCreationLimiter = rateLimit({
 });
 
 /**
+ * Rate Limiter for OTP Verification
+ * Prevents distributed brute-force attacks on OTP codes
+ */
+export const otpRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 OTP attempts per IP per window
+  message: {
+    success: false,
+    message: "Too many OTP attempts, please try again after 15 minutes",
+    error: "RATE_LIMIT_EXCEEDED"
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res, next, options) => {
+    res.status(429).json(options.message);
+  }
+});
+
+/**
  * Rate Limiter for Resume Uploads and Analysis
  * Prevents API quota abuse and CPU starvation from excessive file processing
  */
