@@ -42,6 +42,17 @@ const isLikelyPortfolioUrl = (url) => {
 
 const toUniqueList = (items) => [...new Set(items.filter(Boolean).map((item) => item.trim()))];
 
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+export const hasSkillToken = (text, skill) => {
+  if (!text || !skill) return false;
+  const regex = new RegExp(
+    `(^|[^a-zA-Z0-9])${escapeRegex(skill)}(?=$|[^a-zA-Z0-9])`,
+    "i"
+  );
+  return regex.test(text);
+};
+
 const extractSectionLines = (lines, headerKeys) => {
   const startIndex = lines.findIndex((line) => {
     const normalized = line.trim().toLowerCase();
@@ -80,8 +91,7 @@ const extractName = (lines) => {
 };
 
 const extractSkills = (text) => {
-  const lowerText = text.toLowerCase();
-  return skillKeywords.filter((skill) => lowerText.includes(skill.toLowerCase()));
+  return skillKeywords.filter((skill) => hasSkillToken(text, skill));
 };
 
 export const parseResume = async (filePath) => {
