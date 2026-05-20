@@ -4,21 +4,30 @@ import path from "path";
 
 const uploadDirectory = path.join(process.cwd(), "src", "uploads", "avatars");
 
+const avatarExtensionByMimeType = {
+  "image/jpeg": ".jpg",
+  "image/png": ".png",
+  "image/webp": ".webp",
+  "image/gif": ".gif",
+};
+
+export const getAvatarExtension = (mimetype) =>
+  avatarExtensionByMimeType[mimetype] || null;
+
 if (!fs.existsSync(uploadDirectory)) {
   fs.mkdirSync(uploadDirectory, { recursive: true });
 }
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadDirectory),
-  filename: (req, _file, cb) => {
-    // One avatar per user — overwrite by using userId as filename
-    cb(null, `avatar-${req.user._id}.jpg`);
+  filename: (req, file, cb) => {
+    // One avatar per user per image type, with an extension that matches content.
+    cb(null, `avatar-${req.user._id}${getAvatarExtension(file.mimetype)}`);
   },
 });
 
 const fileFilter = (_req, file, cb) => {
-  const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-  if (allowed.includes(file.mimetype)) {
+  if (getAvatarExtension(file.mimetype)) {
     cb(null, true);
   } else {
     const err = new Error("Only JPEG, PNG, WebP, or GIF images are allowed");
