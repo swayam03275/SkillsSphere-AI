@@ -4,6 +4,17 @@ const techKeywords = require("../../../ai-ml/data/techKeywords.json");
 
 const skillKeywords = Object.values(techKeywords).flat();
 
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+export const hasSkillToken = (text, skill) => {
+  if (!text || !skill) return false;
+  const regex = new RegExp(
+    `(^|[^a-zA-Z0-9])${escapeRegex(skill)}(?=$|[^a-zA-Z0-9])`,
+    "i"
+  );
+  return regex.test(text);
+};
+
 /**
  * Extracts skills and years of experience from raw job description text.
  * @param {string} jdText - The raw job description text.
@@ -17,10 +28,7 @@ export const extractDataFromJD = (jdText) => {
   // 1. Extract Skills
   const extractedSkills = [];
   skillKeywords.forEach(skill => {
-    // Escape special characters in skill (like . in node.js)
-    const escapedSkill = skill.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp(`\\b${escapedSkill}\\b`, "gi");
-    if (regex.test(normalizedJD)) {
+    if (hasSkillToken(normalizedJD, skill)) {
       extractedSkills.push(skill);
     }
   });
