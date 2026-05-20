@@ -3,34 +3,56 @@ const TOKEN_KEY = "skillssphere.auth.token";
 export const getAuthToken = () =>
   localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || "";
 
+const getTrustedAssetOrigins = () => {
+  const origins = new Set();
+
+  if (typeof window !== "undefined" && window.location?.origin) {
+    origins.add(window.location.origin);
+  }
+
+  const apiUrl = import.meta.env?.VITE_API_URL;
+  if (apiUrl) {
+    try {
+      origins.add(new URL(apiUrl).origin);
+    } catch {
+      // Ignore invalid build-time API URL values.
+    }
+  }
+
+  return origins;
+};
+
+export const isTrustedProtectedAssetOrigin = (url) => {
+  const parsedUrl = url instanceof URL ? url : new URL(url);
+  return getTrustedAssetOrigins().has(parsedUrl.origin);
+};
+
 export const resolveProtectedFilePath = (url) => {
   if (!url || typeof url !== "string") return null;
 
-  // Skip third-party URLs
-  if (/^https?:\/\//i.test(url) && !url.includes("/uploads/") && !url.includes("/api/files/")) {
-    return null;
-  }
+  let candidateUrl = url;
 
-  let apiPath = url;
-
-  // Legacy public static paths → protected API routes
-  if (url.includes("/uploads/avatars/")) {
-    const filename = url.split("/uploads/avatars/").pop()?.split("?")[0];
-    apiPath = filename ? `/api/files/avatars/${filename}` : url;
-  } else if (url.includes("/uploads/")) {
-    const filename = url.split("/uploads/").pop()?.split("?")[0];
-    apiPath = filename ? `/api/files/resumes/${filename}` : url;
-  } else if (url.startsWith("/api/files/")) {
-    apiPath = url.split("?")[0];
-  } else if (url.startsWith("http")) {
+  if (/^https?:\/\//i.test(url)) {
     try {
       const parsed = new URL(url);
-      if (parsed.pathname.startsWith("/api/files/")) {
-        apiPath = parsed.pathname;
-      }
+      if (!isTrustedProtectedAssetOrigin(parsed)) return null;
+      candidateUrl = parsed.pathname;
     } catch {
       return null;
     }
+  }
+
+  let apiPath = candidateUrl;
+
+  // Legacy public static paths → protected API routes
+  if (candidateUrl.includes("/uploads/avatars/")) {
+    const filename = candidateUrl.split("/uploads/avatars/").pop()?.split("?")[0];
+    apiPath = filename ? `/api/files/avatars/${filename}` : candidateUrl;
+  } else if (candidateUrl.includes("/uploads/")) {
+    const filename = candidateUrl.split("/uploads/").pop()?.split("?")[0];
+    apiPath = filename ? `/api/files/resumes/${filename}` : candidateUrl;
+  } else if (candidateUrl.startsWith("/api/files/")) {
+    apiPath = candidateUrl.split("?")[0];
   }
 
   if (!apiPath.startsWith("/api/files/")) return null;
