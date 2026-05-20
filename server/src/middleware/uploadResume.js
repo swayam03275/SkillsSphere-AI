@@ -49,9 +49,22 @@ export const removeUploadedFile = (filePath) => {
   }
 };
 
-const buildStoredFilename = (originalName) => {
-  const ext = path.extname(originalName);
-  const name = originalName.replace(ext, "").replace(/\s+/g, "-");
+export const sanitizeResumeFilenameStem = (originalName = "") => {
+  const { name } = path.parse(path.basename(originalName));
+  const safeName = name
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^[-.]+|[-.]+$/g, "")
+    .slice(0, 80);
+
+  return safeName || "resume";
+};
+
+export const buildStoredFilename = (originalName) => {
+  const ext = path.extname(originalName).toLowerCase();
+  const name = sanitizeResumeFilenameStem(originalName);
   return `${Date.now()}-${name}${ext}`;
 };
 
