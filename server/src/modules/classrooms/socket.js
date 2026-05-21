@@ -5,13 +5,12 @@ export function initClassroomSockets(io) {
     console.log(`Socket connected: ${socket.id}`);
 
     // Join a specific room
-    socket.on("join-room", async ({ roomId, user }) => {
-      try {
-        if (!roomId) {
-          socket.emit("unauthorized", { message: "Room ID is required" });
-          socket.disconnect(true);
-          return;
-        }
+    socket.on("join-room", ({ roomId }) => {
+      socket.join(roomId);
+      
+      // Store user info in socket instance to easily retrieve later
+      const user = socket.user; // Secure, derived from JWT
+      socket.data = { roomId, user };
 
         // Validate session in database
         const session = await ClassroomSession.findOne({ roomId, status: "active" });
@@ -104,22 +103,10 @@ export function initClassroomSockets(io) {
     });
 
     // WebRTC Signaling Events
-    socket.on("webrtc-offer", ({ targetSocketId, offer, callerUser }) => {
-      // Validate that both sockets exist and are in the same room
-      if (!socket.data || !socket.data.roomId) {
-        socket.emit("unauthorized", { message: "You must join a room first" });
-        return;
-      }
-
-      const targetSocket = io.sockets.sockets.get(targetSocketId);
-      if (!targetSocket || !targetSocket.data || targetSocket.data.roomId !== socket.data.roomId) {
-        socket.emit("unauthorized", { message: "Target user is not in your classroom" });
-        return;
-      }
-
+    socket.on("webrtc-offer", ({ targetSocketId, offer }) => {
       socket.to(targetSocketId).emit("webrtc-offer", {
         callerSocketId: socket.id,
-        callerUser: socket.data.user,
+        callerUser: socket.data ? socket.data.user : socket.user,
         offer
       });
     });
