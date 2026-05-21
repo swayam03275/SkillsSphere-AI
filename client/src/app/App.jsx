@@ -5,6 +5,7 @@ import { fetchCurrentUser } from "../features/auth/authSlice";
 import ChatWidget from "../modules/ai-assistant/components/ChatWidget";
 import LandingPage from "../modules/landing/LandingPage";
 import DashboardPage from "../modules/dashboard/DashboardPage";
+import CoverLetterHistoryPage from "../modules/dashboard/pages/CoverLetterHistoryPage";
 import ResumeAnalyzerPage from "../modules/resume-analyzer/pages/ResumeAnalyzerPage";
 import JobMatcherPage from "../modules/job-matcher/pages/JobMatcherPage";
 import ComponentDemo from "../modules/auth/components/ComponentDemo";
@@ -23,12 +24,16 @@ import RecruiterApplicantsPage from "../modules/recruiter-jobs/pages/RecruiterAp
 import JobBoardPage from "../modules/student-jobs/pages/JobBoardPage";
 import MyApplicationsPage from "../modules/student-jobs/pages/MyApplicationsPage";
 import RoadmapPage from "../modules/roadmap/pages/RoadmapPage";
+import TutorRoadmapLobby from "../modules/roadmap/pages/TutorRoadmapLobby";
 import ClassroomsDashboard from "../modules/classrooms/pages/ClassroomsDashboard";
 import ClassroomRoom from "../modules/classrooms/pages/ClassroomRoom";
 import InterviewLobby from "../modules/mock-interview/pages/InterviewLobby";
 import InterviewSession from "../modules/mock-interview/pages/InterviewSession";
 import InterviewResults from "../modules/mock-interview/pages/InterviewResults";
 import InterviewHistory from "../modules/mock-interview/pages/InterviewHistory";
+import TutorInterviewConsole from "../modules/mock-interview/pages/TutorInterviewConsole";
+import TutorInterviewsList from "../modules/mock-interview/pages/TutorInterviewsList";
+import TutorAnalyticsDashboard from "../modules/analytics/TutorAnalyticsDashboard";
 import ProtectedRoute from "../shared/components/ProtectedRoute";
 import ThemeToggle from "../shared/components/ThemeToggle";
 import SocketNotificationListener from "../shared/components/SocketNotificationListener";
@@ -70,6 +75,14 @@ function App() {
           element={
             <ProtectedRoute requiredRole="student">
               <ResumeAnalyzerPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/cover-letters" 
+          element={
+            <ProtectedRoute requiredRole="student">
+              <CoverLetterHistoryPage />
             </ProtectedRoute>
           } 
         />
@@ -144,6 +157,26 @@ function App() {
           }
         />
         <Route path="/profile" element={<ProfilePage />} />
+
+        {/* Tutor Analytics */}
+        <Route
+          path="/tutor/analytics"
+          element={
+            <ProtectedRoute requiredRole="tutor">
+              <TutorAnalyticsDashboard />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Tutor Roadmap Lobby */}
+        <Route
+          path="/tutor/roadmaps"
+          element={
+            <ProtectedRoute requiredRole="tutor">
+              <TutorRoadmapLobby />
+            </ProtectedRoute>
+          }
+        />
         
         {/* Live Classrooms */}
         <Route
@@ -193,6 +226,24 @@ function App() {
           element={
             <ProtectedRoute requiredRole="student">
               <InterviewResults />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Tutor Interview Console */}
+        <Route
+          path="/tutor/interviews"
+          element={
+            <ProtectedRoute requiredRole="tutor">
+              <TutorInterviewsList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/tutor/interviews/:id"
+          element={
+            <ProtectedRoute requiredRole="tutor">
+              <TutorInterviewConsole />
             </ProtectedRoute>
           }
         />

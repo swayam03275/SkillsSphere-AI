@@ -11,18 +11,28 @@ import {
   ExternalLink,
   Layout,
   MessageSquare,
-  Globe
+  Globe,
+  PenTool,
+  Loader2
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import Button from "../../../shared/landing/Button";
 import SkillGapVenn from "./SkillGapVenn";
+import CoverLetterModal from "../../../shared/components/CoverLetterModal";
+import { generateCoverLetter } from "../services/resumeService";
 
-const AnalysisResult = ({ result, file, onReset }) => {
+const AnalysisResult = ({ result, file, jobDescription, onReset }) => {
   const score = result?.score || 0;
   const isJDProvided = result.isJDProvided;
   const suggestions = (result.gapAnalysis?.suggestions || []).slice(0, 8);
 
   const [previewUrl, setPreviewUrl] = useState(null);
+  
+  // Cover Letter States
+  const [isGeneratingCL, setIsGeneratingCL] = useState(false);
+  const [clModalOpen, setClModalOpen] = useState(false);
+  const [clText, setClText] = useState("");
+  const [clError, setClError] = useState("");
 
   useEffect(() => {
     if (
@@ -67,6 +77,32 @@ const AnalysisResult = ({ result, file, onReset }) => {
 
   // --- Action Words ---
   const actionWords = result.readabilityMatch?.relevantVerbs || ["Spearheaded", "Orchestrated", "Transformed", "Optimized", "Architected", "Launched", "Pioneered", "Revitalized"];
+
+  const handleGenerateCoverLetter = async () => {
+    try {
+      if (!jobDescription || !jobDescription.trim()) {
+        throw new Error("A Job Description is required to generate a targeted Cover Letter. Please reset and paste one in.");
+      }
+
+      setIsGeneratingCL(true);
+      setClError("");
+      
+      const response = await generateCoverLetter(result.resumeId, jobDescription);
+      
+      if (response && response.coverLetter && response.coverLetter.generatedText) {
+        setClText(response.coverLetter.generatedText);
+        setClModalOpen(true);
+      } else {
+        throw new Error("Invalid response format from server.");
+      }
+    } catch (err) {
+      setClError(err.message || "Failed to generate cover letter.");
+      // Auto clear error after 5 seconds
+      setTimeout(() => setClError(""), 5000);
+    } finally {
+      setIsGeneratingCL(false);
+    }
+  };
 
   return (
     <div className="w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -356,15 +392,55 @@ const AnalysisResult = ({ result, file, onReset }) => {
         </div>
       </div>
 
-      {/* New Scan Button */}
-      <div className="flex justify-center pt-8">
-        <button onClick={onReset} className="group flex flex-col items-center gap-3">
+      {/* Bottom Actions */}
+      <div className="flex flex-wrap justify-center gap-6 pt-8">
+        
+        {/* Generate Cover Letter Button */}
+        <div className="flex flex-col items-center gap-2">
+          <button 
+            onClick={handleGenerateCoverLetter} 
+            disabled={isGeneratingCL}
+            className={`group flex items-center justify-center gap-3 px-6 py-4 rounded-2xl border transition-all shadow-xl
+              ${isGeneratingCL 
+                ? 'bg-surface/50 border-border cursor-not-allowed' 
+                : 'bg-primary/10 border-primary/30 hover:border-primary hover:bg-primary/20 hover:-translate-y-1'
+              }`}
+          >
+            {isGeneratingCL ? (
+              <Loader2 className="w-6 h-6 text-primary animate-spin" />
+            ) : (
+              <PenTool className="w-6 h-6 text-primary group-hover:scale-110 transition-transform" />
+            )}
+            <div className="text-left">
+              <span className="block text-sm font-bold text-text-main group-hover:text-primary transition-colors">
+                {isGeneratingCL ? "Generating AI Draft..." : "Write Cover Letter"}
+              </span>
+              <span className="block text-[10px] uppercase tracking-widest text-text-muted mt-0.5">
+                Powered by Gemini
+              </span>
+            </div>
+          </button>
+          {clError && (
+            <span className="text-xs font-medium text-red-400 animate-in fade-in slide-in-from-top-1">
+              {clError}
+            </span>
+          )}
+        </div>
+
+        {/* New Scan Button */}
+        <button onClick={onReset} className="group flex flex-col items-center gap-3 mt-1">
           <div className="p-4 bg-surface border border-border rounded-2xl group-hover:border-primary/50 group-hover:bg-primary/5 transition-all shadow-xl">
             <Eye className="w-6 h-6 text-text-muted group-hover:text-primary transition-colors" />
           </div>
           <span className="text-xs font-black uppercase tracking-[0.3em] text-text-muted group-hover:text-primary">New Scan</span>
         </button>
       </div>
+
+      <CoverLetterModal 
+        isOpen={clModalOpen} 
+        onClose={() => setClModalOpen(false)} 
+        initialText={clText} 
+      />
     </div>
   );
 };

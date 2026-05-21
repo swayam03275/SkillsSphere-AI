@@ -13,11 +13,30 @@ const topicProgressSchema = new mongoose.Schema({
   completedAt: {
     type: Date,
   },
+  isVerified: {
+    type: Boolean,
+    default: false,
+  },
+  verifiedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  },
+  verifiedAt: {
+    type: Date,
+  },
   resources: [
     {
       title: String,
       url: String,
-      type: { type: String, enum: ["video", "article", "documentation"] }
+      type: { type: String, enum: ["video", "article", "documentation"] },
+      tutorAssigned: {
+        type: Boolean,
+        default: false,
+      },
+      assignedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      }
     }
   ]
 });
@@ -40,8 +59,20 @@ const learningProgressSchema = new mongoose.Schema(
       default: 0,
     },
   },
-  { timestamps: true }
+  { 
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
+  }
 );
+
+// Virtual to check if any tutor has assigned custom resources on this roadmap
+learningProgressSchema.virtual("hasTutorResources").get(function () {
+  if (!this.roadmap) return false;
+  return this.roadmap.some(topic => 
+    topic.resources && topic.resources.some(res => res.tutorAssigned)
+  );
+});
 
 // Middleware to calculate overall progress before saving
 learningProgressSchema.pre("save", function (next) {

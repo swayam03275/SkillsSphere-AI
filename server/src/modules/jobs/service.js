@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import JobPosting from "../../database/models/JobPosting.js";
 import JobApplication from "../../database/models/JobApplication.js";
 import * as resumeService from "../resumes/service.js";
-import * as matchingService from "../matching/service.js";
+import matchingService from "../matching/service.js";
 import { generateRecommendations } from "../../../../ai-ml/pipeline/recommendationEngine.js";
 import AppError from "../../utils/AppError.js";
 import { getIO } from "../../utils/socketIO.js";
@@ -233,16 +233,14 @@ export const getJobRecommendations = async (user) => {
     ];
   }
 
-  // Fetch only the relevant subset of jobs
-  const openJobs = await JobPosting.find(query);
+  // Fetch only the relevant subset of jobs (limit to 100 at DB level)
+  const openJobs = await JobPosting.find(query).limit(100);
 
-  // 3. Perform deep evaluation using the AI/ML Recommendation Engine on the filtered subset
-  const rankedResults = await generateRecommendations(resume, openJobs);
+  // 3. Perform matching and save result using matching service (ranks to top 20 and runs AI evaluation)
+  const matchResult = await matchingService.evaluateMatches(user, resume, openJobs);
+  const recommendations = matchResult.recommendations || [];
 
-  // 3. Persist the MatchResult for analytics (keeping sync with matching module)
-  await matchingService.evaluateMatches(user, resume);
-
-  if (!rankedResults || rankedResults.length === 0) {
+  if (recommendations.length === 0) {
     return {
       success: true,
       message: "No suitable jobs found matching your profile yet.",
@@ -255,12 +253,15 @@ export const getJobRecommendations = async (user) => {
   // We re-attach the full job details from the DB
   const jobMap = new Map(openJobs.map(j => [j._id.toString(), j]));
   
-  const jobsWithDetails = rankedResults.map(rec => ({
-    ...jobMap.get(rec.jobId.toString())._doc,
-    matchScore: rec.score,
-    matchBreakdown: rec.breakdown,
-    relevanceInsights: rec.relevanceInsights
-  }));
+  const jobsWithDetails = recommendations.map(rec => {
+    const jobDoc = jobMap.get(rec.job.toString());
+    return {
+      ...(jobDoc ? jobDoc._doc : {}),
+      matchScore: rec.score,
+      matchBreakdown: rec.breakdown,
+      relevanceInsights: rec.skillMatch?.feedback?.[0] || "Good match based on your background."
+    };
+  });
 
   return {
     success: true,

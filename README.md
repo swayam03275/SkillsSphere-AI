@@ -321,21 +321,19 @@ cp .env.example .env
 - `GOOGLE_CLIENT_ID`
 - `GOOGLE_CLIENT_SECRET`
 
+```env
 # AI/ML Configuration (Required for semantic matching — free tier)
-
 HF_API_TOKEN=your_hugging_face_token
 
-## 🔐 Google OAuth Setup
-
-- `EMAIL_SERVICE_MODE=console` (Use "smtp" for real emails)
-- `EMAIL_HOST=smtp.gmail.com`
-- `EMAIL_PORT=587`
-- `EMAIL_USER=your-email@gmail.com`
-- `EMAIL_PASS=your-app-password`
-- `EMAIL_FROM="SkillsSphere AI" <your-email@gmail.com>`
+# Email Setup (if using console/smtp directly in server)
+EMAIL_SERVICE_MODE=console
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASS=your-app-password
+EMAIL_FROM="SkillsSphere AI" <your-email@gmail.com>
 
 # Evaluator toggles and weights (optional)
-
 EVALUATOR_SKILL_MATCH_ENABLED=true
 EVALUATOR_KEYWORD_MATCH_ENABLED=true
 EVALUATOR_EXPERIENCE_MATCH_ENABLED=true
@@ -344,10 +342,10 @@ EVALUATOR_KEYWORD_MATCH_WEIGHT=0.2
 EVALUATOR_EXPERIENCE_MATCH_WEIGHT=0.2
 
 # Interview AI Service (Python microservice for answer evaluation)
-
 INTERVIEW_AI_URL=http://localhost:8000
 INTERVIEW_AI_TIMEOUT=10000
 INTERVIEW_AI_TRANSCRIBE_TIMEOUT=30000
+```
 
 ### Client
 
@@ -364,7 +362,7 @@ cp .env.example .env
 - `PORT` (backend default: `5000`)
 - `JWT_SECRET` (required for JWT registration)
 - `JWT_EXPIRES_IN` (optional, default is `7d`)
-- `HF_API_TOKEN` (free — required for semantic resume-to-job-description matching, get at https://huggingface.co/settings/tokens)
+- `HF_API_TOKEN` (free — required for semantic resume-to-job-description matching, get at <https://huggingface.co/settings/tokens>)
 - `VITE_API_URL=http://localhost:5000`
 
 ## 🔐 Google OAuth Setup
@@ -416,6 +414,7 @@ To use real email notifications (OTP verification, password reset) via Gmail, fo
    - Click **Create**.
    - Copy the **16-character code** (e.g., `abcd efgh ijkl mnop`).
 3. **Update `server/.env`**:
+
    ```env
    EMAIL_SERVICE_MODE=smtp
    EMAIL_HOST=smtp.gmail.com
@@ -424,4 +423,5 @@ To use real email notifications (OTP verification, password reset) via Gmail, fo
    EMAIL_PASS=abcd efgh ijkl mnop
    EMAIL_FROM="SkillsSphere AI" <your-email@gmail.com>
    ```
+
 4. **Restart the server** to apply changes.

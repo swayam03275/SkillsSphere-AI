@@ -3,8 +3,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { io } from "socket.io-client";
 import Peer from "simple-peer";
-import { Mic, MicOff, Video, VideoOff, MonitorUp, Hand, MessageSquare, Users, PhoneOff, Send } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, MonitorUp, Hand, MessageSquare, Users, PhoneOff, Send, Code2, Palette } from "lucide-react";
 import VideoTile from "../components/VideoTile";
+import Whiteboard from "../components/Whiteboard";
+import SharedCodeEditor from "../components/SharedCodeEditor";
 
 export default function ClassroomRoom() {
   const { roomId } = useParams();
@@ -17,6 +19,7 @@ export default function ClassroomRoom() {
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
   const [activeTab, setActiveTab] = useState("chat"); // 'chat' or 'participants'
+  const [activeWorkspace, setActiveWorkspace] = useState("video"); // 'video', 'whiteboard', or 'code'
 
   // Controls state
   const [isMuted, setIsMuted] = useState(false);
@@ -27,6 +30,7 @@ export default function ClassroomRoom() {
   const peersRef = useRef([]); // To keep track of peer connections inside callbacks
   const socketRef = useRef();
   const localStreamRef = useRef();
+  const activeSocketIdsRef = useRef(new Set());
 
   useEffect(() => {
     // Basic auth check
@@ -53,6 +57,7 @@ export default function ClassroomRoom() {
         s.on("room-participants", (participants) => {
           const peersArr = [];
           participants.forEach(p => {
+            activeSocketIdsRef.current.add(p.socketId);
             const peer = createPeer(p.socketId, s.id, stream, user);
             peersRef.current.push({
               peerId: p.socketId,
@@ -76,11 +81,19 @@ export default function ClassroomRoom() {
         // Handle incoming user (they just joined, they will initiate the call to us)
         s.on("user-joined", (payload) => {
           console.log("User joined", payload);
+          activeSocketIdsRef.current.add(payload.socketId);
           // We don't initiate here. We wait for their offer.
         });
 
         // Receiving an offer
         s.on("webrtc-offer", (payload) => {
+          // Security check: Verify that the caller is a registered participant in this room
+          if (!activeSocketIdsRef.current.has(payload.callerSocketId)) {
+            console.error(`Blocked unauthorized WebRTC stream injection from socket: ${payload.callerSocketId}`);
+            alert("Security Warning: Blocked an unauthorized stream injection attempt from outside this classroom.");
+            return;
+          }
+
           const peer = addPeer(payload.offer, payload.callerSocketId, stream, s);
           
           const newPeerObj = {
@@ -98,10 +111,27 @@ export default function ClassroomRoom() {
 
         // Receiving an answer
         s.on("webrtc-answer", (payload) => {
+          if (!activeSocketIdsRef.current.has(payload.answererSocketId)) {
+            console.error(`Blocked unauthorized WebRTC signaling answer from socket: ${payload.answererSocketId}`);
+            return;
+          }
           const item = peersRef.current.find(p => p.peerId === payload.answererSocketId);
           if (item) {
             item.peer.signal(payload.answer);
           }
+        });
+
+        // Socket security & error handling
+        s.on("unauthorized", (payload) => {
+          console.error("Socket unauthorized action:", payload);
+          alert(`Security Warning: ${payload.message || "Unauthorized action detected."}`);
+          navigate("/classrooms");
+        });
+
+        s.on("error", (payload) => {
+          console.error("Socket error:", payload);
+          alert(`Socket Error: ${payload.message || "An error occurred."}`);
+          navigate("/classrooms");
         });
 
         // Other socket events
@@ -114,6 +144,7 @@ export default function ClassroomRoom() {
         });
 
         s.on("user-left", ({ socketId }) => {
+          activeSocketIdsRef.current.delete(socketId);
           const item = peersRef.current.find(p => p.peerId === socketId);
           if (item) {
             item.peer.destroy();
@@ -240,27 +271,103 @@ export default function ClassroomRoom() {
     <div className="h-screen bg-[#020617] text-white flex flex-col pt-16">
       <div className="flex-1 flex overflow-hidden">
         {/* Main Video Area */}
-        <div className="flex-1 p-4 flex flex-col">
-          <div className="flex-1 bg-slate-900 rounded-2xl overflow-y-auto p-4 border border-slate-800">
-            {/* Grid Layout for Videos */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <VideoTile 
-                stream={localStream} 
-                user={{ name: user?.name || user?.email }} 
-                isLocal={true}
-                isMuted={isMuted}
-                isHandRaised={isHandRaised}
-              />
-              {peers.map((peerObj, index) => (
-                <VideoTile 
-                  key={index} 
-                  stream={peerObj.stream} 
-                  user={peerObj.user} 
-                  isLocal={false}
-                  isMuted={peerObj.isMuted}
-                  isHandRaised={peerObj.isHandRaised}
-                />
-              ))}
+        <div className="flex-1 p-4 flex flex-col min-h-0">
+          {/* Workspace Switcher Bar */}
+          <div className="flex items-center space-x-2 mb-4 bg-slate-900/60 p-1 border border-slate-800 rounded-xl max-w-fit">
+            <button
+              onClick={() => setActiveWorkspace("video")}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                activeWorkspace === "video"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/10"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <Video size={14} />
+              <span>Camera Stream</span>
+            </button>
+            <button
+              onClick={() => setActiveWorkspace("whiteboard")}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                activeWorkspace === "whiteboard"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/10"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <Palette size={14} />
+              <span>Whiteboard</span>
+            </button>
+            <button
+              onClick={() => setActiveWorkspace("code")}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                activeWorkspace === "code"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/10"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <Code2 size={14} />
+              <span>Live Code</span>
+            </button>
+          </div>
+
+          <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+            {/* If in Whiteboard or Code mode, render a compact row of video tiles at the top */}
+            {activeWorkspace !== "video" && (
+              <div className="flex space-x-3 overflow-x-auto mb-4 pb-2 max-h-[140px] scrollbar-thin scrollbar-thumb-slate-800">
+                <div className="w-[180px] flex-shrink-0">
+                  <VideoTile
+                    stream={localStream}
+                    user={{ name: user?.name || user?.email }}
+                    isLocal={true}
+                    isMuted={isMuted}
+                    isHandRaised={isHandRaised}
+                  />
+                </div>
+                {peers.map((peerObj, index) => (
+                  <div className="w-[180px] flex-shrink-0" key={index}>
+                    <VideoTile
+                      stream={peerObj.stream}
+                      user={peerObj.user}
+                      isLocal={false}
+                      isMuted={peerObj.isMuted}
+                      isHandRaised={peerObj.isHandRaised}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Main workspace container */}
+            <div className="flex-1 bg-slate-900 rounded-2xl overflow-y-auto p-4 border border-slate-800 flex flex-col min-h-0">
+              {activeWorkspace === "video" && (
+                /* Grid Layout for Videos */
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <VideoTile
+                    stream={localStream}
+                    user={{ name: user?.name || user?.email }}
+                    isLocal={true}
+                    isMuted={isMuted}
+                    isHandRaised={isHandRaised}
+                  />
+                  {peers.map((peerObj, index) => (
+                    <VideoTile
+                      key={index}
+                      stream={peerObj.stream}
+                      user={peerObj.user}
+                      isLocal={false}
+                      isMuted={peerObj.isMuted}
+                      isHandRaised={peerObj.isHandRaised}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {activeWorkspace === "whiteboard" && socket && (
+                <Whiteboard socket={socket} roomId={roomId} userRole={user?.role} />
+              )}
+
+              {activeWorkspace === "code" && socket && (
+                <SharedCodeEditor socket={socket} roomId={roomId} userRole={user?.role} />
+              )}
             </div>
           </div>
 

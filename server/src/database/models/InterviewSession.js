@@ -52,6 +52,18 @@ const answerSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+
+    tutorScores: {
+      technical: { type: Number, min: 0, max: 100 },
+      communication: { type: Number, min: 0, max: 100 },
+      relevance: { type: Number, min: 0, max: 100 },
+      _id: false,
+    },
+
+    tutorFeedback: {
+      type: String,
+      default: null,
+    },
   },
   { _id: false }
 );
@@ -104,6 +116,17 @@ const interviewSessionSchema = new mongoose.Schema(
       default: 0,
       min: 0,
       max: 100,
+    },
+
+    tutorOverallScore: {
+      type: Number,
+      min: 0,
+      max: 100,
+    },
+
+    tutorOverallFeedback: {
+      type: String,
+      default: null,
     },
 
     weakConcepts: {

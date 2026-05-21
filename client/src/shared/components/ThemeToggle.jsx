@@ -1,21 +1,18 @@
 import { useEffect, useState } from "react";
 
 const ThemeToggle = () => {
-  const [darkMode, setDarkMode] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
     const savedTheme =
-      localStorage.getItem("skillssphere.theme") || "dark";
+      localStorage.getItem("skillssphere.theme") || "light";
 
     const isDark = savedTheme === "dark";
 
     setDarkMode(isDark);
 
-    if (isDark) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    document.documentElement.classList.toggle("dark", isDark);
+    document.documentElement.classList.toggle("light", !isDark);
   }, []);
 
   const toggleTheme = () => {
@@ -25,11 +22,8 @@ const ThemeToggle = () => {
 
     localStorage.setItem("skillssphere.theme", newTheme);
 
-    if (newTheme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    document.documentElement.classList.toggle("dark", newTheme === "dark");
+    document.documentElement.classList.toggle("light", newTheme === "light");
   };
 
   return (

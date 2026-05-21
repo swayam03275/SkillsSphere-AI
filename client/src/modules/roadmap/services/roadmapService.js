@@ -25,3 +25,33 @@ export const updateTopicStatus = async (topicId, status) => {
     token: getToken(),
   });
 };
+
+export const getStudentsRoadmaps = async () => {
+  return await apiRequest("/api/roadmap/tutor/students", {
+    method: "GET",
+    token: getToken(),
+  });
+};
+
+export const getStudentRoadmap = async (studentId) => {
+  return await apiRequest(`/api/roadmap/tutor/students/${studentId}`, {
+    method: "GET",
+    token: getToken(),
+  });
+};
+
+export const assignTutorResource = async (studentId, topicId, title, url, type) => {
+  return await apiRequest("/api/roadmap/tutor/assign-resource", {
+    method: "POST",
+    body: { studentId, topicId, title, url, type },
+    token: getToken(),
+  });
+};
+
+export const verifyTopic = async (studentId, topicId, isVerified) => {
+  return await apiRequest("/api/roadmap/tutor/verify-topic", {
+    method: "POST",
+    body: { studentId, topicId, isVerified },
+    token: getToken(),
+  });
+};

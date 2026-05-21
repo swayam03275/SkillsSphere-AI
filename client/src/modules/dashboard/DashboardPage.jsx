@@ -69,6 +69,7 @@ const DashboardPage = () => {
 
   const isStudent = user?.role === "student";
   const isRecruiter = user?.role === "recruiter";
+  const isTutor = user?.role === "tutor";
 
   useEffect(() => {
     const fetchData = async () => {
@@ -744,11 +745,13 @@ const DashboardPage = () => {
                 <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 bg-blue-500/20 rounded-full blur-3xl group-hover:bg-blue-500/40 transition-all"></div>
                 <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
                   <TrendingUp size={20} className="text-blue-400" />
-                  {isStudent ? "Improve Profile" : "Recruitment Hub"}
+                  {isStudent ? "Improve Profile" : isTutor ? "Tutor Hub" : "Recruitment Hub"}
                 </h3>
                 <p className="text-sm text-gray-700 dark:text-blue-100/70 mb-6">
                   {isStudent
                     ? "Take the next step in your career journey with our AI-driven tools."
+                    : isTutor
+                    ? "Monitor class performance and review student mock interviews."
                     : "Manage your hiring pipeline and find the perfect candidates."}
                 </p>
 
@@ -800,6 +803,56 @@ const DashboardPage = () => {
                         <ArrowRight
                           size={16}
                           className="text-violet-300 group-hover/link:translate-x-1 transition-transform"
+                        />
+                      </Link>
+                    </>
+                  ) : isTutor ? (
+                    <>
+                      <Link
+                        to="/tutor/analytics"
+                        className="flex items-center justify-between group/link w-full p-4 rounded-xl bg-white/10 border border-gray-200 dark:border-white/10 hover:bg-white/20 transition-all mb-2"
+                      >
+                        <div className="flex items-center gap-3">
+                          <BarChart3 size={18} className="text-violet-300" />
+                          <span className="font-semibold text-sm">
+                            Skill Gap Analytics
+                          </span>
+                        </div>
+                        <ArrowRight
+                          size={16}
+                          className="text-violet-300 group-hover/link:translate-x-1 transition-transform"
+                        />
+                      </Link>
+
+                      <Link
+                        to="/tutor/interviews"
+                        className="flex items-center justify-between group/link w-full p-4 rounded-xl bg-white/10 border border-gray-200 dark:border-white/10 hover:bg-white/20 transition-all"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Briefcase size={18} className="text-emerald-300" />
+                          <span className="font-semibold text-sm">
+                            Review Student Interviews
+                          </span>
+                        </div>
+                        <ArrowRight
+                          size={16}
+                          className="text-emerald-300 group-hover/link:translate-x-1 transition-transform"
+                        />
+                      </Link>
+
+                      <Link
+                        to="/tutor/roadmaps"
+                        className="flex items-center justify-between group/link w-full p-4 rounded-xl bg-white/10 border border-gray-200 dark:border-white/10 hover:bg-white/20 transition-all"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Target size={18} className="text-indigo-300" />
+                          <span className="font-semibold text-sm">
+                            Student Learning Roadmaps
+                          </span>
+                        </div>
+                        <ArrowRight
+                          size={16}
+                          className="text-indigo-300 group-hover/link:translate-x-1 transition-transform"
                         />
                       </Link>
                     </>

@@ -19,3 +19,14 @@ export const getSkillTrends = async () => {
     token,
   });
 };
+
+export const getCoverLetterHistory = async () => {
+  const TOKEN_KEY = "skillssphere.auth.token";
+  const token = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+
+  return apiRequest("/api/cover-letters", {
+    method: "GET",
+    token,
+  });
+};
+

@@ -2,21 +2,35 @@ import jwt from "jsonwebtoken";
 import User from "../database/models/User.js";
 import AppError from "../utils/AppError.js";
 import asyncHandler from "../utils/asyncHandler.js";
+import { verifySignedFileUrl } from "../utils/signedFileUrl.js";
 
 /**
- * Auth for file downloads. Accepts JWT via Authorization header OR ?token= query
+ * Auth for file downloads. Accepts JWT via Authorization header or a signed URL
  * so <img src="..."> can load protected avatars without custom fetch logic.
  */
 export const protectFileAccess = asyncHandler(async (req, res, next) => {
-  let token;
+  const requestPath = `${req.baseUrl}${req.path}`;
+  const { exp, sig, uid } = req.query;
 
+  if (exp && sig) {
+    const isValid = verifySignedFileUrl(requestPath, exp, sig, uid);
+    if (!isValid) {
+      return next(new AppError("Signed URL is invalid or expired.", 401));
+    }
+
+    if (uid) {
+      req.signedUserId = uid.toString();
+    }
+
+    return next();
+  }
+
+  let token;
   if (
     req.headers.authorization &&
     req.headers.authorization.startsWith("Bearer")
   ) {
     token = req.headers.authorization.split(" ")[1];
-  } else if (typeof req.query.token === "string" && req.query.token.trim()) {
-    token = req.query.token.trim();
   }
 
   if (!token) {

@@ -52,6 +52,11 @@
   min-height: 100vh;
 }
 
+/* Compact container padding on very small phones */
+@media (max-width: 420px) {
+  .container { padding-left: 0.75rem; padding-right: 0.75rem; }
+}
+
 /* ── Ambient gradient orbs (light mode only) ── */
 body:not(.dark)::before {
   content: '';

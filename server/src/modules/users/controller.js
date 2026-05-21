@@ -1,9 +1,19 @@
 import User from "../../database/models/User.js";
+import Resume from "../../database/models/Resume.js";
+import MatchResult from "../../database/models/MatchResult.js";
+import LearningProgress from "../../database/models/LearningProgress.js";
+import JobApplication from "../../database/models/JobApplication.js";
+import CoverLetter from "../../database/models/CoverLetter.js";
+import InterviewSession from "../../database/models/InterviewSession.js";
+import AnalysisHistory from "../../database/models/AnalysisHistory.js";
+import ClassroomSession from "../../database/models/ClassroomSession.js";
+import JobPosting from "../../database/models/JobPosting.js";
 import AppError from "../../utils/AppError.js";
 import asyncHandler from "../../utils/asyncHandler.js";
 import fs from "fs";
 import path from "path";
 import { buildAvatarFileUrl } from "../../utils/uploadPaths.js";
+import { cascadeDeleteUser } from "../../utils/cascadeDelete.js";
 
 /**
  * @desc    Update user profile details
@@ -42,6 +52,18 @@ export const updateProfile = asyncHandler(async (req, res, next) => {
 export const uploadAvatar = asyncHandler(async (req, res, next) => {
   if (!req.file) {
     return next(new AppError("No image file provided", 400));
+  }
+
+  // Delete the old avatar from disk if it was a local upload
+  const currentUser = await User.findById(req.user._id);
+  if (
+    currentUser?.profilePic &&
+    (currentUser.profilePic.includes("/uploads/avatars/") ||
+      currentUser.profilePic.includes("/api/files/avatars/"))
+  ) {
+    const oldFilename = path.basename(currentUser.profilePic.split("?")[0]);
+    const oldPath = path.join(process.cwd(), "src", "uploads", "avatars", oldFilename);
+    if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
   }
 
   const baseUrl = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
@@ -100,16 +122,17 @@ export const removeAvatar = asyncHandler(async (req, res, next) => {
  * @access  Private
  */
 export const deleteProfile = asyncHandler(async (req, res, next) => {
-  const user = await User.findById(req.user._id);
+  const userId = req.user._id;
+  const user = await User.findById(userId);
 
   if (!user) {
     return next(new AppError("User not found", 404));
   }
 
-  await User.findByIdAndDelete(req.user._id);
+  await cascadeDeleteUser(userId);
 
   res.status(200).json({
     success: true,
-    message: "Account deleted successfully",
+    message: "Account and all associated files/data deleted successfully (GDPR compliant)",
   });
 });

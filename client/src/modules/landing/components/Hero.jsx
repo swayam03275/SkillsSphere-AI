@@ -1,9 +1,31 @@
 import { CheckCircle2, FileSearch, LineChart, MessageSquareText, Sparkles, Video } from "lucide-react";
 import Button from "../../../shared/landing/Button";
 
+const headingGradientStyle = {
+  backgroundImage: "linear-gradient(135deg, #7C3AED 0%, #4F46E5 50%, #059669 100%)",
+  WebkitBackgroundClip: "text",
+  backgroundClip: "text",
+  WebkitTextFillColor: "transparent",
+  color: "transparent",
+};
+
+const renderAnimatedChars = (text, startDelay = 0, stepDelay = 80) =>
+  Array.from(text).map((character, index) => (
+    <span
+      key={`${text}-${index}`}
+      className="animate-heading-char"
+      style={{
+        ["--char-delay"]: `${startDelay + index * stepDelay}ms`,
+        ...headingGradientStyle,
+      }}
+    >
+      {character === " " ? "\u00A0" : character}
+    </span>
+  ));
+
 const Hero = () => {
   return (
-    <section className="relative min-h-[92vh] flex items-center px-4 pt-32 pb-20 overflow-visible animate-slide-up sm:pt-28 sm:pb-14">
+    <section className="relative min-h-[92vh] max-sm:min-h-[72vh] flex items-center px-4 pt-28 pb-16 overflow-visible animate-slide-up sm:pt-28 sm:pb-14">
       {/* Light mode gradient orbs */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full opacity-0 dark:opacity-0"
@@ -16,11 +38,45 @@ const Hero = () => {
         <style>{`
           html:not(.dark) .hero-orb-purple { opacity: 1 !important; }
           html:not(.dark) .hero-orb-green  { opacity: 1 !important; }
+
+          .orb-float {
+            animation: orbFloat 10s ease-in-out infinite;
+            will-change: transform, opacity;
+          }
+
+          @keyframes orbFloat {
+            0% { transform: translateY(0) translateX(0) scale(1); opacity: 0.95; }
+            50% { transform: translateY(-18px) translateX(8px) scale(1.03); opacity: 1; }
+            100% { transform: translateY(0) translateX(0) scale(1); opacity: 0.95; }
+          }
+
+          .animate-heading-char {
+            display: inline-block;
+            opacity: 0;
+            transform: translateY(10px) rotateX(8deg);
+            animation: charIn 480ms var(--char-delay) cubic-bezier(.2,.9,.3,1) forwards;
+          }
+
+          @keyframes charIn {
+            to { opacity: 1; transform: none; }
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            .orb-float,
+            .animate-heading-char,
+            .motion-safe\:animate-cockpit-glow,
+            .motion-safe\:animate-shimmer-sweep,
+            .motion-safe\:animate-scan-line,
+            .motion-safe\:animate-flow-across {
+              animation: none !important;
+              transition: none !important;
+            }
+          }
         `}</style>
-        <div className="hero-orb-purple absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full"
+        <div className="hero-orb-purple orb-float absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full"
           style={{ background: 'radial-gradient(circle, rgba(124,58,237,0.18) 0%, rgba(79,70,229,0.08) 40%, transparent 70%)', filter: 'blur(60px)', opacity: 0 }}
         />
-        <div className="hero-orb-green absolute top-1/2 -right-40 w-[500px] h-[500px] rounded-full"
+        <div className="hero-orb-green orb-float absolute top-1/2 -right-40 w-[500px] h-[500px] rounded-full"
           style={{ background: 'radial-gradient(circle, rgba(5,150,105,0.15) 0%, rgba(16,185,129,0.06) 40%, transparent 70%)', filter: 'blur(60px)', opacity: 0 }}
         />
       </div>
@@ -33,23 +89,18 @@ const Hero = () => {
             AI learning, evaluation, and career readiness
           </div>
 
-          <h1 className="text-[clamp(2.35rem,4.4vw,4.25rem)] font-bold mb-6 tracking-normal leading-[1.05] max-sm:text-[clamp(2.15rem,11vw,3.35rem)]">
-            <span className="block whitespace-nowrap relative overflow-visible">
-              <span className="relative z-10 underline decoration-sky-500/30 bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-500">
-                SkillSphere AI
+          <h1 className="text-[clamp(2.35rem,4.4vw,4.25rem)] font-bold mb-6 tracking-normal leading-[1.05] max-sm:text-[clamp(2.15rem,11vw,3.35rem)]" aria-label="SkillSphere AI turns skills into career proof.">
+            <span className="sr-only">SkillSphere AI turns skills into career proof.</span>
+
+            <span aria-hidden className="block whitespace-nowrap relative overflow-visible animate-heading-line hero-heading-line">
+              <span className="relative z-10 underline decoration-sky-500/30">
+                {renderAnimatedChars("SkillSphere AI")}
               </span>
             </span>
 
-            <span className="block relative mt-2 overflow-visible">
-              <span
-                aria-hidden
-                className="absolute left-0 top-0 w-full pointer-events-none select-none z-0"
-                style={{ color: 'rgba(0,0,0,0.35)', filter: 'blur(8px)', WebkitFilter: 'blur(8px)', transform: 'translateY(4px) scale(1.01)', lineHeight: '1.05', opacity: 0.95 }}
-              >
-                turns skills into career proof.
-              </span>
-              <span className="relative z-10" style={{ filter: 'drop-shadow(0 12px 18px rgba(0,0,0,0.45)) drop-shadow(0 10px 14px rgba(255,255,255,0.3))' }}>
-                turns skills into <span className="text-gradient">career proof.</span>
+            <span aria-hidden className="block relative mt-2 overflow-visible animate-heading-line hero-heading-line" style={{ ["--line-delay"]: "420ms" }}>
+              <span className="relative z-10" style={{ filter: 'drop-shadow(0 12px 18px rgba(0,0,0,0.26)) drop-shadow(0 10px 14px rgba(255,255,255,0.22))' }}>
+                {renderAnimatedChars("turns skills into career proof.", 420)}
               </span>
             </span>
           </h1>
@@ -146,7 +197,7 @@ const Hero = () => {
                 })}
               </div>
 
-              <div className="relative min-h-[390px] rounded-xl border border-[var(--border)] bg-[linear-gradient(145deg,var(--surface),rgba(16,185,129,0.04))] dark:bg-[linear-gradient(145deg,rgba(255,255,255,0.03),rgba(124,58,237,0.08))] p-5 overflow-hidden max-sm:min-h-[340px]">
+              <div className="relative min-h-[390px] max-sm:min-h-[260px] rounded-xl border border-[var(--border)] bg-[linear-gradient(145deg,var(--surface),rgba(16,185,129,0.04))] dark:bg-[linear-gradient(145deg,rgba(255,255,255,0.03),rgba(124,58,237,0.08))] p-5 overflow-hidden">
                 <div aria-hidden className="absolute inset-0 opacity-70"
                   style={{
                     background:

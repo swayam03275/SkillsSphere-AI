@@ -5,6 +5,7 @@ import Resume from "../../database/models/Resume.js";
 import AppError from "../../utils/AppError.js";
 import asyncHandler from "../../utils/asyncHandler.js";
 import { resolveUploadPath } from "../../utils/uploadPaths.js";
+import { buildSignedFileUrl, normalizeProtectedFilePath } from "../../utils/signedFileUrl.js";
 
 const sendFileIfExists = (res, absolutePath, filename) => {
   if (!fs.existsSync(absolutePath)) {
@@ -42,8 +43,15 @@ export const serveResume = asyncHandler(async (req, res, next) => {
     return next(new AppError("Invalid file path", 400));
   }
 
+  const ownerId = req.user?._id?.toString() || req.signedUserId;
+  if (!ownerId) {
+    return next(
+      new AppError("You are not logged in! Please log in to get access.", 401)
+    );
+  }
+
   const ownedResume = await Resume.findOne({
-    user: req.user._id,
+    user: ownerId,
     $or: [
       { "file.storedName": resolved.safeName },
       { "file.path": { $regex: resolved.safeName } },
@@ -83,4 +91,51 @@ export const serveAvatar = asyncHandler(async (req, res, next) => {
   if (!sendFileIfExists(res, resolved.absolutePath, resolved.safeName)) {
     return next(new AppError("File not found", 404));
   }
+});
+
+/**
+ * @desc    Create a signed URL for protected file access
+ * @route   POST /api/files/sign
+ */
+export const createSignedFileUrl = asyncHandler(async (req, res, next) => {
+  const { path: rawPath, ttlSeconds } = req.body;
+  const filePath = normalizeProtectedFilePath(rawPath);
+
+  if (!filePath) {
+    return next(new AppError("Invalid file path", 400));
+  }
+
+  if (filePath.startsWith("/api/files/resumes/")) {
+    const filename = filePath.split("/api/files/resumes/").pop();
+    const ownedResume = await Resume.findOne({
+      user: req.user._id,
+      $or: [
+        { "file.storedName": filename },
+        { "file.path": { $regex: filename } },
+      ],
+    }).select("_id");
+
+    if (!ownedResume) {
+      return next(
+        new AppError("You do not have permission to access this file", 403)
+      );
+    }
+  }
+
+  const ttl = Number.isFinite(Number(ttlSeconds)) ? Number(ttlSeconds) : 300;
+  const expiresAt = Math.floor(Date.now() / 1000) + Math.max(ttl, 30);
+  const signedPath = buildSignedFileUrl({
+    path: filePath,
+    expiresAt,
+    extra: req.user._id.toString(),
+  });
+
+  const baseUrl =
+    process.env.BACKEND_URL || `${req.protocol}://${req.get("host")}`;
+
+  res.status(200).json({
+    success: true,
+    url: `${baseUrl}${signedPath}`,
+    expiresAt: expiresAt * 1000,
+  });
 });

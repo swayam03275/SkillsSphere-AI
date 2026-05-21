@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import User from "../../database/models/User.js";
 import { OAuth2Client } from "google-auth-library";
@@ -33,7 +34,7 @@ const buildAuthToken = (user) => {
 
 // 🔢 Generate OTP
 const generateOTP = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return crypto.randomInt(100000, 999999).toString();
 };
 
 // 📝 Register user

@@ -1,28 +1,14 @@
 const TOKEN_KEY = "skillssphere.auth.token";
 
-const getApiBaseUrl = () => {
-  try {
-    const env = import.meta?.env;
-    return env?.VITE_API_URL || env?.VITE_API_BASE_URL || "http://localhost:5000";
-  } catch {
-    return "http://localhost:5000";
-  }
-};
-
 export const getAuthToken = () =>
   localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || "";
 
-/**
- * Turn stored asset URLs into authenticated download URLs.
- * External URLs (e.g. Google profile photos) are returned unchanged.
- */
-export const getProtectedAssetUrl = (url, token = getAuthToken()) => {
-  if (!url || typeof url !== "string") return url;
-  if (!token) return url;
+export const resolveProtectedFilePath = (url) => {
+  if (!url || typeof url !== "string") return null;
 
   // Skip third-party URLs
   if (/^https?:\/\//i.test(url) && !url.includes("/uploads/") && !url.includes("/api/files/")) {
-    return url;
+    return null;
   }
 
   let apiPath = url;
@@ -30,10 +16,10 @@ export const getProtectedAssetUrl = (url, token = getAuthToken()) => {
   // Legacy public static paths → protected API routes
   if (url.includes("/uploads/avatars/")) {
     const filename = url.split("/uploads/avatars/").pop()?.split("?")[0];
-    apiPath = `/api/files/avatars/${filename}`;
+    apiPath = filename ? `/api/files/avatars/${filename}` : url;
   } else if (url.includes("/uploads/")) {
     const filename = url.split("/uploads/").pop()?.split("?")[0];
-    apiPath = `/api/files/resumes/${filename}`;
+    apiPath = filename ? `/api/files/resumes/${filename}` : url;
   } else if (url.startsWith("/api/files/")) {
     apiPath = url.split("?")[0];
   } else if (url.startsWith("http")) {
@@ -43,13 +29,26 @@ export const getProtectedAssetUrl = (url, token = getAuthToken()) => {
         apiPath = parsed.pathname;
       }
     } catch {
-      return url;
+      return null;
     }
   }
 
-  if (!apiPath.startsWith("/api/files/")) return url;
+  if (!apiPath.startsWith("/api/files/")) return null;
 
-  const base = getApiBaseUrl().replace(/\/$/, "");
-  const separator = apiPath.includes("?") ? "&" : "?";
-  return `${base}${apiPath}${separator}token=${encodeURIComponent(token)}`;
+  return apiPath;
+};
+
+/**
+ * Helper to return a URL suitable for use in <img src=""> for protected files.
+ * If the input is already a public URL, it is returned unchanged. For protected
+ * server paths ("/api/files/..."), this returns the path and, if a token is
+ * provided, appends it as `access_token` query param to allow simple fetching
+ * in environments where Authorization header cannot be set for images.
+ */
+export const getProtectedAssetUrl = (url, token) => {
+  if (!url) return null;
+  const apiPath = resolveProtectedFilePath(url);
+  if (!apiPath) return url;
+  if (token) return `${apiPath}?access_token=${encodeURIComponent(token)}`;
+  return apiPath;
 };

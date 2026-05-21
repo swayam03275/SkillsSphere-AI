@@ -31,3 +31,28 @@ export const analyzeResume = async (file, jobDescription = "") => {
     throw error; // Let the caller (component) handle the UI toast/state
   }
 };
+
+export const generateCoverLetter = async (resumeId, jobDescription) => {
+  try {
+    if (!resumeId) throw new Error("Resume ID is missing.");
+    if (!jobDescription || !jobDescription.trim()) throw new Error("Job description is required.");
+
+    const TOKEN_KEY = "skillssphere.auth.token";
+    const token = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+
+    const response = await apiRequest(`/api/resume/${resumeId}/cover-letter`, {
+      method: "POST",
+      body: { jobDescription: jobDescription.trim() },
+      token,
+    });
+
+    if (!response || response.success === false) {
+      throw new Error(response?.message || response?.error || "Failed to generate cover letter.");
+    }
+
+    return response;
+  } catch (error) {
+    console.error("[resumeService] Cover Letter Generation Error:", error);
+    throw error;
+  }
+};

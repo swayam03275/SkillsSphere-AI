@@ -1,6 +1,6 @@
 import express from "express";
 import { protect } from "../../middleware/authMiddleware.js";
-import { authRateLimiter } from "../../middleware/rateLimiter.js";
+import { authRateLimiter, otpRateLimiter } from "../../middleware/rateLimiter.js";
 import {
   buildGoogleAuthUrl,
   GOOGLE_OAUTH_NOT_CONFIGURED_MESSAGE,
@@ -104,7 +104,7 @@ router.get("/google/callback", googleOAuthCallback);
  *         description: User registered
  */
 router.post("/register", authRateLimiter, register);
-router.post("/verify-email", authRateLimiter, verifyEmail);
+router.post("/verify-email", otpRateLimiter, authRateLimiter, verifyEmail);
 router.post("/forgot-password", authRateLimiter, forgotPassword);
 router.post("/reset-password", authRateLimiter, resetPassword);
 router.post("/resend-otp", authRateLimiter, resendOTP);

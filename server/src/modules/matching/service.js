@@ -9,11 +9,40 @@ import { runPipeline } from "../../../../ai-ml/pipeline/runPipeline.js";
  * @param {Object} resume - The parsed resume data (Mongoose document)
  * @returns {Promise<Object>} The saved MatchResult document
  */
-export const evaluateMatches = async (user, resume) => {
-  // 1. Fetch all open jobs
-  const openJobs = await JobPosting.find({ status: "open" });
+export const evaluateMatches = async (user, resume, preFilteredJobs = null) => {
+  // 1. Normalize candidate skills from resume
+  const candidateSkills = (resume.skills || []).map(s => s.toLowerCase().trim());
 
-  // 2. Evaluate each job using the AI/ML pipeline in parallel
+  let openJobs;
+
+  if (preFilteredJobs && Array.isArray(preFilteredJobs)) {
+    openJobs = preFilteredJobs;
+  } else {
+    // 2. Query open jobs that share at least one skill with the candidate (limit to 100 at DB level)
+    openJobs = await JobPosting.find({
+      status: "open",
+      skills: { $in: candidateSkills }
+    }).limit(100);
+
+    // Fallback: If no jobs match by skill, fetch the 10 most recent open jobs
+    if (openJobs.length === 0) {
+      openJobs = await JobPosting.find({ status: "open" })
+        .sort({ createdAt: -1 })
+        .limit(10);
+    }
+  }
+
+  // Rank and limit open jobs to top 20 based on skill overlap count to prevent resource starvation
+  const rankedJobs = openJobs.map(job => {
+    const jobSkillsNormalized = (job.skills || []).map(s => s.toLowerCase().trim());
+    const overlapCount = jobSkillsNormalized.filter(s => candidateSkills.includes(s)).length;
+    return { job, overlapCount };
+  });
+
+  rankedJobs.sort((a, b) => b.overlapCount - a.overlapCount);
+  openJobs = rankedJobs.slice(0, 20).map(item => item.job);
+
+  // 3. Evaluate each pre-filtered job using the AI/ML pipeline in parallel
   console.time(`Matching evaluation for ${openJobs.length} jobs`);
   const recommendations = await Promise.all(
     openJobs.map(async (job) => {
@@ -60,3 +89,10 @@ export const getLatestRecommendations = async (userId) => {
     .populate("recommendations.job")
     .lean();
 };
+
+const matchingService = {
+  evaluateMatches,
+  getLatestRecommendations
+};
+
+export default matchingService;

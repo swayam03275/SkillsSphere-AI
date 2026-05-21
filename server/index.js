@@ -1,7 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
-dotenv.config();
+dotenv.config({ override: true });
 
 import http from "http";
 import { Server } from "socket.io";
@@ -12,6 +12,7 @@ import jobRoutes from "./src/modules/jobs/routes.js";
 import roadmapRoutes from "./src/modules/roadmap/routes.js";
 import matchingRoutes from "./src/modules/matching/routes.js";
 import dashboardRoutes from "./src/modules/dashboard/routes.js";
+import coverLetterRoutes from "./src/modules/coverLetters/routes.js";
 import classroomRoutes from "./src/modules/classrooms/routes.js";
 import userRoutes from "./src/modules/users/routes.js";
 import interviewRoutes from "./src/modules/interviews/routes.js";
@@ -24,11 +25,14 @@ import { initNotificationSockets } from "./src/modules/notifications/socket.js";
 import { verifySocketToken } from "./src/middleware/authMiddleware.js";
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './src/config/swaggerConfig.js';
-
+import { validateEnv } from './src/config/validateEnv.js';
+import analyticsRoutes from "./src/modules/analytics/routes.js";
 const app = express();
+app.set("trust proxy", 1);
 const PORT = process.env.PORT || 5000;
 
-// Create HTTP server for Socket.io
+validateEnv();
+
 const server = http.createServer(app);
 
 const ALLOWED_ORIGINS = [
@@ -62,9 +66,7 @@ io.use(async (socket, next) => {
 setIO(io);
 
 app.use(cors());
-
 app.use(express.json());
-// Uploads are NOT served publicly — use /api/files/* with auth (see files/routes.js)
 
 await connectDB();
 logEvaluatorConfig();
@@ -73,22 +75,16 @@ app.get("/health", (req, res) => {
   res.json({ status: "OK" });
 });
 
-// Swagger Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.post("/api/chat", (req, res) => {
   try {
     const { message } = req.body;
-
-    // validation
     if (!message) {
       return res.status(400).json({ error: "Message required" });
     }
-
-    let reply = "I didn’t understand that.";
-
+    let reply = "I didn't understand that.";
     const msg = message.toLowerCase();
-
     if (msg.includes("hello") || msg.includes("hi")) {
       reply = "Hi! How can I help you?";
     } else if (msg.includes("help")) {
@@ -96,7 +92,6 @@ app.post("/api/chat", (req, res) => {
     } else if (msg.includes("resume")) {
       reply = "You can upload or manage your resumes here.";
     }
-
     res.json({ reply });
   } catch (error) {
     res.status(500).json({ error: "Server error" });
@@ -109,12 +104,13 @@ app.use("/api/jobs", jobRoutes);
 app.use("/api/roadmap", roadmapRoutes);
 app.use("/api/matching", matchingRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/cover-letters", coverLetterRoutes);
 app.use("/api/classrooms", classroomRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/interviews", interviewRoutes);
 app.use("/api/files", fileRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
-// Initialize Sockets
 initClassroomSockets(io);
 initNotificationSockets(io);
 

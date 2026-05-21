@@ -3,10 +3,11 @@ import { useSelector } from "react-redux";
 import { CheckCircle2, Circle, Clock, Rocket, Target, Award, ArrowRight } from "lucide-react";
 import Navbar from "../../../shared/landing/Navbar";
 import { getMyRoadmap, updateTopicStatus } from "../services/roadmapService";
-import LoadingState from "../../../shared/components/LoadingState";
+import { LoadingState, useToast } from "../../../shared/components";
 
 const RoadmapPage = () => {
   const { user } = useSelector((state) => state.auth);
+  const { success: showSuccess, error: showError } = useToast();
   const [roadmap, setRoadmap] = useState(null);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
@@ -35,9 +36,11 @@ const RoadmapPage = () => {
       const response = await updateTopicStatus(topicId, nextStatus);
       if (response.success) {
         setRoadmap(response.data);
+        showSuccess(`Milestone marked as ${nextStatus === "completed" ? "Completed" : "In Progress"}.`);
       }
     } catch (err) {
       console.error("Update failed:", err);
+      showError(err.message || "Failed to update milestone status.");
     } finally {
       setUpdatingId(null);
     }
@@ -124,29 +127,61 @@ const RoadmapPage = () => {
 
                     <div className="flex items-start justify-between mb-4">
                        <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">{index + 1}. Milestone</span>
-                       {isCompleted ? (
-                         <div className="px-2 py-1 bg-emerald-500/10 text-emerald-400 rounded-lg text-[8px] font-black uppercase tracking-tighter border border-emerald-500/20">
-                            Completed
-                         </div>
-                       ) : (
-                         <div className="px-2 py-1 bg-blue-500/10 text-blue-400 rounded-lg text-[8px] font-black uppercase tracking-tighter border border-blue-500/20">
-                            Active
-                         </div>
-                       )}
+                       <div className="flex items-center gap-1.5">
+                         {topic.isVerified && (
+                           <div className="px-2 py-1 bg-indigo-500/10 text-indigo-400 rounded-lg text-[8px] font-black uppercase tracking-tighter border border-indigo-500/20 flex items-center gap-1 animate-pulse">
+                              <Award className="w-3 h-3 text-indigo-400" /> Verified
+                           </div>
+                         )}
+                         {isCompleted ? (
+                           <div className="px-2 py-1 bg-emerald-500/10 text-emerald-400 rounded-lg text-[8px] font-black uppercase tracking-tighter border border-emerald-500/20">
+                              Completed
+                           </div>
+                         ) : (
+                           <div className="px-2 py-1 bg-blue-500/10 text-blue-400 rounded-lg text-[8px] font-black uppercase tracking-tighter border border-blue-500/20">
+                              Active
+                           </div>
+                         )}
+                       </div>
                     </div>
 
                     <h3 className="text-xl font-bold text-white mb-4 group-hover:text-primary transition-colors">
                       {topic.topicName}
                     </h3>
 
+                    {topic.resources && topic.resources.length > 0 && (
+                      <div className="mt-2 mb-4 space-y-2 border-t border-border/30 pt-3">
+                        <p className="text-[10px] font-black text-text-muted uppercase tracking-wider mb-1">Study Resources:</p>
+                        {topic.resources.map((res, rIdx) => (
+                          <a 
+                            key={res._id || rIdx} 
+                            href={res.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className={`flex items-center justify-between p-2 rounded-xl text-xs font-semibold transition-all border ${res.tutorAssigned ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-300 hover:bg-indigo-500/20' : 'bg-slate-800/40 border-slate-700/30 hover:bg-slate-800/70 text-slate-300'}`}
+                          >
+                            <span className="truncate max-w-[200px]">{res.title}</span>
+                            <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                              {res.tutorAssigned && (
+                                <span className="px-1.5 py-0.5 bg-indigo-500 text-white rounded text-[8px] font-black uppercase tracking-tighter">Tutor</span>
+                              )}
+                              <span className="text-[10px] uppercase tracking-tighter text-text-muted opacity-80">{res.type}</span>
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                    )}
+
                     <div className="flex items-center justify-between">
                        <button 
                          onClick={() => handleStatusUpdate(topic._id, topic.status)}
-                         disabled={updatingId === topic._id}
-                         className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${isCompleted ? 'bg-emerald-500/10 text-emerald-400' : 'bg-primary/10 text-primary hover:bg-primary text-white'}`}
+                         disabled={updatingId === topic._id || topic.isVerified}
+                         className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${topic.isVerified ? 'bg-indigo-500/10 text-indigo-400 cursor-not-allowed' : isCompleted ? 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20' : 'bg-primary/10 text-primary hover:bg-primary hover:text-white'}`}
                        >
                          {updatingId === topic._id ? (
                            <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                         ) : topic.isVerified ? (
+                           <> <Award className="w-4 h-4" /> Verified Completed </>
                          ) : isCompleted ? (
                            <> <CheckCircle2 className="w-4 h-4" /> Mastery Achieved </>
                          ) : (

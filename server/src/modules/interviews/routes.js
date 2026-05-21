@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { protect } from "../../middleware/authMiddleware.js";
+import { authorizeRoles, protect } from "../../middleware/authMiddleware.js";
 import {
   startInterview,
   getSession,
@@ -10,6 +10,9 @@ import {
   getSessionResults,
   getAvailableTopics,
   getAIServiceStatus,
+  getTutorSessions,
+  getTutorSession,
+  submitTutorFeedback,
 } from "./controller.js";
 
 const router = express.Router();
@@ -123,5 +126,10 @@ router.post("/:id/complete", completeInterview);
  *         description: Detailed feedback and scores
  */
 router.get("/:id/results", getSessionResults);
+
+// Tutor routes
+router.get("/tutor/sessions", authorizeRoles("tutor"), getTutorSessions);
+router.get("/tutor/sessions/:id", authorizeRoles("tutor"), getTutorSession);
+router.post("/tutor/sessions/:id/feedback", authorizeRoles("tutor"), submitTutorFeedback);
 
 export default router;

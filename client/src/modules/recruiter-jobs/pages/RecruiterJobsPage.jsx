@@ -178,21 +178,29 @@ const RecruiterJobsPage = () => {
             }
             description={
               searchTerm
-                ? "Try adjusting your search filters."
+                ? "No matching skills found. Try another keyword."
                 : "Get started by creating your first job posting to find the best candidates."
             }
             action={
-              !searchTerm && (
-                <Link to="/recruiter/jobs/new">
-                  <Button
-                    variant="primary"
-                    className="bg-blue-600 hover:bg-blue-500 mt-4"
-                  >
-                    Create First Posting
-                  </Button>
-                </Link>
-              )
-            }
+            searchTerm ? (
+              <Button
+              variant="primary"
+              className="bg-blue-600 hover:bg-blue-500 mt-4"
+              onClick={() => setSearchTerm("")}
+            >
+              Clear Search
+            </Button>
+            ) : (
+            <Link to="/recruiter/jobs/new">
+              <Button
+              variant="primary"
+              className="bg-blue-600 hover:bg-blue-500 mt-4"
+              >
+              Create First Posting
+              </Button>
+            </Link>
+           )
+        }
           />
         ) : (
           <div className="grid grid-cols-1 gap-4">

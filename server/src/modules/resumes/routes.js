@@ -1,12 +1,16 @@
 import express from "express";
-import { uploadResumeMiddleware } from "../../middleware/uploadResume.js";
+import {
+  parseResumeUpload,
+  validateAndPersistResumeFile,
+} from "../../middleware/uploadResume.js";
 import {
   uploadResume,
   analyzeResume,
   getResumeResult,
   getLatestResume,
-  compareVersions
+  compareVersions,
 } from "./controller.js";
+import { generateCoverLetterForResume } from "./coverLetter.controller.js";
 import { resumeAnalysisLimiter } from "../../middleware/rateLimiter.js";
 
 import { protect, authorizeRoles } from "../../middleware/authMiddleware.js";
@@ -28,14 +32,23 @@ const router = express.Router();
  *           schema:
  *             type: object
  *             properties:
- *               file:
+ *               resume:
  *                 type: string
  *                 format: binary
  *     responses:
  *       200:
  *         description: Resume uploaded successfully
+ *       400:
+ *         description: Invalid or spoofed file (magic-byte validation failed)
  */
-router.post("/upload", protect, authorizeRoles("student"), resumeAnalysisLimiter, uploadResumeMiddleware, uploadResume);
+router.post(
+  "/upload",
+  protect,
+  authorizeRoles("student"),
+  parseResumeUpload,
+  validateAndPersistResumeFile,
+  uploadResume
+);
 
 /**
  * @openapi
@@ -52,7 +65,7 @@ router.post("/upload", protect, authorizeRoles("student"), resumeAnalysisLimiter
  *           schema:
  *             type: object
  *             properties:
- *               file:
+ *               resume:
  *                 type: string
  *                 format: binary
  *               jobDescription:
@@ -61,8 +74,17 @@ router.post("/upload", protect, authorizeRoles("student"), resumeAnalysisLimiter
  *     responses:
  *       200:
  *         description: Analysis complete
+ *       400:
+ *         description: Invalid or spoofed file (magic-byte validation failed)
  */
-router.post("/analyze", protect, authorizeRoles("student"), resumeAnalysisLimiter, uploadResumeMiddleware, analyzeResume);
+router.post(
+  "/analyze",
+  protect,
+  authorizeRoles("student"),
+  parseResumeUpload,
+  validateAndPersistResumeFile,
+  analyzeResume
+);
 
 /**
  * @openapi
@@ -98,7 +120,6 @@ router.get("/me/latest", protect, getLatestResume);
  */
 router.get("/result/:id", protect, getResumeResult);
 
-
 /**
  * @openapi
  * /api/resume/compare:
@@ -127,5 +148,41 @@ router.get("/result/:id", protect, getResumeResult);
  */
 router.post("/compare", protect, compareVersions);
 
+/**
+ * @openapi
+ * /api/resume/{id}/cover-letter:
+ *   post:
+ *     summary: Generate an AI cover letter for a specific resume
+ *     tags: [Resumes]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - jobDescription
+ *             properties:
+ *               jobDescription:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Cover letter generated successfully
+ *       400:
+ *         description: Job description missing
+ *       404:
+ *         description: Resume not found
+ *       500:
+ *         description: AI generation failed
+ */
+router.post("/:id/cover-letter", protect, authorizeRoles("student"), generateCoverLetterForResume);
 
 export default router;

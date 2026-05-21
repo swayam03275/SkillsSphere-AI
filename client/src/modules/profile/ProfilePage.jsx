@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import ProfileSkeleton from "./components/ProfileSkeleton";
 import {
@@ -18,7 +18,7 @@ import {
   removeAvatar,
 } from "./services/profileService";
 import LoadingState from "../../shared/components/LoadingState";
-import { getProtectedAssetUrl } from "../../utils/protectedAssetUrl";
+import { getSignedFileUrl } from "../../services/fileService";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -96,7 +96,7 @@ const DeleteModal = ({ onConfirm, onCancel, loading }) => (
   </div>
 );
 
-const AvatarEditor = ({ user, roleConfig, onUpload, onRemove, uploading, isEditing, token }) => {
+const AvatarEditor = ({ user, roleConfig, onUpload, onRemove, uploading, isEditing, avatarSrc }) => {
   const fileRef = useRef(null);
   const [preview, setPreview] = useState(null);
   const [pendingFile, setPendingFile] = useState(null);
@@ -120,7 +120,7 @@ const AvatarEditor = ({ user, roleConfig, onUpload, onRemove, uploading, isEditi
     setTimeout(() => setJustSaved(false), 3000);
   };
 
-  const displayPic = preview || getProtectedAssetUrl(user.profilePic, token);
+  const displayPic = preview || avatarSrc;
   const initials = getInitials(user.name || "");
   const hasPending = Boolean(pendingFile);
 
@@ -197,8 +197,24 @@ const ProfilePage = () => {
   const [apiError, setApiError] = useState("");
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState("");
+  const [avatarSrc, setAvatarSrc] = useState(null);
 
   const roleConfig = ROLE_CONFIG[user?.role] ?? ROLE_CONFIG.student;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    if (!user?.profilePic) {
+      setAvatarSrc(null);
+      return () => { isMounted = false; };
+    }
+
+    getSignedFileUrl(user.profilePic, token).then((url) => {
+      if (isMounted) setAvatarSrc(url);
+    });
+
+    return () => { isMounted = false; };
+  }, [user?.profilePic, token]);
 
   const handleAvatarUpload = async (file) => {
     setAvatarUploading(true);
@@ -348,7 +364,7 @@ const ProfilePage = () => {
                 onRemove={handleAvatarRemove}
                 uploading={avatarUploading}
                 isEditing={isEditing}
-                token={token}
+                avatarSrc={avatarSrc}
               />
               {avatarError && <p className="mt-2 text-xs text-red-500 dark:text-red-400">{avatarError}</p>}
               

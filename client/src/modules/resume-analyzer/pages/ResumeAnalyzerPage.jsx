@@ -94,6 +94,7 @@ const ResumeAnalyzerPage = () => {
               <AnalysisResult
                 result={result}
                 file={selectedFile}
+                jobDescription={jobDescription}
                 onReset={resetAnalyzer}
               />
             ) : (
