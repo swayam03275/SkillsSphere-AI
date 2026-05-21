@@ -120,7 +120,11 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install dependencies
+      - name: Install root dependencies
+        if: steps.server_check.outputs.exists == 'true'
+        run: npm install
+
+      - name: Install server dependencies
         if: steps.server_check.outputs.exists == 'true'
         working-directory: server
         run: npm ci
