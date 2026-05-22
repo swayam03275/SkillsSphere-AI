@@ -104,103 +104,117 @@ export const analyzeResume = asyncHandler(async (req, res, next) => {
     return next(new AppError("Resume file is required", 400));
   }
 
-  console.time("ResumeAnalysis");
-  console.time("ResumeParsing");
-  const parsedData = await controllerDependencies.parseResume(file.path);
-  console.timeEnd("ResumeParsing");
-
   const jobSkills = normalizeJobSkills(req.body.jobSkills);
   if (jobSkills === null) {
     return next(new AppError("jobSkills must be a valid JSON array", 400));
   }
+
+  try {
+    console.time("ResumeAnalysis");
+
+    console.time("ResumeParsing");
+    const parsedData = await controllerDependencies.parseResume(file.path);
+    console.timeEnd("ResumeParsing");
+
     // 🧠 RUN PIPELINE (ONLY LOGIC ENTRY)
-  console.time("PipelineExecution");
-  const pipelineResult = await runPipeline({
-    resumeData: parsedData,
-    jobSkills,
-    jobDescription: req.body.jobDescription,
-  });
-  console.timeEnd("PipelineExecution");
+    console.time("PipelineExecution");
+    const pipelineResult = await runPipeline({
+      resumeData: parsedData,
+      jobSkills,
+      jobDescription: req.body.jobDescription,
+    });
+    console.timeEnd("PipelineExecution");
 
-  const evaluators = [];
-  if (parsedData.skills?.length && jobSkills.length) {
-    evaluators.push(skillMatchEvaluator);
-  }
-  if (req.body.jobDescription && parsedData.resumeText) {
-    evaluators.push(keywordMatchEvaluator);
-    evaluators.push(semanticMatchEvaluator);
-  }
-  evaluators.push(experienceMatchEvaluator);
-
-  // 🔗 LINK VERIFICATION: Check if extracted links are alive
-  console.time("LinkVerification");
-  const linksToVerify = [
-    parsedData.linkedin,
-    parsedData.github,
-    parsedData.portfolio
-  ].filter(Boolean);
-  const verifiedLinks = await verifyLinks(linksToVerify);
-  console.timeEnd("LinkVerification");
-
-  // 🔥 Normalize everything
-  const safeData = normalizeResumeData(parsedData);
-  const safePipeline = normalizePipelineResult(pipelineResult);
-
-  // Save to DB (optional)
-  const savedResume = await controllerDependencies.upsertResume(req.user._id, {
-    ...safeData,
-    ...safePipeline,
-    jobSkills,
-    jobDescription: req.body.jobDescription,
-    mode: pipelineResult.mode || "match",
-    file: {
-      originalName: file.originalname,
-      storedName: file.filename,
-      path: file.path,
-      size: `${(file.size / 1024).toFixed(2)} KB`,
-      mimeType: file.mimetype,
-    },
-  });
-
-  // Save Analysis History
-  await AnalysisHistory.create({
-    user: req.user._id,
-    score: safePipeline.score || 0,
-    classification: safePipeline.classification?.level || "Beginner",
-    skills: safeData.skills || [],
-    missingSkills: safePipeline.skillMatch?.missingSkills || [],
-    suggestions: safePipeline.gapAnalysis?.suggestions || [],
-    breakdown: safePipeline.breakdown || {},
-    mode: pipelineResult.mode || "match",
-  });
-
-  // Clean up: Limit history to last 10 versions to prevent bloat (Optimized with direct deletion)
-  const historyCount = await AnalysisHistory.countDocuments({ user: req.user._id });
-  if (historyCount > 10) {
-    const surplus = historyCount - 10;
-    const oldestRecords = await AnalysisHistory.find({ user: req.user._id })
-      .sort({ createdAt: 1 })
-      .limit(surplus)
-      .select("_id");
-
-    if (oldestRecords.length > 0) {
-      await AnalysisHistory.deleteMany({
-        _id: { $in: oldestRecords.map(r => r._id) }
-      });
+    const evaluators = [];
+    if (parsedData.skills?.length && jobSkills.length) {
+      evaluators.push(skillMatchEvaluator);
     }
+    if (req.body.jobDescription && parsedData.resumeText) {
+      evaluators.push(keywordMatchEvaluator);
+      evaluators.push(semanticMatchEvaluator);
+    }
+    evaluators.push(experienceMatchEvaluator);
+
+    // 🔗 LINK VERIFICATION: Check if extracted links are alive
+    console.time("LinkVerification");
+    const linksToVerify = [
+      parsedData.linkedin,
+      parsedData.github,
+      parsedData.portfolio,
+    ].filter(Boolean);
+    const verifiedLinks = await verifyLinks(linksToVerify);
+    console.timeEnd("LinkVerification");
+
+    // 🔥 Normalize everything
+    const safeData = normalizeResumeData(parsedData);
+    const safePipeline = normalizePipelineResult(pipelineResult);
+
+    // Save to DB
+    const savedResume = await controllerDependencies.upsertResume(req.user._id, {
+      ...safeData,
+      ...safePipeline,
+      jobSkills,
+      jobDescription: req.body.jobDescription,
+      mode: pipelineResult.mode || "match",
+      file: {
+        originalName: file.originalname,
+        storedName: file.filename,
+        path: file.path,
+        size: `${(file.size / 1024).toFixed(2)} KB`,
+        mimeType: file.mimetype,
+      },
+    });
+
+    // Save Analysis History
+    await AnalysisHistory.create({
+      user: req.user._id,
+      score: safePipeline.score || 0,
+      classification: safePipeline.classification?.level || "Beginner",
+      skills: safeData.skills || [],
+      missingSkills: safePipeline.skillMatch?.missingSkills || [],
+      suggestions: safePipeline.gapAnalysis?.suggestions || [],
+      breakdown: safePipeline.breakdown || {},
+      mode: pipelineResult.mode || "match",
+    });
+
+    // Clean up: Limit history to last 10 versions to prevent bloat
+    const historyCount = await AnalysisHistory.countDocuments({ user: req.user._id });
+    if (historyCount > 10) {
+      const surplus = historyCount - 10;
+      const oldestRecords = await AnalysisHistory.find({ user: req.user._id })
+        .sort({ createdAt: 1 })
+        .limit(surplus)
+        .select("_id");
+
+      if (oldestRecords.length > 0) {
+        await AnalysisHistory.deleteMany({
+          _id: { $in: oldestRecords.map((r) => r._id) },
+        });
+      }
+    }
+
+    console.timeEnd("ResumeAnalysis");
+
+    return res.status(200).json({
+      success: true,
+      message: "Resume analyzed successfully",
+      resumeId: savedResume._id,
+      data: safeData,
+      ...safePipeline,
+      verifiedLinks,
+      file: savedResume.file,
+    });
+  } catch (error) {
+    console.error("[analyzeResume]", error);
+    return next(
+      error instanceof AppError
+        ? error
+        : new AppError(
+            error.message || "Resume analysis failed",
+            error.statusCode || 500
+          )
+    );
   }
-
-  console.timeEnd("ResumeAnalysis");
-
-  return res.status(200).json({
-    success: true,
-    message: "Resume analyzed successfully",
-    resumeId: savedResume._id,
-    data: safeData,
-    ...safePipeline,
-    verifiedLinks,
-    file: savedResume.file,
-  });
 });
 
 export const getResumeResult = asyncHandler(async (req, res, next) => {
