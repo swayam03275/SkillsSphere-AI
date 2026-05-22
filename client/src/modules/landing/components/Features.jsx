@@ -184,181 +184,105 @@ const Features = () => {
   const featuresList = [
     {
       key: "classroom",
-      eyebrow: "Collaborative learning",
-      accent: "from-sky-500/20 via-cyan-400/10 to-transparent",
       icon: <Video className="text-[var(--primary)]" size={32} />,
       title: "Live Interactive Classrooms",
       description:
         "Run real-time sessions with video, chat, and collaboration so learners can practice while tutors guide them.",
-      metric: "Live room",
-      stat: "Streaming now",
+      metric: "Live",
     },
     {
       key: "resume",
-      eyebrow: "Document intelligence",
-      accent: "from-fuchsia-500/20 via-violet-400/10 to-transparent",
       icon: <FileText style={{ color: "#A855F7" }} size={32} />,
       title: "AI Resume Analyzer",
       description:
         "Upload a resume, get ATS scoring, identify missing keywords, and see targeted improvement suggestions.",
       metric: "ATS 86",
-      stat: "PDF review",
     },
     {
       key: "matcher",
-      eyebrow: "Role fit analysis",
-      accent: "from-emerald-500/20 via-teal-400/10 to-transparent",
       icon: <FileSearch className="text-[var(--primary)]" size={32} />,
       title: "Resume vs JD Matcher",
       description:
         "Compare a candidate profile with a job description to understand fit, gaps, and role-specific readiness.",
       metric: "92%",
-      stat: "Role match",
     },
     {
       key: "interview",
-      eyebrow: "Interview practice",
-      accent: "from-orange-500/20 via-rose-400/10 to-transparent",
       icon: <Mic style={{ color: "var(--accent)" }} size={32} />,
       title: "AI Mock Interview System",
       description:
         "Practice realistic interview prompts and receive structured feedback on clarity, depth, and confidence.",
       metric: "Ready",
-      stat: "Live prompt",
     },
     {
       key: "dashboard",
-      eyebrow: "Progress tracking",
-      accent: "from-amber-500/20 via-yellow-400/10 to-transparent",
       icon: <LineChart style={{ color: "var(--secondary)" }} size={32} />,
       title: "Skill Tracking Dashboard",
       description:
         "Track progress across learning, resume quality, interview practice, and hiring-readiness signals.",
       metric: "+18%",
-      stat: "Momentum",
     },
     {
       key: "auth",
-      eyebrow: "Trust and access",
-      accent: "from-slate-500/25 via-slate-300/10 to-transparent",
       icon: <ShieldCheck style={{ color: "var(--secondary)" }} size={32} />,
       title: "Secure Auth & Verification",
       description:
         "Support real users with OTP verification, password recovery, protected routes, and role-aware access.",
       metric: "OTP",
-      stat: "Verified",
     },
   ];
 
-  const spotlightFeatures = featuresList.slice(0, 2);
-  const comparisonFeatures = featuresList.slice(2);
-
   return (
-    <section className="py-28 px-4 bg-[var(--surface)] relative isolate overflow-hidden sm:py-16 max-sm:py-10">
+    <section className="py-28 px-4 bg-[var(--surface)] relative sm:py-16 max-sm:py-10">
       {/* Light mode gradient background */}
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden -z-0">
         <style>{`
           html:not(.dark) .feat-orb-1 { opacity: 1 !important; }
           html:not(.dark) .feat-orb-2 { opacity: 1 !important; }
-          html:not(.dark) .feat-section-bg { background: linear-gradient(160deg, #f6f2ff 0%, #ffffff 42%, #effdf4 100%) !important; }
+          html:not(.dark) .feat-section-bg { background: linear-gradient(160deg, #faf5ff 0%, #ffffff 50%, #f0fdf4 100%) !important; }
         `}</style>
-        <div className="feat-section-bg absolute inset-0" style={{ opacity: 1 }} />
-        <div className="feat-orb-1 absolute -top-24 left-[8%] h-[440px] w-[440px] rounded-full blur-3xl opacity-80"
-          style={{ background: 'radial-gradient(circle, rgba(124,58,237,0.16) 0%, rgba(124,58,237,0.06) 38%, transparent 72%)' }}
+        <div className="feat-section-bg absolute inset-0" style={{ opacity: 0 }} />
+        <div className="feat-orb-1 absolute -top-20 left-1/4 w-[400px] h-[400px] rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(124,58,237,0.10) 0%, transparent 70%)', filter: 'blur(50px)', opacity: 0 }}
         />
-        <div className="feat-orb-2 absolute -bottom-28 right-[8%] h-[420px] w-[420px] rounded-full blur-3xl opacity-80"
-          style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.15) 0%, rgba(59,130,246,0.08) 40%, transparent 74%)' }}
+        <div className="feat-orb-2 absolute bottom-0 right-1/4 w-[350px] h-[350px] rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(5,150,105,0.09) 0%, transparent 70%)', filter: 'blur(50px)', opacity: 0 }}
         />
       </div>
-      <div className="container relative z-10">
+      <div className="container">
         <div className="text-center mb-16 max-w-[700px] mx-auto sm:mb-12 max-sm:mb-8">
-          <h2 className="text-[clamp(1.5rem,4vw,2.5rem)] font-bold mb-4 leading-tight text-slate-950 dark:text-white">
+          <h2 className="text-[clamp(1.5rem,4vw,2.5rem)] font-bold mb-4 leading-tight">
             Core <span className="text-gradient">Features</span>
           </h2>
-          <p className="mx-auto max-w-2xl text-slate-700 text-lg leading-relaxed sm:text-base max-sm:text-[0.95rem] dark:text-[var(--text-muted)]">
+          <p className="text-[var(--text-muted)] text-lg leading-relaxed sm:text-base max-sm:text-[0.95rem]">
             Each module moves users from learning to measurable readiness with
             feedback they can act on.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 max-sm:gap-4">
-          {spotlightFeatures.map((feature, index) => (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4 max-sm:gap-4">
+          {featuresList.map((feature, index) => (
             <Card
               key={feature.key}
-              className="feature-card-surface flex min-h-[450px] flex-col p-6 sm:p-6 max-sm:p-5 backdrop-blur-sm"
-              hoverEffect={false}
+              className={`flex min-h-[420px] flex-col p-6 sm:p-6 max-sm:p-5 ${index === 4 ? "xl:col-start-2" : ""}`}
+              hoverEffect={true}
             >
-              <div className="relative mb-6 flex items-start justify-between gap-4">
-                <div className="inline-flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[linear-gradient(145deg,var(--surface),rgba(255,255,255,0.03))] px-4 py-3 shadow-[var(--shadow-soft)]">
-                  <span className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--surface-soft)] ring-1 ring-white/10">
-                    <span className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/15 to-transparent opacity-70" aria-hidden />
-                    {feature.icon}
-                  </span>
-                  <div className="space-y-0.5">
-                    <p className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-[var(--text-muted)]">
-                      {feature.eyebrow}
-                    </p>
-                    <p className="text-xs font-semibold text-[var(--text-main)]">{feature.stat}</p>
-                  </div>
+              <div className="mb-6 flex items-start justify-between gap-4">
+                <div className="inline-flex p-3 bg-[var(--surface-soft)] rounded-lg border border-[var(--border)]">
+                  {feature.icon}
                 </div>
-                <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface)_82%,white_8%)] px-3 py-2 text-xs font-bold text-[var(--text-main)] shadow-[var(--shadow-soft)]">
-                  <span className="h-2 w-2 rounded-full bg-[var(--secondary)] animate-pulse-soft" />
+                <span className="rounded-full border border-[var(--border)] bg-[var(--background)] px-3 py-1 text-xs font-bold text-[var(--text-muted)]">
                   {feature.metric}
                 </span>
               </div>
-              <h3 className="relative z-10 text-xl font-semibold mb-3 leading-snug sm:text-lg max-sm:text-base">
+              <h3 className="text-xl font-semibold mb-3 leading-snug sm:text-lg max-sm:text-base">
                 {feature.title}
               </h3>
-              <p className="relative z-10 text-[var(--text-muted)] text-[0.95rem] leading-relaxed max-sm:text-sm">
+              <p className="text-[var(--text-muted)] text-[0.95rem] leading-relaxed max-sm:text-sm">
                 {feature.description}
               </p>
 
-              <div className="relative mt-auto pt-6">
-                <div className="relative overflow-hidden rounded-2xl border border-[var(--border)] bg-[linear-gradient(160deg,var(--background),rgba(255,255,255,0.03))] p-3 shadow-[var(--shadow-soft)]">
-                  {previews[feature.key]}
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-
-        <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-4 md:grid-cols-2 max-sm:gap-4">
-          {comparisonFeatures.map((feature, index) => (
-            <Card
-              key={feature.key}
-              className="feature-card-surface flex min-h-[450px] flex-col p-6 sm:p-6 max-sm:p-5 backdrop-blur-sm"
-              hoverEffect={false}
-            >
-              <div className="relative mb-6 flex items-start justify-between gap-4">
-                <div className="inline-flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[linear-gradient(145deg,var(--surface),rgba(255,255,255,0.03))] px-4 py-3 shadow-[var(--shadow-soft)]">
-                  <span className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--surface-soft)] ring-1 ring-white/10">
-                    <span className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/15 to-transparent opacity-70" aria-hidden />
-                    {feature.icon}
-                  </span>
-                  <div className="space-y-0.5">
-                    <p className="text-[0.65rem] font-semibold uppercase tracking-[0.24em] text-[var(--text-muted)]">
-                      {feature.eyebrow}
-                    </p>
-                    <p className="text-xs font-semibold text-[var(--text-main)]">{feature.stat}</p>
-                  </div>
-                </div>
-                <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface)_82%,white_8%)] px-3 py-2 text-xs font-bold text-[var(--text-main)] shadow-[var(--shadow-soft)]">
-                  <span className="h-2 w-2 rounded-full bg-[var(--secondary)] animate-pulse-soft" />
-                  {feature.metric}
-                </span>
-              </div>
-              <h3 className="relative z-10 text-xl font-semibold mb-3 leading-snug sm:text-lg max-sm:text-base">
-                {feature.title}
-              </h3>
-              <p className="relative z-10 text-[var(--text-muted)] text-[0.95rem] leading-relaxed max-sm:text-sm">
-                {feature.description}
-              </p>
-
-              <div className="relative mt-auto pt-6">
-                <div className="relative overflow-hidden rounded-2xl border border-[var(--border)] bg-[linear-gradient(160deg,var(--background),rgba(255,255,255,0.03))] p-3 shadow-[var(--shadow-soft)]">
-                  {previews[feature.key]}
-                </div>
-              </div>
+              <div className="mt-auto pt-6">{previews[feature.key]}</div>
             </Card>
           ))}
         </div>
