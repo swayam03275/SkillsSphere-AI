@@ -8,7 +8,7 @@ This document provides comprehensive guidance on the Notifications REST API syst
 
 ### Directory Structure
 
-```
+```bash
 server/src/modules/notifications/
 ├── controller.js          # HTTP request handlers
 ├── service.js             # Business logic layer
@@ -21,7 +21,7 @@ server/src/modules/notifications/
 
 ### Database Model
 
-```
+```bash
 server/src/database/models/Notification.js
 ```
 
@@ -330,7 +330,7 @@ io.to(`user_${userId}`).emit("new-notification", notificationData);
 
 #### 1. Get All Notifications
 
-```
+```bash
 GET http://localhost:5000/api/notifications?page=1&limit=20
 Headers:
   Authorization: Bearer <YOUR_JWT_TOKEN>
@@ -339,7 +339,7 @@ Headers:
 
 #### 2. Create a Notification
 
-```
+```bash
 POST http://localhost:5000/api/notifications
 Headers:
   Authorization: Bearer <YOUR_JWT_TOKEN>
@@ -359,7 +359,7 @@ Body:
 
 #### 3. Get Unread Count
 
-```
+```bash
 GET http://localhost:5000/api/notifications/unread-count
 Headers:
   Authorization: Bearer <YOUR_JWT_TOKEN>
@@ -367,7 +367,7 @@ Headers:
 
 #### 4. Mark as Read
 
-```
+```bash
 PATCH http://localhost:5000/api/notifications/notif-id/read
 Headers:
   Authorization: Bearer <YOUR_JWT_TOKEN>
@@ -375,7 +375,7 @@ Headers:
 
 #### 5. Mark All as Read
 
-```
+```bash
 PATCH http://localhost:5000/api/notifications/mark-all/read
 Headers:
   Authorization: Bearer <YOUR_JWT_TOKEN>
@@ -383,7 +383,7 @@ Headers:
 
 #### 6. Delete Notification
 
-```
+```bash
 DELETE http://localhost:5000/api/notifications/notif-id
 Headers:
   Authorization: Bearer <YOUR_JWT_TOKEN>
@@ -391,7 +391,7 @@ Headers:
 
 #### 7. Delete All Notifications
 
-```
+```bash
 DELETE http://localhost:5000/api/notifications
 Headers:
   Authorization: Bearer <YOUR_JWT_TOKEN>
