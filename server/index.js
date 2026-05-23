@@ -4,6 +4,7 @@ import cors from "cors";
 dotenv.config({ override: true });
 
 import http from "http";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Server } from "socket.io";
 import connectDB from "./src/database/db.js";
 import authRoutes from "./src/modules/auth/routes.js";
@@ -86,24 +87,31 @@ app.get("/health", (req, res) => {
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-app.post("/api/chat", (req, res) => {
+app.post("/api/chat", async (req, res) => {
   try {
     const { message } = req.body;
     if (!message) {
       return res.status(400).json({ error: "Message required" });
     }
-    let reply = "I didn't understand that.";
-    const msg = message.toLowerCase();
-    if (msg.includes("hello") || msg.includes("hi")) {
-      reply = "Hi! How can I help you?";
-    } else if (msg.includes("help")) {
-      reply = "Sure! Tell me what you need help with.";
-    } else if (msg.includes("resume")) {
-      reply = "You can upload or manage your resumes here.";
+
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(503).json({ error: "AI service is currently unconfigured. Please set GEMINI_API_KEY in .env" });
     }
+
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    const prompt = `You are the "SkillsSphere Career Assistant", an expert AI specializing in tech careers, resumes, recruitment, and technical interviews. 
+Keep your answers concise, helpful, and professional. If the user asks something completely unrelated to careers or the platform, politely decline to answer.
+User message: ${message}`;
+
+    const result = await model.generateContent(prompt);
+    const reply = result.response.text();
+
     res.json({ reply });
   } catch (error) {
-    res.status(500).json({ error: "Server error" });
+    console.error("Chat API error:", error);
+    res.status(500).json({ error: "Failed to generate AI response" });
   }
 });
 
