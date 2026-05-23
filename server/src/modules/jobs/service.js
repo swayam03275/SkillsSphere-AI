@@ -655,6 +655,28 @@ export const getApplicantAnalytics = async (recruiterId) => {
       totalApplicants: 0,
       applicantsByStatus: { pending: 0, reviewed: 0, shortlisted: 0, rejected: 0 },
       applicantsPerJob: [],
+      averageAiMatchScore: 0,
+      topCandidatesCount: 0,
+      matchCategoryDistribution: {
+        "Excellent Match": 0,
+        "Moderate Match": 0,
+        "Growth Potential": 0,
+        "Weak Alignment": 0
+      },
+      averageAtsScore: 0,
+      atsReadyPercentage: 0,
+      lowAtsCount: 0,
+      ossContributorCount: 0,
+      ossContributorPercentage: 0,
+      activeRoadmapCount: 0,
+      specializationCounts: {
+        frontend: 0,
+        backend: 0,
+        fullstack: 0,
+        devops: 0,
+        aiml: 0,
+        database: 0
+      }
     };
   }
 
@@ -699,10 +721,126 @@ export const getApplicantAnalytics = async (recruiterId) => {
     },
   ]);
 
+  // Dynamic Hiring Intelligence Metrics
+  const allApps = await JobApplication.find({ job: { $in: jobIds } }).lean();
+
+  let totalScored = 0;
+  let totalScoreSum = 0;
+  let topCandidatesCount = 0;
+  
+  let totalAtsScored = 0;
+  let totalAtsSum = 0;
+  let atsReadyCount = 0;
+  let lowAtsCount = 0;
+
+  let ossContributorCount = 0;
+  let activeRoadmapCount = 0;
+
+  const matchCategoryDistribution = {
+    "Excellent Match": 0,
+    "Moderate Match": 0,
+    "Growth Potential": 0,
+    "Weak Alignment": 0
+  };
+
+  allApps.forEach(app => {
+    // AI Match Scores
+    if (app.aiMatchScore !== null && app.aiMatchScore !== undefined) {
+      totalScored += 1;
+      totalScoreSum += app.aiMatchScore;
+      if (app.aiMatchScore >= 85) {
+        topCandidatesCount += 1;
+      }
+    }
+
+    if (app.matchCategory) {
+      if (matchCategoryDistribution[app.matchCategory] !== undefined) {
+        matchCategoryDistribution[app.matchCategory] += 1;
+      }
+    }
+
+    // Breakdown details
+    if (app.matchBreakdown) {
+      const ats = app.matchBreakdown.atsCompatibility;
+      if (ats !== null && ats !== undefined) {
+        totalAtsScored += 1;
+        totalAtsSum += ats;
+        if (ats >= 80) {
+          atsReadyCount += 1;
+        }
+        if (ats < 50) {
+          lowAtsCount += 1;
+        }
+      }
+
+      const contr = app.matchBreakdown.contributionActivity;
+      if (contr === "High" || contr === "Medium") {
+        ossContributorCount += 1;
+      }
+
+      const career = app.matchBreakdown.careerReadiness;
+      if (career === "High" || career === "Medium") {
+        activeRoadmapCount += 1;
+      }
+    }
+  });
+
+  const averageAiMatchScore = totalScored > 0 ? Math.round(totalScoreSum / totalScored) : 0;
+  const averageAtsScore = totalAtsScored > 0 ? Math.round(totalAtsSum / totalAtsScored) : 0;
+  const atsReadyPercentage = totalAtsScored > 0 ? Math.round((atsReadyCount / totalAtsScored) * 100) : 0;
+  const ossContributorPercentage = totalApplicants > 0 ? Math.round((ossContributorCount / totalApplicants) * 100) : 0;
+
+  // Query resumes to count specialization statistics
+  const applicationsWithResumes = await JobApplication.find({ job: { $in: jobIds } })
+    .select("resume")
+    .populate("resume", "skills")
+    .lean();
+
+  const specMap = {
+    frontend: ['html', 'css', 'react', 'angular', 'vue', 'javascript', 'typescript', 'tailwind', 'next.js', 'nextjs', 'redux', 'frontend', 'front-end'],
+    backend: ['node.js', 'nodejs', 'express', 'python', 'django', 'fastapi', 'java', 'spring', 'ruby', 'rails', 'go', 'golang', 'php', 'backend', 'back-end'],
+    devops: ['docker', 'kubernetes', 'aws', 'gcp', 'azure', 'ci/cd', 'cicd', 'git', 'github actions', 'terraform', 'ansible', 'devops'],
+    aiml: ['machine learning', 'deep learning', 'pytorch', 'tensorflow', 'scikit-learn', 'nlp', 'computer vision', 'ai', 'ml', 'artificial intelligence'],
+    database: ['sql', 'mysql', 'postgresql', 'postgres', 'mongodb', 'redis', 'oracle', 'sqlite', 'cassandra', 'dynamodb', 'database']
+  };
+
+  const specializationCounts = { frontend: 0, backend: 0, fullstack: 0, devops: 0, aiml: 0, database: 0 };
+
+  applicationsWithResumes.forEach(app => {
+    const skills = (app.resume?.skills || []).map(s => s.toLowerCase().trim());
+    if (skills.length === 0) return;
+
+    let hasFrontend = skills.some(s => specMap.frontend.includes(s));
+    let hasBackend = skills.some(s => specMap.backend.includes(s));
+    let hasDevops = skills.some(s => specMap.devops.includes(s));
+    let hasAiml = skills.some(s => specMap.aiml.includes(s));
+    let hasDatabase = skills.some(s => specMap.database.includes(s));
+
+    if (hasFrontend && hasBackend) {
+      specializationCounts.fullstack += 1;
+    } else {
+      if (hasFrontend) specializationCounts.frontend += 1;
+      if (hasBackend) specializationCounts.backend += 1;
+    }
+    if (hasDevops) specializationCounts.devops += 1;
+    if (hasAiml) specializationCounts.aiml += 1;
+    if (hasDatabase) specializationCounts.database += 1;
+  });
+
   return {
     totalApplicants,
     applicantsByStatus,
     applicantsPerJob: perJobAgg,
+    averageAiMatchScore,
+    topCandidatesCount,
+    matchCategoryDistribution,
+    averageAtsScore,
+    atsReadyPercentage,
+    lowAtsCount,
+    ossContributorCount,
+    ossContributorPercentage,
+    activeRoadmapCount,
+    specializationCounts
   };
 };
 
