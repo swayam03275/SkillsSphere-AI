@@ -4,6 +4,7 @@ import fs from "fs/promises";
 import path from "path";
 import {
   validateAndPersistResumeFile,
+  persistValidatedResumeFile,
   removeUploadedFile,
 } from "../uploadResume.js";
 
@@ -78,6 +79,63 @@ describe("validateAndPersistResumeFile middleware", () => {
     const onDisk = await fs.readFile(req.file.path);
     assert.equal(onDisk.subarray(0, 5).toString(), "%PDF-");
 
-    removeUploadedFile(req.file.path);
+    await removeUploadedFile(req.file.path);
+  });
+});
+
+describe("persistValidatedResumeFile", () => {
+  it("is an async function and resolves with filename and filePath", async () => {
+    // Verify the function itself is declared async
+    assert.equal(
+      persistValidatedResumeFile.constructor.name,
+      "AsyncFunction",
+      "persistValidatedResumeFile should be an async function"
+    );
+
+    const { filename, filePath } = await persistValidatedResumeFile(
+      Buffer.from("%PDF-1.4\n%EOF"),
+      "test.pdf"
+    );
+    assert.ok(filename.endsWith(".pdf"));
+    assert.ok(filePath.includes("uploads"));
+
+    // Verify file is actually on disk
+    const onDisk = await fs.readFile(filePath);
+    assert.equal(onDisk.subarray(0, 5).toString(), "%PDF-");
+
+    await removeUploadedFile(filePath);
+  });
+});
+
+describe("removeUploadedFile", () => {
+  it("asynchronously removes a file that exists", async () => {
+    // Write a temp file to remove
+    const tmpPath = path.join(uploadDirectory, `__test-remove-${Date.now()}.txt`);
+    await fs.writeFile(tmpPath, "temp");
+
+    // Confirm it exists
+    await assert.doesNotReject(fs.access(tmpPath));
+
+    await removeUploadedFile(tmpPath);
+
+    // Confirm it is gone — readFile should fail after deletion
+    let fileStillExists = false;
+    try {
+      await fs.readFile(tmpPath);
+      fileStillExists = true;
+    } catch {
+      fileStillExists = false;
+    }
+    assert.equal(fileStillExists, false, "file should have been deleted");
+  });
+
+  it("does not throw when file does not exist", async () => {
+    const fakePath = path.join(uploadDirectory, "__nonexistent-file.pdf");
+    await assert.doesNotReject(removeUploadedFile(fakePath));
+  });
+
+  it("does not throw when called with null or undefined", async () => {
+    await assert.doesNotReject(removeUploadedFile(null));
+    await assert.doesNotReject(removeUploadedFile(undefined));
   });
 });
