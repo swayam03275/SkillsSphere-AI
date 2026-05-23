@@ -29,6 +29,7 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './src/config/swaggerConfig.js';
 import { validateEnv } from './src/config/validateEnv.js';
 import analyticsRoutes from "./src/modules/analytics/routes.js";
+import { generateCareerAssistantReply } from "./src/utils/geminiService.js";
 const app = express();
 app.set("trust proxy", 1);
 const PORT = process.env.PORT || 5000;
@@ -86,22 +87,37 @@ app.get("/health", (req, res) => {
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-app.post("/api/chat", (req, res) => {
+const getStaticChatReply = (message) => {
+  const msg = message.toLowerCase();
+  if (msg.includes("hello") || msg.includes("hi")) {
+    return "Hi! How can I help you?";
+  }
+  if (msg.includes("help")) {
+    return "Sure! Tell me what you need help with.";
+  }
+  if (msg.includes("resume")) {
+    return "You can upload or manage your resumes here.";
+  }
+  return "I can help with resumes, interviews, career planning, and skill development.";
+};
+
+app.post("/api/chat", async (req, res) => {
   try {
     const { message } = req.body;
-    if (!message) {
+    if (!message || typeof message !== "string") {
       return res.status(400).json({ error: "Message required" });
     }
-    let reply = "I didn't understand that.";
-    const msg = message.toLowerCase();
-    if (msg.includes("hello") || msg.includes("hi")) {
-      reply = "Hi! How can I help you?";
-    } else if (msg.includes("help")) {
-      reply = "Sure! Tell me what you need help with.";
-    } else if (msg.includes("resume")) {
-      reply = "You can upload or manage your resumes here.";
+
+    const result = await generateCareerAssistantReply(message);
+    if (result.success) {
+      return res.json({ reply: result.text });
     }
-    res.json({ reply });
+
+    return res.json({
+      reply: getStaticChatReply(message),
+      fallback: true,
+      reason: result.error,
+    });
   } catch (error) {
     res.status(500).json({ error: "Server error" });
   }
