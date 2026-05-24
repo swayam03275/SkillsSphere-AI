@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import ClassroomSession from "../../database/models/ClassroomSession.js";
 import AppError from "../../utils/AppError.js";
+import { clearRoomState } from "./socket.js";
 
 /**
  * Create a new live classroom session
@@ -79,6 +80,9 @@ export const endSession = async (roomId, hostId) => {
   session.status = "ended";
   session.endedAt = new Date();
   await session.save();
+
+  // Clear in-memory room state to prevent memory leaks
+  clearRoomState(roomId);
 
   return session;
 };
