@@ -10,9 +10,15 @@ if (!fs.existsSync(uploadDirectory)) {
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadDirectory),
-  filename: (req, _file, cb) => {
-    // One avatar per user — overwrite by using userId as filename
-    cb(null, `avatar-${req.user._id}.jpg`);
+  filename: (req, file, cb) => {
+    const extMap = {
+      "image/jpeg": ".jpg",
+      "image/png": ".png",
+      "image/webp": ".webp",
+      "image/gif": ".gif",
+    };
+    const extension = extMap[file.mimetype] || path.extname(file.originalname).toLowerCase() || ".jpg";
+    cb(null, `avatar-${req.user._id}${extension}`);
   },
 });
 

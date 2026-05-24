@@ -1,9 +1,7 @@
 import multer from "multer";
 import fs from "fs";
-import fsPromises from "fs/promises";
 import path from "path";
 import { validateResumeBufferSignatureSync } from "../utils/validateFileSignature.js";
-import asyncHandler from "../utils/asyncHandler.js";
 
 const uploadDirectory = path.join(process.cwd(), "src", "uploads");
 
@@ -42,29 +40,32 @@ const upload = multer({
   },
 });
 
-export const removeUploadedFile = async (filePath) => {
+export const removeUploadedFile = (filePath) => {
   if (!filePath) return;
   try {
-    await fsPromises.unlink(filePath);
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
   } catch {
     // Best-effort cleanup after rejected upload
   }
 };
 
 const buildStoredFilename = (originalName) => {
-  const safeName = path.basename(originalName);
-  const ext = path.extname(safeName);
-  const name = safeName.replace(ext, "").replace(/\s+/g, "-");
+  const safeBasename = path.basename(originalName);
+  const ext = path.extname(safeBasename).toLowerCase();
+  const name = safeBasename
+    .replace(ext, "")
+    .replace(/[^a-zA-Z0-9-_]/g, "-")
+    .replace(/\s+/g, "-");
   return `${Date.now()}-${name}${ext}`;
 };
 
 /**
  * Write a validated resume buffer to disk (call only after magic-byte checks pass).
  */
-export const persistValidatedResumeFile = async (buffer, originalName) => {
+export const persistValidatedResumeFile = (buffer, originalName) => {
   const filename = buildStoredFilename(originalName);
   const filePath = path.join(uploadDirectory, filename);
-  await fsPromises.writeFile(filePath, buffer);
+  fs.writeFileSync(filePath, buffer);
   return { filename, filePath };
 };
 
@@ -122,7 +123,7 @@ export const parseResumeUpload = (req, res, next) => {
 /**
  * Step 2: Validate magic bytes from memory, then persist only authentic files.
  */
-export const validateAndPersistResumeFile = asyncHandler(async (req, res, next) => {
+export const validateAndPersistResumeFile = (req, res, next) => {
   if (!req.file) {
     return next();
   }
@@ -142,7 +143,7 @@ export const validateAndPersistResumeFile = asyncHandler(async (req, res, next) 
     });
   }
 
-  const { filename, filePath } = await persistValidatedResumeFile(
+  const { filename, filePath } = persistValidatedResumeFile(
     req.file.buffer,
     req.file.originalname
   );
@@ -152,7 +153,7 @@ export const validateAndPersistResumeFile = asyncHandler(async (req, res, next) 
   req.file.destination = uploadDirectory;
 
   return next();
-});
+};
 
 /** @deprecated Use parseResumeUpload + validateAndPersistResumeFile */
 export const validateResumeFileContent = validateAndPersistResumeFile;
