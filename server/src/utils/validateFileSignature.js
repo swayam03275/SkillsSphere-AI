@@ -1,4 +1,5 @@
 import fs from "fs";
+import fsPromises from "fs/promises";
 
 const HEADER_READ_BYTES = 8192;
 
@@ -135,21 +136,29 @@ export const validateResumeBufferSignatureSync = (buffer, originalName) => {
   return validateHeaderForExtension(sampleHeader(buffer), extension);
 };
 
-const readFileHeaderSync = (filePath) => {
-  const fd = fs.openSync(filePath, "r");
+/**
+ * Read the first HEADER_READ_BYTES of a file without blocking the event loop.
+ * @param {string} filePath
+ * @returns {Promise<Buffer>}
+ */
+const readFileHeader = async (filePath) => {
+  const fh = await fsPromises.open(filePath, "r");
   try {
     const buffer = Buffer.alloc(HEADER_READ_BYTES);
-    const bytesRead = fs.readSync(fd, buffer, 0, HEADER_READ_BYTES, 0);
+    const { bytesRead } = await fh.read(buffer, 0, HEADER_READ_BYTES, 0);
     return buffer.subarray(0, bytesRead);
   } finally {
-    fs.closeSync(fd);
+    await fh.close();
   }
 };
 
 /**
- * Validate magic bytes from a file already on disk (e.g. legacy call sites).
+ * Validate magic bytes from a file already on disk using non-blocking async I/O.
+ * @param {string} filePath
+ * @param {string} originalName
+ * @returns {Promise<{ valid: boolean, message?: string }>}
  */
-export const validateResumeFileSignatureSync = (filePath, originalName) => {
+export const validateResumeFileSignature = async (filePath, originalName) => {
   const extension = getExtension(originalName);
 
   if (!extension) {
@@ -162,7 +171,7 @@ export const validateResumeFileSignatureSync = (filePath, originalName) => {
 
   let header;
   try {
-    header = readFileHeaderSync(filePath);
+    header = await readFileHeader(filePath);
   } catch {
     return {
       valid: false,
@@ -173,8 +182,25 @@ export const validateResumeFileSignatureSync = (filePath, originalName) => {
   return validateHeaderForExtension(header, extension);
 };
 
-export const validateResumeFileSignature = async (filePath, originalName) =>
-  validateResumeFileSignatureSync(filePath, originalName);
+/** @deprecated Use validateResumeFileSignature (async) */
+export const validateResumeFileSignatureSync = (filePath, originalName) => {
+  const extension = getExtension(originalName);
+  if (!extension) return { valid: false, message: "Unsupported file type. Only PDF, DOC, DOCX, and TXT files are allowed." };
+  let header;
+  try {
+    const fd = fs.openSync(filePath, "r");
+    try {
+      const buf = Buffer.alloc(HEADER_READ_BYTES);
+      const bytesRead = fs.readSync(fd, buf, 0, HEADER_READ_BYTES, 0);
+      header = buf.subarray(0, bytesRead);
+    } finally {
+      fs.closeSync(fd);
+    }
+  } catch {
+    return { valid: false, message: "Unable to read the uploaded file for validation." };
+  }
+  return validateHeaderForExtension(header, extension);
+};
 
 export const __testables = {
   isPdfSignature,
