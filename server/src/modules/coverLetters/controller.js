@@ -1,4 +1,5 @@
 import CoverLetter from "../../database/models/CoverLetter.js";
+import { generateCoverLetterService } from "./service.js";
 import asyncHandler from "../../utils/asyncHandler.js";
 import AppError from "../../utils/AppError.js";
 
@@ -43,5 +44,27 @@ export const getCoverLetterById = asyncHandler(async (req, res, next) => {
   res.status(200).json({
     success: true,
     data: coverLetter,
+  });
+});
+
+/**
+ * @desc    Generate a new personalized cover letter
+ * @route   POST /api/cover-letters/generate
+ * @access  Private (Student)
+ */
+export const generateCoverLetter = asyncHandler(async (req, res, next) => {
+  const userId = req.user._id || req.user.id;
+  const { resumeId, jobDescription } = req.body;
+
+  if (!resumeId || !jobDescription) {
+    return next(new AppError("Resume ID and Job Description are required", 400));
+  }
+
+  const newCoverLetter = await generateCoverLetterService(userId, resumeId, jobDescription);
+
+  res.status(201).json({
+    success: true,
+    message: "Cover letter generated successfully",
+    data: newCoverLetter,
   });
 });
