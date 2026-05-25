@@ -23,6 +23,7 @@ import notificationRoutes from "./src/modules/notifications/routes.js";
 import userRoutes from "./src/modules/users/routes.js";
 import interviewRoutes from "./src/modules/interviews/routes.js";
 import fileRoutes from "./src/modules/files/routes.js";
+import chatRoutes from "./src/modules/chat/routes.js";
 import { initClassroomSockets } from "./src/modules/classrooms/socket.js";
 import { initInterviewSockets } from "./src/modules/interviews/socket.js";
 import globalErrorHandler from "./src/middleware/errorMiddleware.js";
@@ -97,34 +98,6 @@ app.get("/health", (req, res) => {
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-app.post("/api/chat", async (req, res) => {
-  try {
-    const { message } = req.body;
-    if (!message) {
-      return res.status(400).json({ error: "Message required" });
-    }
-
-    if (!process.env.GEMINI_API_KEY) {
-      return res.status(503).json({ error: "AI service is currently unconfigured. Please set GEMINI_API_KEY in .env" });
-    }
-
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-    const prompt = `You are the "SkillsSphere Career Assistant", an expert AI specializing in tech careers, resumes, recruitment, and technical interviews. 
-Keep your answers concise, helpful, and professional. If the user asks something completely unrelated to careers or the platform, politely decline to answer.
-User message: ${message}`;
-
-    const result = await model.generateContent(prompt);
-    const reply = result.response.text();
-
-    res.json({ reply });
-  } catch (error) {
-    console.error("Chat API error:", error);
-    res.status(500).json({ error: "Failed to generate AI response" });
-  }
-});
-
 app.use("/api/auth", requireDB, authRoutes);
 app.use("/api/resume", requireDB, resumeRoutes);
 app.use("/api/jobs", requireDB, jobRoutes);
@@ -136,6 +109,7 @@ app.use("/api/classrooms", requireDB, classroomRoutes);
 app.use("/api/users", requireDB, userRoutes);
 app.use("/api/interviews", requireDB, interviewRoutes);
 app.use("/api/files", requireDB, fileRoutes);
+app.use("/api/chat", requireDB, chatRoutes);
 app.use("/api/notifications", requireDB, notificationRoutes);
 app.use("/api/analytics", requireDB, analyticsRoutes);
 
