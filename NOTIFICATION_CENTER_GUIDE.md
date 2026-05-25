@@ -15,7 +15,7 @@ A complete Notification Center UI feature has been implemented for SkillsSphere-
 
 ## 📁 File Structure
 
-```
+```text
 client/src/
 ├── modules/notifications/
 │   ├── hooks/
@@ -526,7 +526,7 @@ All dependencies already in project:
 
 ### Data Flow
 
-```
+```text
 Socket Event → SocketNotificationListener
              → Redux (addLiveNotification)
              → useNotifications hook (useSelector)
@@ -536,7 +536,7 @@ Socket Event → SocketNotificationListener
 
 ### State Flow
 
-```
+```text
 User Action → useNotifications hook
             → Redux Thunk
             → API Call

@@ -179,7 +179,7 @@
 
 ## 📂 File Structure Verification
 
-```
+```text
 ✅ client/src/modules/notifications/
    ✅ hooks/
       ✅ useNotifications.js

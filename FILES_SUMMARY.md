@@ -67,6 +67,7 @@
 
 - Added import: `import NotificationsPage from "../modules/notifications/pages/NotificationsPage";`
 - Added route:
+
   ```javascript
   <Route
     path="/notifications"
@@ -122,7 +123,7 @@ These already exist in project:
 
 ## 📂 Complete Project Structure
 
-```
+```text
 SkillsSphere-AI/
 ├── client/
 │   └── src/
@@ -329,7 +330,7 @@ notifications: {
 
 ## 🔗 Component Communication Diagram
 
-```
+```text
 ┌─────────────────────────────────────┐
 │         Socket Events               │
 │  new-notification from backend      │
