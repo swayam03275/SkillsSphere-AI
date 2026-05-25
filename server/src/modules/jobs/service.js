@@ -955,6 +955,19 @@ export const updateApplicationStatus = async (applicationId, recruiterId, { stat
 
   await application.save();
 
+  // Create persistent notification in DB
+  const notif = await Notification.create({
+    userId: application.applicant,
+    type: "application",
+    title: "Application Update",
+    message: `Your application for "${application.job.title}" was updated to "${status.charAt(0).toUpperCase() + status.slice(1)}".`,
+    metadata: {
+      relatedId: application._id,
+      relatedModel: "JobApplication",
+      actionUrl: "/my-applications",
+    },
+  });
+
   // Emit real-time notification to the applicant
   const io = getIO();
   if (io) {
@@ -965,6 +978,7 @@ export const updateApplicationStatus = async (applicationId, recruiterId, { stat
       status: application.status,
       updatedAt: new Date(),
     });
+    io.to(roomName).emit("new-notification", notif);
   }
 
   return application;

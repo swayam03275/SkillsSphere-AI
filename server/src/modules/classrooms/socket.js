@@ -1,4 +1,5 @@
 import ClassroomSession from "../../database/models/ClassroomSession.js";
+import { executeCode } from "../../utils/codeExecutor.js";
 
 const roomStates = new Map();
 
@@ -15,6 +16,10 @@ function getOrCreateRoomState(roomId) {
 
 export function clearRoomState(roomId) {
   roomStates.delete(roomId);
+}
+
+export function getRoomState(roomId) {
+  return roomStates.get(roomId);
 }
 
 export function initClassroomSockets(io) {
@@ -147,12 +152,13 @@ export function initClassroomSockets(io) {
 
     // WebRTC Signaling Events
     socket.on("webrtc-offer", ({ targetSocketId, offer }) => {
-      // Validate that both sockets exist and are in the same room
+      // Validate that the requesting socket is in a room
       if (!socket.data || !socket.data.roomId) {
         socket.emit("unauthorized", { message: "You must join a room first" });
         return;
       }
 
+      // Validate that the target socket exists and is in the same room
       const targetSocket = io.sockets.sockets.get(targetSocketId);
       if (
         !targetSocket ||
@@ -255,6 +261,31 @@ export function initClassroomSockets(io) {
       socket.to(roomId).emit("code-cursor", {
         cursorPosition,
         senderId: socket.id,
+        senderName: socket.data.user?.name || "Participant",
+      });
+    });
+
+    // Execute code event
+    socket.on("execute-code-request", async ({ roomId, code, language }) => {
+      if (!socket.data || socket.data.roomId !== roomId) {
+        socket.emit("unauthorized", {
+          message: "Cross-classroom action detected",
+        });
+        return;
+      }
+
+      // Broadcast that execution has started
+      io.to(roomId).emit("execution-started", {
+        senderName: socket.data.user?.name || "Participant",
+      });
+
+      // Execute code via API
+      const result = await executeCode(language, code);
+
+      // Broadcast result
+      io.to(roomId).emit("execution-result", {
+        output: result.output,
+        isError: result.isError,
         senderName: socket.data.user?.name || "Participant",
       });
     });

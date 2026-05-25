@@ -1,38 +1,20 @@
 import axios from "axios";
 import dns from "dns";
+import { URL } from "url";
 
-/**
- * Checks if an IP address belongs to a private, loopback, or cloud metadata range.
- * This prevents SSRF attacks targeting internal networks.
- * 
- * @param {string} ip - The IP address to check
- * @returns {boolean} True if the IP is private/internal
- */
 const isPrivateIP = (ip) => {
-  // IPv4 Loopback (127.0.0.0/8)
-  if (ip.startsWith("127.")) return true;
-  
-  // Cloud Metadata (169.254.0.0/16) - Critical for AWS/GCP SSRF
-  if (ip.startsWith("169.254.")) return true;
-  
-  // IPv4 Private Networks (RFC 1918)
-  // 10.0.0.0/8
-  if (ip.startsWith("10.")) return true;
-  
-  // 172.16.0.0/12 (172.16.x.x - 172.31.x.x)
-  if (ip.startsWith("172.")) {
-    const secondOctet = parseInt(ip.split(".")[1], 10);
-    if (secondOctet >= 16 && secondOctet <= 31) return true;
+  // IPv4 Private, Loopback, Link-Local ranges
+  const parts = ip.split(".");
+  if (parts.length === 4) {
+    if (parts[0] === "10" || parts[0] === "127" || parts[0] === "0") return true;
+    if (parts[0] === "172" && parts[1] >= 16 && parts[1] <= 31) return true;
+    if (parts[0] === "192" && parts[1] === "168") return true;
+    if (parts[0] === "169" && parts[1] === "254") return true; // Cloud Metadata
   }
-  
-  // 192.168.0.0/16
-  if (ip.startsWith("192.168.")) return true;
 
-  // IPv4 Special-Purpose (0.0.0.0/8)
-  if (ip.startsWith("0.")) return true;
-
-  // IPv6 Loopback
+  // IPv6 Private & Loopback
   if (ip === "::1") return true;
+  if (ip.match(/^(f[cd][0-9a-f]{2}|fe80):/i)) return true;
 
   return false;
 };
@@ -46,29 +28,22 @@ export const verifyLink = async (url) => {
   if (!url) return { url, isValid: false, status: null };
 
   try {
-    let parsedUrl;
-    try {
-      parsedUrl = new URL(url);
-    } catch (e) {
-      return { url, isValid: false, status: null, error: "Invalid URL format" };
-    }
-
-    // Must be HTTP or HTTPS
-    if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
-      return { url, isValid: false, status: null, error: "Unsupported protocol" };
-    }
+    const parsedUrl = new URL(url);
 
     // SSRF Protection: Resolve the hostname and block private/internal IPs
     const addresses = await dns.promises.resolve(parsedUrl.hostname).catch(() => []);
     
-    // If we can't resolve it or it resolves to a local IP, block it
-    if (addresses.length === 0) {
-       return { url, isValid: false, status: null, error: "DNS resolution failed" };
-    }
-    
-    for (const ip of addresses) {
-      if (isPrivateIP(ip)) {
-        return { url, isValid: false, status: null, error: "Blocked SSRF attempt (Internal IP)" };
+    // If we resolved it, check if any IP is private
+    if (addresses.length > 0) {
+      const hasPrivateIP = addresses.some(isPrivateIP);
+      if (hasPrivateIP) {
+        return { url, isValid: false, status: null, error: "Access to internal network is forbidden" };
+      }
+    } else {
+      // If we couldn't resolve the hostname (could be an IP passed directly)
+      // We check if the hostname itself is a private IP string
+      if (isPrivateIP(parsedUrl.hostname)) {
+        return { url, isValid: false, status: null, error: "Access to internal network is forbidden" };
       }
     }
 

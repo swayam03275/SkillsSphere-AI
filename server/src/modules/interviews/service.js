@@ -9,6 +9,8 @@ import {
   evaluateAnswer,
 } from "../../integrations/aiInterviewService.js";
 import cache from "../../utils/cache.js";
+import Notification from "../../database/models/Notification.js";
+import { getIO } from "../../utils/socketIO.js";
 
 /**
  * Select random questions from the bank for a given topic and difficulty.
@@ -459,5 +461,26 @@ export const addTutorFeedback = async (sessionId, tutorId, { tutorOverallScore, 
   }
   
   await session.save();
+
+  // Create persistent notification in DB for student
+  const notif = await Notification.create({
+    userId: session.userId,
+    type: "interview",
+    title: "Interview Feedback Submitted",
+    message: `Tutor has submitted feedback for your "${session.topic}" interview.`,
+    metadata: {
+      relatedId: session._id,
+      relatedModel: "Interview",
+      actionUrl: `/mock-interview/${session._id}/results`,
+    },
+  });
+
+  // Emit real-time socket notification to the student
+  const io = getIO();
+  if (io) {
+    const roomName = `user_${session.userId}`;
+    io.to(roomName).emit("new-notification", notif);
+  }
+
   return session;
 };

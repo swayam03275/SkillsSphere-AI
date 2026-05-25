@@ -157,7 +157,7 @@ const notificationsSlice = createSlice({
         state.loading = false;
         
         // If it's page 1, replace. If it's subsequent page, append (infinite scroll logic)
-        const { notifications, pagination } = action.payload;
+        const { data: notifications = [], pagination } = action.payload;
         if (pagination.page === 1) {
           state.items = notifications;
         } else {

@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import ClassroomSession from "../../database/models/ClassroomSession.js";
 import AppError from "../../utils/AppError.js";
-import { clearRoomState } from "./socket.js";
+import { clearRoomState, getRoomState } from "./socket.js";
 
 /**
  * Create a new live classroom session
@@ -75,6 +75,13 @@ export const endSession = async (roomId, hostId) => {
 
   if (session.status === "ended") {
     return session; // already ended
+  }
+
+  // Capture final artifacts from memory state
+  const finalState = getRoomState(roomId);
+  if (finalState) {
+    session.chatHistory = finalState.chatHistory || [];
+    session.codeSnapshot = finalState.code || "";
   }
 
   session.status = "ended";

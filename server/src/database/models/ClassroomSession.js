@@ -44,6 +44,19 @@ const classroomSessionSchema = new mongoose.Schema(
       max: [100, "A session cannot exceed 100 participants"],
     },
 
+    chatHistory: [
+      {
+        sender: { type: Object },
+        message: { type: String },
+        timestamp: { type: String },
+      },
+    ],
+
+    codeSnapshot: {
+      type: String,
+      default: "",
+    },
+
     endedAt: {
       type: Date,
       default: null,

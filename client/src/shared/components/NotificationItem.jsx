@@ -1,5 +1,6 @@
 import React from "react";
 import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import { Info, CheckCircle, AlertTriangle, XCircle, Briefcase, Video, FileText, Trash2 } from "lucide-react";
 import { markAsRead, deleteNotificationById } from "../../features/notifications/notificationsSlice";
 
@@ -57,6 +58,16 @@ const getNotificationConfig = (type) => {
         icon: <FileText className="text-sky-500" size={18} />,
         bgColor: "bg-sky-500/10 border-sky-500/20",
       };
+    case "new_application":
+      return {
+        icon: <Briefcase className="text-teal-500" size={18} />,
+        bgColor: "bg-teal-500/10 border-teal-500/20",
+      };
+    case "skill_gap_alert":
+      return {
+        icon: <AlertTriangle className="text-rose-500" size={18} />,
+        bgColor: "bg-rose-500/10 border-rose-500/20",
+      };
     case "info":
     default:
       return {
@@ -68,6 +79,7 @@ const getNotificationConfig = (type) => {
 
 const NotificationItem = ({ notification, onCloseDropdown }) => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { _id, title, message, type, isRead, createdAt, metadata } = notification;
 
   const config = getNotificationConfig(type);
@@ -83,8 +95,11 @@ const NotificationItem = ({ notification, onCloseDropdown }) => {
     // Optionally handle navigation if actionUrl is present
     if (metadata?.actionUrl) {
       onCloseDropdown();
-      // Simply push/navigate, but since we are generic we let browser handle or keep user context
-      window.location.href = metadata.actionUrl;
+      if (metadata.actionUrl.startsWith("/")) {
+        navigate(metadata.actionUrl);
+      } else {
+        window.location.href = metadata.actionUrl;
+      }
     }
   };
 
@@ -131,7 +146,11 @@ const NotificationItem = ({ notification, onCloseDropdown }) => {
               onClick={(e) => {
                 e.stopPropagation();
                 onCloseDropdown();
-                window.location.href = metadata.actionUrl;
+                if (metadata.actionUrl.startsWith("/")) {
+                  navigate(metadata.actionUrl);
+                } else {
+                  window.location.href = metadata.actionUrl;
+                }
               }}
             >
               View Details &rarr;

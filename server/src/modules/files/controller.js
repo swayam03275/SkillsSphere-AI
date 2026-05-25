@@ -8,6 +8,8 @@ import asyncHandler from "../../utils/asyncHandler.js";
 import { resolveUploadPath } from "../../utils/uploadPaths.js";
 import { buildSignedFileUrl, normalizeProtectedFilePath } from "../../utils/signedFileUrl.js";
 
+const escapeRegex = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 const sendFileIfExists = (res, absolutePath, filename) => {
   if (!fs.existsSync(absolutePath)) {
     return false;
@@ -38,12 +40,14 @@ const sendFileIfExists = (res, absolutePath, filename) => {
  * Returns true if the user is the owner OR a recruiter evaluating an application.
  */
 const checkResumeAccess = async (userId, filename) => {
+  const escapedFilename = escapeRegex(filename);
+
   // 1. Check if user is the direct owner (Student)
   const ownedResume = await Resume.findOne({
     user: userId,
     $or: [
       { "file.storedName": filename },
-      { "file.path": { $regex: filename } },
+      { "file.path": { $regex: new RegExp(`\\/${escapedFilename}$`) } },
     ],
   }).select("_id");
 
@@ -53,7 +57,7 @@ const checkResumeAccess = async (userId, filename) => {
   const resumeDoc = await Resume.findOne({
     $or: [
       { "file.storedName": filename },
-      { "file.path": { $regex: filename } },
+      { "file.path": { $regex: new RegExp(`\\/${escapedFilename}$`) } },
     ],
   }).select("_id");
 
@@ -115,8 +119,9 @@ export const serveAvatar = asyncHandler(async (req, res, next) => {
     return next(new AppError("Invalid file path", 400));
   }
 
+  const escapedFilename = escapeRegex(resolved.safeName);
   const avatarOwner = await User.findOne({
-    profilePic: { $regex: resolved.safeName },
+    profilePic: { $regex: new RegExp(`\\/${escapedFilename}$`) },
   }).select("_id");
 
   if (!avatarOwner) {

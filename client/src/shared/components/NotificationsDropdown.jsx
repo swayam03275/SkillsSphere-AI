@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { BellOff, Loader2, CheckCheck, Trash } from "lucide-react";
 import NotificationItem from "./NotificationItem";
@@ -149,6 +150,17 @@ const NotificationsDropdown = ({ isOpen, onClose }) => {
             )}
           </>
         )}
+      </div>
+
+      {/* Footer - View All Link */}
+      <div className="sticky bottom-0 border-t border-[var(--border)] bg-[var(--surface-soft)]/90 backdrop-blur-md p-3 text-center">
+        <Link
+          to="/notifications"
+          onClick={onClose}
+          className="inline-flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl text-xs font-extrabold text-[var(--primary)] hover:bg-[var(--primary)]/10 transition-colors"
+        >
+          <span>View all notifications</span>
+        </Link>
       </div>
     </div>
   );
