@@ -14,7 +14,7 @@ const cleanup = () => {
   }
 };
 
-setInterval(cleanup, CLEANUP_INTERVAL_MS);
+setInterval(cleanup, CLEANUP_INTERVAL_MS).unref();
 
 export const generateAuthCode = (userId) => {
   const code = crypto.randomBytes(24).toString("hex");
