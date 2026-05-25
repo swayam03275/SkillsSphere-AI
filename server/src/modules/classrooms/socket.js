@@ -148,12 +148,13 @@ export function initClassroomSockets(io) {
 
     // WebRTC Signaling Events
     socket.on("webrtc-offer", ({ targetSocketId, offer }) => {
-      // Validate that both sockets exist and are in the same room
+      // Validate that the requesting socket is in a room
       if (!socket.data || !socket.data.roomId) {
         socket.emit("unauthorized", { message: "You must join a room first" });
         return;
       }
 
+      // Validate that the target socket exists and is in the same room
       const targetSocket = io.sockets.sockets.get(targetSocketId);
       if (
         !targetSocket ||
