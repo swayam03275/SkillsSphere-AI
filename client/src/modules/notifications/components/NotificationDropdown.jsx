@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Trash2, ArrowRight, CheckCheck } from "lucide-react";
 import NotificationCard from "./NotificationCard";
@@ -19,7 +19,7 @@ const NotificationDropdown = ({
   onDeleteAll,
 }) => {
   const dropdownRef = useRef(null);
-  const [isEmpty, setIsEmpty] = useState(false);
+  const isEmpty = notifications.length === 0 && !loading;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -45,10 +45,6 @@ const NotificationDropdown = ({
       document.removeEventListener("keydown", handleEscape);
     };
   }, [isOpen, onClose]);
-
-  useEffect(() => {
-    setIsEmpty(notifications.length === 0 && !loading);
-  }, [notifications.length, loading]);
 
   if (!isOpen) return null;
 

@@ -1,5 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
-import { useDispatch } from "react-redux";
+import React, { useState, useCallback } from "react";
 import { Bell } from "lucide-react";
 import NotificationDropdown from "./NotificationDropdown";
 import useNotifications from "../hooks/useNotifications";
@@ -10,7 +9,6 @@ import useNotifications from "../hooks/useNotifications";
  */
 const NotificationBell = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dispatch = useDispatch();
   const {
     notifications,
     unreadCount,

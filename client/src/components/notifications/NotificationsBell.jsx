@@ -1,12 +1,7 @@
-import React, { useEffect, useState } from "react";
-import { Bell } from "lucide-react";
-
-import { useSelector } from "react-redux";
-
-import NotificationDropdown from "./NotificationDropdown";
+import NotificationBell from "../../modules/notifications/components/NotificationBell";
 
 const NotificationsBell = () => {
-  return <div></div>;
+  return <NotificationBell />;
 };
 
 export default NotificationsBell;
