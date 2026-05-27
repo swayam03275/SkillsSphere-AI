@@ -22,9 +22,9 @@ A clear and concise description of what you expected to happen.
 If applicable, add screenshots or console logs to help explain your problem.
 
 ## Environment Details
- - OS: [e.g. Windows, macOS, Linux]
- - Browser: [e.g. Chrome, Safari]
- - Version: [e.g. 22]
+- OS: [e.g. Windows, macOS, Linux]
+- Browser: [e.g. Chrome, Safari]
+- Version: [e.g. 22]
 
 ## Additional Context
 Add any other context about the problem here.

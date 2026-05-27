@@ -28,7 +28,7 @@ jobs:
           node-version: 20
 
       - name: Lint Markdown files
-        run: npx -y markdownlint-cli2 "**/*.md" "!**/node_modules/**"
+        run: npx -y markdownlint-cli2 "**/*.md" "!**/node_modules/**" "!**/venv/**" "!**/.venv/**"
 
       - name: Lint GitHub Actions workflow syntax
         uses: reviewdog/action-actionlint@v1
