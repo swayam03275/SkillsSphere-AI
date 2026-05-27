@@ -58,6 +58,7 @@ const ConfirmDialog = ({
         <button
           onClick={onCancel}
           disabled={loading}
+          aria-label="Close dialog"
           className="absolute top-4 right-4 p-1 text-slate-500 hover:text-slate-300 transition-colors disabled:opacity-50"
         >
           <X size={18} />

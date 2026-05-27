@@ -53,6 +53,7 @@ const VersionComparisonModal = ({ isOpen, onClose, versions }) => {
           </div>
           <button 
             onClick={onClose}
+            aria-label="Close modal"
             className="p-2 hover:bg-white/10 rounded-full text-slate-400 hover:text-white transition-all"
           >
             <X size={24} />
