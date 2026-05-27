@@ -5,9 +5,9 @@ import JobPosting from "../../../database/models/JobPosting.js";
 import JobApplication from "../../../database/models/JobApplication.js";
 import Resume from "../../../database/models/Resume.js";
 import AppError from "../../../utils/AppError.js";
-
+import mongoose from "mongoose";
 describe("Job Service Filtering", () => {
-  const mockJobId = "job123";
+  const mockJobId = new mongoose.Types.ObjectId();
   const mockRecruiterId = "recruiter123";
 
   afterEach(() => {

@@ -7,7 +7,7 @@ import Resume from "../../../database/models/Resume.js";
 import AppError from "../../../utils/AppError.js";
 import * as resumeService from "../../resumes/service.js";
 import matchingService from "../../matching/service.js";
-
+import mongoose from "mongoose";
 describe("Job Service", () => {
   afterEach(() => {
     mock.restoreAll();
@@ -34,7 +34,7 @@ describe("Job Service", () => {
 
   describe("updateJob", () => {
     it("should update a job successfully when user is the owner", async () => {
-      const mockJobId = "job123";
+      const mockJobId = new mongoose.Types.ObjectId();
       const mockRecruiterId = "recruiter123";
       const mockUpdateData = { title: "Senior Software Engineer" };
 
@@ -87,7 +87,7 @@ describe("Job Service", () => {
 
   describe("deleteJob", () => {
     it("should delete a job and its applications when user is owner", async () => {
-      const mockJobId = "job123";
+      const mockJobId = new mongoose.Types.ObjectId();
       const mockRecruiterId = "recruiter123";
 
       const mockExistingJob = { _id: mockJobId, recruiter: { toString: () => mockRecruiterId } };
@@ -191,7 +191,7 @@ describe("Job Service", () => {
   });
 
   describe("getJobApplications", () => {
-    const mockJobId = "job123";
+    const mockJobId = new mongoose.Types.ObjectId();
     const mockRecruiterId = "recruiter123";
 
     it("should return all applications for the job when no status filter is provided", async () => {
