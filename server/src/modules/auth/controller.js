@@ -24,6 +24,7 @@ import crypto from "crypto";
 import AppError from "../../utils/AppError.js";
 import asyncHandler from "../../utils/asyncHandler.js";
 import { blacklistToken } from "../../utils/tokenBlacklist.js";
+import { generateAuthCode } from "../../utils/authCodeStore.js";
 import {
   getGoogleOAuthConfig,
   GOOGLE_OAUTH_NOT_CONFIGURED_MESSAGE,
@@ -242,15 +243,8 @@ export const googleOAuthCallback = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Generate your app's JWT
-  const jwtToken = jwt.sign(
-    { userId: user._id.toString(), role: user.role, jti: crypto.randomUUID() },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || "7d" },
-  );
-
-  // Redirect to frontend with ONLY the token (no user data in URL)
-  res.redirect(`${callbackUrl}?token=${jwtToken}`);
+  const authCode = await generateAuthCode(user._id.toString());
+  res.redirect(`${callbackUrl}?code=${authCode}`);
 });
 
 // 👤 Get Current User
