@@ -1,42 +1,43 @@
-import React, { useEffect } from "react";
+import React, { useEffect, Suspense, lazy } from "react";
 import { Routes, Route } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchCurrentUser } from "../features/auth/authSlice";
 import ChatWidget from "../modules/ai-assistant/components/ChatWidget";
-import LandingPage from "../modules/landing/LandingPage";
-import DashboardPage from "../modules/dashboard/DashboardPage";
-import CoverLetterHistoryPage from "../modules/dashboard/pages/CoverLetterHistoryPage";
-import ResumeAnalyzerPage from "../modules/resume-analyzer/pages/ResumeAnalyzerPage";
-import JobMatcherPage from "../modules/job-matcher/pages/JobMatcherPage";
-import ComponentDemo from "../modules/auth/components/ComponentDemo";
-import Login from "../modules/auth/Login";
-import Register from "../modules/auth/Register";
-import OAuthCallback from "../modules/auth/OAuthCallback";
-import ResetPassword from "../modules/auth/ResetPassword";
-import ForgotPassword from "../modules/auth/ForgotPassword";
-import VerifyEmail from "../modules/auth/VerifyEmail";
-import ProfilePage from "../modules/profile/ProfilePage";
-import RecruiterJobsPage from "../modules/recruiter-jobs/pages/RecruiterJobsPage";
-import RecruiterAnalyticsPage from "../modules/recruiter-jobs/pages/RecruiterAnalyticsPage";
-import CreateJobPostingPage from "../modules/recruiter-jobs/pages/CreateJobPostingPage";
-import EditJobPostingPage from "../modules/recruiter-jobs/pages/EditJobPostingPage";
-import RecruiterApplicantsPage from "../modules/recruiter-jobs/pages/RecruiterApplicantsPage";
-import JobBoardPage from "../modules/student-jobs/pages/JobBoardPage";
-import MyApplicationsPage from "../modules/student-jobs/pages/MyApplicationsPage";
-import RoadmapPage from "../modules/roadmap/pages/RoadmapPage";
-import TutorRoadmapLobby from "../modules/roadmap/pages/TutorRoadmapLobby";
-import ClassroomsDashboard from "../modules/classrooms/pages/ClassroomsDashboard";
-import ClassroomRoom from "../modules/classrooms/pages/ClassroomRoom";
-import InterviewLobby from "../modules/mock-interview/pages/InterviewLobby";
-import InterviewSession from "../modules/mock-interview/pages/InterviewSession";
-import InterviewResults from "../modules/mock-interview/pages/InterviewResults";
-import InterviewHistory from "../modules/mock-interview/pages/InterviewHistory";
-import TutorInterviewConsole from "../modules/mock-interview/pages/TutorInterviewConsole";
-import TutorInterviewsList from "../modules/mock-interview/pages/TutorInterviewsList";
-import TutorAnalyticsDashboard from "../modules/analytics/TutorAnalyticsDashboard";
-import NotificationsPage from "../modules/notifications/pages/NotificationsPage";
+const LandingPage = lazy(() => import("../modules/landing/LandingPage"));
+const DashboardPage = lazy(() => import("../modules/dashboard/DashboardPage"));
+const CoverLetterHistoryPage = lazy(() => import("../modules/dashboard/pages/CoverLetterHistoryPage"));
+const ResumeAnalyzerPage = lazy(() => import("../modules/resume-analyzer/pages/ResumeAnalyzerPage"));
+const JobMatcherPage = lazy(() => import("../modules/job-matcher/pages/JobMatcherPage"));
+const ComponentDemo = lazy(() => import("../modules/auth/components/ComponentDemo"));
+const Login = lazy(() => import("../modules/auth/Login"));
+const Register = lazy(() => import("../modules/auth/Register"));
+const OAuthCallback = lazy(() => import("../modules/auth/OAuthCallback"));
+const ResetPassword = lazy(() => import("../modules/auth/ResetPassword"));
+const ForgotPassword = lazy(() => import("../modules/auth/ForgotPassword"));
+const VerifyEmail = lazy(() => import("../modules/auth/VerifyEmail"));
+const ProfilePage = lazy(() => import("../modules/profile/ProfilePage"));
+const RecruiterJobsPage = lazy(() => import("../modules/recruiter-jobs/pages/RecruiterJobsPage"));
+const RecruiterAnalyticsPage = lazy(() => import("../modules/recruiter-jobs/pages/RecruiterAnalyticsPage"));
+const CreateJobPostingPage = lazy(() => import("../modules/recruiter-jobs/pages/CreateJobPostingPage"));
+const EditJobPostingPage = lazy(() => import("../modules/recruiter-jobs/pages/EditJobPostingPage"));
+const RecruiterApplicantsPage = lazy(() => import("../modules/recruiter-jobs/pages/RecruiterApplicantsPage"));
+const JobBoardPage = lazy(() => import("../modules/student-jobs/pages/JobBoardPage"));
+const MyApplicationsPage = lazy(() => import("../modules/student-jobs/pages/MyApplicationsPage"));
+const RoadmapPage = lazy(() => import("../modules/roadmap/pages/RoadmapPage"));
+const TutorRoadmapLobby = lazy(() => import("../modules/roadmap/pages/TutorRoadmapLobby"));
+const ClassroomsDashboard = lazy(() => import("../modules/classrooms/pages/ClassroomsDashboard"));
+const ClassroomRoom = lazy(() => import("../modules/classrooms/pages/ClassroomRoom"));
+const InterviewLobby = lazy(() => import("../modules/mock-interview/pages/InterviewLobby"));
+const InterviewSession = lazy(() => import("../modules/mock-interview/pages/InterviewSession"));
+const InterviewResults = lazy(() => import("../modules/mock-interview/pages/InterviewResults"));
+const InterviewHistory = lazy(() => import("../modules/mock-interview/pages/InterviewHistory"));
+const TutorInterviewConsole = lazy(() => import("../modules/mock-interview/pages/TutorInterviewConsole"));
+const TutorInterviewsList = lazy(() => import("../modules/mock-interview/pages/TutorInterviewsList"));
+const TutorAnalyticsDashboard = lazy(() => import("../modules/analytics/TutorAnalyticsDashboard"));
+const NotificationsPage = lazy(() => import("../modules/notifications/pages/NotificationsPage"));
 import ProtectedRoute from "../shared/components/ProtectedRoute";
 import SocketNotificationListener from "../shared/components/SocketNotificationListener";
+import { LoadingState } from "../shared/components";
 function App() {
   const dispatch = useDispatch();
   const { token } = useSelector((state) => state.auth);
@@ -51,6 +52,7 @@ function App() {
     <div className="min-h-screen bg-[var(--background)] text-[var(--text-main)] transition-colors duration-300">
       <SocketNotificationListener />
 
+      <Suspense fallback={<LoadingState message="Loading module..." />}>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route
@@ -266,6 +268,7 @@ function App() {
           }
         />
       </Routes>
+      </Suspense>
       <ChatWidget />
     </div>
   );
