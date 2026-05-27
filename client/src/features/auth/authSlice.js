@@ -206,6 +206,21 @@ export const fetchCurrentUser = createAsyncThunk(
   },
 );
 
+export const logoutUser = createAsyncThunk(
+  "auth/logoutUser",
+  async (_, thunkAPI) => {
+    const token = thunkAPI.getState()?.auth?.token;
+    if (token) {
+      try {
+        await authService.logout(token);
+      } catch {
+        // Logout API failure is non-fatal — still clear local state
+      }
+    }
+    return null;
+  },
+);
+
 const storedAuth = readStoredAuth();
 
 const initialState = {
@@ -224,13 +239,6 @@ const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    logout: (state) => {
-      clearStoredAuth();
-      state.user = null;
-      state.token = null;
-      state.isAuthenticated = false;
-      state.error = null;
-    },
     clearAuthError: (state) => {
       state.error = null;
     },
@@ -351,16 +359,34 @@ const authSlice = createSlice({
         state.user = null;
         state.token = null;
         state.isAuthenticated = false;
+      })
+      .addCase(logoutUser.fulfilled, (state) => {
+        clearStoredAuth();
+        state.user = null;
+        state.token = null;
+        state.isAuthenticated = false;
+        state.error = null;
+      })
+      .addCase(logoutUser.rejected, (state) => {
+        // Even if the API call fails, clear local auth state
+        clearStoredAuth();
+        state.user = null;
+        state.token = null;
+        state.isAuthenticated = false;
+        state.error = null;
       });
   },
 });
 
 export const {
   clearAuthError,
-  logout,
   setPendingVerificationEmail,
   setOAuthData,
   updateUserProfile,
 } = authSlice.actions;
+
+// Export logoutUser thunk as "logout" to preserve the existing API
+// used by all UI components (Navbar, DashboardPage, ProfilePage)
+export const logout = logoutUser;
 
 export default authSlice.reducer;

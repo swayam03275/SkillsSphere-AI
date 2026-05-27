@@ -135,7 +135,7 @@ router.post("/resend-otp", authRateLimiter, resendOTP);
 router.post("/login", authRateLimiter, login);
 
 // 🚪 Logout
-router.post("/logout", logout);
+router.post("/logout", protect, logout);
 
 // 🔐 Google Login
 router.post("/google", googleLogin);

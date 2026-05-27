@@ -29,3 +29,9 @@ apiRequest("/api/auth/me", {
     method: "GET",
     token,
   });
+
+export const logout = (token) =>
+  apiRequest("/api/auth/logout", {
+    method: "POST",
+    token,
+  });
