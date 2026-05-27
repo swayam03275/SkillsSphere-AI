@@ -134,7 +134,8 @@ export const createJobPosting = asyncHandler(async (req, res) => {
   await invalidateCacheByPrefix("jobs");
   invalidateAnalyticsCache(req.user._id.toString());
 
-  res.status(201).json({
+  console.log("DEBUG: Calling res.status(201)");
+  return res.status(201).json({
     success: true,
     job: jobPosting,
   });

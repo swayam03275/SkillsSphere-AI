@@ -1,4 +1,4 @@
-import { describe, it, beforeEach, afterEach, mock } from "node:test";
+﻿import { describe, it, beforeEach, afterEach, mock } from "node:test";
 import assert from "node:assert/strict";
 import mongoose from "mongoose";
 import { deleteProfile } from "../controller.js";
@@ -48,23 +48,34 @@ describe("deleteProfile", () => {
     };
     mock.method(mongoose, "startSession", async () => mockSession);
 
+    const mockQueryWithSession = {
+      session: mock.fn(() => mockQueryWithSession),
+      then: mock.fn((onFulfilled) => onFulfilled([])),
+    };
+
     mock.method(User, "findById", async () => mockUser);
     mock.method(User, "findByIdAndDelete", async () => mockUser);
-    mock.method(Resume, "find", () => ({ session: mock.fn(async () => []) }));
+    
+    mock.method(Resume, "find", () => mockQueryWithSession);
     mock.method(Resume, "deleteMany", async () => ({}));
+    
     mock.method(MatchResult, "deleteMany", async () => ({}));
     mock.method(MatchResult, "updateMany", async () => ({}));
     mock.method(LearningProgress, "deleteMany", async () => ({}));
     mock.method(JobApplication, "deleteMany", async () => ({}));
     mock.method(CoverLetter, "deleteMany", async () => ({}));
-    mock.method(InterviewSession, "find", () => ({ session: mock.fn(async () => []) }));
+    
+    mock.method(InterviewSession, "find", () => mockQueryWithSession);
     mock.method(InterviewSession, "deleteMany", async () => ({}));
     mock.method(InterviewSession, "updateMany", async () => ({}));
+    
     mock.method(AnalysisHistory, "deleteMany", async () => ({}));
     mock.method(ClassroomSession, "deleteMany", async () => ({}));
     mock.method(ClassroomSession, "updateMany", async () => ({}));
-    mock.method(JobPosting, "find", () => ({ session: mock.fn(async () => []) }));
+    
+    mock.method(JobPosting, "find", () => mockQueryWithSession);
     mock.method(JobPosting, "deleteMany", async () => ({}));
+    
     mock.method(Notification, "deleteMany", async () => ({}));
 
     mock.method(fs, "existsSync", () => true);
@@ -72,6 +83,11 @@ describe("deleteProfile", () => {
 
     await deleteProfile(req, res, next);
 
+    if (next.mock.calls.length > 0) {
+      throw next.mock.calls[0].arguments[0];
+    }
+
+    assert.equal(res.status.mock.calls.length, 1);
     assert.equal(res.status.mock.calls[0].arguments[0], 200);
     assert.equal(res.json.mock.calls[0].arguments[0].success, true);
   });

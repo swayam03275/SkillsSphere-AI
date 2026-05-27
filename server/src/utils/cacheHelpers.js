@@ -1,6 +1,7 @@
 import redisClient from "../config/redis.js";
 
 export const invalidateCacheByPrefix = async (prefix) => {
+  if (!redisClient || !redisClient.isReady) return;
   try {
     const keys = await redisClient.keys(`${prefix}:*`);
     if (keys.length > 0) {
