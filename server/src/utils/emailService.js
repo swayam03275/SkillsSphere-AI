@@ -50,7 +50,7 @@ export const sendEmail = async (to, subject, text, html) => {
     console.log(`[EMAIL SERVICE] SMTP: Email sent to ${to}`);
   } catch (error) {
     console.error(`[EMAIL SERVICE] SMTP Error: ${error.message}`);
-    // Graceful failure as requested
+    throw new Error(`Email delivery failed: ${error.message}`);
   }
 };
 
