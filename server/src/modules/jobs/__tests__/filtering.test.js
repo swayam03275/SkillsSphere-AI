@@ -22,9 +22,9 @@ describe("Job Service Filtering", () => {
 
     const mockQuery = {
       populate: mock.fn(() => mockQuery),
-      sort: mock.fn(async () => mockApps),
+      sort: mock.fn(() => mockQuery), skip: mock.fn(() => mockQuery), limit: mock.fn(async () => mockApps),
     };
-    mock.method(JobApplication, "find", () => mockQuery);
+    mock.method(JobApplication, 'find', () => mockQuery); mock.method(JobApplication, 'countDocuments', async () => mockApps ? mockApps.length : 1);
 
     const filters = { minScore: 80, maxScore: 95 };
     const result = await jobService.getJobApplications(mockJobId, mockRecruiterId, filters);
@@ -35,7 +35,7 @@ describe("Job Service Filtering", () => {
     const findArgs = JobApplication.find.mock.calls[0].arguments[0];
     assert.equal(findArgs.job, mockJobId);
     assert.deepEqual(findArgs.aiMatchScore, { $gte: 80, $lte: 95 });
-    assert.deepEqual(result, mockApps);
+    assert.deepEqual(result, { applications: mockApps, totalCount: 1, totalPages: 1, currentPage: 1 });
   });
 
   it("should filter applications by minAtsScore and maxAtsScore correctly", async () => {
@@ -46,9 +46,9 @@ describe("Job Service Filtering", () => {
 
     const mockQuery = {
       populate: mock.fn(() => mockQuery),
-      sort: mock.fn(async () => mockApps),
+      sort: mock.fn(() => mockQuery), skip: mock.fn(() => mockQuery), limit: mock.fn(async () => mockApps),
     };
-    mock.method(JobApplication, "find", () => mockQuery);
+    mock.method(JobApplication, 'find', () => mockQuery); mock.method(JobApplication, 'countDocuments', async () => mockApps ? mockApps.length : 1);
 
     const filters = { minAtsScore: 75, maxAtsScore: 90 };
     const result = await jobService.getJobApplications(mockJobId, mockRecruiterId, filters);
@@ -58,7 +58,7 @@ describe("Job Service Filtering", () => {
     const findArgs = JobApplication.find.mock.calls[0].arguments[0];
     assert.equal(findArgs.job, mockJobId);
     assert.deepEqual(findArgs["matchBreakdown.atsCompatibility"], { $gte: 75, $lte: 90 });
-    assert.deepEqual(result, mockApps);
+    assert.deepEqual(result, { applications: mockApps, totalCount: 1, totalPages: 1, currentPage: 1 });
   });
 
   it("should filter applications by matchCategory correctly", async () => {
@@ -69,9 +69,9 @@ describe("Job Service Filtering", () => {
 
     const mockQuery = {
       populate: mock.fn(() => mockQuery),
-      sort: mock.fn(async () => mockApps),
+      sort: mock.fn(() => mockQuery), skip: mock.fn(() => mockQuery), limit: mock.fn(async () => mockApps),
     };
-    mock.method(JobApplication, "find", () => mockQuery);
+    mock.method(JobApplication, 'find', () => mockQuery); mock.method(JobApplication, 'countDocuments', async () => mockApps ? mockApps.length : 1);
 
     const filters = { matchCategory: "excellent,moderate" };
     const result = await jobService.getJobApplications(mockJobId, mockRecruiterId, filters);
@@ -81,7 +81,7 @@ describe("Job Service Filtering", () => {
     const findArgs = JobApplication.find.mock.calls[0].arguments[0];
     assert.equal(findArgs.job, mockJobId);
     assert.deepEqual(findArgs.matchCategory, { $in: ["Excellent Match", "Moderate Match"] });
-    assert.deepEqual(result, mockApps);
+    assert.deepEqual(result, { applications: mockApps, totalCount: 1, totalPages: 1, currentPage: 1 });
   });
 
   it("should filter applications by contributorOnly correctly", async () => {
@@ -92,9 +92,9 @@ describe("Job Service Filtering", () => {
 
     const mockQuery = {
       populate: mock.fn(() => mockQuery),
-      sort: mock.fn(async () => mockApps),
+      sort: mock.fn(() => mockQuery), skip: mock.fn(() => mockQuery), limit: mock.fn(async () => mockApps),
     };
-    mock.method(JobApplication, "find", () => mockQuery);
+    mock.method(JobApplication, 'find', () => mockQuery); mock.method(JobApplication, 'countDocuments', async () => mockApps ? mockApps.length : 1);
 
     const filters = { contributorOnly: "true" };
     const result = await jobService.getJobApplications(mockJobId, mockRecruiterId, filters);
@@ -104,7 +104,7 @@ describe("Job Service Filtering", () => {
     const findArgs = JobApplication.find.mock.calls[0].arguments[0];
     assert.equal(findArgs.job, mockJobId);
     assert.deepEqual(findArgs["matchBreakdown.contributionActivity"], { $in: ["High", "Medium"] });
-    assert.deepEqual(result, mockApps);
+    assert.deepEqual(result, { applications: mockApps, totalCount: 1, totalPages: 1, currentPage: 1 });
   });
 
   it("should filter applications by careerReadiness correctly", async () => {
@@ -115,9 +115,9 @@ describe("Job Service Filtering", () => {
 
     const mockQuery = {
       populate: mock.fn(() => mockQuery),
-      sort: mock.fn(async () => mockApps),
+      sort: mock.fn(() => mockQuery), skip: mock.fn(() => mockQuery), limit: mock.fn(async () => mockApps),
     };
-    mock.method(JobApplication, "find", () => mockQuery);
+    mock.method(JobApplication, 'find', () => mockQuery); mock.method(JobApplication, 'countDocuments', async () => mockApps ? mockApps.length : 1);
 
     const filters = { careerReadiness: "High,Medium" };
     const result = await jobService.getJobApplications(mockJobId, mockRecruiterId, filters);
@@ -127,7 +127,7 @@ describe("Job Service Filtering", () => {
     const findArgs = JobApplication.find.mock.calls[0].arguments[0];
     assert.equal(findArgs.job, mockJobId);
     assert.deepEqual(findArgs["matchBreakdown.careerReadiness"], { $in: ["High", "Medium"] });
-    assert.deepEqual(result, mockApps);
+    assert.deepEqual(result, { applications: mockApps, totalCount: 1, totalPages: 1, currentPage: 1 });
   });
 
   it("should filter applications by specialization correctly using Resume subquery", async () => {
@@ -144,9 +144,9 @@ describe("Job Service Filtering", () => {
 
     const mockQuery = {
       populate: mock.fn(() => mockQuery),
-      sort: mock.fn(async () => mockApps),
+      sort: mock.fn(() => mockQuery), skip: mock.fn(() => mockQuery), limit: mock.fn(async () => mockApps),
     };
-    mock.method(JobApplication, "find", () => mockQuery);
+    mock.method(JobApplication, 'find', () => mockQuery); mock.method(JobApplication, 'countDocuments', async () => mockApps ? mockApps.length : 1);
 
     const filters = { specialization: "frontend" };
     const result = await jobService.getJobApplications(mockJobId, mockRecruiterId, filters);
@@ -157,6 +157,6 @@ describe("Job Service Filtering", () => {
     const findArgs = JobApplication.find.mock.calls[0].arguments[0];
     assert.equal(findArgs.job, mockJobId);
     assert.deepEqual(findArgs.resume, { $in: ["resume123", "resume456"] });
-    assert.deepEqual(result, mockApps);
+    assert.deepEqual(result, { applications: mockApps, totalCount: 1, totalPages: 1, currentPage: 1 });
   });
 });

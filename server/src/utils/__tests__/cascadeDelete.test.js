@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test, { mock } from "node:test";
 import fs from "fs";
 import mongoose from "mongoose";
+import Notification from "../../database/models/Notification.js";
 import User from "../../database/models/User.js";
 import Resume from "../../database/models/Resume.js";
 import MatchResult from "../../database/models/MatchResult.js";
@@ -45,22 +46,31 @@ test("cascadeDeleteUser sweeps all physical files and databases", async () => {
   };
 
   // Mock Mongoose Query / Methods
+  mock.method(mongoose, "startSession", async () => ({
+    startTransaction: () => {},
+    commitTransaction: async () => {},
+    abortTransaction: async () => {},
+    endSession: () => {}
+  }));
+  mock.method(Notification, "deleteMany", async () => ({ deletedCount: 1 }));
   mock.method(User, "findById", async () => mockUser);
   mock.method(User, "findByIdAndDelete", async () => mockUser);
 
-  mock.method(Resume, "find", async () => [mockResume]);
+  mock.method(Resume, "find", () => ({ session: async () => [mockResume] }));
   mock.method(Resume, "deleteMany", async () => ({ deletedCount: 1 }));
 
   mock.method(MatchResult, "deleteMany", async () => ({ deletedCount: 1 }));
   mock.method(LearningProgress, "deleteMany", async () => ({ deletedCount: 1 }));
   mock.method(JobApplication, "deleteMany", async () => ({ deletedCount: 1 }));
   mock.method(CoverLetter, "deleteMany", async () => ({ deletedCount: 1 }));
-  mock.method(InterviewSession, "find", async () => [mockInterviewSession]);
+  mock.method(InterviewSession, "find", () => ({ session: async () => [mockInterviewSession] }));
   mock.method(InterviewSession, "deleteMany", async () => ({ deletedCount: 1 }));
+  mock.method(InterviewSession, "updateMany", async () => ({ modifiedCount: 1 }));
   mock.method(AnalysisHistory, "deleteMany", async () => ({ deletedCount: 1 }));
   mock.method(ClassroomSession, "deleteMany", async () => ({ deletedCount: 1 }));
+  mock.method(ClassroomSession, "updateMany", async () => ({ modifiedCount: 1 }));
 
-  mock.method(JobPosting, "find", async () => [mockJobPosting]);
+  mock.method(JobPosting, "find", () => ({ session: async () => [mockJobPosting] }));
   mock.method(JobPosting, "deleteMany", async () => ({ deletedCount: 1 }));
 
   // Mock File System operations

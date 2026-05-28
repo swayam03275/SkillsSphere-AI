@@ -202,9 +202,9 @@ describe("Job Service", () => {
 
       const mockQuery = {
         populate: mock.fn(() => mockQuery),
-        sort: mock.fn(async () => mockApps),
+        sort: mock.fn(() => mockQuery), skip: mock.fn(() => mockQuery), limit: mock.fn(async () => mockApps),
       };
-      mock.method(JobApplication, "find", () => mockQuery);
+      mock.method(JobApplication, 'find', () => mockQuery); mock.method(JobApplication, 'countDocuments', async () => typeof mockApps !== 'undefined' ? mockApps.length : 1);
 
       const result = await jobService.getJobApplications(mockJobId, mockRecruiterId);
 
@@ -212,7 +212,7 @@ describe("Job Service", () => {
       assert.equal(JobPosting.findById.mock.calls[0].arguments[0], mockJobId);
       assert.equal(JobApplication.find.mock.calls.length, 1);
       assert.deepEqual(JobApplication.find.mock.calls[0].arguments[0], { job: mockJobId });
-      assert.deepEqual(result, mockApps);
+      assert.deepEqual(result, { applications: mockApps, totalCount: 1, totalPages: 1, currentPage: 1 });
     });
 
     it("should filter applications by status when status filter is provided", async () => {
@@ -223,16 +223,16 @@ describe("Job Service", () => {
 
       const mockQuery = {
         populate: mock.fn(() => mockQuery),
-        sort: mock.fn(async () => mockApps),
+        sort: mock.fn(() => mockQuery), skip: mock.fn(() => mockQuery), limit: mock.fn(async () => mockApps),
       };
-      mock.method(JobApplication, "find", () => mockQuery);
+      mock.method(JobApplication, 'find', () => mockQuery); mock.method(JobApplication, 'countDocuments', async () => typeof mockApps !== 'undefined' ? mockApps.length : 1);
 
       const result = await jobService.getJobApplications(mockJobId, mockRecruiterId, "shortlisted");
 
       assert.equal(JobPosting.findById.mock.calls.length, 1);
       assert.equal(JobApplication.find.mock.calls.length, 1);
       assert.deepEqual(JobApplication.find.mock.calls[0].arguments[0], { job: mockJobId, status: "shortlisted" });
-      assert.deepEqual(result, mockApps);
+      assert.deepEqual(result, { applications: mockApps, totalCount: 1, totalPages: 1, currentPage: 1 });
     });
 
     it("should throw AppError(404) if job not found", async () => {
