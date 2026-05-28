@@ -3,10 +3,15 @@ import test, { afterEach, mock } from "node:test";
 import express from "express";
 import globalErrorHandler from "../../../middleware/errorMiddleware.js";
 import AnalysisHistory from "../../../database/models/AnalysisHistory.js";
+import Resume from "../../../database/models/Resume.js";
 import {
   analyzeResume,
   resetResumeControllerDependencies,
   setResumeControllerDependencies,
+  listResumes,
+  setActiveResume,
+  renameResume,
+  deleteResume,
 } from "../controller.js";
 
 // Mock MongoDB interactions on AnalysisHistory to prevent database buffering timeouts
@@ -20,6 +25,7 @@ mock.method(AnalysisHistory, "find", () => ({
   })
 }));
 mock.method(AnalysisHistory, "deleteMany", async () => ({}));
+mock.method(Resume, "countDocuments", async () => 0);
 
 const parsedResume = {
   name: "Ada Lovelace",
@@ -314,5 +320,173 @@ test("analyze resume saves to cache on cache miss", async () => {
   assert.ok(savedCacheData.resumeHash);
   assert.ok(savedCacheData.jdHash);
   assert.equal(savedCacheData.score, body.overallScore);
+});
+
+test("analyzeResume rejects upload when user already has 3 resumes", async () => {
+  const originalCount = Resume.countDocuments;
+  Resume.countDocuments = async () => 3;
+
+  try {
+    const req = {
+      file: { path: "/test" },
+      user: { _id: "user1" }
+    };
+    let nextError = null;
+    const next = (err) => {
+      nextError = err;
+    };
+
+    await analyzeResume(req, {}, next);
+    assert.ok(nextError);
+    assert.equal(nextError.statusCode, 400);
+    assert.equal(nextError.message, "Maximum limit of 3 resumes reached. Please delete an existing version to upload a new one.");
+  } finally {
+    Resume.countDocuments = originalCount;
+  }
+});
+
+test("listResumes returns list of resumes for user", async () => {
+  const dummyResumes = [
+    { _id: "1", title: "Resume 1", user: "user1", isActive: true },
+    { _id: "2", title: "Resume 2", user: "user1", isActive: false },
+  ];
+  const originalFind = Resume.find;
+  Resume.find = () => ({
+    select: () => ({
+      sort: () => ({
+        lean: async () => dummyResumes
+      })
+    })
+  });
+
+  try {
+    const req = { user: { _id: "user1" } };
+    let jsonResult = null;
+    const res = {
+      status: (code) => {
+        assert.equal(code, 200);
+        return {
+          json: (data) => {
+            jsonResult = data;
+          }
+        };
+      }
+    };
+
+    await listResumes(req, res, () => {});
+    assert.equal(jsonResult.success, true);
+    assert.deepEqual(jsonResult.data, dummyResumes);
+  } finally {
+    Resume.find = originalFind;
+  }
+});
+
+test("setActiveResume updates active status", async () => {
+  const dummyResume = {
+    _id: "1",
+    user: "user1",
+    isActive: false,
+    save: async function() {
+      this.isActive = true;
+      return this;
+    }
+  };
+
+  const originalFindOne = Resume.findOne;
+  const originalUpdateMany = Resume.updateMany;
+  
+  Resume.findOne = async () => dummyResume;
+  Resume.updateMany = async () => ({});
+
+  try {
+    const req = { params: { id: "1" }, user: { _id: "user1" } };
+    let jsonResult = null;
+    const res = {
+      status: (code) => {
+        assert.equal(code, 200);
+        return {
+          json: (data) => {
+            jsonResult = data;
+          }
+        };
+      }
+    };
+
+    await setActiveResume(req, res, () => {});
+    assert.equal(jsonResult.success, true);
+    assert.equal(jsonResult.data.isActive, true);
+  } finally {
+    Resume.findOne = originalFindOne;
+    Resume.updateMany = originalUpdateMany;
+  }
+});
+
+test("renameResume updates resume title", async () => {
+  const dummyResume = {
+    _id: "1",
+    title: "New Title"
+  };
+
+  const originalFindOneAndUpdate = Resume.findOneAndUpdate;
+  Resume.findOneAndUpdate = () => ({
+    select: async () => dummyResume
+  });
+
+  try {
+    const req = { params: { id: "1" }, body: { title: "New Title" }, user: { _id: "user1" } };
+    let jsonResult = null;
+    const res = {
+      status: (code) => {
+        assert.equal(code, 200);
+        return {
+          json: (data) => {
+            jsonResult = data;
+          }
+        };
+      }
+    };
+
+    await renameResume(req, res, () => {});
+    assert.equal(jsonResult.success, true);
+    assert.equal(jsonResult.data.title, "New Title");
+  } finally {
+    Resume.findOneAndUpdate = originalFindOneAndUpdate;
+  }
+});
+
+test("deleteResume deletes document", async () => {
+  const dummyResume = {
+    _id: "1",
+    user: "user1",
+    isActive: false
+  };
+
+  const originalFindOne = Resume.findOne;
+  const originalDeleteOne = Resume.deleteOne;
+  
+  Resume.findOne = async () => dummyResume;
+  Resume.deleteOne = async () => ({});
+
+  try {
+    const req = { params: { id: "1" }, user: { _id: "user1" } };
+    let jsonResult = null;
+    const res = {
+      status: (code) => {
+        assert.equal(code, 200);
+        return {
+          json: (data) => {
+            jsonResult = data;
+          }
+        };
+      }
+    };
+
+    await deleteResume(req, res, () => {});
+    assert.equal(jsonResult.success, true);
+    assert.equal(jsonResult.message, "Resume deleted successfully");
+  } finally {
+    Resume.findOne = originalFindOne;
+    Resume.deleteOne = originalDeleteOne;
+  }
 });
 
