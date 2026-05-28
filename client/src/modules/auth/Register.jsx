@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { Check, X } from "lucide-react";
 import { registerUser } from "../../features/auth/authSlice";
 import { useToast } from "../../shared/components";
 import Button from "../../shared/components/Button";
@@ -9,6 +10,41 @@ import Select from "../../shared/components/Select";
 import Navbar from "../../shared/landing/Navbar";
 import { API_URL } from "../../config/env";
 import { useDocumentTitle } from "../../hooks/useDocumentTitle";
+
+// Helper function to calculate password strength
+const calculatePasswordStrength = (password) => {
+  const criteria = [
+    { label: "At least 8 characters", met: password.length >= 8 },
+    { label: "Contains uppercase letter", met: /[A-Z]/.test(password) },
+    { label: "Contains lowercase letter", met: /[a-z]/.test(password) },
+    { label: "Contains a number", met: /[0-9]/.test(password) },
+    { label: "Contains special character", met: /[^A-Za-z0-9]/.test(password) },
+  ];
+
+  const score = criteria.filter((c) => c.met).length;
+
+  let color = "bg-red-500";
+  let label = "Weak";
+  
+  if (score === 0) {
+    color = "bg-slate-200 dark:bg-slate-700";
+    label = "";
+  } else if (score <= 2) {
+    color = "bg-red-500";
+    label = "Weak";
+  } else if (score === 3) {
+    color = "bg-yellow-500";
+    label = "Fair";
+  } else if (score === 4) {
+    color = "bg-emerald-400";
+    label = "Good";
+  } else if (score === 5) {
+    color = "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]";
+    label = "Strong";
+  }
+
+  return { score, criteria, color, label };
+};
 
 const Register = () => {
   useDocumentTitle("Register");
@@ -26,6 +62,8 @@ const Register = () => {
   });
 
   const [errors, setErrors] = useState({});
+
+  const strength = useMemo(() => calculatePasswordStrength(form.password), [form.password]);
 
   const handleChange = (e) => {
     const { id, value } = e.target;
@@ -55,8 +93,8 @@ const Register = () => {
       newErrors.email = "Please enter a valid email";
 
     if (!form.password) newErrors.password = "Password is required";
-    else if (form.password.length < 8)
-      newErrors.password = "Password must be at least 8 characters";
+    else if (strength.score < 4)
+      newErrors.password = "Please create a stronger password (at least Good)";
 
     if (!form.confirmPassword)
       newErrors.confirmPassword = "Please confirm your password";
@@ -124,12 +162,13 @@ const Register = () => {
     loading ||
     !form.password ||
     !form.confirmPassword ||
-    form.password !== form.confirmPassword;
+    form.password !== form.confirmPassword ||
+    strength.score < 4;
 
   return (
-    <div className="h-[125vh] flex flex-col justify-center items-center bg-slate-50 dark:bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] overflow-hidden relative px-3 py-6 box-border">
+    <div className="min-h-[125vh] flex flex-col justify-center items-center bg-slate-50 dark:bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] overflow-hidden relative px-3 py-6 box-border">
       <Navbar />
-      <div className="relative z-10 w-full max-w-[380px]">
+      <div className="relative z-10 w-full max-w-[380px] mt-16 sm:mt-24">
         {/* Background glow */}
         <div className="hidden sm:block absolute w-[520px] h-[520px] bg-blue-400/45 dark:bg-blue-500/40 rounded-full blur-[140px] dark:blur-[120px] -top-[150px] -left-[150px] -z-10 animate-pulse"></div>
         <div className="hidden sm:block absolute w-[420px] h-[420px] bg-purple-400/45 dark:bg-purple-500/40 rounded-full blur-[140px] dark:blur-[120px] -bottom-[120px] -right-[120px] -z-10 animate-pulse"></div>
@@ -165,16 +204,51 @@ const Register = () => {
               disabled={loading}
             />
 
-            <Input
-              id="password"
-              type="password"
-              label="Password"
-              placeholder="Create a password"
-              value={form.password}
-              onChange={handleChange}
-              error={errors.password}
-              disabled={loading}
-            />
+            <div className="flex flex-col gap-1">
+              <Input
+                id="password"
+                type="password"
+                label="Password"
+                placeholder="Create a password"
+                value={form.password}
+                onChange={handleChange}
+                error={errors.password}
+                disabled={loading}
+              />
+              
+              {/* Password Strength Indicator */}
+              {form.password && (
+                <div className="mt-1 flex flex-col gap-2">
+                  <div className="flex items-center justify-between text-xs font-semibold">
+                    <span className="text-slate-500 dark:text-slate-400">Password Strength:</span>
+                    <span className={`${strength.color.split(' ')[0].replace('bg-', 'text-')}`}>{strength.label}</span>
+                  </div>
+                  <div className="flex h-1.5 w-full gap-1">
+                    {[1, 2, 3, 4, 5].map((index) => (
+                      <div
+                        key={index}
+                        className={`h-full w-full rounded-full transition-all duration-300 ${
+                          index <= strength.score ? strength.color : "bg-slate-200 dark:bg-slate-700"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <div className="mt-2 grid grid-cols-1 gap-1 text-[11px] sm:text-xs">
+                    {strength.criteria.map((criterion, idx) => (
+                      <div
+                        key={idx}
+                        className={`flex items-center gap-1.5 transition-colors duration-200 ${
+                          criterion.met ? "text-emerald-500" : "text-slate-400 dark:text-slate-500"
+                        }`}
+                      >
+                        {criterion.met ? <Check size={14} /> : <X size={14} />}
+                        <span>{criterion.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
 
             <Input
               id="confirmPassword"
@@ -187,8 +261,8 @@ const Register = () => {
               disabled={loading}
             />
             {passwordsMatch && (
-              <p className="text-green-400 text-xs sm:text-sm -mt-1">
-                ✓ Passwords match
+              <p className="text-emerald-500 text-xs sm:text-sm -mt-1 font-medium flex items-center gap-1">
+                <Check size={16} /> Passwords match
               </p>
             )}
 
@@ -207,7 +281,7 @@ const Register = () => {
             fullWidth
             loading={loading}
             disabled={isSubmitDisabled}
-            className="mt-3 sm:mt-4 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 border-none font-bold text-sm sm:text-base hover:scale-105 hover:shadow-[0_0_20px_rgba(59,130,246,0.6)] transition-all duration-300 min-h-[44px]"
+            className="mt-3 sm:mt-4 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 border-none font-bold text-sm sm:text-base hover:scale-105 hover:shadow-[0_0_20px_rgba(59,130,246,0.6)] transition-all duration-300 min-h-[44px] disabled:opacity-50 disabled:hover:scale-100 disabled:hover:shadow-none"
           >
             {loading ? "Creating Account..." : "Sign Up"}
           </Button>
