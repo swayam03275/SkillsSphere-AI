@@ -274,9 +274,10 @@ export default function TutorRoadmapLobby() {
                     {showAddMilestone && (
                       <form onSubmit={handleAddMilestone} className="mb-6 p-4 bg-indigo-900/20 border border-indigo-500/30 rounded-xl flex flex-col md:flex-row gap-3 items-end animate-fade-in">
                         <div className="flex-1 w-full">
-                          <label className="text-[10px] font-black text-indigo-300 uppercase tracking-widest mb-1 block">Milestone Topic Name</label>
+                          <label htmlFor="newTopicName" className="text-[10px] font-black text-indigo-300 uppercase tracking-widest mb-1 block">Milestone Topic Name</label>
                           <input 
                             type="text" 
+                            id="newTopicName"
                             value={newTopicName}
                             onChange={e => setNewTopicName(e.target.value)}
                             placeholder="e.g. Advanced System Design"
@@ -371,9 +372,10 @@ export default function TutorRoadmapLobby() {
                                 >
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     <div>
-                                      <label className="text-[9px] font-black text-slate-400 uppercase">Resource Title</label>
+                                      <label htmlFor="resourceTitle" className="text-[9px] font-black text-slate-400 uppercase">Resource Title</label>
                                       <input 
                                         type="text" 
+                                        id="resourceTitle"
                                         value={resourceTitle}
                                         onChange={e => setResourceTitle(e.target.value)}
                                         placeholder="e.g. Clean Code Book Guide" 
@@ -381,8 +383,9 @@ export default function TutorRoadmapLobby() {
                                       />
                                     </div>
                                     <div>
-                                      <label className="text-[9px] font-black text-slate-400 uppercase">Resource Type</label>
+                                      <label htmlFor="resourceType" className="text-[9px] font-black text-slate-400 uppercase">Resource Type</label>
                                       <select 
+                                        id="resourceType"
                                         value={resourceType}
                                         onChange={e => setResourceType(e.target.value)}
                                         className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs focus:outline-none focus:border-indigo-500"
@@ -394,9 +397,10 @@ export default function TutorRoadmapLobby() {
                                     </div>
                                   </div>
                                   <div>
-                                    <label className="text-[9px] font-black text-slate-400 uppercase">URL Link</label>
+                                    <label htmlFor="resourceUrL" className="text-[9px] font-black text-slate-400 uppercase">URL Link</label>
                                     <input 
                                       type="url" 
+                                      id="resourceUrL"
                                       value={resourceUrL}
                                       onChange={e => setResourceUrL(e.target.value)}
                                       placeholder="https://example.com/..." 

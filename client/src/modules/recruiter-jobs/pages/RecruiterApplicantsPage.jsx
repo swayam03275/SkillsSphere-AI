@@ -389,15 +389,211 @@ const RecruiterApplicantsPage = () => {
                 >
                   <RefreshCw size={12} /> Reset
                 </button>
+const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `job-${job?.title || jobId}-applicants.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(err.message || "Failed to export matches.");
+    }
+  };
+
+  const openUpdateModal = (e, app) => {
+    e.stopPropagation();
+    setSelectedApp(app);
+    setIsModalOpen(true);
+  };
+
+  const toggleExpand = (id) => {
+    setExpandedId(expandedId === id ? null : id);
+  };
+
+  const applyPreset = (presetId) => {
+    handleResetFilters();
+    setActivePreset(presetId);
+    
+    if (presetId === 'topMatches') {
+      setMinScore(85);
+    } else if (presetId === 'excellent') {
+      setSelectedCategories(['Excellent Match']);
+    } else if (presetId === 'oss') {
+      setContributorOnly(true);
+    } else if (presetId === 'highAts') {
+      setMinAtsScore(80);
+    } else if (presetId === 'frontend') {
+      setSpecialization('frontend');
+    } else if (presetId === 'backend') {
+      setSpecialization('backend');
+    } else if (presetId === 'fullstack') {
+      setSpecialization('fullstack');
+    } else if (presetId === 'readiness') {
+      setCareerReadiness('High');
+    }
+  };
+
+  const handleCategoryToggle = (category) => {
+    setActivePreset('');
+    if (selectedCategories.includes(category)) {
+      setSelectedCategories(selectedCategories.filter(c => c !== category));
+    } else {
+      setSelectedCategories([...selectedCategories, category]);
+    }
+  };
+
+  const handleResetFilters = () => {
+    setMinScore(0);
+    setMinAtsScore(0);
+    setSelectedCategories([]);
+    setSpecialization('');
+    setContributorOnly(false);
+    setCareerReadiness('');
+    setStatusFilter('');
+    setSortBy('matchScore');
+    setActivePreset('');
+    setPage(1);
+  };
+
+  // Reset page when filters change (except when page itself changes)
+  useEffect(() => {
+    setPage(1);
+  }, [
+    statusFilter, sortBy, minScore, minAtsScore, selectedCategories, 
+    specialization, contributorOnly, careerReadiness
+  ]);
+
+  const isAnyFilterActive = 
+    statusFilter !== '' ||
+    minScore > 0 ||
+    minAtsScore > 0 ||
+    selectedCategories.length > 0 ||
+    specialization !== '' ||
+    contributorOnly ||
+    careerReadiness !== '';
+
+  return (
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] p-4 sm:p-6 pt-24 sm:pt-32 text-slate-100">
+      <Navbar />
+
+      <div className="mx-auto max-w-7xl w-full space-y-8">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <button 
+              onClick={() => navigate('/recruiter/jobs')}
+              className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm mb-4"
+            >
+              <ArrowLeft size={16} /> Back to Jobs
+            </button>
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white">
+              Applicants for <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400">{job?.title || 'Loading...'}</span>
+            </h1>
+            <div className="flex items-center gap-4 text-slate-400 text-sm">
+              <span className="flex items-center gap-1.5">
+                <Users size={16} /> {applicants.length} Matching Candidate{applicants.length !== 1 ? 's' : ''}
+              </span>
+              <span className="flex items-center gap-1.5 uppercase tracking-wider text-[10px] font-bold bg-white/5 px-2 py-0.5 rounded border border-white/5">
+                Job ID: {jobId.slice(-6)}
+              </span>
+            </div>
+          </div>
+          
+          <div className="relative z-20">
+            <button
+              onClick={() => setIsExportDropdownOpen(!isExportDropdownOpen)}
+              className="inline-flex items-center gap-2 rounded-xl border border-blue-500/30 bg-blue-600/10 px-4 py-2.5 text-sm font-semibold text-blue-400 hover:bg-blue-600/20 hover:text-blue-300 backdrop-blur-sm transition-all duration-300"
+            >
+              <Download size={16} />
+              Export Candidates
+              <ChevronDown size={14} className={`transition-transform ${isExportDropdownOpen ? "rotate-180" : ""}`} />
+            </button>
+            
+            {isExportDropdownOpen && (
+              <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-white/10 bg-slate-900/95 p-2 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-top-2 duration-200">
+                <button
+                  onClick={handleExportPDF}
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+                >
+                  <FileText size={14} />
+                  Export List (PDF)
+                </button>
+                <button
+                  onClick={handleExportCSV}
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+                >
+                  <Filter size={14} />
+                  Export Data (CSV)
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* AI-Powered Filter Chips Presets */}
+        <div className="space-y-3 bg-slate-900/20 border border-white/5 rounded-2xl p-4">
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest">
+            <Sparkles size={14} className="text-blue-400" />
+            AI Intelligence Presets
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {presets.map(p => {
+              const isActive = activePreset === p.id;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => applyPreset(p.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border transition-all duration-300 ${
+                    isActive 
+                      ? 'bg-blue-600/20 text-blue-300 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.2)]'
+                      : 'bg-slate-950/40 text-slate-300 border-white/5 hover:border-slate-700 hover:text-white'
+                  }`}
+                >
+                  {p.icon}
+                  {p.label}
+                </button>
+              );
+            })}
+            {isAnyFilterActive && (
+              <button
+                onClick={handleResetFilters}
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-red-400 hover:text-red-300 bg-red-500/10 border border-red-500/25 rounded-xl transition-all duration-300"
+              >
+                <X size={12} />
+                Clear Filters
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Responsive Grid Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
+          
+          {/* Left Column: Smart Filters Sidebar */}
+          <div className="lg:col-span-1 bg-slate-900/40 border border-white/5 backdrop-blur-md p-6 rounded-3xl space-y-6 shadow-2xl">
+            <div className="flex items-center justify-between pb-4 border-b border-white/5">
+              <span className="font-extrabold tracking-tight text-white flex items-center gap-2 text-lg">
+                <Sliders size={18} className="text-blue-400" /> Smart Filters
+              </span>
+              {isAnyFilterActive && (
+                <button 
+                  onClick={handleResetFilters}
+                  className="text-xs font-medium text-slate-400 hover:text-red-400 transition-colors flex items-center gap-1"
+                >
+                  <RefreshCw size={12} /> Reset
+                </button>
               )}
             </div>
 
             {/* Workflow Status Filter */}
             <div className="space-y-2">
-              <label className="block text-xs uppercase font-extrabold tracking-wider text-slate-500">
+              <label htmlFor="statusFilter" className="block text-xs uppercase font-extrabold tracking-wider text-slate-500">
                 Application Status
               </label>
               <select
+                id="statusFilter"
                 value={statusFilter}
                 onChange={(e) => {
                   setActivePreset('');
@@ -416,7 +612,7 @@ const RecruiterApplicantsPage = () => {
             {/* AI Match Score Range */}
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <label className="block text-xs uppercase font-extrabold tracking-wider text-slate-500">
+                <label htmlFor="minScore" className="block text-xs uppercase font-extrabold tracking-wider text-slate-500">
                   Min AI Match Score
                 </label>
                 <span className="text-sm font-bold text-emerald-400">{minScore || 'All'}%</span>
@@ -425,6 +621,7 @@ const RecruiterApplicantsPage = () => {
                 type="range"
                 min="0"
                 max="100"
+                id="minScore"
                 value={minScore}
                 onChange={(e) => {
                   setActivePreset('');
@@ -437,7 +634,7 @@ const RecruiterApplicantsPage = () => {
             {/* ATS Score Range */}
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <label className="block text-xs uppercase font-extrabold tracking-wider text-slate-500">
+                <label htmlFor="minAtsScore" className="block text-xs uppercase font-extrabold tracking-wider text-slate-500">
                   Min ATS Score
                 </label>
                 <span className="text-sm font-bold text-indigo-400">{minAtsScore || 'All'}%</span>
@@ -446,6 +643,7 @@ const RecruiterApplicantsPage = () => {
                 type="range"
                 min="0"
                 max="100"
+                id="minAtsScore"
                 value={minAtsScore}
                 onChange={(e) => {
                   setActivePreset('');
@@ -477,10 +675,11 @@ const RecruiterApplicantsPage = () => {
 
             {/* Technical Specialization */}
             <div className="space-y-2">
-              <label className="block text-xs uppercase font-extrabold tracking-wider text-slate-500">
+              <label htmlFor="specialization" className="block text-xs uppercase font-extrabold tracking-wider text-slate-500">
                 Technical Specialty
               </label>
               <select
+                id="specialization"
                 value={specialization}
                 onChange={(e) => {
                   setActivePreset('');
@@ -523,12 +722,11 @@ const RecruiterApplicantsPage = () => {
 
             {/* Career Readiness */}
             <div className="space-y-2">
-              <label className="block text-xs uppercase font-extrabold tracking-wider text-slate-500">
+              <label htmlFor="careerReadiness" className="block text-xs uppercase font-extrabold tracking-wider text-slate-500">
                 Career Readiness
               </label>
               <select
-                value={careerReadiness}
-                onChange={(e) => {
+                id="careerReadiness"
                   setActivePreset('');
                   setCareerReadiness(e.target.value);
                 }}
