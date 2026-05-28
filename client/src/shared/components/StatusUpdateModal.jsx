@@ -50,6 +50,7 @@ const StatusUpdateModal = ({ isOpen, onClose, onUpdate, currentStatus, applicant
           </div>
           <button 
             onClick={onClose}
+            aria-label="Close modal"
             className="p-2 hover:bg-slate-800 rounded-xl text-slate-400 transition-colors"
           >
             <X size={20} />

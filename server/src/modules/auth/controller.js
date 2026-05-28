@@ -21,8 +21,10 @@ import {
 } from "./service.js";
 
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import AppError from "../../utils/AppError.js";
 import asyncHandler from "../../utils/asyncHandler.js";
+import { blacklistToken } from "../../utils/tokenBlacklist.js";
 import { generateAuthCode } from "../../utils/authCodeStore.js";
 import {
   getGoogleOAuthConfig,
@@ -140,6 +142,7 @@ export const googleLogin = asyncHandler(async (req, res, next) => {
     {
       userId: user._id.toString(),
       role: user.role,
+      jti: crypto.randomUUID(),
     },
     process.env.JWT_SECRET,
     {
@@ -276,6 +279,20 @@ export const getMe = asyncHandler(async (req, res, next) => {
 
 // 🚪 Logout
 export const logout = asyncHandler(async (req, res, next) => {
+  // Extract token from Authorization header and blacklist its JTI
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer")) {
+    const token = authHeader.split(" ")[1];
+    try {
+      const decoded = jwt.decode(token);
+      if (decoded && decoded.jti && decoded.exp) {
+        blacklistToken(decoded.jti, decoded.exp);
+      }
+    } catch {
+      // Token decode failure is non-fatal for logout
+    }
+  }
+
   res.status(200).json({
     success: true,
     message: "Logged out successfully",

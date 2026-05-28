@@ -1,5 +1,6 @@
 import { useState } from "react";
 import MessageBubble from "./MessageBubble";
+import { API_URL } from "../../../config/env";
 
 const ChatBox = () => {
   const [messages, setMessages] = useState([
@@ -11,7 +12,7 @@ const ChatBox = () => {
   // 🔥 NEW: backend call function
   const sendMessageToBackend = async (message) => {
     try {
-      const res = await fetch("http://localhost:5000/api/chat", {
+      const res = await fetch(`${API_URL}/api/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

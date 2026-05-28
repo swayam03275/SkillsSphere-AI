@@ -51,7 +51,7 @@ const RoadmapPage = () => {
 
   if (!roadmap) {
     return (
-      <div className="min-h-screen bg-[var(--background)] text-[var(--text-main)]">
+      <div className="min-h-screen bg-[var(--background)] text-[var(--text-main)] pt-24">
         <Navbar />
         <div className="pt-40 flex flex-col items-center justify-center text-center px-4">
           <div className="p-6 bg-primary/10 rounded-full mb-6">
@@ -70,7 +70,7 @@ const RoadmapPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--background)] text-[var(--text-main)] font-sans">
+    <div className="min-h-screen bg-[var(--background)] text-[var(--text-main)] font-sans pt-24">
       <Navbar />
       <div className="max-w-4xl mx-auto pt-32 pb-20 px-4">
         {/* Header section */}

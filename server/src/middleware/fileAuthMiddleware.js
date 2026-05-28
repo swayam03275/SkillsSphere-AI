@@ -3,6 +3,7 @@ import User from "../database/models/User.js";
 import AppError from "../utils/AppError.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import { verifySignedFileUrl } from "../utils/signedFileUrl.js";
+import { isTokenBlacklisted } from "../utils/tokenBlacklist.js";
 
 /**
  * Auth for file downloads. Accepts JWT via Authorization header or a signed URL
@@ -41,6 +42,11 @@ export const protectFileAccess = asyncHandler(async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    if (decoded.jti && isTokenBlacklisted(decoded.jti)) {
+      return next(new AppError("Token has been revoked. Please log in again.", 401));
+    }
+
     const currentUser = await User.findById(decoded.userId).select("-password");
 
     if (!currentUser) {

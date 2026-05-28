@@ -69,8 +69,9 @@ const TutorAnalyticsDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 pt-24">
+        <Navbar />
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
@@ -86,7 +87,7 @@ const TutorAnalyticsDashboard = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 px-6 pb-6 pt-24 sm:px-10 sm:pb-10 sm:pt-28">
-      <Navbar />
+      
       <div className="max-w-7xl mx-auto space-y-8">
         
         {/* Header Section */}

@@ -339,7 +339,7 @@ const MyApplicationsPage = () => {
   };
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] text-slate-100 flex flex-col">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] text-slate-100 flex flex-col pt-24">
       <Navbar />
 
       <div className="h-24 md:h-32 shrink-0"></div>

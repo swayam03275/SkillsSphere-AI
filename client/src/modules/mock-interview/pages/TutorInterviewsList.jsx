@@ -37,7 +37,7 @@ const TutorInterviewsList = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 px-6 pb-6 pt-24 sm:px-10 sm:pb-10 sm:pt-28">
-      <Navbar />
+      
       <div className="max-w-6xl mx-auto space-y-8">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Student Mock Interviews</h1>

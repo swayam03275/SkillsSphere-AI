@@ -6,6 +6,7 @@ import Input from "../../shared/components/Input";
 import Button from "../../shared/components/Button";
 import { useToast } from "../../shared/components";
 import Navbar from "../../shared/landing/Navbar";
+import { API_URL } from "../../config/env";
 
 const Login = () => {
   const dispatch = useDispatch();
@@ -164,7 +165,6 @@ const Login = () => {
                 if (location.state?.from?.pathname) {
                   sessionStorage.setItem('oauth_redirect', location.state.from.pathname);
                 }
-                const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
                 const redirect = encodeURIComponent(`${window.location.origin}/auth/callback`);
                 window.location.href = `${API_URL}/api/auth/google?redirect=${redirect}`;
               }}

@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Input from "../../shared/components/Input";
 import Button from "../../shared/components/Button";
 import { useToast } from "../../shared/components";
+import { API_URL } from "../../config/env";
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
@@ -26,7 +27,6 @@ const ForgotPassword = () => {
     setError("");
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
       const response = await fetch(`${API_URL}/api/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

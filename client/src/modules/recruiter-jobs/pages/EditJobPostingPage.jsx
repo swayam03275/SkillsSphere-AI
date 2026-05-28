@@ -54,6 +54,7 @@ const EditJobPostingPage = () => {
       if (error.errors) {
         setFieldErrors(error.errors);
       }
+      throw error;
     } finally {
       setIsSubmitting(false);
     }

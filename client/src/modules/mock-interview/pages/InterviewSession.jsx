@@ -4,6 +4,7 @@ import { useSelector } from "react-redux";
 import { io } from "socket.io-client";
 import { submitAnswer, completeInterview } from "../services/interviewService";
 import { apiRequest } from "../../../services/apiClient";
+import { SOCKET_URL } from "../../../config/env";
 import InterviewSessionSkeleton from "../components/InterviewSessionSkeleton";
 import ObserverPanel from "../components/ObserverPanel";
 import RealtimeSentimentIndicator from "../components/RealtimeSentimentIndicator";
@@ -141,8 +142,7 @@ const InterviewSession = () => {
     if (!session || !user) return;
     const token = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
     
-    const socketUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
-    const newSocket = io(socketUrl, { 
+    const newSocket = io(SOCKET_URL, { 
       auth: { token },
       reconnection: true,
       reconnectionAttempts: 10,
@@ -375,7 +375,7 @@ const InterviewSession = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#020617]">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#020617] pt-24">
         <Navbar />
         <InterviewSessionSkeleton />
       </div>
@@ -384,7 +384,7 @@ const InterviewSession = () => {
 
   if (error && !session) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#020617] flex flex-col">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#020617] flex flex-col pt-24">
         <Navbar />
         <div className="flex-1 flex flex-col items-center justify-center p-8">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 p-10 rounded-3xl flex flex-col items-center max-w-md text-center shadow-xl">
@@ -406,7 +406,7 @@ const InterviewSession = () => {
   const totalQuestions = session?.totalQuestions || 0;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#020617] flex flex-col font-sans transition-colors duration-300">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#020617] flex flex-col font-sans transition-colors duration-300 pt-24">
       <Navbar />
 
       <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 mt-24 sm:mt-28 flex flex-col lg:flex-row gap-8 items-start">

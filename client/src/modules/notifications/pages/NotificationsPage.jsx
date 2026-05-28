@@ -107,7 +107,7 @@ const NotificationsPage = () => {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-[var(--background)]">
+    <div className="min-h-screen bg-[var(--background)] pt-24">
       <Navbar />
 
       {/* Main Content */}

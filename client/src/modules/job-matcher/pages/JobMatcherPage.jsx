@@ -75,7 +75,7 @@ export default function JobMatcherPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[var(--background)] dark:bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] text-gray-900 dark:text-slate-100 flex flex-col">
+    <main className="min-h-screen bg-[var(--background)] dark:bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] text-gray-900 dark:text-slate-100 flex flex-col pt-24">
       <Navbar />
 
       {/* Spacer for fixed navbar */}

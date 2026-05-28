@@ -191,7 +191,7 @@ const DashboardPage = () => {
         </div>
       ) : (
         <div className="w-full py-4 sm:py-6">
-          <div className="grid gap-4 lg:min-h-[calc(100vh-8.5rem)] lg:grid-cols-[240px_minmax(0,1fr)]">
+          <div className="grid gap-4 lg:min-h-[calc(100vh-8.5rem)] lg:grid-cols-[240px_minmax(0,1fr)] pb-32">
             <aside className="rounded-xl bg-[#0f3558] px-5 py-10 text-white shadow-[0_20px_40px_rgba(12,26,47,0.25)] dark:bg-slate-900 dark:shadow-[0_20px_40px_rgba(0,0,0,0.5)] lg:min-h-[calc(100vh-8.5rem)]">
               <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#1a486f] shadow-[0_8px_20px_rgba(0,0,0,0.25)] dark:bg-slate-800">
                 <User size={40} className="text-slate-100" />

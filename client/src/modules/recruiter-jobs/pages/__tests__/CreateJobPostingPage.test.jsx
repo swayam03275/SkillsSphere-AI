@@ -6,6 +6,7 @@ import { configureStore } from '@reduxjs/toolkit'
 import { MemoryRouter } from 'react-router-dom'
 import CreateJobPostingPage from '../CreateJobPostingPage'
 import * as jobPostingService from '../../services/jobPostingService'
+import { ToastProvider } from '../../../../shared/components'
 
 // Mock the service
 vi.mock('../../services/jobPostingService', () => ({
@@ -74,7 +75,9 @@ const createMockStore = (authState = {}) => {
 const renderWithProviders = (component, { store = createMockStore() } = {}) => {
   return render(
     <Provider store={store}>
-      <MemoryRouter>{component}</MemoryRouter>
+      <MemoryRouter>
+        <ToastProvider>{component}</ToastProvider>
+      </MemoryRouter>
     </Provider>
   )
 }
@@ -218,7 +221,7 @@ describe('CreateJobPostingPage', () => {
 
     // Button should show loading state
     await waitFor(() => {
-      expect(screen.getByTestId('submit-btn')).toHaveTextContent('Loading...')
+      expect(screen.getByTestId('submit-btn')).toHaveTextContent('Posting...')
       expect(screen.getByTestId('submit-btn')).toBeDisabled()
     })
   })
@@ -276,7 +279,7 @@ describe('CreateJobPostingPage', () => {
     await user.click(screen.getByTestId('submit-btn'))
 
     await waitFor(() => {
-      expect(screen.getByText('Unable to connect to server')).toBeInTheDocument()
+      expect(screen.getAllByText('Unable to connect to server').length).toBeGreaterThan(0)
     })
   })
 

@@ -33,7 +33,7 @@ const buildAuthToken = (user) => {
   }
 
   return jwt.sign(
-    { userId: user._id.toString(), role: user.role },
+    { userId: user._id.toString(), role: user.role, jti: crypto.randomUUID() },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
   );
@@ -72,7 +72,11 @@ export const registerUserAndIssueToken = async ({ name, email, password, role })
 
   // In SMTP mode, send real OTP email; in console mode, auto-verify the user
   if (!skipVerification) {
-    await sendOTP(email, otp, "verification");
+    try {
+      await sendOTP(email, otp, "verification");
+    } catch (error) {
+      throw new AppError("Failed to send verification email. Please try again.", 500);
+    }
   } else {
     console.log(`[AUTH] User ${email} auto-verified (EMAIL_SERVICE_MODE=${emailMode})`);
   }
@@ -137,7 +141,11 @@ export const forgotPasswordRequest = async (email) => {
   user.otpAttempts = 0;
   await user.save();
 
-  await sendOTP(email, otp, "reset");
+  try {
+    await sendOTP(email, otp, "reset");
+  } catch (error) {
+    throw new AppError("Failed to send reset code. Please try again.", 500);
+  }
 
   return { success: true, message: "A reset code has been sent to your email." };
 };
@@ -195,7 +203,11 @@ export const resendUserOTP = async (email) => {
   user.otpAttempts = 0;
   await user.save();
 
-  await sendOTP(email, otp, "verification");
+  try {
+    await sendOTP(email, otp, "verification");
+  } catch (error) {
+    throw new AppError("Failed to resend verification code. Please try again.", 500);
+  }
 
   return { success: true, message: "A new verification code has been sent to your email." };
 };

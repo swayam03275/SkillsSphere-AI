@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import Navbar from "../landing/Navbar";
 
 /**
@@ -26,7 +26,7 @@ export const AUTH_CARD_CLASS =
  */
 const AuthLayout = ({ children, maxWidth = "380px", footerContent }) => {
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center bg-slate-50 dark:bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] overflow-hidden relative px-3 py-6 box-border">
+    <div className="min-h-screen flex flex-col justify-center items-center bg-slate-50 dark:bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] overflow-hidden relative px-3 pt-24 pb-6 box-border">
       <Navbar />
 
       <div

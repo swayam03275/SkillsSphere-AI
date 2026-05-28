@@ -61,7 +61,7 @@ const InterviewHistory = () => {
 
   return (
     <div className="max-w-[900px] mx-auto px-8 pb-8 pt-24 flex flex-col gap-6 min-h-[calc(100vh-80px)]">
-      <Navbar />
+      
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-extrabold bg-gradient-to-br from-indigo-500 to-purple-500 bg-clip-text text-transparent">Interview History</h1>
         <button

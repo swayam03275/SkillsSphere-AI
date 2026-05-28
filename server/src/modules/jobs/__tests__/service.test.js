@@ -7,7 +7,7 @@ import Resume from "../../../database/models/Resume.js";
 import AppError from "../../../utils/AppError.js";
 import * as resumeService from "../../resumes/service.js";
 import matchingService from "../../matching/service.js";
-
+import mongoose from "mongoose";
 describe("Job Service", () => {
   afterEach(() => {
     mock.restoreAll();
@@ -34,7 +34,7 @@ describe("Job Service", () => {
 
   describe("updateJob", () => {
     it("should update a job successfully when user is the owner", async () => {
-      const mockJobId = "job123";
+      const mockJobId = new mongoose.Types.ObjectId();
       const mockRecruiterId = "recruiter123";
       const mockUpdateData = { title: "Senior Software Engineer" };
 
@@ -87,7 +87,7 @@ describe("Job Service", () => {
 
   describe("deleteJob", () => {
     it("should delete a job and its applications when user is owner", async () => {
-      const mockJobId = "job123";
+      const mockJobId = new mongoose.Types.ObjectId();
       const mockRecruiterId = "recruiter123";
 
       const mockExistingJob = { _id: mockJobId, recruiter: { toString: () => mockRecruiterId } };
@@ -191,7 +191,7 @@ describe("Job Service", () => {
   });
 
   describe("getJobApplications", () => {
-    const mockJobId = "job123";
+    const mockJobId = new mongoose.Types.ObjectId();
     const mockRecruiterId = "recruiter123";
 
     it("should return all applications for the job when no status filter is provided", async () => {
@@ -202,9 +202,13 @@ describe("Job Service", () => {
 
       const mockQuery = {
         populate: mock.fn(() => mockQuery),
-        sort: mock.fn(() => mockQuery), skip: mock.fn(() => mockQuery), limit: mock.fn(async () => mockApps),
+        sort: mock.fn(() => mockQuery),
+      skip: mock.fn(() => mockQuery),
+      limit: mock.fn(() => mockQuery),
+      select: mock.fn(() => mockQuery),
+      lean: mock.fn(async () => mockApps),
       };
-      mock.method(JobApplication, 'find', () => mockQuery); mock.method(JobApplication, 'countDocuments', async () => typeof mockApps !== 'undefined' ? mockApps.length : 1);
+      mock.method(JobApplication, "find", () => mockQuery);
 
       const result = await jobService.getJobApplications(mockJobId, mockRecruiterId);
 
@@ -212,7 +216,7 @@ describe("Job Service", () => {
       assert.equal(JobPosting.findById.mock.calls[0].arguments[0], mockJobId);
       assert.equal(JobApplication.find.mock.calls.length, 1);
       assert.deepEqual(JobApplication.find.mock.calls[0].arguments[0], { job: mockJobId });
-      assert.deepEqual(result, { applications: mockApps, totalCount: 1, totalPages: 1, currentPage: 1 });
+      assert.deepEqual(result, mockApps);
     });
 
     it("should filter applications by status when status filter is provided", async () => {
@@ -223,16 +227,20 @@ describe("Job Service", () => {
 
       const mockQuery = {
         populate: mock.fn(() => mockQuery),
-        sort: mock.fn(() => mockQuery), skip: mock.fn(() => mockQuery), limit: mock.fn(async () => mockApps),
+        sort: mock.fn(() => mockQuery),
+      skip: mock.fn(() => mockQuery),
+      limit: mock.fn(() => mockQuery),
+      select: mock.fn(() => mockQuery),
+      lean: mock.fn(async () => mockApps),
       };
-      mock.method(JobApplication, 'find', () => mockQuery); mock.method(JobApplication, 'countDocuments', async () => typeof mockApps !== 'undefined' ? mockApps.length : 1);
+      mock.method(JobApplication, "find", () => mockQuery);
 
       const result = await jobService.getJobApplications(mockJobId, mockRecruiterId, "shortlisted");
 
       assert.equal(JobPosting.findById.mock.calls.length, 1);
       assert.equal(JobApplication.find.mock.calls.length, 1);
       assert.deepEqual(JobApplication.find.mock.calls[0].arguments[0], { job: mockJobId, status: "shortlisted" });
-      assert.deepEqual(result, { applications: mockApps, totalCount: 1, totalPages: 1, currentPage: 1 });
+      assert.deepEqual(result, mockApps);
     });
 
     it("should throw AppError(404) if job not found", async () => {

@@ -111,7 +111,7 @@ const ResumeAnalyzerPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-dark-bg text-gray-900 dark:text-text-main font-sans">
+    <div className="min-h-screen bg-white dark:bg-dark-bg text-gray-900 dark:text-text-main font-sans pt-24">
       <Navbar />
 
       <div className="max-w-4xl mx-auto pt-32 pb-12 px-4 sm:px-6 lg:px-8 space-y-8 animate-slide-up">

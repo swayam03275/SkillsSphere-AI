@@ -1,19 +1,19 @@
 import axios from "axios";
 import dns from "dns/promises";
+import ipaddr from "ipaddr.js";
 
 // Function to check if an IP is private/local
 const isPrivateIP = (ip) => {
-  const parts = ip.split(".").map(Number);
-  if (parts.length !== 4) return false;
-
-  return (
-    parts[0] === 10 ||
-    (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) ||
-    (parts[0] === 192 && parts[1] === 168) ||
-    parts[0] === 127 ||
-    (parts[0] === 169 && parts[1] === 254) ||
-    parts[0] === 0 // 0.0.0.0
-  );
+  try {
+    const parsedIp = ipaddr.parse(ip);
+    const range = parsedIp.range();
+    return [
+      "unspecified", "broadcast", "multicast", "linkLocal", 
+      "loopback", "private", "reserved"
+    ].includes(range);
+  } catch (err) {
+    return false; // Invalid IP format
+  }
 };
 
 /**

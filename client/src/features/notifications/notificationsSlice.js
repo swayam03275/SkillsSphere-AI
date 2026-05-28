@@ -190,45 +190,85 @@ const notificationsSlice = createSlice({
         }
       })
       .addCase(markAsRead.rejected, (state, action) => {
-        // Rollback on rejection (re-fetch correct unread count to reconcile)
+        const id = action.meta.arg;
+        const index = state.items.findIndex((item) => item._id === id);
+        if (index !== -1 && state.items[index].isRead) {
+          state.items[index].isRead = false;
+          state.unreadCount += 1;
+        }
         state.error = action.payload;
       })
 
       // Mark all notifications as read (Optimistic Update)
       .addCase(markAllAsRead.pending, (state) => {
+        state._rollbackUnreadIds = state.items
+          .filter((item) => !item.isRead)
+          .map((item) => item._id);
         state.items = state.items.map((item) => ({ ...item, isRead: true }));
         state.unreadCount = 0;
       })
       .addCase(markAllAsRead.rejected, (state, action) => {
+        const unreadIds = state._rollbackUnreadIds;
+        if (unreadIds && unreadIds.length > 0) {
+          state.items.forEach((item) => {
+            if (unreadIds.includes(item._id)) {
+              item.isRead = false;
+            }
+          });
+          state.unreadCount = unreadIds.length;
+          state._rollbackUnreadIds = null;
+        }
         state.error = action.payload;
       })
 
       // Delete a single notification (Optimistic Update)
       .addCase(deleteNotificationById.pending, (state, action) => {
-        const id = action.meta.arg;
-        const itemToDelete = state.items.find((item) => item._id === id);
-        
-        if (itemToDelete) {
-          if (!itemToDelete.isRead) {
-            state.unreadCount = Math.max(0, state.unreadCount - 1);
+          const id = action.meta.arg;
+          const itemToDelete = state.items.find((item) => item._id === id);
+          
+          if (itemToDelete) {
+            state._rollbackDeletedItem = itemToDelete;
+            if (!itemToDelete.isRead) {
+              state.unreadCount = Math.max(0, state.unreadCount - 1);
+            }
+            state.items = state.items.filter((item) => item._id !== id);
+            state.pagination.total = Math.max(0, state.pagination.total - 1);
           }
-          state.items = state.items.filter((item) => item._id !== id);
-          state.pagination.total = Math.max(0, state.pagination.total - 1);
-        }
-      })
+        })
       .addCase(deleteNotificationById.rejected, (state, action) => {
-        state.error = action.payload;
-      })
+          const deleted = state._rollbackDeletedItem;
+          if (deleted) {
+            state.items.push(deleted);
+            if (!deleted.isRead) {
+              state.unreadCount += 1;
+            }
+            state.pagination.total += 1;
+            state._rollbackDeletedItem = null;
+          }
+          state.error = action.payload;
+        })
 
       // Clear all notifications (Optimistic Update)
       .addCase(clearAllNotifications.pending, (state) => {
-        state.items = [];
-        state.unreadCount = 0;
-        state.pagination = initialState.pagination;
-      })
+          state._rollbackSnapshot = {
+            items: state.items,
+            unreadCount: state.unreadCount,
+            pagination: state.pagination,
+          };
+          state.items = [];
+          state.unreadCount = 0;
+          state.pagination = initialState.pagination;
+        })
       .addCase(clearAllNotifications.rejected, (state, action) => {
-        state.error = action.payload;
-      });
+          const snapshot = state._rollbackSnapshot;
+          if (snapshot) {
+            state.items = snapshot.items;
+            state.unreadCount = snapshot.unreadCount;
+            state.pagination = snapshot.pagination;
+            state._rollbackSnapshot = null;
+          }
+          state.error = action.payload;
+        });
   },
 });
 

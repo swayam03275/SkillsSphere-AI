@@ -69,7 +69,7 @@ const InterviewLobby = () => {
   }));
 
   return (
-    <div className="min-h-screen bg-[#d8dde5] dark:bg-slate-950 text-gray-900 dark:text-slate-100 overflow-hidden relative">
+    <div className="min-h-screen bg-[#d8dde5] dark:bg-slate-950 text-gray-900 dark:text-slate-100 overflow-hidden relative pt-24">
       {/* Premium Animated Backgrounds */}
       <div className="pointer-events-none absolute -left-28 top-12 h-[500px] w-[500px] rounded-full bg-indigo-500/20 blur-[120px] dark:bg-indigo-600/15 animate-pulse" />
       <div className="pointer-events-none absolute -right-24 top-1/4 h-[600px] w-[600px] rounded-full bg-violet-500/20 blur-[120px] dark:bg-violet-600/15 animate-pulse" style={{ animationDelay: "2s" }} />
