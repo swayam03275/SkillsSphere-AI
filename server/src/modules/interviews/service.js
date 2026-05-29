@@ -12,6 +12,11 @@ import redisClient from "../../config/redis.js";
 import Notification from "../../database/models/Notification.js";
 import { getIO } from "../../utils/socketIO.js";
 
+// Guards against concurrent answer submissions for the same session.
+// Since processAnswerSubmission spans async I/O (transcription, evaluation),
+// two calls can otherwise read the same currentQuestionIndex and collide.
+const pendingSubmissions = new Map();
+
 /**
  * Select random questions from the bank for a given topic and difficulty.
  * Avoids repeating questions from the user's last 3 sessions on the same topic.
@@ -111,110 +116,118 @@ export const processAnswerSubmission = async ({
   transcript,
   audioFile,
 }) => {
-  const session = await InterviewSession.findOne({
-    _id: sessionId,
-    userId,
-    status: "in_progress",
-  });
-
-  if (!session) {
-    throw new AppError("Active interview session not found", 404);
+  if (pendingSubmissions.get(sessionId)) {
+    throw new AppError("Answer submission already in progress for this session", 429);
   }
 
-  const currentIndex = session.currentQuestionIndex;
+  pendingSubmissions.set(sessionId, true);
 
-  if (currentIndex >= session.totalQuestions) {
-    throw new AppError("All questions have been answered", 400);
-  }
-
-  const currentAnswer = session.answers[currentIndex];
-
-  // Get the full question details for evaluation
-  const question = await QuestionBank.findById(currentAnswer.questionId);
-
-  if (!question) {
-    throw new AppError("Question not found in bank", 500);
-  }
-
-  // Step 1: If audio file provided, transcribe it via Python service
-  let finalTranscript = transcript;
-  if (audioFile && !transcript) {
-    try {
-      const transcription = await transcribeAudio(audioFile.buffer);
-      finalTranscript = transcription.transcript;
-    } catch (err) {
-      console.error("[interview] Transcription failed:", err.message);
-      // Fall back — allow text-only submission
-      throw new AppError("Audio transcription failed. Please try submitting text instead.", 500);
-    }
-  }
-
-  if (!finalTranscript || finalTranscript.trim().length === 0) {
-    throw new AppError("No transcript available for evaluation", 400);
-  }
-
-  // Step 2: Evaluate the answer via Python service
-  let evaluation;
   try {
-    evaluation = await evaluateAnswer(
-      finalTranscript,
-      question.expectedAnswer,
-      question.expectedConcepts
-    );
-  } catch (err) {
-    console.error("[interview] Evaluation failed:", err.message);
-    // Use fallback scores so the interview can continue
-    evaluation = {
-      technical: 0,
-      communication: 0,
-      relevance: 0,
-      concepts: { detected: [], missed: question.expectedConcepts },
-      fillerWords: 0,
-      speakingSpeed: "normal",
-    };
-  }
+    const session = await InterviewSession.findOne({
+      _id: sessionId,
+      userId,
+      status: "in_progress",
+    });
 
-  // Step 3: Update the session with the answer data
-  session.answers[currentIndex].transcript = finalTranscript;
-  session.answers[currentIndex].scores = {
-    technical: evaluation.technical || 0,
-    communication: evaluation.communication || 0,
-    relevance: evaluation.relevance || 0,
-  };
-  session.answers[currentIndex].concepts.detected =
-    evaluation.concepts?.detected || [];
-  session.answers[currentIndex].concepts.missed =
-    evaluation.concepts?.missed || [];
-  session.answers[currentIndex].fillerWords = evaluation.fillerWords || 0;
-  session.answers[currentIndex].speakingSpeed =
-    evaluation.speakingSpeed || "normal";
-  session.answers[currentIndex].answeredAt = new Date();
+    if (!session) {
+      throw new AppError("Active interview session not found", 404);
+    }
 
-  if (audioFile) {
-    session.answers[currentIndex].audioPath = audioFile.path || null;
-  }
+    const currentIndex = session.currentQuestionIndex;
 
-  // Move to next question
-  session.currentQuestionIndex = currentIndex + 1;
-  await session.save();
+    if (currentIndex >= session.totalQuestions) {
+      throw new AppError("All questions have been answered", 400);
+    }
 
-  // Prepare response
-  const isLastQuestion = currentIndex + 1 >= session.totalQuestions;
-  const nextQuestion = !isLastQuestion
-    ? {
-        index: currentIndex + 1,
-        questionText: session.answers[currentIndex + 1].questionText,
-        questionId: session.answers[currentIndex + 1].questionId,
+    const currentAnswer = session.answers[currentIndex];
+
+    // Get the full question details for evaluation
+    const question = await QuestionBank.findById(currentAnswer.questionId);
+
+    if (!question) {
+      throw new AppError("Question not found in bank", 500);
+    }
+
+    // Step 1: If audio file provided, transcribe it via Python service
+    let finalTranscript = transcript;
+    if (audioFile && !transcript) {
+      try {
+        const transcription = await transcribeAudio(audioFile.buffer);
+        finalTranscript = transcription.transcript;
+      } catch (err) {
+        console.error("[interview] Transcription failed:", err.message);
+        throw new AppError("Audio transcription failed. Please try submitting text instead.", 500);
       }
-    : null;
+    }
 
-  return {
-    scores: session.answers[currentIndex].scores,
-    concepts: session.answers[currentIndex].concepts,
-    transcript: finalTranscript,
-    isLastQuestion,
-    nextQuestion,
-  };
+    if (!finalTranscript || finalTranscript.trim().length === 0) {
+      throw new AppError("No transcript available for evaluation", 400);
+    }
+
+    // Step 2: Evaluate the answer via Python service
+    let evaluation;
+    try {
+      evaluation = await evaluateAnswer(
+        finalTranscript,
+        question.expectedAnswer,
+        question.expectedConcepts
+      );
+    } catch (err) {
+      console.error("[interview] Evaluation failed:", err.message);
+      evaluation = {
+        technical: 0,
+        communication: 0,
+        relevance: 0,
+        concepts: { detected: [], missed: question.expectedConcepts },
+        fillerWords: 0,
+        speakingSpeed: "normal",
+      };
+    }
+
+    // Step 3: Update the session with the answer data
+    session.answers[currentIndex].transcript = finalTranscript;
+    session.answers[currentIndex].scores = {
+      technical: evaluation.technical || 0,
+      communication: evaluation.communication || 0,
+      relevance: evaluation.relevance || 0,
+    };
+    session.answers[currentIndex].concepts.detected =
+      evaluation.concepts?.detected || [];
+    session.answers[currentIndex].concepts.missed =
+      evaluation.concepts?.missed || [];
+    session.answers[currentIndex].fillerWords = evaluation.fillerWords || 0;
+    session.answers[currentIndex].speakingSpeed =
+      evaluation.speakingSpeed || "normal";
+    session.answers[currentIndex].answeredAt = new Date();
+
+    if (audioFile) {
+      session.answers[currentIndex].audioPath = audioFile.path || null;
+    }
+
+    // Move to next question
+    session.currentQuestionIndex = currentIndex + 1;
+    await session.save();
+
+    // Prepare response
+    const isLastQuestion = currentIndex + 1 >= session.totalQuestions;
+    const nextQuestion = !isLastQuestion
+      ? {
+          index: currentIndex + 1,
+          questionText: session.answers[currentIndex + 1].questionText,
+          questionId: session.answers[currentIndex + 1].questionId,
+        }
+      : null;
+
+    return {
+      scores: session.answers[currentIndex].scores,
+      concepts: session.answers[currentIndex].concepts,
+      transcript: finalTranscript,
+      isLastQuestion,
+      nextQuestion,
+    };
+  } finally {
+    pendingSubmissions.delete(sessionId);
+  }
 };
 
 /**

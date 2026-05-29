@@ -1,8 +1,6 @@
-import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
 // Skeleton placeholder card displayed during jobs loading state
 
 const JobCardSkeleton = () => {
-  useDocumentTitle("Job Card Skeleton");
   return (
     <div className="animate-pulse rounded-2xl border border-white/5 bg-slate-900/40 p-6">
       <div className="flex justify-between items-start mb-5">

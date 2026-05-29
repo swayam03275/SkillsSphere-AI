@@ -43,6 +43,9 @@ const TABS = [
   { id: "security", label: "Security", icon: <Lock size={15} /> },
 ];
 
+const AVATAR_FILE_TYPES = ["image/png", "image/jpeg", "image/webp"];
+const AVATAR_MAX_SIZE = 5 * 1024 * 1024;
+
 function formatDate(iso) {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString("en-US", {
@@ -99,85 +102,128 @@ const DeleteModal = ({ onConfirm, onCancel, loading }) => (
   </div>
 );
 
-const AvatarEditor = ({ user, roleConfig, onUpload, onRemove, uploading, isEditing, avatarSrc }) => {
+const AvatarEditor = ({ user, roleConfig, onUpload, onRemove, uploading, avatarSrc }) => {
   const fileRef = useRef(null);
   const [preview, setPreview] = useState(null);
-  const [pendingFile, setPendingFile] = useState(null);
   const [justSaved, setJustSaved] = useState(false);
+  const [validationError, setValidationError] = useState("");
 
-  const handleFile = (file) => {
+  useEffect(() => {
+    return () => {
+      if (preview?.startsWith("blob:")) {
+        URL.revokeObjectURL(preview);
+      }
+    };
+  }, [preview]);
+
+  const handleFile = async (file) => {
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => setPreview(e.target.result);
-    reader.readAsDataURL(file);
-    setPendingFile(file);
-    setJustSaved(false);
-  };
+    if (!AVATAR_FILE_TYPES.includes(file.type)) {
+      setValidationError("Please upload a PNG, JPG, JPEG, or WEBP image.");
+      setPreview(null);
+      return;
+    }
 
-  const handleSavePhoto = () => {
-    if (!pendingFile) return;
-    onUpload(pendingFile);
-    setPendingFile(null);
+    if (file.size > AVATAR_MAX_SIZE) {
+      setValidationError("Profile image must be 5MB or smaller.");
+      setPreview(null);
+      return;
+    }
+
+    if (preview?.startsWith("blob:")) {
+      URL.revokeObjectURL(preview);
+    }
+
+    const nextPreview = URL.createObjectURL(file);
+    setPreview(nextPreview);
+    setValidationError("");
+    setJustSaved(false);
+
+    const uploaded = await onUpload(file);
     setPreview(null);
-    setJustSaved(true);
-    setTimeout(() => setJustSaved(false), 3000);
+    if (uploaded) {
+      setJustSaved(true);
+      setTimeout(() => setJustSaved(false), 3000);
+    }
   };
 
   const displayPic = preview || avatarSrc;
   const initials = getInitials(user.name || "");
-  const hasPending = Boolean(pendingFile);
+  const inputId = "profile-avatar-upload";
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex w-full flex-col items-center gap-3">
       <div className="relative group">
         <div className={`w-32 h-32 rounded-full bg-gradient-to-br ${roleConfig.avatar} flex items-center justify-center text-white text-3xl font-bold border-4 border-white dark:border-slate-900 shadow-xl overflow-hidden select-none`}
           style={{ boxShadow: `0 4px 24px ${roleConfig.glow}` }}>
-          {displayPic ? <img src={displayPic} alt={user.name} className="w-full h-full object-cover" /> : initials}
+          {displayPic ? (
+            <img src={displayPic} alt={`${user.name || "User"} profile avatar`} className="w-full h-full object-cover" />
+          ) : (
+            <span aria-label={`${user.name || "User"} default avatar`}>{initials || "U"}</span>
+          )}
         </div>
         {uploading && (
-          <div className="absolute inset-0 rounded-full bg-black/60 flex items-center justify-center">
-            <div className="w-7 h-7 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          <div className="absolute inset-0 rounded-full bg-black/60 flex flex-col items-center justify-center gap-2 text-white" aria-live="polite">
+            <div className="w-7 h-7 border-2 border-white border-t-transparent rounded-full animate-spin" aria-hidden="true" />
+            <span className="text-[11px] font-semibold">Uploading...</span>
           </div>
         )}
-        {isEditing && !uploading && !hasPending && !justSaved && (
-          <div onClick={() => fileRef.current?.click()}
-            className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 cursor-pointer">
+        {!uploading && !justSaved && (
+          <label
+            htmlFor={inputId}
+            className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 cursor-pointer"
+          >
             <Camera size={18} className="text-white" />
-            <span className="text-white text-[10px] font-semibold">{user.profilePic ? "Change" : "Upload"}</span>
-          </div>
+            <span className="text-white text-[10px] font-semibold">{displayPic ? "Change" : "Upload"}</span>
+          </label>
         )}
-        {isEditing && user.profilePic && !hasPending && !uploading && !justSaved && (
-          <button onClick={() => { setPreview(null); setPendingFile(null); onRemove(); }}
-            className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-md z-10">
+        {displayPic && !uploading && !justSaved && onRemove && (
+          <button
+            type="button"
+            aria-label="Remove profile photo"
+            onClick={onRemove}
+            className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-md z-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+          >
             <X size={11} />
           </button>
         )}
       </div>
-      {isEditing && hasPending && (
-        <div className="flex gap-2 mt-1">
-          <button onClick={handleSavePhoto} disabled={uploading}
-            className="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white disabled:opacity-50">
-            <Check size={12} /> Save
-          </button>
-          <button onClick={() => { setPreview(null); setPendingFile(null); }} disabled={uploading}
-            className="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10">
-            <X size={12} /> Cancel
-          </button>
-        </div>
-      )}
-      {isEditing && !hasPending && !uploading && justSaved && (
+
+      <div className="flex w-full flex-col items-center gap-2">
+        <input
+          ref={fileRef}
+          id={inputId}
+          type="file"
+          accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
+          className="sr-only"
+          aria-label="Upload profile image"
+          disabled={uploading}
+          onChange={(e) => { handleFile(e.target.files[0]); e.target.value = ""; }}
+        />
+        <label
+          htmlFor={inputId}
+          aria-disabled={uploading}
+          className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-offset-2 dark:focus-within:ring-offset-slate-900 ${
+            uploading
+              ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500"
+              : "cursor-pointer border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-300 dark:hover:bg-indigo-500/20"
+          }`}
+        >
+          <Upload size={12} aria-hidden="true" />
+          {displayPic ? "Change photo" : "Upload photo"}
+        </label>
+      </div>
+
+      {!uploading && justSaved && (
         <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
           <BadgeCheck size={13} /> Saved!
         </span>
       )}
-      {isEditing && !hasPending && !uploading && !justSaved && !user.profilePic && (
-        <button onClick={() => fileRef.current?.click()}
-          className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 mt-1">
-          <Upload size={11} /> Upload photo
-        </button>
+      {validationError && (
+        <p className="text-xs text-red-500 dark:text-red-400 text-center" role="alert">
+          {validationError}
+        </p>
       )}
-      <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden"
-        onChange={(e) => { handleFile(e.target.files[0]); e.target.value = ""; }} />
     </div>
   );
 };
@@ -217,8 +263,15 @@ const ProfilePage = () => {
       return () => { isMounted = false; };
     }
 
+    if (/^(blob:|data:|https?:\/\/)/.test(user.profilePic)) {
+      setAvatarSrc(user.profilePic);
+      return () => { isMounted = false; };
+    }
+
     getSignedFileUrl(user.profilePic, token).then((url) => {
       if (isMounted) setAvatarSrc(url);
+    }).catch(() => {
+      if (isMounted) setAvatarSrc(null);
     });
 
     return () => { isMounted = false; };
@@ -227,17 +280,16 @@ const ProfilePage = () => {
   const handleAvatarUpload = async (file) => {
     setAvatarUploading(true);
     setAvatarError("");
-    const blobUrl = URL.createObjectURL(file);
-    dispatch(updateUserProfile({ ...user, profilePic: blobUrl }));
     try {
       const response = await uploadAvatar(file, token);
       dispatch(updateUserProfile(response.user));
+      setAvatarSrc(response.user?.profilePic ?? null);
+      return true;
     } catch (err) {
-      dispatch(updateUserProfile({ ...user, profilePic: user.profilePic ?? null }));
       setAvatarError(err.message || "Failed to upload photo");
+      return false;
     } finally {
       setAvatarUploading(false);
-      URL.revokeObjectURL(blobUrl);
     }
   };
 
@@ -247,6 +299,7 @@ const ProfilePage = () => {
     try {
       const response = await removeAvatar(token);
       dispatch(updateUserProfile(response.user));
+      setAvatarSrc(null);
     } catch (err) {
       setAvatarError(err.message || "Failed to remove photo");
     } finally {
@@ -375,10 +428,13 @@ const ProfilePage = () => {
                 onUpload={handleAvatarUpload}
                 onRemove={handleAvatarRemove}
                 uploading={avatarUploading}
-                isEditing={isEditing}
                 avatarSrc={avatarSrc}
               />
-              {avatarError && <p className="mt-2 text-xs text-red-500 dark:text-red-400">{avatarError}</p>}
+              {avatarError && (
+                <p className="mt-2 text-xs text-red-500 dark:text-red-400" role="alert">
+                  {avatarError}
+                </p>
+              )}
               
               <div className="text-center mt-3 w-full">
                 <h1 className="text-lg font-bold text-slate-900 dark:text-white truncate">{user.name}</h1>

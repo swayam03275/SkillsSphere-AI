@@ -2,9 +2,6 @@ import { AlertCircle, CheckCircle2, Loader2, UploadCloud } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useToast } from "../../../shared/components";
 import Button from "../../../shared/landing/Button";
-import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
-
-
 const MAX_RESUME_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 const SUPPORTED_RESUME_EXTENSIONS = [".pdf", ".doc", ".docx"];
 const SUPPORTED_RESUME_MIME_TYPES = [
@@ -70,7 +67,6 @@ const getUploadErrorMessage = (error) => {
 };
 
 const DragDropUpload = ({ onFileUpload }) => {
-  useDocumentTitle("Drag Drop Upload");
   const { success, warning, error: showError } = useToast();
   const [isDragActive, setIsDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -216,11 +212,11 @@ const DragDropUpload = ({ onFileUpload }) => {
         </p>
         <p className="text-xs text-primary/60 pt-2 font-medium opacity-80">
           Or press{" "}
-          <kbd className="px-2 py-1 bg-surface border border-border rounded text-text-main mx-1 shadow-sm">
+          <kbd className="px-2 py-1 bg-gray-100 dark:bg-surface border border-gray-200 dark:border-border rounded text-gray-900 dark:text-text-main mx-1 shadow-sm">
             Ctrl
           </kbd>{" "}
           +{" "}
-          <kbd className="px-2 py-1 bg-surface border border-border rounded text-text-main mx-1 shadow-sm">
+          <kbd className="px-2 py-1 bg-gray-100 dark:bg-surface border border-gray-200 dark:border-border rounded text-gray-900 dark:text-text-main mx-1 shadow-sm">
             V
           </kbd>{" "}
           to paste

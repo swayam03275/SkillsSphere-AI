@@ -1,8 +1,5 @@
 import { CheckCircle2, FileSearch, LineChart, MessageSquareText, Sparkles, Video } from "lucide-react";
 import Button from "../../../shared/landing/Button";
-import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
-
-
 const headingGradientStyle = {
   backgroundImage: "linear-gradient(135deg, #7C3AED 0%, #4F46E5 50%, #059669 100%)",
   WebkitBackgroundClip: "text",
@@ -26,7 +23,6 @@ const renderAnimatedChars = (text, startDelay = 0, stepDelay = 80) =>
   ));
 
 const Hero = () => {
-  useDocumentTitle("Hero");
   return (
     <section className="relative min-h-[92vh] max-sm:min-h-[72vh] flex items-center px-4 pt-28 pb-16 overflow-visible animate-slide-up sm:pt-28 sm:pb-14">
       {/* Light mode gradient orbs */}

@@ -250,4 +250,60 @@ router.post("/student/opt-in-tutor-tracking", authorizeRoles("student"), roadmap
  */
 router.get("/recruiter/tracked", authorizeRoles("recruiter"), roadmapController.getTrackedRoadmaps);
 
+/**
+ * @openapi
+ * /api/roadmap/{id}/comments:
+ *   get:
+ *     summary: Get comments/collaboration history for a roadmap
+ *     tags: [Roadmap]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: milestoneId
+ *         schema:
+ *           type: string
+ *         description: Optional milestone topic ID to filter comment thread
+ *     responses:
+ *       200:
+ *         description: List of comments
+ *   post:
+ *     summary: Add a comment or collaboration log on a milestone
+ *     tags: [Roadmap]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [milestoneId, content]
+ *             properties:
+ *               milestoneId:
+ *                 type: string
+ *               content:
+ *                 type: string
+ *               type:
+ *                 type: string
+ *                 enum: [comment, status_change, task_assigned]
+ *     responses:
+ *       201:
+ *         description: Comment created
+ */
+router.route("/:id/comments")
+  .get(roadmapController.getRoadmapComments)
+  .post(roadmapController.postRoadmapComment);
+
 export default router;

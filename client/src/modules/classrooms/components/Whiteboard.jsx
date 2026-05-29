@@ -1,10 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
 import { Trash2, Eraser, Edit2 } from "lucide-react";
-import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
-
-
 export default function Whiteboard({ socket, roomId, userRole }) {
-  useDocumentTitle("Whiteboard");
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [color, setColor] = useState("#38bdf8"); // Neon Blue default

@@ -1,8 +1,5 @@
 import React from "react";
 import PropTypes from "prop-types";
-import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
-
-
 /**
  * ProfileField — A single read-only info row used inside the profile cards.
  *
@@ -13,7 +10,6 @@ import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
  * @param {React.ReactNode} icon    - Optional lucide-react icon element
  */
 const ProfileField = ({ label, value, icon }) => {
-  useDocumentTitle("Profile Field");
   return (
     <div className="flex items-start gap-3 py-3 border-b border-white/5 last:border-b-0">
       {icon && (

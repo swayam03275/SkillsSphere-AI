@@ -1,9 +1,5 @@
 import React from "react";
-import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
-
-
 const StatCard = ({ icon: Icon, label, value, color, className = "" }) => {
-  useDocumentTitle("Stat Card");
   const colorVariants = {
     blue: "border-blue-500/30 from-blue-500/5 text-blue-400 bg-blue-500/20",
     emerald: "border-emerald-500/30 from-emerald-500/5 text-emerald-400 bg-emerald-500/20",

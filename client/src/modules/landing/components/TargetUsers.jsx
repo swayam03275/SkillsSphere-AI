@@ -1,10 +1,6 @@
 import { BookOpen, Briefcase, CheckCircle2, Users } from "lucide-react";
 import Card from "../../../shared/landing/Card";
-import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
-
-
 const TargetUsers = () => {
-  useDocumentTitle("Target Users");
   const users = [
     {
       icon: <BookOpen className="text-[var(--primary)]" size={34} />,

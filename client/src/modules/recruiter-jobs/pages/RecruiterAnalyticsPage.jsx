@@ -128,7 +128,7 @@ const CircularProgressRing = ({ value, color, label, icon: Icon }) => {
   const strokeDashoffset = circumference - (Math.min(value, 100) / 100) * circumference;
 
   return (
-    <div className="flex flex-col items-center p-6 bg-slate-900/30 border border-white/5 rounded-2xl">
+    <div className="flex flex-col items-center p-6 bg-gray-50 dark:bg-slate-900/30 border border-gray-200 dark:border-white/5 rounded-2xl">
       <div className="relative flex items-center justify-center">
         <svg height={radius * 2} width={radius * 2} className="transform -rotate-90">
           <circle
@@ -165,7 +165,7 @@ const CircularProgressRing = ({ value, color, label, icon: Icon }) => {
 
 // Summary Metric Cards
 const SummaryMetricCard = ({ icon: Icon, color, bg, hoverBorder, label, value, subtext }) => (
-  <div className={`group relative rounded-2xl border border-white/10 bg-slate-900/40 p-5 shadow-2xl backdrop-blur-md transition-all hover:${hoverBorder} duration-300`}>
+  <div className={`group relative rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-slate-900/40 p-5 shadow-2xl backdrop-blur-md transition-all hover:${hoverBorder} duration-300`}>
     <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/[0.01] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
     <div className="relative">
       <div className="mb-2 flex items-center justify-between">
@@ -315,7 +315,7 @@ const RecruiterAnalyticsPage = () => {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] p-5 pt-28 text-slate-100">
+      <main className="min-h-screen bg-gray-50 dark:bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] p-5 pt-28 text-gray-900 dark:text-slate-100">
         <Navbar />
         <div className="py-20">
           <LoadingState message="Aggregating hiring intelligence analytics..." />
@@ -326,7 +326,7 @@ const RecruiterAnalyticsPage = () => {
 
   if (error) {
     return (
-      <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] p-5 pt-28 text-slate-100">
+      <main className="min-h-screen bg-gray-50 dark:bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] p-5 pt-28 text-gray-900 dark:text-slate-100">
         <Navbar />
         <div className="mx-auto max-w-5xl py-8">
           <ErrorState message={error} onRetry={fetchAnalytics} />
@@ -336,7 +336,7 @@ const RecruiterAnalyticsPage = () => {
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] p-4 sm:p-6 pt-24 sm:pt-32 text-slate-100">
+    <main className="min-h-screen bg-gray-50 dark:bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] p-4 sm:p-6 pt-24 sm:pt-32 text-gray-900 dark:text-slate-100">
       <Navbar />
 
       <div id="analytics-dashboard" className="mx-auto flex w-full max-w-7xl flex-col gap-8">
@@ -357,7 +357,7 @@ const RecruiterAnalyticsPage = () => {
           <div className="flex items-center gap-3 relative">
             <Link
               to="/recruiter/jobs"
-              className="inline-flex items-center gap-2 rounded-xl border border-white/5 bg-slate-900/40 px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-slate-800 hover:text-white backdrop-blur-sm transition-all duration-300 w-fit"
+              className="inline-flex items-center gap-2 rounded-xl border border-gray-200 dark:border-white/5 bg-white dark:bg-slate-900/40 px-4 py-2.5 text-sm font-semibold text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white backdrop-blur-sm transition-all duration-300 w-fit"
             >
               <ArrowLeft size={16} />
               Back to Jobs
@@ -374,7 +374,7 @@ const RecruiterAnalyticsPage = () => {
               </button>
               
               {isExportDropdownOpen && (
-                <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-white/10 bg-slate-900/95 p-2 shadow-2xl backdrop-blur-md z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-slate-900/95 p-2 shadow-2xl backdrop-blur-md z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                   <button
                     onClick={handleExportPDF}
                     className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
@@ -445,7 +445,7 @@ const RecruiterAnalyticsPage = () => {
         </section>
 
         {/* Segmented Tab Controller */}
-        <div className="flex border-b border-white/5 p-1 bg-slate-900/30 backdrop-blur-md rounded-2xl w-full sm:w-max">
+        <div className="flex border-b border-gray-200 dark:border-white/5 p-1 bg-white dark:bg-slate-900/30 backdrop-blur-md rounded-2xl w-full sm:w-max">
           <button
             onClick={() => setActiveTab("overview")}
             className={`flex-1 sm:flex-initial px-6 py-2.5 text-xs font-extrabold tracking-wider uppercase rounded-xl transition-all duration-300 ${
@@ -538,7 +538,7 @@ const RecruiterAnalyticsPage = () => {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 
                 {/* Status Distribution */}
-                <div className="rounded-2xl border border-white/10 bg-slate-900/50 overflow-hidden backdrop-blur-md shadow-2xl">
+                <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-slate-900/50 overflow-hidden backdrop-blur-md shadow-2xl">
                   <div className="border-b border-white/5 bg-white/5 px-6 py-4 flex items-center gap-2">
                     <BarChart3 className="text-blue-400" size={18} />
                     <h2 className="text-sm font-bold uppercase tracking-wider text-slate-200">Postings Status</h2>
@@ -588,7 +588,7 @@ const RecruiterAnalyticsPage = () => {
                 </div>
 
                 {/* Posting Timeline */}
-                <div className="rounded-2xl border border-white/10 bg-slate-900/50 overflow-hidden backdrop-blur-md shadow-2xl">
+                <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-slate-900/50 overflow-hidden backdrop-blur-md shadow-2xl">
                   <div className="border-b border-white/5 bg-white/5 px-6 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <TrendingUp className="text-emerald-400" size={18} />
@@ -628,7 +628,7 @@ const RecruiterAnalyticsPage = () => {
               {/* Demand & Job listing detail rows */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Top demanded skills */}
-                <div className="rounded-2xl border border-white/10 bg-slate-900/50 overflow-hidden backdrop-blur-md p-6 space-y-4">
+                <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-slate-900/50 overflow-hidden backdrop-blur-md p-6 space-y-4">
                   <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2 pb-3 border-b border-white/5">
                     <Zap size={16} className="text-amber-400" /> Dominated Demanded Skills
                   </h3>
@@ -662,7 +662,7 @@ const RecruiterAnalyticsPage = () => {
                 </div>
 
                 {/* Applicants Per Job Bar */}
-                <div className="rounded-2xl border border-white/10 bg-slate-900/50 overflow-hidden backdrop-blur-md p-6 space-y-4">
+                <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-slate-900/50 overflow-hidden backdrop-blur-md p-6 space-y-4">
                   <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2 pb-3 border-b border-white/5">
                     <Users size={16} className="text-violet-400" /> Applicants Per Job
                   </h3>
@@ -696,7 +696,7 @@ const RecruiterAnalyticsPage = () => {
                 </div>
 
                 {/* Recent Jobs list */}
-                <div className="rounded-2xl border border-white/10 bg-slate-900/50 overflow-hidden backdrop-blur-md p-6 space-y-4">
+                <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-slate-900/50 overflow-hidden backdrop-blur-md p-6 space-y-4">
                   <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2 pb-3 border-b border-white/5">
                     <Clock size={16} className="text-indigo-400" /> Recent Posting Activities
                   </h3>
@@ -705,9 +705,9 @@ const RecruiterAnalyticsPage = () => {
                       {recentJobs.map((job) => {
                         const config = STATUS_CONFIG[job.status] || STATUS_CONFIG.draft;
                         return (
-                          <div key={job._id} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/20 border border-white/5">
+                          <div key={job._id} className="flex items-center justify-between p-2.5 rounded-xl bg-gray-50 dark:bg-slate-900/30 border border-gray-200 dark:border-white/5">
                             <div className="min-w-0">
-                              <h4 className="text-xs font-bold text-slate-200 truncate">{job.title}</h4>
+                              <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200 truncate">{job.title}</h4>
                               <p className="text-[10px] text-slate-500 mt-0.5">{new Date(job.createdAt).toLocaleDateString()}</p>
                             </div>
                             <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider border ${config.bg} ${config.text} ${config.border}`}>
@@ -751,7 +751,7 @@ const RecruiterAnalyticsPage = () => {
                   label="ATS-Ready (80%+)"
                   icon={CheckCircle}
                 />
-                <div className="flex flex-col items-center justify-center p-6 bg-slate-900/30 border border-white/5 rounded-2xl text-center">
+                <div className="flex flex-col items-center justify-center p-6 bg-gray-50 dark:bg-slate-900/30 border border-gray-200 dark:border-white/5 rounded-2xl text-center">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-500/10 text-red-400 mb-3 animate-pulse">
                     <ShieldAlert size={24} />
                   </div>
@@ -766,7 +766,7 @@ const RecruiterAnalyticsPage = () => {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
                 {/* Match Category Pie Chart */}
-                <div className="lg:col-span-2 rounded-2xl border border-white/10 bg-slate-900/50 overflow-hidden backdrop-blur-md shadow-2xl">
+                <div className="lg:col-span-2 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-slate-900/50 overflow-hidden backdrop-blur-md shadow-2xl">
                   <div className="border-b border-white/5 bg-white/5 px-6 py-4 flex items-center gap-2">
                     <Sparkles className="text-blue-400" size={18} />
                     <h2 className="text-sm font-bold uppercase tracking-wider text-slate-200">Match Category Distributions</h2>
@@ -816,7 +816,7 @@ const RecruiterAnalyticsPage = () => {
                 </div>
 
                 {/* Recruiter Insight Alerts */}
-                <div className="rounded-2xl border border-white/10 bg-slate-900/50 overflow-hidden backdrop-blur-md p-6 space-y-6">
+                <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-slate-900/50 overflow-hidden backdrop-blur-md p-6 space-y-6">
                   <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2 pb-3 border-b border-white/5">
                     <Award size={16} className="text-emerald-400" /> Talent Quality Index
                   </h3>
@@ -853,7 +853,7 @@ const RecruiterAnalyticsPage = () => {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
                 {/* Specialization Bar Chart */}
-                <div className="lg:col-span-2 rounded-2xl border border-white/10 bg-slate-900/50 overflow-hidden backdrop-blur-md p-6 shadow-2xl">
+                <div className="lg:col-span-2 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-slate-900/50 overflow-hidden backdrop-blur-md p-6 shadow-2xl">
                   <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2 pb-4 border-b border-white/5 mb-6">
                     <Code size={18} className="text-blue-400" /> Specialization Demographics
                   </h3>
@@ -877,7 +877,7 @@ const RecruiterAnalyticsPage = () => {
                 </div>
 
                 {/* Contribution details & stages */}
-                <div className="rounded-2xl border border-white/10 bg-slate-900/50 overflow-hidden backdrop-blur-md p-6 space-y-6">
+                <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-slate-900/50 overflow-hidden backdrop-blur-md p-6 space-y-6">
                   <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2 pb-3 border-b border-white/5">
                     <BookOpen size={16} className="text-indigo-400" /> Career & Contributions
                   </h3>

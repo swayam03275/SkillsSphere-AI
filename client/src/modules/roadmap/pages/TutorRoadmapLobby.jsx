@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { 
-  Award, BookOpen, CheckCircle2, Plus, Target, ExternalLink, Video, FileText, Globe, User, ArrowLeft, ArrowRight
+  Award, BookOpen, CheckCircle2, Plus, Target, ExternalLink, Video, FileText, Globe, User, ArrowLeft, ArrowRight, MessageSquare
 } from "lucide-react";
 import Navbar from "../../../shared/landing/Navbar";
 import { 
@@ -9,6 +9,7 @@ import {
 } from "../services/roadmapService";
 import { LoadingState, useToast } from "../../../shared/components";
 import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
+import RoadmapCollaborationPanel from "../components/RoadmapCollaborationPanel";
 
 
 export default function TutorRoadmapLobby() {
@@ -20,6 +21,8 @@ export default function TutorRoadmapLobby() {
   const [studentDetails, setStudentDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [detailsLoading, setDetailsLoading] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [activeMilestoneId, setActiveMilestoneId] = useState(null);
 
   // Resource Assignment Form State
   const [activeTopicId, setActiveTopicId] = useState(null);
@@ -340,6 +343,17 @@ export default function TutorRoadmapLobby() {
 
                               <div className="flex items-center gap-2 flex-shrink-0">
                                 <button
+                                  onClick={() => {
+                                    setActiveMilestoneId(topic._id);
+                                    setPanelOpen(true);
+                                  }}
+                                  className="px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-tighter transition-all flex items-center gap-1 bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 hover:text-white"
+                                  title="Discuss milestone"
+                                >
+                                  <MessageSquare className="w-3.5 h-3.5" />
+                                  <span>Discuss</span>
+                                </button>
+                                <button
                                   onClick={() => handleVerifyToggle(topic)}
                                   className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-tighter transition-all flex items-center gap-1 ${
                                     isVerified 
@@ -481,6 +495,18 @@ export default function TutorRoadmapLobby() {
 
         </div>
       </div>
+
+      {/* Collaboration Sidebar Panel */}
+      {studentDetails && (
+        <RoadmapCollaborationPanel
+          roadmapId={studentDetails._id}
+          isOpen={panelOpen}
+          onClose={() => setPanelOpen(false)}
+          initialMilestoneId={activeMilestoneId}
+          milestones={studentDetails.roadmap}
+          currentUser={user}
+        />
+      )}
     </div>
   );
 }

@@ -3,12 +3,7 @@ import PropTypes from "prop-types";
 import { Search, Filter, Calendar, IndianRupee, X } from "lucide-react";
 import Input from "../../../shared/components/Input";
 import Select from "../../../shared/components/Select";
-import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
-
-
-
 const JobFilters = ({ onFilterChange }) => {
-  useDocumentTitle("Job Filters");
   const [filters, setFilters] = useState({
     designation: "",
     minSalary: "",

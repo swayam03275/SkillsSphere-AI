@@ -29,7 +29,7 @@ export const protect = asyncHandler(async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // 3) Check if token has been revoked (logged out)
-    if (decoded.jti && isTokenBlacklisted(decoded.jti)) {
+    if (decoded.jti && await isTokenBlacklisted(decoded.jti)) {
       return next(
         new AppError("Token has been revoked. Please log in again.", 401)
       );
@@ -77,7 +77,7 @@ export const authorizeRoles = (...roles) => {
 export const verifySocketToken = async (token) => {
   if (!token) throw new Error("Authentication required");
   const decoded = jwt.verify(token, process.env.JWT_SECRET);
-  if (decoded.jti && isTokenBlacklisted(decoded.jti)) {
+  if (decoded.jti && await isTokenBlacklisted(decoded.jti)) {
     throw new Error("Token has been revoked");
   }
   const user = await User.findById(decoded.userId).select("-password");

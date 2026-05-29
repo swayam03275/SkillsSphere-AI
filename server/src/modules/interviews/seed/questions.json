@@ -251,14 +251,6 @@
     "topic": "nodejs",
     "subtopic": "fundamentals",
     "difficulty": "easy",
-    "questionText": "What is the difference between require and import in Node.js?",
-    "expectedAnswer": "require is the CommonJS module system — it loads modules synchronously at runtime and uses module.exports for exports. import is the ES Module syntax — it supports static analysis, tree-shaking, and is asynchronous. In Node.js, ES modules require either .mjs extension or 'type: module' in package.json. require can be used conditionally inside functions, while import statements must be at the top level (except dynamic import()).",
-    "expectedConcepts": ["commonjs", "es-modules", "require", "import", "tree-shaking", "module-exports"]
-  },
-  {
-    "topic": "nodejs",
-    "subtopic": "fundamentals",
-    "difficulty": "easy",
     "questionText": "What is the purpose of package.json in a Node.js project?",
     "expectedAnswer": "package.json is the manifest file for a Node.js project. It contains metadata like project name, version, and description. It lists dependencies (production and dev), defines scripts for tasks like testing and building, specifies the entry point, and configures module type. npm uses it to install correct packages, manage versions with semver, and share the project reproducibly using the lockfile.",
     "expectedConcepts": ["package-json", "dependencies", "scripts", "semver", "npm", "entry-point"]
@@ -289,27 +281,11 @@
   },
   {
     "topic": "dsa",
-    "subtopic": "arrays",
-    "difficulty": "easy",
-    "questionText": "What is the difference between an array and a linked list?",
-    "expectedAnswer": "Arrays store elements in contiguous memory, allowing O(1) random access by index but O(n) insertion/deletion in the middle. Linked lists store elements in nodes with pointers, allowing O(1) insertion/deletion when you have a reference to the node but O(n) access since you must traverse from the head. Arrays have better cache locality. Linked lists use more memory due to pointer storage but don't need contiguous memory allocation.",
-    "expectedConcepts": ["array", "linked-list", "contiguous-memory", "random-access", "insertion", "deletion", "cache-locality"]
-  },
-  {
-    "topic": "dsa",
     "subtopic": "searching",
     "difficulty": "easy",
     "questionText": "Explain how binary search works and when you can use it.",
     "expectedAnswer": "Binary search finds a target value in a sorted array by repeatedly dividing the search interval in half. Compare the target with the middle element — if smaller, search the left half; if larger, search the right half. Time complexity is O(log n), much faster than linear search O(n). It requires the array to be sorted. Variations include finding first/last occurrence, searching in rotated arrays, and finding insertion position.",
     "expectedConcepts": ["binary-search", "sorted-array", "divide-and-conquer", "logarithmic", "time-complexity"]
-  },
-  {
-    "topic": "dsa",
-    "subtopic": "trees",
-    "difficulty": "medium",
-    "questionText": "What is a Binary Search Tree and what are its key operations?",
-    "expectedAnswer": "A BST is a binary tree where each node's left subtree contains only values less than the node, and the right subtree contains only values greater. Key operations: search, insert, delete — all O(h) where h is height. In a balanced BST, h = log n giving O(log n) operations. In worst case (skewed tree), h = n giving O(n). Self-balancing variants like AVL and Red-Black trees maintain O(log n) by rebalancing after modifications.",
-    "expectedConcepts": ["bst", "binary-tree", "search", "insert", "delete", "balanced", "avl", "time-complexity"]
   },
   {
     "topic": "dsa",
@@ -361,10 +337,226 @@
   },
   {
     "topic": "react",
-    "subtopic": "components",
+    "subtopic": "reconciliation",
     "difficulty": "easy",
-    "questionText": "What is the difference between controlled and uncontrolled components?",
-    "expectedAnswer": "Controlled components have their form data handled by React state — the input value is set via state and changes through onChange handlers. This gives React full control over the form data. Uncontrolled components store form data in the DOM itself, accessed via refs. Controlled components are preferred for validation, conditional disabling, and enforcing input formats. Uncontrolled components are simpler and useful for file inputs or integrating with non-React code.",
-    "expectedConcepts": ["controlled-components", "uncontrolled-components", "state", "refs", "forms", "onChange"]
+    "questionText": "How does React decide what to update when component state changes?",
+    "expectedAnswer": "When state changes, React creates a new tree of elements and compares it with the previous tree during reconciliation. It uses element type and keys to decide whether to update, reuse, mount, or unmount parts of the UI. React then commits only the necessary DOM changes, which keeps rendering efficient.",
+    "expectedConcepts": ["reconciliation", "rendering", "element-tree", "keys", "dom-updates"]
+  },
+  {
+    "topic": "react",
+    "subtopic": "hooks",
+    "difficulty": "easy",
+    "questionText": "Why must React Hooks be called at the top level of a component?",
+    "expectedAnswer": "Hooks must be called in the same order on every render so React can correctly associate hook state with each call. Calling hooks inside conditions, loops, or nested functions can change that order and cause state to be read from the wrong hook slot. This is why the Rules of Hooks require top-level calls inside React components or custom hooks.",
+    "expectedConcepts": ["hooks", "rules-of-hooks", "hook-order", "state", "functional-components"]
+  },
+  {
+    "topic": "react",
+    "subtopic": "context-api",
+    "difficulty": "medium",
+    "questionText": "When is the Context API a good choice, and when can it become a performance problem?",
+    "expectedAnswer": "Context is useful for values needed by many components, such as theme, locale, authentication state, or feature flags. It can become a performance issue when a frequently changing context value causes many consumers to re-render. Splitting contexts, memoizing provider values, or using a dedicated state library can reduce unnecessary updates.",
+    "expectedConcepts": ["context-api", "global-state", "provider", "consumer", "performance", "re-rendering"]
+  },
+  {
+    "topic": "react",
+    "subtopic": "useEffect",
+    "difficulty": "medium",
+    "questionText": "What should you include in a useEffect dependency array?",
+    "expectedAnswer": "The dependency array should include every reactive value used inside the effect, such as props, state, and functions declared in the component scope. This keeps the effect synchronized with the values it reads and prevents stale closures. If a dependency causes excessive reruns, the better fix is usually to stabilize the value or restructure the effect rather than omit it.",
+    "expectedConcepts": ["useEffect", "dependency-array", "stale-closure", "props", "state", "side-effects"]
+  },
+  {
+    "topic": "react",
+    "subtopic": "performance",
+    "difficulty": "medium",
+    "questionText": "How would you reduce unnecessary re-renders in a React component tree?",
+    "expectedAnswer": "Start by identifying the expensive render path with React DevTools Profiler. Then keep state as local as possible, avoid creating unstable props unnecessarily, memoize expensive calculations with useMemo, and memoize child components with React.memo when prop identity is stable. You can also split large components so unrelated state changes affect fewer children.",
+    "expectedConcepts": ["performance", "re-rendering", "react-profiler", "react-memo", "useMemo", "state-colocation"]
+  },
+  {
+    "topic": "react",
+    "subtopic": "state-management",
+    "difficulty": "medium",
+    "questionText": "How do you decide between local state, Context, and an external state management library?",
+    "expectedAnswer": "Use local state when only one component or a small subtree needs the data. Use Context for low-frequency shared values like theme or authenticated user details. Use an external store such as Redux, Zustand, or TanStack Query when state is complex, frequently updated, server-synchronized, or needs debugging and predictable updates across distant parts of the app.",
+    "expectedConcepts": ["state-management", "local-state", "context-api", "redux", "zustand", "server-state"]
+  },
+  {
+    "topic": "react",
+    "subtopic": "rendering",
+    "difficulty": "hard",
+    "questionText": "What is the difference between render and commit phases in React?",
+    "expectedAnswer": "In the render phase, React calculates what the UI should look like and prepares the changes; this phase can be paused, restarted, or discarded in concurrent rendering. In the commit phase, React applies the calculated changes to the DOM and runs layout effects. Side effects that mutate the outside world should not happen during render because render may run more than once.",
+    "expectedConcepts": ["render-phase", "commit-phase", "concurrent-rendering", "side-effects", "layout-effects"]
+  },
+  {
+    "topic": "react",
+    "subtopic": "hooks",
+    "difficulty": "hard",
+    "questionText": "What problem does a stale closure cause in React Hooks, and how can you fix it?",
+    "expectedAnswer": "A stale closure happens when a callback or effect captures an old value from a previous render and later uses that outdated value. It often appears in timers, subscriptions, or memoized callbacks with incomplete dependency arrays. Fix it by adding correct dependencies, using functional state updates, or storing mutable values in refs when you intentionally need the latest value without retriggering an effect.",
+    "expectedConcepts": ["stale-closure", "hooks", "useEffect", "useCallback", "dependency-array", "refs"]
+  },
+  {
+    "topic": "react",
+    "subtopic": "lifecycle",
+    "difficulty": "hard",
+    "questionText": "How do class component lifecycle methods map to common Hook patterns?",
+    "expectedAnswer": "componentDidMount maps to useEffect with an empty dependency array for setup logic. componentDidUpdate maps to useEffect with specific dependencies, while componentWillUnmount maps to the cleanup function returned from useEffect. Some lifecycle logic should be split into multiple effects so each effect handles one concern rather than copying class lifecycle methods directly.",
+    "expectedConcepts": ["lifecycle", "class-components", "useEffect", "cleanup", "componentDidMount", "componentDidUpdate"]
+  },
+  {
+    "topic": "nodejs",
+    "subtopic": "event-loop",
+    "difficulty": "easy",
+    "questionText": "Why is blocking the event loop a problem in Node.js?",
+    "expectedAnswer": "Node.js uses a single main JavaScript thread to handle many concurrent requests through the event loop. If CPU-heavy work or synchronous I/O blocks that thread, other requests cannot be processed until it finishes. This increases latency for every connected user, so heavy tasks should be moved to workers, child processes, queues, or optimized asynchronous APIs.",
+    "expectedConcepts": ["nodejs", "event-loop", "blocking", "concurrency", "synchronous-io", "latency"]
+  },
+  {
+    "topic": "nodejs",
+    "subtopic": "buffers",
+    "difficulty": "easy",
+    "questionText": "What is a Buffer in Node.js and when would you use one?",
+    "expectedAnswer": "A Buffer represents raw binary data outside the normal JavaScript string format. It is commonly used when working with files, TCP streams, images, cryptography, or HTTP request bodies. Buffers are useful because network and file data arrives as bytes, and Node can process those bytes efficiently before decoding them into strings or other formats.",
+    "expectedConcepts": ["nodejs", "buffers", "binary-data", "files", "streams", "encoding"]
+  },
+  {
+    "topic": "nodejs",
+    "subtopic": "express",
+    "difficulty": "easy",
+    "questionText": "What is the purpose of app.use(express.json()) in an Express API?",
+    "expectedAnswer": "express.json() is middleware that parses incoming JSON request bodies and assigns the parsed object to req.body. Without it, JSON payloads sent by clients would not be available in route handlers. It should be registered before routes that need to read JSON input.",
+    "expectedConcepts": ["express", "middleware", "json", "request-body", "rest-api"]
+  },
+  {
+    "topic": "nodejs",
+    "subtopic": "authentication",
+    "difficulty": "medium",
+    "questionText": "How does JWT authentication usually work in a Node.js REST API?",
+    "expectedAnswer": "After login, the server verifies credentials and signs a JWT containing claims such as user id and role. The client sends that token on later requests, usually in the Authorization header as a Bearer token. Middleware verifies the signature and expiry before attaching the authenticated user to the request. Sensitive data should not be stored in the token because JWT payloads are encoded, not encrypted.",
+    "expectedConcepts": ["jwt", "authentication", "authorization-header", "middleware", "claims", "token-expiry"]
+  },
+  {
+    "topic": "nodejs",
+    "subtopic": "streams",
+    "difficulty": "medium",
+    "questionText": "What is backpressure in Node.js streams?",
+    "expectedAnswer": "Backpressure happens when a writable stream cannot consume data as fast as a readable stream produces it. Node signals this with write() returning false and a later drain event when writing can resume. Handling backpressure prevents unbounded memory growth and is one reason pipe() is safer than manually pushing chunks without flow control.",
+    "expectedConcepts": ["streams", "backpressure", "readable-stream", "writable-stream", "drain", "memory-management"]
+  },
+  {
+    "topic": "nodejs",
+    "subtopic": "async-await",
+    "difficulty": "medium",
+    "questionText": "How does async/await improve asynchronous Node.js code, and what mistakes should you avoid?",
+    "expectedAnswer": "async/await lets promise-based code read more like synchronous control flow while still running asynchronously. You should avoid forgetting await, swallowing errors, or running independent operations sequentially when Promise.all would be more efficient. Errors from awaited promises should be handled with try-catch or passed to centralized error middleware.",
+    "expectedConcepts": ["async-await", "promises", "try-catch", "Promise.all", "error-handling", "concurrency"]
+  },
+  {
+    "topic": "nodejs",
+    "subtopic": "rest-api",
+    "difficulty": "medium",
+    "questionText": "What makes a REST API endpoint idempotent, and why does it matter?",
+    "expectedAnswer": "An operation is idempotent if making the same request multiple times has the same final effect as making it once. GET, PUT, and DELETE are expected to be idempotent when designed correctly, while POST usually is not. Idempotency matters for retries, network failures, and safer distributed systems because clients can repeat requests without creating duplicate side effects.",
+    "expectedConcepts": ["rest-api", "idempotency", "http-methods", "get", "put", "delete", "retries"]
+  },
+  {
+    "topic": "nodejs",
+    "subtopic": "performance",
+    "difficulty": "hard",
+    "questionText": "How do clustering and Worker Threads differ in Node.js?",
+    "expectedAnswer": "Clustering creates multiple Node.js processes that can share server load across CPU cores, which is useful for handling more HTTP traffic. Worker Threads create additional JavaScript threads within a process and are better for CPU-heavy computation that would block the event loop. Processes have stronger isolation, while workers are lighter and can share memory using SharedArrayBuffer with careful synchronization.",
+    "expectedConcepts": ["cluster", "worker-threads", "processes", "cpu-bound", "parallelism", "shared-memory"]
+  },
+  {
+    "topic": "nodejs",
+    "subtopic": "security",
+    "difficulty": "hard",
+    "questionText": "What security checks should middleware perform before allowing access to a protected route?",
+    "expectedAnswer": "Middleware should verify the authentication token, check token expiry and signature, and confirm the user still exists and has the required role or permission. It should reject malformed input early and avoid leaking sensitive details in error messages. In production, it should work alongside rate limiting, secure headers, HTTPS, and careful CORS configuration.",
+    "expectedConcepts": ["middleware", "authentication", "authorization", "jwt", "rbac", "security", "rate-limiting"]
+  },
+  {
+    "topic": "dsa",
+    "subtopic": "arrays",
+    "difficulty": "easy",
+    "questionText": "What is the two-pointer technique, and when is it useful?",
+    "expectedAnswer": "The two-pointer technique uses two indices that move through an array or string to reduce unnecessary nested loops. It is useful for sorted arrays, pair-sum checks, reversing, partitioning, and sliding comparisons. Many two-pointer solutions run in O(n) time with O(1) extra space.",
+    "expectedConcepts": ["dsa", "arrays", "two-pointers", "time-complexity", "space-complexity"]
+  },
+  {
+    "topic": "dsa",
+    "subtopic": "strings",
+    "difficulty": "easy",
+    "questionText": "How can you check if two strings are anagrams efficiently?",
+    "expectedAnswer": "You can count the frequency of each character in one string and decrement counts while scanning the other. If all counts return to zero and the lengths match, the strings are anagrams. This approach is O(n) time and O(k) space, where k is the character set size.",
+    "expectedConcepts": ["dsa", "strings", "hashing", "frequency-map", "time-complexity"]
+  },
+  {
+    "topic": "dsa",
+    "subtopic": "linked-lists",
+    "difficulty": "easy",
+    "questionText": "How do you detect a cycle in a linked list?",
+    "expectedAnswer": "Use Floyd's cycle detection algorithm with a slow pointer moving one step and a fast pointer moving two steps. If there is a cycle, the two pointers will eventually meet; if the fast pointer reaches null, there is no cycle. The algorithm runs in O(n) time and uses O(1) extra space.",
+    "expectedConcepts": ["dsa", "linked-list", "cycle-detection", "two-pointers", "floyd-algorithm"]
+  },
+  {
+    "topic": "dsa",
+    "subtopic": "stacks",
+    "difficulty": "medium",
+    "questionText": "How can a stack be used to validate balanced parentheses?",
+    "expectedAnswer": "Scan the string from left to right, pushing opening brackets onto a stack. When you see a closing bracket, the stack top must contain the matching opening bracket; otherwise the string is invalid. At the end, the string is balanced only if the stack is empty. This runs in O(n) time and O(n) space in the worst case.",
+    "expectedConcepts": ["dsa", "stack", "balanced-parentheses", "strings", "time-complexity"]
+  },
+  {
+    "topic": "dsa",
+    "subtopic": "queues",
+    "difficulty": "medium",
+    "questionText": "Why is a queue the natural data structure for level-order traversal of a tree?",
+    "expectedAnswer": "Level-order traversal processes nodes in the order they are discovered, from left to right across each level. A queue supports this FIFO behavior: dequeue the current node, then enqueue its children for later processing. This ensures all nodes at one depth are processed before nodes at the next depth.",
+    "expectedConcepts": ["dsa", "queue", "trees", "level-order-traversal", "bfs"]
+  },
+  {
+    "topic": "dsa",
+    "subtopic": "trees",
+    "difficulty": "medium",
+    "questionText": "What is the difference between preorder, inorder, and postorder tree traversal?",
+    "expectedAnswer": "Preorder visits the root before its children, making it useful for copying or serializing a tree. Inorder visits left subtree, root, then right subtree, which produces sorted order for a Binary Search Tree. Postorder visits children before the root, which is useful for deleting nodes or evaluating expression trees.",
+    "expectedConcepts": ["dsa", "trees", "preorder", "inorder", "postorder", "traversal"]
+  },
+  {
+    "topic": "dsa",
+    "subtopic": "graphs",
+    "difficulty": "medium",
+    "questionText": "How can you detect a cycle in a directed graph?",
+    "expectedAnswer": "A common DFS approach tracks three states for each node: unvisited, visiting, and visited. If DFS reaches a node currently marked visiting, a back edge exists and the graph has a cycle. This runs in O(V + E) time and is also related to topological sorting.",
+    "expectedConcepts": ["dsa", "graphs", "cycle-detection", "dfs", "topological-sort", "time-complexity"]
+  },
+  {
+    "topic": "dsa",
+    "subtopic": "dynamic-programming",
+    "difficulty": "hard",
+    "questionText": "How do you recognize that a problem can be solved with dynamic programming?",
+    "expectedAnswer": "Dynamic programming is a good fit when a problem has overlapping subproblems and optimal substructure. Overlapping subproblems mean the same smaller computations repeat, while optimal substructure means the best answer can be built from best answers to subproblems. Once identified, you can choose memoization for a top-down solution or tabulation for a bottom-up solution.",
+    "expectedConcepts": ["dsa", "dynamic-programming", "overlapping-subproblems", "optimal-substructure", "memoization", "tabulation"]
+  },
+  {
+    "topic": "dsa",
+    "subtopic": "recursion",
+    "difficulty": "hard",
+    "questionText": "What are the key parts of a correct recursive solution?",
+    "expectedAnswer": "A correct recursive solution needs a base case that stops recursion, a recursive case that reduces the problem, and a way to combine or return results. The input must move toward the base case on every call to avoid infinite recursion. You should also analyze call stack depth because recursion can add O(depth) space usage.",
+    "expectedConcepts": ["dsa", "recursion", "base-case", "recursive-case", "call-stack", "space-complexity"]
+  },
+  {
+    "topic": "dsa",
+    "subtopic": "hashing",
+    "difficulty": "hard",
+    "questionText": "How would you design an LRU cache with O(1) get and put operations?",
+    "expectedAnswer": "Use a hash map from key to node for O(1) lookup and a doubly linked list to track recency order. On get or put, move the node to the most-recent position; when capacity is exceeded, remove the least-recent node from the tail. The map gives fast access, while the linked list gives O(1) removal and insertion when the node reference is known.",
+    "expectedConcepts": ["dsa", "hashing", "lru-cache", "doubly-linked-list", "hash-map", "time-complexity"]
   }
 ]

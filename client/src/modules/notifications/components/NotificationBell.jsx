@@ -2,15 +2,11 @@ import React, { useState, useCallback } from "react";
 import { Bell } from "lucide-react";
 import NotificationDropdown from "./NotificationDropdown";
 import useNotifications from "../hooks/useNotifications";
-import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
-
-
 /**
  * Notification Bell Icon with dropdown
  * Shows unread badge and manages dropdown visibility
  */
 const NotificationBell = () => {
-  useDocumentTitle("Notification Bell");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const {
     notifications,

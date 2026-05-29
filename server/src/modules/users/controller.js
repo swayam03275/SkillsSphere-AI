@@ -10,12 +10,10 @@ import ClassroomSession from "../../database/models/ClassroomSession.js";
 import JobPosting from "../../database/models/JobPosting.js";
 import AppError from "../../utils/AppError.js";
 import asyncHandler from "../../utils/asyncHandler.js";
-import fs from "fs";
-import path from "path";
-import { buildAvatarFileUrl } from "../../utils/uploadPaths.js";
 import { cascadeDeleteUser } from "../../utils/cascadeDelete.js";
 import { getBackendUrl } from "../../config/env.js";
 import { safeDeleteAvatarByUrl } from "../../utils/fileUtils.js";
+import { deleteCloudinaryAsset, uploadAvatarBuffer } from "../../config/cloudinary.js";
 
 /**
  * @desc    Update user profile details
@@ -67,25 +65,43 @@ export const updateProfile = asyncHandler(async (req, res, next) => {
  * @access  Private
  */
 export const uploadAvatar = asyncHandler(async (req, res, next) => {
-  if (!req.file) {
+  if (!req.file?.buffer) {
     return next(new AppError("No image file provided", 400));
   }
 
-  // Delete the old avatar from disk if it was a local upload
   const currentUser = await User.findById(req.user._id);
-  safeDeleteAvatarByUrl(currentUser?.profilePic);
+  if (!currentUser) {
+    return next(new AppError("User not found", 404));
+  }
 
+  const uploadedAvatar = await uploadAvatarBuffer(req.file.buffer, req.user._id);
+  const previousPublicId = currentUser.profilePicPublicId;
+  const previousProfilePic = currentUser.profilePic;
   const baseUrl = getBackendUrl();
   const profilePic = `${baseUrl}${buildAvatarFileUrl(req.file.filename)}`;
 
   const updatedUser = await User.findByIdAndUpdate(
     req.user._id,
-    { profilePic },
+    {
+      profilePic: uploadedAvatar.secure_url,
+      profilePicPublicId: uploadedAvatar.public_id,
+    },
     { new: true }
   ).select("-password -__v");
 
   if (!updatedUser) {
+    await deleteCloudinaryAsset(uploadedAvatar.public_id).catch((error) => {
+      console.error("[uploadAvatar] Failed to clean up orphaned Cloudinary avatar:", error.message);
+    });
     return next(new AppError("User not found", 404));
+  }
+
+  if (previousPublicId) {
+    await deleteCloudinaryAsset(previousPublicId).catch((error) => {
+      console.error("[uploadAvatar] Failed to delete previous Cloudinary avatar:", error.message);
+    });
+  } else {
+    safeDeleteAvatarByUrl(previousProfilePic);
   }
 
   res.status(200).json({
@@ -104,11 +120,20 @@ export const removeAvatar = asyncHandler(async (req, res, next) => {
   const user = await User.findById(req.user._id);
   if (!user) return next(new AppError("User not found", 404));
 
-  // Delete file from disk if it's a local upload
-  safeDeleteAvatarByUrl(user.profilePic);
+  const previousPublicId = user.profilePicPublicId;
+  const previousProfilePic = user.profilePic;
 
   user.profilePic = null;
+  user.profilePicPublicId = null;
   await user.save();
+
+  if (previousPublicId) {
+    await deleteCloudinaryAsset(previousPublicId).catch((error) => {
+      console.error("[removeAvatar] Failed to delete Cloudinary avatar:", error.message);
+    });
+  } else {
+    safeDeleteAvatarByUrl(previousProfilePic);
+  }
 
   res.status(200).json({
     success: true,

@@ -1,11 +1,7 @@
 import MatchScoreCard from "./MatchScoreCard";
 import MissingSkillsList from "./MissingSkillsList";
 import RecommendedJobsList from "./RecommendedJobsList";
-import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
-
-
 export default function MatcherResult({ data }) {
-  useDocumentTitle("Matcher Result");
   return (
     <div className="grid md:grid-cols-3 gap-6">
       
