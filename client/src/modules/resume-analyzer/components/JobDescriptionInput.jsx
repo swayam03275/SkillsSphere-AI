@@ -9,9 +9,6 @@ import {
   FileText,
 } from "lucide-react";
 import { TextArea, Button, useToast } from "../../../shared/components";
-import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
-
-
 /**
  * Cleans raw JD text:
  * - Collapses 3+ blank lines to 2
@@ -29,7 +26,6 @@ const cleanJDText = (raw) => {
 const CHAR_LIMIT = 5000;
 
 const JobDescriptionInput = ({ value, onChange }) => {
-  useDocumentTitle("Job Description Input");
   const { success, error: showError, warning, info } = useToast();
   const fileInputRef = useRef(null);
   const [isDragOver, setIsDragOver] = useState(false);

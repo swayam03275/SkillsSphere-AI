@@ -1,10 +1,6 @@
 import React from "react";
 import { User, Briefcase, Zap, AlertCircle, CheckCircle2 } from "lucide-react";
-import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
-
-
 const SkillGapVenn = ({ skillMatch = {}, isJDProvided = false, mode = "match" }) => {
-  useDocumentTitle("Skill Gap Venn");
   if (!isJDProvided && mode !== "benchmark") return null;
 
   const { matchedSkills = [], missingSkills = [], extraSkills = [] } = skillMatch.details || {};
@@ -13,12 +9,12 @@ const SkillGapVenn = ({ skillMatch = {}, isJDProvided = false, mode = "match" })
   const extraCount = extraSkills.length;
 
   return (
-    <div className="bg-surface border border-border rounded-[2rem] p-8 shadow-xl relative overflow-hidden">
+    <div className="bg-white dark:bg-surface border border-gray-200 dark:border-border rounded-[2rem] p-8 shadow-xl relative overflow-hidden">
       <div className="flex items-center gap-3 mb-8">
         <div className="p-2 bg-primary/10 rounded-lg">
           <Zap className="w-5 h-5 text-primary" />
         </div>
-        <h3 className="text-xl font-bold text-text-main">Visual Skill Gap</h3>
+        <h3 className="text-xl font-bold text-gray-900 dark:text-text-main">Visual Skill Gap</h3>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">

@@ -139,7 +139,7 @@ export default function JobMatcherPage() {
             </p>
             <button
               onClick={() => navigate("/job-board")}
-              className="px-8 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-colors border border-white/10"
+              className="px-8 py-3 bg-gray-200 dark:bg-slate-800 hover:bg-gray-300 dark:hover:bg-slate-700 text-gray-700 dark:text-white font-bold rounded-xl transition-colors border border-gray-300 dark:border-white/10"
             >
               Browse All Jobs
             </button>

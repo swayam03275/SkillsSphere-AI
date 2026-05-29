@@ -11,9 +11,6 @@ import {
   Video,
 } from "lucide-react";
 import Card from "../../../shared/landing/Card";
-import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
-
-
 const ClassroomPreview = () => (
   <div className="grid h-36 grid-cols-[1fr_0.72fr] gap-3 rounded-lg border border-[var(--border)] bg-[var(--background)] p-3">
     <div className="relative rounded-lg bg-[var(--surface)] p-3">
@@ -183,7 +180,6 @@ const previews = {
 };
 
 const Features = () => {
-  useDocumentTitle("Features");
   const featuresList = [
     {
       key: "classroom",

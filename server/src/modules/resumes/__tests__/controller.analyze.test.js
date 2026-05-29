@@ -3,10 +3,15 @@ import test, { afterEach, mock } from "node:test";
 import express from "express";
 import globalErrorHandler from "../../../middleware/errorMiddleware.js";
 import AnalysisHistory from "../../../database/models/AnalysisHistory.js";
+import Resume from "../../../database/models/Resume.js";
 import {
   analyzeResume,
   resetResumeControllerDependencies,
   setResumeControllerDependencies,
+  listResumes,
+  setActiveResume,
+  renameResume,
+  deleteResume,
 } from "../controller.js";
 
 // Mock MongoDB interactions on AnalysisHistory to prevent database buffering timeouts
@@ -20,6 +25,7 @@ mock.method(AnalysisHistory, "find", () => ({
   })
 }));
 mock.method(AnalysisHistory, "deleteMany", async () => ({}));
+mock.method(Resume, "countDocuments", async () => 0);
 
 const parsedResume = {
   name: "Ada Lovelace",
@@ -34,9 +40,9 @@ const parsedResume = {
   github: "https://github.com/ada",
   portfolio: "https://ada.dev",
   keywords: ["JavaScript", "React", "Node.js"],
-  extractedTextLength: 128,
+  extractedTextLength: 200,
   resumeText:
-    "Ada Lovelace JavaScript React Node.js developer with 3 years experience building APIs.",
+    "Ada Lovelace is an experienced software engineer with a strong background in JavaScript, React, and Node.js. She has 3 years of professional experience building highly scalable APIs and full-stack web applications.",
 };
 
 afterEach(() => {
@@ -222,6 +228,7 @@ test("analyze response shape regression is protected", async () => {
     "file",
     "evaluatorBreakdown",
     "overallScore",
+    "isScannedPdf",
   ]);
 });
 
@@ -314,5 +321,47 @@ test("analyze resume saves to cache on cache miss", async () => {
   assert.ok(savedCacheData.resumeHash);
   assert.ok(savedCacheData.jdHash);
   assert.equal(savedCacheData.score, body.overallScore);
+});
+
+test("analyze returns isScannedPdf false for standard resume", async () => {
+  stubControllerDependencies();
+
+  const { status, body } = await postAnalyze({
+    jobSkills: JSON.stringify(["JavaScript"]),
+    jobDescription: "JavaScript developer",
+  });
+
+  assert.equal(status, 200);
+  assert.equal(body.isScannedPdf, false);
+});
+
+test("analyze returns isScannedPdf true for scanned resume (low word count)", async () => {
+  const savedPayloads = [];
+  setResumeControllerDependencies({
+    parseResume: async () => ({
+      ...parsedResume,
+      resumeText: "Scanned resume. Image file only.",
+      extractedTextLength: 32,
+    }),
+    upsertResume: async (userId, payload) => {
+      savedPayloads.push({ ...payload, user: userId });
+      return {
+        _id: "64f1f77bcf86cd7994390111",
+        ...payload,
+        user: userId,
+      };
+    },
+    findCachedAnalysis: async () => null,
+    saveCachedAnalysis: async () => ({}),
+  });
+
+  const { status, body } = await postAnalyze({
+    jobSkills: JSON.stringify(["JavaScript"]),
+    jobDescription: "JavaScript developer",
+  });
+
+  assert.equal(status, 200);
+  assert.equal(body.isScannedPdf, true);
+  assert.equal(savedPayloads[0].isScannedPdf, true);
 });
 

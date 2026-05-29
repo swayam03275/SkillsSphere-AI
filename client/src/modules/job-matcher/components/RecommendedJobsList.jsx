@@ -1,8 +1,6 @@
-import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
 export default function RecommendedJobsList({ jobs }) {
-  useDocumentTitle("Recommended Jobs List");
   return (
-    <div className="bg-white/10 backdrop-blur-lg border border-white/20 p-5 rounded-2xl shadow-xl text-white">
+    <div className="bg-white dark:bg-white/10 backdrop-blur-lg border border-gray-200 dark:border-white/20 p-5 rounded-2xl shadow-xl text-gray-900 dark:text-white">
       
       <h3 className="text-lg font-semibold mb-4 text-blue-900 dark:text-blue-300">
         💼 Recommended Jobs
@@ -16,7 +14,7 @@ export default function RecommendedJobsList({ jobs }) {
                        hover:shadow-lg hover:scale-[1.02] transition duration-300"
           >
             {/* Job Title */}
-            <h4 className="text-lg font-bold text-white">
+            <h4 className="text-lg font-bold text-gray-900 dark:text-white">
               {job.title}
             </h4>
 

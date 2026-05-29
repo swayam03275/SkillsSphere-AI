@@ -1,6 +1,7 @@
 import crypto from "crypto";
 
 const authCodeStore = new Map();
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
 
 export const generateAuthCode = (userId) => {
   const code = crypto.randomUUID();
@@ -21,3 +22,17 @@ export const consumeAuthCode = (code) => {
   authCodeStore.delete(code);
   return entry.userId;
 };
+
+const purgeExpiredCodes = () => {
+  const now = Date.now();
+  for (const [code, entry] of authCodeStore) {
+    if (entry.expiresAt <= now) {
+      authCodeStore.delete(code);
+    }
+  }
+};
+
+const cleanupTimer = setInterval(purgeExpiredCodes, CLEANUP_INTERVAL_MS);
+if (cleanupTimer.unref) {
+  cleanupTimer.unref();
+}

@@ -1,10 +1,6 @@
 import React from "react";
 import { Star, TrendingUp, Award } from "lucide-react";
-import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
-
-
 const ContributionSummaryCard = ({ roadmap }) => {
-  useDocumentTitle("Contribution Summary Card");
   if (!roadmap || !roadmap.roadmap) return null;
 
   const contributionTopics = roadmap.roadmap.filter(

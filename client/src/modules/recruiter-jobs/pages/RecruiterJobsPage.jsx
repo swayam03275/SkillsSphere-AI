@@ -11,6 +11,7 @@ import EmptyState from "../../../shared/components/EmptyState";
 import JobCardSkeleton from "../../student-jobs/components/JobCardSkeleton";
 import { Pagination } from "../../../shared/components";
 import JobPostingCard from "../components/JobPostingCard";
+
 import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
 import {
 

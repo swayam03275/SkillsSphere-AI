@@ -26,6 +26,9 @@ export const verifyLink = async (url) => {
 
   try {
     const parsedUrl = new URL(url);
+    if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+      return { url, isValid: false, status: 400, error: "Unsupported protocol" };
+    }
     const hostname = parsedUrl.hostname;
 
     // Check if hostname is directly an IP and private
@@ -65,7 +68,7 @@ export const verifyLink = async (url) => {
   } catch (error) {
     // Handle cases where the site exists but blocks automated GETs (like LinkedIn)
     // If it's a 403 or 429, we still consider it "potentially valid" if it's a known domain
-    const isBotProtected = error.response && [403, 429, 999].includes(error.response.status);
+    const isBotProtected = !!(error.response && [403, 429, 999].includes(error.response.status));
     
     return {
       url,

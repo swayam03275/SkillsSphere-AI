@@ -73,11 +73,9 @@ export const uploadAvatar = asyncHandler(async (req, res, next) => {
   if (!currentUser) {
     return next(new AppError("User not found", 404));
   }
-
   const uploadedAvatar = await uploadAvatarBuffer(req.file.buffer, req.user._id);
   const previousPublicId = currentUser.profilePicPublicId;
   const previousProfilePic = currentUser.profilePic;
-
 
   const updatedUser = await User.findByIdAndUpdate(
     req.user._id,
