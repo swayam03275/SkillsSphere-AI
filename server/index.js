@@ -31,11 +31,11 @@ import globalErrorHandler from "./src/middleware/errorMiddleware.js";
 import { logEvaluatorConfig } from "./src/config/evaluatorConfig.js";
 import { setIO } from "./src/utils/socketIO.js";
 import { initNotificationSockets } from "./src/modules/notifications/socket.js";
-import { verifySocketToken } from "./src/middleware/authMiddleware.js";
+import { verifySocketToken, protect } from "./src/middleware/authMiddleware.js";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./src/config/swaggerConfig.js";
 import analyticsRoutes from "./src/modules/analytics/routes.js";
-import { globalLimiter } from "./src/middleware/rateLimiter.js";
+import { globalLimiter, aiActionLimiter } from "./src/middleware/rateLimiter.js";
 
 const app = express();
 if (process.env.TRUST_PROXY === 'true') {
@@ -101,7 +101,7 @@ app.get("/health", (req, res) => {
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-app.post("/api/chat", async (req, res) => {
+app.post("/api/chat", aiActionLimiter, protect, async (req, res) => {
   try {
     const { message } = req.body;
     if (!message) {
