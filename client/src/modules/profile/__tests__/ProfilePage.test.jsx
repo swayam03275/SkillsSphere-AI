@@ -44,6 +44,7 @@ const createStore = (user = baseUser) =>
         }
         return state;
       },
+      notifications: (state = { unreadCount: 0, items: [] }) => state,
     },
   });
 
