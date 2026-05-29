@@ -55,7 +55,7 @@ const globalErrorHandler = (err, req, res, next) => {
   if (error.name === "ValidationError") error = handleValidationErrorDB(error);
   
   // Handle AI/OpenAI Errors
-  if (error.isAxiosError || error.status >= 500 || error.type === 'invalid_request_error') {
+  if (error.isAxiosError || error.name === 'GoogleGenerativeAIError' || error.type === 'invalid_request_error') {
     error = handleAIError(error);
   }
   
