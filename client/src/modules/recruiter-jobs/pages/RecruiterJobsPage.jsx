@@ -9,7 +9,8 @@ import LoadingState from "../../../shared/components/LoadingState";
 import ErrorState from "../../../shared/components/ErrorState";
 import EmptyState from "../../../shared/components/EmptyState";
 import JobCardSkeleton from "../../student-jobs/components/JobCardSkeleton";
-import { JobViewerCard, Pagination } from "../../../shared/components";
+import { Pagination } from "../../../shared/components";
+import JobPostingCard from "../components/JobPostingCard";
 import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
 import {
 
@@ -259,10 +260,9 @@ const RecruiterJobsPage = () => {
         ) : (
           <div className="grid grid-cols-1 gap-4">
             {filteredJobs.map((job) => (
-              <JobViewerCard
+              <JobPostingCard
                 key={job._id || job.id}
                 job={job}
-                viewerRole="recruiter"
                 onEdit={handleEditJob}
                 onDelete={handleDeleteJob}
                 onViewStats={handleViewRecommendations}
