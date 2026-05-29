@@ -217,7 +217,7 @@ const ResumeAnalyzerPage = () => {
                         type="text"
                         value={editTitle}
                         onChange={(e) => setEditTitle(e.target.value)}
-                        className="bg-white dark:bg-surface border border-primary text-xs font-bold rounded-lg px-2 py-1 w-full text-text-main focus:outline-none"
+                        className="bg-white dark:bg-surface border border-primary text-xs font-bold rounded-lg px-2 py-1 w-full text-gray-900 dark:text-text-main focus:outline-none"
                         autoFocus
                         onKeyDown={(e) => {
                           if (e.key === "Enter") handleRename(res._id);
@@ -240,7 +240,7 @@ const ResumeAnalyzerPage = () => {
                   ) : (
                     <div className="flex items-start justify-between gap-2">
                       <span
-                        className={`text-sm font-bold truncate block w-full text-text-main ${
+                        className={`text-sm font-bold truncate block w-full text-gray-900 dark:text-text-main ${
                           res.isActive ? "text-primary" : ""
                         }`}
                       >

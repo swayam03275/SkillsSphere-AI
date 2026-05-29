@@ -53,23 +53,23 @@ const JobApplyForm = ({ job, user, onSubmit, onClose, isSubmitting }) => {
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-lg bg-slate-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-slate-800/50">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-slate-800/50">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-500/15 rounded-lg">
               <Send size={18} className="text-blue-400" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white">Apply to Position</h2>
-              <p className="text-xs text-slate-400 truncate max-w-[280px]">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">Apply to Position</h2>
+              <p className="text-xs text-gray-500 dark:text-slate-400 truncate max-w-[280px]">
                 {job?.title || "Job Position"}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-colors"
+            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 text-gray-400 dark:text-slate-400 hover:text-gray-700 dark:hover:text-white transition-colors"
           >
             <X size={18} />
           </button>
@@ -83,8 +83,8 @@ const JobApplyForm = ({ job, user, onSubmit, onClose, isSubmitting }) => {
               <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
                 Name
               </label>
-              <div className="flex items-center gap-2 px-3 py-2.5 bg-slate-800/50 border border-white/5 rounded-xl text-sm text-slate-300">
-                <User size={14} className="text-slate-500" />
+              <div className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 dark:bg-slate-800/50 border border-gray-200 dark:border-white/5 rounded-xl text-sm text-gray-700 dark:text-slate-300">
+                <User size={14} className="text-gray-400 dark:text-slate-500" />
                 {user?.name || "—"}
               </div>
             </div>
@@ -92,8 +92,8 @@ const JobApplyForm = ({ job, user, onSubmit, onClose, isSubmitting }) => {
               <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
                 Email
               </label>
-              <div className="flex items-center gap-2 px-3 py-2.5 bg-slate-800/50 border border-white/5 rounded-xl text-sm text-slate-300">
-                <Mail size={14} className="text-slate-500" />
+              <div className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 dark:bg-slate-800/50 border border-gray-200 dark:border-white/5 rounded-xl text-sm text-gray-700 dark:text-slate-300">
+                <Mail size={14} className="text-gray-400 dark:text-slate-500" />
                 <span className="truncate">{user?.email || "—"}</span>
               </div>
             </div>
@@ -121,10 +121,10 @@ const JobApplyForm = ({ job, user, onSubmit, onClose, isSubmitting }) => {
                   if (error) setError("");
                 }}
                 placeholder="https://drive.google.com/your-resume"
-                className={`w-full pl-9 pr-4 py-2.5 bg-slate-800/80 border rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 transition-all ${
+                className={`w-full pl-9 pr-4 py-2.5 bg-gray-50 dark:bg-slate-800/80 border rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-600 focus:outline-none focus:ring-2 transition-all ${
                   error
                     ? "border-red-500/50 focus:ring-red-500/30"
-                    : "border-white/10 focus:ring-blue-500/30 focus:border-blue-500/40"
+                    : "border-gray-200 dark:border-white/10 focus:ring-blue-500/30 focus:border-blue-500/40"
                 }`}
               />
             </div>
@@ -153,7 +153,7 @@ const JobApplyForm = ({ job, user, onSubmit, onClose, isSubmitting }) => {
                 placeholder="Why are you a great fit for this role?"
                 rows={3}
                 maxLength={1000}
-                className="w-full pl-9 pr-4 py-2.5 bg-slate-800/80 border border-white/10 rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40 transition-all resize-none"
+                className="w-full pl-9 pr-4 py-2.5 bg-gray-50 dark:bg-slate-800/80 border border-gray-200 dark:border-white/10 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/40 transition-all resize-none"
               />
             </div>
             <p className="text-[10px] text-slate-600 mt-1 text-right">
@@ -166,7 +166,7 @@ const JobApplyForm = ({ job, user, onSubmit, onClose, isSubmitting }) => {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2.5 rounded-xl border border-white/10 text-sm font-medium text-slate-400 hover:bg-white/5 transition-colors"
+              className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm font-medium text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
             >
               Cancel
             </button>

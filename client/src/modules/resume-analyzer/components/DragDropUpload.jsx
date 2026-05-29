@@ -212,11 +212,11 @@ const DragDropUpload = ({ onFileUpload }) => {
         </p>
         <p className="text-xs text-primary/60 pt-2 font-medium opacity-80">
           Or press{" "}
-          <kbd className="px-2 py-1 bg-surface border border-border rounded text-text-main mx-1 shadow-sm">
+          <kbd className="px-2 py-1 bg-gray-100 dark:bg-surface border border-gray-200 dark:border-border rounded text-gray-900 dark:text-text-main mx-1 shadow-sm">
             Ctrl
           </kbd>{" "}
           +{" "}
-          <kbd className="px-2 py-1 bg-surface border border-border rounded text-text-main mx-1 shadow-sm">
+          <kbd className="px-2 py-1 bg-gray-100 dark:bg-surface border border-gray-200 dark:border-border rounded text-gray-900 dark:text-text-main mx-1 shadow-sm">
             V
           </kbd>{" "}
           to paste

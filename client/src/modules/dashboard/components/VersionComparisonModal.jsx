@@ -37,23 +37,23 @@ const VersionComparisonModal = ({ isOpen, onClose, versions }) => {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="bg-slate-900 border border-white/10 rounded-[2rem] w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+      <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/10 rounded-[2rem] w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
         
         {/* Header */}
-        <div className="px-8 py-6 border-b border-white/5 flex items-center justify-between bg-gradient-to-r from-blue-600/10 to-transparent">
+        <div className="px-8 py-6 border-b border-gray-200 dark:border-white/5 flex items-center justify-between bg-gradient-to-r from-blue-600/10 to-transparent">
           <div>
-            <h2 className="text-2xl font-black text-white flex items-center gap-2">
+            <h2 className="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
               <TrendingUp className="text-blue-400" />
               Resume Evolution Analysis
             </h2>
-            <p className="text-slate-400 text-sm mt-1">
+            <p className="text-gray-500 dark:text-slate-400 text-sm mt-1">
               Comparing versions from {new Date(v1.createdAt).toLocaleDateString()} and {new Date(v2.createdAt).toLocaleDateString()}
             </p>
           </div>
           <button 
             onClick={onClose}
             aria-label="Close modal"
-            className="p-2 hover:bg-white/10 rounded-full text-slate-400 hover:text-white transition-all"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full text-gray-400 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-all"
           >
             <X size={24} />
           </button>
@@ -64,9 +64,9 @@ const VersionComparisonModal = ({ isOpen, onClose, versions }) => {
           
           {/* Summary Score View */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-6 rounded-2xl bg-slate-800/40 border border-white/5 text-center">
+            <div className="p-6 rounded-2xl bg-gray-100 dark:bg-slate-800/40 border border-gray-200 dark:border-white/5 text-center">
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Previous Score</p>
-              <div className="text-4xl font-black text-slate-400">{v1.score}%</div>
+              <div className="text-4xl font-black text-gray-500 dark:text-slate-400">{v1.score}%</div>
               <p className="text-[10px] font-bold text-slate-500 mt-1">{v1.classification}</p>
             </div>
             
@@ -82,7 +82,7 @@ const VersionComparisonModal = ({ isOpen, onClose, versions }) => {
             <div className="p-6 rounded-2xl bg-blue-600/10 border border-blue-500/20 text-center relative overflow-hidden group">
               <div className="absolute top-0 right-0 -mt-4 -mr-4 h-20 w-20 bg-blue-500/10 rounded-full blur-2xl"></div>
               <p className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-2">Current Score</p>
-              <div className="text-4xl font-black text-white">{v2.score}%</div>
+              <div className="text-4xl font-black text-gray-900 dark:text-white">{v2.score}%</div>
               <p className="text-[10px] font-bold text-blue-300 mt-1">{v2.classification}</p>
             </div>
           </div>
@@ -98,7 +98,7 @@ const VersionComparisonModal = ({ isOpen, onClose, versions }) => {
                 </div>
                 <h3 className="font-bold text-lg">Skills Acquired</h3>
               </div>
-              <div className="p-6 rounded-2xl bg-slate-800/40 border border-white/5 min-h-[120px]">
+              <div className="p-6 rounded-2xl bg-gray-50 dark:bg-slate-800/40 border border-gray-200 dark:border-white/5 min-h-[120px]">
                 {addedSkills.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {addedSkills.map(skill => (
@@ -121,7 +121,7 @@ const VersionComparisonModal = ({ isOpen, onClose, versions }) => {
                 </div>
                 <h3 className="font-bold text-lg">Resolved Skill Gaps</h3>
               </div>
-              <div className="p-6 rounded-2xl bg-slate-800/40 border border-white/5 min-h-[120px]">
+              <div className="p-6 rounded-2xl bg-gray-50 dark:bg-slate-800/40 border border-gray-200 dark:border-white/5 min-h-[120px]">
                 {resolvedGaps.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {resolvedGaps.map(skill => (
@@ -145,31 +145,31 @@ const VersionComparisonModal = ({ isOpen, onClose, versions }) => {
                 <Zap size={24} />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-white">Evolution Strategy</h3>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Evolution Strategy</h3>
                 <p className="text-indigo-300/60 text-xs font-medium uppercase tracking-widest">AI Insights</p>
               </div>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-4">
-                <h4 className="text-sm font-black text-slate-300 uppercase tracking-widest flex items-center gap-2">
+                <h4 className="text-sm font-black text-gray-600 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
                   <Layout size={16} /> Key Improvements
                 </h4>
                 <ul className="space-y-3">
                   {scoreDiff > 0 && (
-                    <li className="text-sm text-slate-400 flex items-start gap-2">
+                    <li className="text-sm text-gray-600 dark:text-slate-400 flex items-start gap-2">
                       <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0"></div>
                       <span>Your overall score increased by <strong>{scoreDiff}%</strong>, showing strong alignment with current market standards.</span>
                     </li>
                   )}
                   {addedSkills.length > 0 && (
-                    <li className="text-sm text-slate-400 flex items-start gap-2">
+                    <li className="text-sm text-gray-600 dark:text-slate-400 flex items-start gap-2">
                       <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0"></div>
                       <span>Successfully integrated <strong>{addedSkills.length}</strong> new technical competencies into your profile.</span>
                     </li>
                   )}
                   {resolvedGaps.length > 0 && (
-                    <li className="text-sm text-slate-400 flex items-start gap-2">
+                    <li className="text-sm text-gray-600 dark:text-slate-400 flex items-start gap-2">
                       <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-purple-500 shrink-0"></div>
                       <span>Reduced priority skill gaps by addressing <strong>{resolvedGaps.length}</strong> high-impact areas.</span>
                     </li>
@@ -178,7 +178,7 @@ const VersionComparisonModal = ({ isOpen, onClose, versions }) => {
               </div>
 
               <div className="space-y-4">
-                <h4 className="text-sm font-black text-slate-300 uppercase tracking-widest flex items-center gap-2">
+                <h4 className="text-sm font-black text-gray-600 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
                   <AlertCircle size={16} /> Remaining Priorities
                 </h4>
                 <div className="flex flex-wrap gap-2">
@@ -201,7 +201,7 @@ const VersionComparisonModal = ({ isOpen, onClose, versions }) => {
         </div>
 
         {/* Footer */}
-        <div className="px-8 py-6 border-t border-white/5 bg-slate-950/50 flex justify-end">
+        <div className="px-8 py-6 border-t border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-slate-950/50 flex justify-end">
           <Button variant="primary" onClick={onClose} className="px-10">
             Done Reviewing
           </Button>
