@@ -427,7 +427,11 @@ const ProfilePage = () => {
                   isEditing={isEditing}
                   avatarSrc={avatarSrc}
                 />
-                {avatarError && <p className="mt-2 text-xs text-red-500 dark:text-red-400">{avatarError}</p>}
+                {avatarError && (
+                  <p className="mt-2 text-xs text-red-500 dark:text-red-400" role="alert">
+                    {avatarError}
+                  </p>
+                )}
                 
                 <div className="text-center mt-3 w-full">
                   <h1 className="text-lg font-bold text-slate-900 dark:text-white truncate">{user.name}</h1>

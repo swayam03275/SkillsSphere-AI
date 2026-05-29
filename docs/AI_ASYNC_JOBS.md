@@ -4,7 +4,7 @@ Long-running AI work (resume analysis, job matching) runs in a background worker
 
 ## Architecture
 
-```
+```text
 Client → POST /api/ai-jobs/* → Express API → BullMQ (Redis) → Worker → MongoDB / AI pipeline
 Client → GET /api/ai-jobs/:jobId (poll until completed)
 ```
@@ -31,11 +31,11 @@ REDIS_URL=redis://localhost:6379
 
 ## Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/api/ai-jobs/resume-analyze` | Queue resume analysis (multipart, student role) |
-| POST | `/api/ai-jobs/matching-evaluate` | Queue job matching (optional resume file) |
-| GET | `/api/ai-jobs/:jobId` | Poll job status and result |
+| Method | Path                             | Description                         |
+| ------ | -------------------------------- | ----------------------------------- |
+| POST   | `/api/ai-jobs/resume-analyze`    | Queue resume analysis               |
+| POST   | `/api/ai-jobs/matching-evaluate` | Queue job matching                  |
+| GET    | `/api/ai-jobs/:jobId`            | Poll job status and result          |
 
 Optional header: `Idempotency-Key: <uuid>` — prevents duplicate runs within 24 hours.
 
