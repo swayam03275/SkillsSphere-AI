@@ -29,7 +29,7 @@ export const authRateLimiter = rateLimit({
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   keyGenerator: emailKeyGenerator,
-  validate: { xForwardedForHeader: false, trustProxy: false, default: true, ip: false },
+  validate: { xForwardedForHeader: false, trustProxy: false, default: true, ip: false, keyGeneratorIpFallback: false },
   handler: (req, res, next, options) => {
     res.status(429).json(options.message);
   }
@@ -69,7 +69,7 @@ export const otpRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: emailKeyGenerator,
-  validate: { xForwardedForHeader: false, trustProxy: false, default: true, ip: false },
+  validate: { xForwardedForHeader: false, trustProxy: false, default: true, ip: false, keyGeneratorIpFallback: false },
   handler: (req, res, next, options) => {
     res.status(429).json(options.message);
   }
