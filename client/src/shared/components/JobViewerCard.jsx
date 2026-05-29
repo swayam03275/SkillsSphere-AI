@@ -88,6 +88,7 @@ const STATUS_STYLES = {
   open: "bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/25",
   draft: "bg-yellow-100 text-yellow-900 border-yellow-300 dark:bg-yellow-500/15 dark:text-yellow-300 dark:border-yellow-500/25",
   closed: "bg-gray-200 text-gray-900 border-gray-400 dark:bg-slate-700/60 dark:text-slate-400 dark:border-slate-600/40",
+  archived: "bg-slate-200 text-slate-900 border-slate-400 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600/60",
 };
 
 const JOB_LEVEL_STYLES = {
@@ -159,7 +160,7 @@ const JobViewerCard = ({
   return (
     <div
       id={`job-card-${job._id || job.id}`}
-      className={`group transition-all duration-300 border backdrop-blur-md rounded-2xl overflow-hidden ${
+      className={`group w-full max-w-full transition-all duration-300 border backdrop-blur-md rounded-2xl overflow-hidden ${
         isExpanded
           ? "bg-slate-900/80 border-blue-500/30 shadow-[0_0_30px_rgba(59,130,246,0.15)]"
           : "bg-slate-900/40 border-white/5 hover:border-white/10 hover:bg-slate-900/60"
@@ -167,7 +168,7 @@ const JobViewerCard = ({
     >
       {/* ── Collapsed Header ── */}
       <div
-        className="p-6 cursor-pointer"
+        className="cursor-pointer p-4 sm:p-5 md:p-6"
         onClick={() => setIsExpanded(!isExpanded)}
         role="button"
         tabIndex={0}
@@ -179,23 +180,23 @@ const JobViewerCard = ({
           }
         }}
       >
-        <div className="flex flex-col md:flex-row md:items-center gap-5">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-5">
           {/* Company Logo Placeholder */}
-          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-white/5 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
-            <Briefcase size={28} className="text-blue-400" />
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/5 bg-gradient-to-br from-blue-500/20 to-purple-500/20 transition-transform duration-300 group-hover:scale-105 sm:h-14 sm:w-14 md:group-hover:scale-110">
+            <Briefcase size={28} className="text-blue-400 max-sm:h-6 max-sm:w-6" />
           </div>
 
-          <div className="flex-1 min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap mb-1">
-                  <h3 className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors truncate">
+              <div className="min-w-0 flex-1">
+                <div className="mb-1 flex min-w-0 flex-wrap items-start gap-2">
+                  <h3 className="min-w-0 break-words text-lg font-bold leading-snug text-white transition-colors group-hover:text-blue-400 sm:text-xl md:truncate">
                     {title}
                   </h3>
                   {/* Status badge — visible for recruiters, or when status is not "open" */}
                   {(viewerRole === "recruiter" || status !== "open") && (
                     <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border shrink-0 ${
+                      className={`inline-flex max-w-full shrink-0 items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${
                         STATUS_STYLES[status] || STATUS_STYLES.closed
                       }`}
                     >
@@ -204,7 +205,7 @@ const JobViewerCard = ({
                   )}
                   {jobLevel && (
                     <span
-                      className={`hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border shrink-0 ${
+                      className={`inline-flex max-w-full items-center rounded-full border px-2.5 py-0.5 text-xs font-medium sm:shrink-0 ${
                         JOB_LEVEL_STYLES[jobLevel] || "bg-slate-700/60 text-slate-300 border-slate-600/40"
                       }`}
                     >
@@ -212,40 +213,41 @@ const JobViewerCard = ({
                     </span>
                   )}
                 </div>
-                <p className="text-slate-400 font-medium mt-0.5 truncate">
+                <p className="mt-0.5 min-w-0 break-words text-sm font-medium text-slate-400 sm:text-base md:truncate">
                   {companyWebsite ? (
                     <a
                       href={companyWebsite}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-400 hover:text-blue-300 hover:underline inline-flex items-center gap-1.5"
+                      className="inline-flex max-w-full items-center gap-1.5 break-words text-blue-400 hover:text-blue-300 hover:underline"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      {companyName} <ExternalLink size={14} className="shrink-0" />
+                      <span className="min-w-0 break-words md:truncate">{companyName}</span>
+                      <ExternalLink size={14} className="shrink-0" />
                     </a>
                   ) : (
                     companyName
                   )}
                 </p>
               </div>
-              <div className="text-slate-500 group-hover:text-blue-400 transition-colors shrink-0 mt-1">
+              <div className="mt-1 shrink-0 text-slate-500 transition-colors group-hover:text-blue-400">
                 {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
               </div>
             </div>
 
             {/* Meta strip */}
-            <div className="flex flex-wrap items-center gap-y-2 gap-x-6 mt-4 text-sm text-slate-400">
-              <div className="flex items-center gap-1.5">
+            <div className="mt-4 flex min-w-0 flex-col gap-2 text-sm text-slate-400 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-2">
+              <div className="flex min-w-0 items-start gap-1.5 sm:items-center">
                 <MapPin size={16} className="text-slate-500 shrink-0" />
-                <span className="truncate">{formatLocation(location)}</span>
+                <span className="min-w-0 break-words sm:truncate">{formatLocation(location)}</span>
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex min-w-0 items-start gap-1.5 sm:items-center">
                 <IndianRupee size={16} className="text-slate-500 shrink-0" />
-                {formatSalary(salary)}
+                <span className="min-w-0 break-words">{formatSalary(salary)}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Clock size={16} className="text-slate-500 shrink-0" />
-                {getTimeAgo(createdAt)}
+                <span>{getTimeAgo(createdAt)}</span>
               </div>
               {location?.remote && (
                 <div className="flex items-center gap-1.5">
@@ -264,7 +266,7 @@ const JobViewerCard = ({
           isExpanded ? "max-h-[2000px] border-t border-white/5" : "max-h-0"
         }`}
       >
-        <div className="p-8 bg-slate-950/30">
+        <div className="bg-slate-950/30 p-4 sm:p-6 md:p-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left — Description, Skills, Requirements, Responsibilities */}
             <div className="lg:col-span-2 space-y-6">
@@ -273,7 +275,7 @@ const JobViewerCard = ({
                 <h4 className="text-sm font-semibold text-blue-400 uppercase tracking-wider mb-3">
                   About the Role
                 </h4>
-                <p className="text-slate-300 leading-relaxed whitespace-pre-line">
+                <p className="break-words text-sm leading-relaxed text-slate-300 whitespace-pre-line sm:text-base">
                   {description || "No detailed description provided for this position."}
                 </p>
               </div>
@@ -288,7 +290,7 @@ const JobViewerCard = ({
                     {skills.map((skill, idx) => (
                       <span
                         key={idx}
-                        className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-500/15 text-blue-300 border border-blue-500/25"
+                        className="inline-flex max-w-full items-center rounded-full border border-blue-500/25 bg-blue-500/15 px-3 py-1 text-xs font-medium text-blue-300 break-words"
                       >
                         {skill}
                       </span>
@@ -307,7 +309,7 @@ const JobViewerCard = ({
                     {requirements.map((req, idx) => (
                       <li key={idx} className="flex items-start gap-3 text-slate-300">
                         <CheckCircle2 size={16} className="text-green-400 mt-1 shrink-0" />
-                        <span>{req}</span>
+                        <span className="min-w-0 break-words">{req}</span>
                       </li>
                     ))}
                   </ul>
@@ -324,7 +326,7 @@ const JobViewerCard = ({
                     {responsibilities.map((item, idx) => (
                       <li key={idx} className="flex items-start gap-2 text-sm text-slate-300">
                         <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
-                        {item}
+                        <span className="min-w-0 break-words">{item}</span>
                       </li>
                     ))}
                   </ul>
@@ -341,7 +343,7 @@ const JobViewerCard = ({
                     {keywords.map((kw, idx) => (
                       <span
                         key={idx}
-                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-700/60 text-slate-300 border border-slate-600/40"
+                        className="inline-flex max-w-full items-center rounded-full border border-slate-600/40 bg-slate-700/60 px-2.5 py-0.5 text-xs font-medium text-slate-300 break-words"
                       >
                         {kw}
                       </span>
@@ -353,48 +355,48 @@ const JobViewerCard = ({
 
             {/* Right — Quick Details + Actions */}
             <div className="lg:col-span-1 space-y-6">
-              <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-6">
+              <div className="rounded-2xl border border-white/5 bg-slate-800/40 p-4 sm:p-6">
                 <h4 className="text-sm font-semibold text-slate-200 mb-4">
                   Quick Details
                 </h4>
                 <div className="space-y-4">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">Location</span>
-                    <span className="text-slate-200 font-medium text-right max-w-[60%] truncate">
+                  <div className="flex flex-col gap-1 text-sm sm:flex-row sm:justify-between sm:gap-4">
+                    <span className="shrink-0 text-slate-500">Location</span>
+                    <span className="min-w-0 break-words font-medium text-slate-200 sm:max-w-[60%] sm:text-right">
                       {formatLocation(location)}
                     </span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">Salary</span>
-                    <span className="text-slate-200 font-medium">{formatSalary(salary)}</span>
+                  <div className="flex flex-col gap-1 text-sm sm:flex-row sm:justify-between sm:gap-4">
+                    <span className="shrink-0 text-slate-500">Salary</span>
+                    <span className="min-w-0 break-words font-medium text-slate-200 sm:text-right">{formatSalary(salary)}</span>
                   </div>
                   {experienceRequired != null && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-500">Experience</span>
-                      <span className="text-slate-200 font-medium">
+                    <div className="flex flex-col gap-1 text-sm sm:flex-row sm:justify-between sm:gap-4">
+                      <span className="shrink-0 text-slate-500">Experience</span>
+                      <span className="font-medium text-slate-200 sm:text-right">
                         {experienceRequired} yr{experienceRequired !== 1 ? "s" : ""}
                       </span>
                     </div>
                   )}
                   {jobLevel && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-500">Level</span>
-                      <span className="text-slate-200 font-medium">{jobLevel}</span>
+                    <div className="flex flex-col gap-1 text-sm sm:flex-row sm:justify-between sm:gap-4">
+                      <span className="shrink-0 text-slate-500">Level</span>
+                      <span className="min-w-0 break-words font-medium text-slate-200 sm:text-right">{jobLevel}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">Job Type</span>
-                    <span className="text-slate-200 font-medium">{type || "Full-time"}</span>
+                  <div className="flex flex-col gap-1 text-sm sm:flex-row sm:justify-between sm:gap-4">
+                    <span className="shrink-0 text-slate-500">Job Type</span>
+                    <span className="min-w-0 break-words font-medium text-slate-200 sm:text-right">{type || "Full-time"}</span>
                   </div>
                   {openings != null && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-500">Openings</span>
-                      <span className="text-slate-200 font-medium">{openings} Position{openings !== 1 ? "s" : ""}</span>
+                    <div className="flex flex-col gap-1 text-sm sm:flex-row sm:justify-between sm:gap-4">
+                      <span className="shrink-0 text-slate-500">Openings</span>
+                      <span className="font-medium text-slate-200 sm:text-right">{openings} Position{openings !== 1 ? "s" : ""}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">Posted</span>
-                    <span className="text-slate-200 font-medium">{formatDate(createdAt)}</span>
+                  <div className="flex flex-col gap-1 text-sm sm:flex-row sm:justify-between sm:gap-4">
+                    <span className="shrink-0 text-slate-500">Posted</span>
+                    <span className="font-medium text-slate-200 sm:text-right">{formatDate(createdAt)}</span>
                   </div>
                 </div>
 
@@ -411,13 +413,13 @@ const JobViewerCard = ({
                     ) : canApply ? (
                       <Button
                         fullWidth
-                        className="bg-blue-600 hover:bg-blue-500"
+                        className="bg-blue-600 text-center hover:bg-blue-500"
                         onClick={(e) => {
                           e.stopPropagation();
                           onApply?.(job);
                         }}
                       >
-                        <span className="flex items-center justify-center gap-2 whitespace-nowrap">
+                        <span className="flex items-center justify-center gap-2 whitespace-normal">
                           Apply for this position
                           <ExternalLink size={16} className="shrink-0" />
                         </span>
@@ -436,7 +438,7 @@ const JobViewerCard = ({
                     {onViewStats && (
                       <Button
                         fullWidth
-                        className="bg-blue-600 hover:bg-blue-500 flex items-center justify-center gap-2"
+                        className="flex items-center justify-center gap-2 whitespace-normal bg-blue-600 text-center hover:bg-blue-500"
                         onClick={(e) => {
                           e.stopPropagation();
                           onViewStats(job);
@@ -449,7 +451,7 @@ const JobViewerCard = ({
                     {onViewApplicants && (
                       <Button
                         fullWidth
-                        className="bg-purple-600 hover:bg-purple-500 flex items-center justify-center gap-2"
+                        className="flex items-center justify-center gap-2 whitespace-normal bg-purple-600 text-center hover:bg-purple-500"
                         onClick={(e) => {
                           e.stopPropagation();
                           onViewApplicants(job);
@@ -459,7 +461,7 @@ const JobViewerCard = ({
                         View Applicants
                       </Button>
                     )}
-                    <div className="flex gap-2">
+                    <div className="flex flex-col gap-2 sm:flex-row">
                       {onEdit && (
                         <Button
                           variant="outline"
@@ -530,7 +532,7 @@ JobViewerCard.propTypes = {
       "Director",
       "Executive",
     ]),
-    status: PropTypes.oneOf(["draft", "open", "closed"]),
+    status: PropTypes.oneOf(["draft", "open", "closed", "archived"]),
     location: PropTypes.shape({
       city: PropTypes.string,
       state: PropTypes.string,
@@ -571,6 +573,9 @@ JobViewerCard.propTypes = {
 
   /** Recruiter: called with the job object when "View Recommendations" is clicked. */
   onViewStats: PropTypes.func,
+
+  /** Recruiter: called with the job object when "View Applicants" is clicked. */
+  onViewApplicants: PropTypes.func,
 
   /** Student: whether the user has already applied to this job. */
   isApplied: PropTypes.bool,
