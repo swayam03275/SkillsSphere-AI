@@ -13,6 +13,7 @@
     "predev": "node scripts/verify-python-env.js",
     "dev": "node scripts/dev-all.js",
     "dev:web": "turbo run dev",
+    "dev:worker": "npm run dev:worker --workspace=server",
     "build": "turbo run build",
     "quickstart": "node scripts/quickstart.js",
     "python:setup": "node scripts/python-setup.js",

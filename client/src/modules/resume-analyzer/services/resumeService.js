@@ -1,4 +1,8 @@
 import { apiRequest } from "../../../services/apiClient";
+import {
+  enqueueResumeAnalyze,
+  pollAiJobUntilDone,
+} from "../../../services/aiJobService";
 
 const TOKEN_KEY = "skillssphere.auth.token";
 const getToken = () =>
@@ -36,13 +40,45 @@ export const getLatestResumeAnalysis = async () => {
   }
 };
 
-export const analyzeResume = async (file, jobDescription = "") => {
+export const analyzeResume = async (file, jobDescription = "", options = {}) => {
   try {
     if (!file) throw new Error("Please select a resume file first.");
 
+    const useAsync = options.useAsync !== false;
+
+    if (useAsync) {
+      const idempotencyKey =
+        options.idempotencyKey ||
+        (typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `analyze-${Date.now()}`);
+
+      const enqueued = await enqueueResumeAnalyze(file, jobDescription, {
+        idempotencyKey,
+      });
+
+      if (!enqueued?.jobId) {
+        throw new Error(enqueued?.message || "Failed to queue resume analysis.");
+      }
+
+      if (enqueued.status === "completed" && enqueued.result) {
+        return enqueued.result;
+      }
+
+      const completed = await pollAiJobUntilDone(enqueued.jobId, {
+        onProgress: options.onProgress,
+      });
+
+      if (!completed?.result) {
+        throw new Error("Analysis completed but no result was returned.");
+      }
+
+      return completed.result;
+    }
+
     const formData = new FormData();
     formData.append("resume", file);
-    
+
     if (jobDescription && jobDescription.trim()) {
       formData.append("jobDescription", jobDescription.trim());
     }
@@ -54,13 +90,15 @@ export const analyzeResume = async (file, jobDescription = "") => {
     });
 
     if (!response || response.success === false) {
-      throw new Error(response?.message || "Failed to analyze resume. Please check the file format.");
+      throw new Error(
+        response?.message || "Failed to analyze resume. Please check the file format."
+      );
     }
 
     return response;
   } catch (error) {
     console.error("[resumeService] Analysis Error:", error);
-    throw error; // Let the caller (component) handle the UI toast/state
+    throw error;
   }
 };
 

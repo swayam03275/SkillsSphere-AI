@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "nodemon index.js",
     "start": "node index.js",
+    "worker": "node worker.js",
+    "dev:worker": "nodemon worker.js",
     "test": "node --test"
   },
   "dependencies": {
@@ -13,6 +15,7 @@
     "@monaco-editor/react": "^4.7.0",
     "axios": "^1.16.1",
     "bcryptjs": "^3.0.3",
+    "bullmq": "^5.40.2",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^4.22.1",

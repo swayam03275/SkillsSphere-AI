@@ -19,6 +19,7 @@ const ResumeAnalyzerPage = () => {
   useDocumentTitle("Resume Analyzer");
   const { success, error: showError, warning } = useToast();
   const [loading, setLoading] = useState(false);
+  const [jobProgress, setJobProgress] = useState({ percent: 0, stage: "queued" });
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -66,9 +67,12 @@ const ResumeAnalyzerPage = () => {
     }
 
     setLoading(true);
+    setJobProgress({ percent: 0, stage: "queued" });
     setError(null);
     try {
-      const result = await analyzeResume(selectedFile, jobDescription);
+      const result = await analyzeResume(selectedFile, jobDescription, {
+        onProgress: setJobProgress,
+      });
       setResult(result);
       setIsViewingLatest(false); // Fresh live result — hide the "latest scan" banner
 
@@ -135,7 +139,23 @@ const ResumeAnalyzerPage = () => {
             {isLoadingLatest ? (
               <ResumeSkeleton />
             ) : loading ? (
-              <ResumeSkeleton />
+              <div className="space-y-6">
+                <ResumeSkeleton />
+                <div className="rounded-2xl border border-primary/20 bg-primary/5 p-6">
+                  <p className="text-sm font-semibold text-text-main mb-2">
+                    Analyzing in background… {jobProgress.percent}%
+                  </p>
+                  <div className="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-800 overflow-hidden">
+                    <div
+                      className="h-full bg-primary transition-all duration-500"
+                      style={{ width: `${Math.min(jobProgress.percent, 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-text-muted mt-2 capitalize">
+                    {String(jobProgress.stage || "queued").replace(/_/g, " ")}
+                  </p>
+                </div>
+              </div>
             ) : error ? (
               <ErrorState description={error} onRetry={resetAnalyzer} />
             ) : result ? (
