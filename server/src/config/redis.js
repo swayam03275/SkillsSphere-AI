@@ -13,18 +13,12 @@ const redisClient = createClient({
   },
 });
 
-let hasLoggedError = false;
-
 redisClient.on("error", (err) => {
-  if (!hasLoggedError) {
-    console.log("Redis unavailable. Continuing without Redis.");
-    hasLoggedError = true;
-  }
+  console.error("Redis error:", err.message);
 });
 
 redisClient.on("connect", () => {
   console.log("Redis Client Connected");
-  hasLoggedError = false;
 });
 
 export const connectRedis = async () => {

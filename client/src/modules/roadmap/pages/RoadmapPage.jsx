@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { CheckCircle2, Circle, Clock, Rocket, Target, Award, ArrowRight, Star } from "lucide-react";
+import { CheckCircle2, Circle, Clock, Rocket, Target, Award, Star, MessageSquare } from "lucide-react";
 import Navbar from "../../../shared/landing/Navbar";
 import { getMyRoadmap, updateTopicStatus } from "../services/roadmapService";
 import { LoadingState, useToast } from "../../../shared/components";
 import ContributionSummaryCard from "../components/ContributionSummaryCard";
 import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
+import RoadmapCollaborationPanel from "../components/RoadmapCollaborationPanel";
 
 const RoadmapPage = () => {
   useDocumentTitle("Roadmap");
@@ -14,6 +15,8 @@ const RoadmapPage = () => {
   const [roadmap, setRoadmap] = useState(null);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [activeMilestoneId, setActiveMilestoneId] = useState(null);
 
   const fetchRoadmap = async () => {
     try {
@@ -204,8 +207,16 @@ const RoadmapPage = () => {
                          )}
                        </button>
 
-                       <button className="p-2 text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors">
-                         <ArrowRight className="w-5 h-5" />
+                       <button 
+                         onClick={() => {
+                           setActiveMilestoneId(topic._id);
+                           setPanelOpen(true);
+                         }}
+                         className="flex items-center gap-1.5 p-2 bg-[var(--surface-soft)] border border-[var(--border)] border-opacity-30 rounded-xl text-xs font-bold text-primary hover:bg-primary hover:text-white transition-all shadow-md"
+                         title="Discuss Milestone"
+                       >
+                         <MessageSquare className="w-4 h-4" />
+                         <span>Discuss</span>
                        </button>
                     </div>
                   </div>
@@ -233,6 +244,18 @@ const RoadmapPage = () => {
            </div>
         </div>
       </div>
+
+      {/* Collaboration Sidebar Panel */}
+      {roadmap && (
+        <RoadmapCollaborationPanel
+          roadmapId={roadmap._id}
+          isOpen={panelOpen}
+          onClose={() => setPanelOpen(false)}
+          initialMilestoneId={activeMilestoneId}
+          milestones={roadmap.roadmap}
+          currentUser={user}
+        />
+      )}
     </div>
   );
 };

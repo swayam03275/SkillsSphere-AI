@@ -15,6 +15,18 @@ const resumeSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    isScannedPdf: {
+      type: Boolean,
+      default: false,
+    },
+    title: {
+      type: String,
+      default: "My Resume",
+    },
+    isActive: {
+      type: Boolean,
+      default: false,
+    },
     phone: {
       type: String,
       default: null,
@@ -63,6 +75,10 @@ const resumeSchema = new mongoose.Schema(
       type: String,
       default: null,
       select: false, // Don't include in queries by default for privacy
+    },
+    isScannedPdf: {
+      type: Boolean,
+      default: false,
     },
     jobSkills: {
       type: [String],

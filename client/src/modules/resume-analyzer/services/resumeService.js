@@ -127,3 +127,88 @@ export const generateCoverLetter = async (resumeId, jobDescription, tone = "Prof
     throw error;
   }
 };
+
+/**
+ * Fetch all resume versions for the student.
+ */
+export const getResumeList = async () => {
+  try {
+    const response = await apiRequest("/api/resume/list", {
+      method: "GET",
+      token: getToken(),
+    });
+
+    if (!response || response.success === false) {
+      throw new Error(response?.message || "Failed to fetch resume list.");
+    }
+
+    return response.data || [];
+  } catch (error) {
+    console.error("[resumeService] getResumeList Error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Set a specific resume version as active.
+ */
+export const setActiveResume = async (id) => {
+  try {
+    const response = await apiRequest(`/api/resume/${id}/active`, {
+      method: "PATCH",
+      token: getToken(),
+    });
+
+    if (!response || response.success === false) {
+      throw new Error(response?.message || "Failed to update active resume.");
+    }
+
+    return response;
+  } catch (error) {
+    console.error("[resumeService] setActiveResume Error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Rename a specific resume version.
+ */
+export const renameResume = async (id, title) => {
+  try {
+    const response = await apiRequest(`/api/resume/${id}/rename`, {
+      method: "PATCH",
+      body: { title },
+      token: getToken(),
+    });
+
+    if (!response || response.success === false) {
+      throw new Error(response?.message || "Failed to rename resume.");
+    }
+
+    return response;
+  } catch (error) {
+    console.error("[resumeService] renameResume Error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Delete a specific resume version.
+ */
+export const deleteResume = async (id) => {
+  try {
+    const response = await apiRequest(`/api/resume/${id}`, {
+      method: "DELETE",
+      token: getToken(),
+    });
+
+    if (!response || response.success === false) {
+      throw new Error(response?.message || "Failed to delete resume.");
+    }
+
+    return response;
+  } catch (error) {
+    console.error("[resumeService] deleteResume Error:", error);
+    throw error;
+  }
+};

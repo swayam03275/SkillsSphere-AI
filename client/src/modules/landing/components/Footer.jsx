@@ -1,10 +1,6 @@
 import { Link } from "react-router-dom";
 import { Mail, ArrowRight, Sparkles } from "lucide-react";
-import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
-
-
 const Footer = () => {
-  useDocumentTitle("Footer");
   return (
     <footer className="relative border-t border-[var(--border)] bg-slate-950 overflow-hidden">
       {/* Decorative gradient background elements */}

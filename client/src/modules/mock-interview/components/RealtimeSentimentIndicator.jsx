@@ -1,10 +1,6 @@
 import React from 'react';
 import { Activity, Brain, AlertCircle } from 'lucide-react';
-import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
-
-
 const RealtimeSentimentIndicator = ({ analysis }) => {
-  useDocumentTitle("Realtime Sentiment Indicator");
   if (!analysis) return null;
 
   const { confidence, tone, hesitationCount } = analysis;
@@ -28,14 +24,14 @@ const RealtimeSentimentIndicator = ({ analysis }) => {
   };
 
   return (
-    <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 mb-6 dark:bg-gray-900/70">
+    <div className="bg-gray-50 dark:bg-gray-900/70 backdrop-blur-md border border-gray-200 dark:border-white/10 rounded-2xl p-6 mb-6">
       <div className="flex items-center gap-2 text-indigo-300 font-semibold mb-4 text-sm uppercase tracking-wider">
         <Activity size={16} className="animate-pulse" />
         <span>Live Analysis</span>
       </div>
 
       <div className="grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] gap-4">
-        <div className="flex flex-col gap-2 bg-black/20 p-4 rounded-xl border border-white/5">
+        <div className="flex flex-col gap-2 bg-gray-100 dark:bg-black/20 p-4 rounded-xl border border-gray-200 dark:border-white/5">
           <div className="flex items-center gap-2 text-slate-400 text-xs">
             <Brain size={14} />
             <span>Confidence</span>
@@ -43,7 +39,7 @@ const RealtimeSentimentIndicator = ({ analysis }) => {
           <div className="text-xl font-bold" style={{ color: getConfidenceColor(confidence) }}>
             {confidence}%
           </div>
-          <div className="h-1 bg-white/10 rounded-sm overflow-hidden">
+          <div className="h-1 bg-gray-200 dark:bg-white/10 rounded-sm overflow-hidden">
             <div 
               className="h-full rounded-sm" 
               style={{ 
@@ -55,7 +51,7 @@ const RealtimeSentimentIndicator = ({ analysis }) => {
           </div>
         </div>
 
-        <div className="flex flex-col gap-2 bg-black/20 p-4 rounded-xl border border-white/5">
+        <div className="flex flex-col gap-2 bg-gray-100 dark:bg-black/20 p-4 rounded-xl border border-gray-200 dark:border-white/5">
           <div className="flex items-center gap-2 text-slate-400 text-xs">
             <Activity size={14} />
             <span>Tone</span>
@@ -63,7 +59,7 @@ const RealtimeSentimentIndicator = ({ analysis }) => {
           <div className="text-xl font-bold" style={{ color: getToneColor(tone) }}>
             {getToneLabel(tone)}
           </div>
-          <div className="h-1 bg-white/10 rounded-sm overflow-hidden">
+          <div className="h-1 bg-gray-200 dark:bg-white/10 rounded-sm overflow-hidden">
             <div 
               className="h-full rounded-sm" 
               style={{ 
@@ -75,7 +71,7 @@ const RealtimeSentimentIndicator = ({ analysis }) => {
           </div>
         </div>
         
-        <div className="flex flex-col gap-2 bg-black/20 p-4 rounded-xl border border-white/5">
+        <div className="flex flex-col gap-2 bg-gray-100 dark:bg-black/20 p-4 rounded-xl border border-gray-200 dark:border-white/5">
           <div className="flex items-center gap-2 text-slate-400 text-xs">
             <AlertCircle size={14} />
             <span>Hesitations</span>

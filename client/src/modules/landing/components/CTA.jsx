@@ -1,11 +1,7 @@
 import { useSelector } from "react-redux";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
-
-
 const CTA = () => {
-  useDocumentTitle("CTA");
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const isRecruiter = user?.role === "recruiter";
   const cta = isAuthenticated

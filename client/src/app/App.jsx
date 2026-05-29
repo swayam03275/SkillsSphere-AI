@@ -281,7 +281,7 @@ function App() {
         />
       </Routes>
       </Suspense>
-      <ChatWidget />
+      {token && <ChatWidget />}
     </div>
   );
 }

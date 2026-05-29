@@ -9,6 +9,7 @@ import { updateUserProfile } from "../../../features/auth/authSlice";
 import * as profileService from "../services/profileService";
 import * as fileService from "../../../services/fileService";
 import { ThemeProvider } from "../../../shared/contexts/ThemeContext";
+
 vi.mock("../services/profileService", () => ({
   updateProfile: vi.fn(),
   deleteProfile: vi.fn(),

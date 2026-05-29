@@ -2,9 +2,6 @@ import React, { useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Trash2, ArrowRight, CheckCheck } from "lucide-react";
 import NotificationCard from "./NotificationCard";
-import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
-
-
 /**
  * Dropdown panel showing recent notifications
  * Positioned relative to the bell icon
@@ -20,7 +17,6 @@ const NotificationDropdown = ({
   onMarkAllAsRead,
   onDeleteAll,
 }) => {
-  useDocumentTitle("Notification Dropdown");
   const dropdownRef = useRef(null);
   const isEmpty = notifications.length === 0 && !loading;
 
