@@ -20,9 +20,9 @@ import Button from "../../../shared/landing/Button";
 import SkillGapVenn from "./SkillGapVenn";
 import CoverLetterModal from "../../../shared/components/CoverLetterModal";
 import { generateCoverLetter } from "../services/resumeService";
-import html2pdf from "html2pdf.js";
 import AnalysisReportPDF from "./AnalysisReportPDF";
 import { useToast } from "../../../shared/components";
+import { exportToPDF } from "../../../utils/exportUtils";
 const AnalysisResult = ({ result, file, jobDescription, onReset }) => {
   const score = result?.score || 0;
   const isJDProvided = result.isJDProvided;
@@ -38,6 +38,7 @@ const AnalysisResult = ({ result, file, jobDescription, onReset }) => {
 
   const { success, error: showError } = useToast();
   const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const [exportError, setExportError] = useState("");
 
   useEffect(() => {
     if (
@@ -84,30 +85,27 @@ const AnalysisResult = ({ result, file, jobDescription, onReset }) => {
   const actionWords = result.readabilityMatch?.relevantVerbs || ["Spearheaded", "Orchestrated", "Transformed", "Optimized", "Architected", "Launched", "Pioneered", "Revitalized"];
 
   const handleExportPDF = async () => {
-    setIsExportingPDF(true);
-    try {
-      const element = document.getElementById("analysis-report-pdf");
-      if (!element) {
-        throw new Error("Report element not found in DOM.");
-      }
+    if (isExportingPDF) return;
 
+    setIsExportingPDF(true);
+    setExportError("");
+    try {
       const fileNameClean = file?.name 
         ? file.name.replace(/\.[^/.]+$/, "") 
-        : "resume";
+        : "resume-analysis";
 
-      const opt = {
+      await exportToPDF("analysis-report-pdf", `${fileNameClean}-analysis-report.pdf`, {
         margin: [0.4, 0.4, 0.4, 0.4],
-        filename: `${fileNameClean}_analysis_report.pdf`,
         image: { type: "jpeg", quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, letterRendering: true, scrollX: 0, scrollY: 0 },
         jsPDF: { unit: "in", format: "letter", orientation: "portrait" }
-      };
-
-      await html2pdf().set(opt).from(element).save();
+      });
       success("Report exported to PDF successfully.");
     } catch (err) {
       console.error("PDF Export Error:", err);
-      showError(err.message || "Failed to export PDF report.");
+      const message = "We couldn't export the PDF report. Please try again.";
+      setExportError(message);
+      showError(err.message || message);
     } finally {
       setIsExportingPDF(false);
     }
@@ -499,6 +497,7 @@ const AnalysisResult = ({ result, file, jobDescription, onReset }) => {
           <button 
             onClick={handleExportPDF} 
             disabled={isExportingPDF}
+            aria-busy={isExportingPDF}
             className={`group flex items-center justify-center gap-3 px-6 py-4 rounded-2xl border transition-all shadow-xl
               ${isExportingPDF 
                 ? 'bg-gray-100 dark:bg-surface/50 border-gray-200 dark:border-border cursor-not-allowed' 
@@ -512,13 +511,18 @@ const AnalysisResult = ({ result, file, jobDescription, onReset }) => {
             )}
             <div className="text-left">
               <span className="block text-sm font-bold text-gray-900 dark:text-text-main group-hover:text-secondary transition-colors">
-                {isExportingPDF ? "Exporting PDF..." : "Export PDF Report"}
+                {isExportingPDF ? "Exporting..." : "Export PDF"}
               </span>
               <span className="block text-[10px] uppercase tracking-widest text-gray-500 dark:text-text-muted mt-0.5">
                 Download Feedback
               </span>
             </div>
           </button>
+          {exportError && (
+            <span className="text-xs font-medium text-red-400 text-center" role="alert">
+              {exportError}
+            </span>
+          )}
         </div>
 
         {/* New Scan Button */}
