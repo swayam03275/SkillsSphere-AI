@@ -8,7 +8,7 @@ import ProfilePage from "../ProfilePage";
 import { updateUserProfile } from "../../../features/auth/authSlice";
 import * as profileService from "../services/profileService";
 import * as fileService from "../../../services/fileService";
-
+import { ThemeProvider } from "../../../shared/contexts/ThemeContext";
 vi.mock("../services/profileService", () => ({
   updateProfile: vi.fn(),
   deleteProfile: vi.fn(),
@@ -52,7 +52,9 @@ const renderProfile = (user = baseUser) =>
   render(
     <Provider store={createStore(user)}>
       <MemoryRouter>
-        <ProfilePage />
+        <ThemeProvider>
+          <ProfilePage />
+        </ThemeProvider>
       </MemoryRouter>
     </Provider>,
   );
