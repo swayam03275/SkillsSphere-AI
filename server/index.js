@@ -25,6 +25,7 @@ import notificationRoutes from "./src/modules/notifications/routes.js";
 import userRoutes from "./src/modules/users/routes.js";
 import interviewRoutes from "./src/modules/interviews/routes.js";
 import fileRoutes from "./src/modules/files/routes.js";
+import recruiterRoutes from "./src/modules/recruiter/routes.js";
 import { initClassroomSockets } from "./src/modules/classrooms/socket.js";
 import { initInterviewSockets } from "./src/modules/interviews/socket.js";
 import { initRoadmapSockets } from "./src/modules/roadmap/socket.js";
@@ -143,6 +144,7 @@ app.use("/api/interviews", requireDB, interviewRoutes);
 app.use("/api/files", requireDB, fileRoutes);
 app.use("/api/notifications", requireDB, notificationRoutes);
 app.use("/api/analytics", requireDB, analyticsRoutes);
+app.use("/api/recruiter", requireDB, recruiterRoutes);
 
 initClassroomSockets(io);
 initNotificationSockets(io);
