@@ -1,11 +1,21 @@
 import { API_URL } from "../config/env";
 import logger from "./logger";
 
+const SENSITIVE_KEYS = new Set([
+  "token",
+  "accessToken",
+  "refreshToken",
+  "password",
+  "confirmPassword",
+  "authorization",
+  "cookie",
+  "secret",
+  "apiKey",
+]);
+
 const REDACTION_PATTERNS = [
   /Bearer\s+[A-Za-z0-9._~+/=-]+/gi,
-  /token["':=\s]+[A-Za-z0-9._~+/=-]+/gi,
-  /password["':=\s]+[^,\s}]+/gi,
-  /api[_-]?key["':=\s]+[A-Za-z0-9._~+/=-]+/gi,
+  /(token|accessToken|refreshToken|password|confirmPassword|authorization|cookie|secret|apiKey)["':=\s]+[^,\s}]+/gi,
 ];
 
 const redactSensitiveData = (value) => {
@@ -15,6 +25,23 @@ const redactSensitiveData = (value) => {
     (text, pattern) => text.replace(pattern, "[redacted]"),
     String(value),
   );
+};
+
+const sanitizeMetadata = (value) => {
+  if (Array.isArray(value)) {
+    return value.map(sanitizeMetadata);
+  }
+
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, nestedValue]) => [
+        key,
+        SENSITIVE_KEYS.has(key) ? "[redacted]" : sanitizeMetadata(nestedValue),
+      ]),
+    );
+  }
+
+  return typeof value === "string" ? redactSensitiveData(value) : value;
 };
 
 const getCurrentRoute = () => {
@@ -35,6 +62,11 @@ const buildErrorPayload = (error, errorInfo = {}) => ({
   message: redactSensitiveData(error?.message || "Unknown client error"),
   stack: redactSensitiveData(error?.stack),
   componentStack: redactSensitiveData(errorInfo?.componentStack),
+  context: sanitizeMetadata(
+    Object.fromEntries(
+      Object.entries(errorInfo || {}).filter(([key]) => key !== "componentStack"),
+    ),
+  ),
   route: redactSensitiveData(getCurrentRoute()),
   timestamp: new Date().toISOString(),
   browser: getBrowserInfo(),
@@ -92,4 +124,5 @@ export const reportError = async (error, errorInfo = {}) => {
 export const __testing = {
   buildErrorPayload,
   redactSensitiveData,
+  sanitizeMetadata,
 };

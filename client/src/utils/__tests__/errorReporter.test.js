@@ -16,13 +16,24 @@ describe("errorReporter", () => {
   it("sanitizes sensitive values before building payloads", () => {
     const payload = __testing.buildErrorPayload(
       new Error("Request failed with token=super-secret"),
-      { componentStack: "Component password: hunter2" },
+      {
+        componentStack: "Component password: hunter2",
+        source: "auth",
+        token: "raw-token",
+        nested: {
+          accessToken: "raw-access-token",
+          authorization: "Bearer abc123",
+        },
+      },
     );
 
     expect(payload.message).toContain("[redacted]");
     expect(payload.message).not.toContain("super-secret");
     expect(payload.componentStack).toContain("[redacted]");
     expect(payload.componentStack).not.toContain("hunter2");
+    expect(payload.context.token).toBe("[redacted]");
+    expect(payload.context.nested.accessToken).toBe("[redacted]");
+    expect(payload.context.nested.authorization).toBe("[redacted]");
     expect(payload.timestamp).toBeTruthy();
   });
 

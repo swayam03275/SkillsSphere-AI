@@ -5,7 +5,9 @@ import { setOAuthData } from '../../features/auth/authSlice';
 import { useToast } from '../../shared/components';
 import { API_URL } from "../../config/env";
 import { useDocumentTitle } from "../../hooks/useDocumentTitle";
+import { reportError } from "../../utils/errorReporter";
 
+const OAUTH_ERROR_MESSAGE = "Authentication failed. Please try signing in again.";
 
 const OAuthCallback = () => {
   useDocumentTitle("OAuth Callback");
@@ -26,13 +28,21 @@ const OAuthCallback = () => {
     }
 
     if (error) {
-      showError(decodeURIComponent(error));
+      reportError(new Error("OAuth provider returned an error"), {
+        source: "auth",
+        feature: "oauth-callback",
+      }).catch(() => {});
+      showError(OAUTH_ERROR_MESSAGE);
       navigate('/login', { replace: true });
       return;
     }
 
     if (!code) {
-      showError('No authorization code received');
+      reportError(new Error("OAuth callback missing authorization code"), {
+        source: "auth",
+        feature: "oauth-callback",
+      }).catch(() => {});
+      showError(OAUTH_ERROR_MESSAGE);
       navigate('/login', { replace: true });
       return;
     }
@@ -47,7 +57,7 @@ const OAuthCallback = () => {
         const exchangeData = await exchangeRes.json();
 
         if (!exchangeData.success || !exchangeData.token) {
-          throw new Error(exchangeData.message || 'Failed to exchange authorization code');
+          throw new Error('OAuth authorization code exchange failed');
         }
 
         const { token, user } = exchangeData;
@@ -59,8 +69,12 @@ const OAuthCallback = () => {
         sessionStorage.removeItem('oauth_redirect');
         navigate(redirectTo, { replace: true });
       } catch (err) {
-        console.error(err);
-        showError('Could not complete login. Please try again.');
+        reportError(new Error("OAuth callback failed"), {
+          source: "auth",
+          feature: "oauth-callback",
+          reason: err?.name || "exchange-failed",
+        }).catch(() => {});
+        showError(OAUTH_ERROR_MESSAGE);
         navigate('/login', { replace: true });
       } finally {
         setLoading(false);

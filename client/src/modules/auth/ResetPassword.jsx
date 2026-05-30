@@ -6,8 +6,12 @@ import { KeyRound, ArrowLeft, CheckCircle } from "lucide-react";
 import { useToast } from "../../shared/components";
 import { API_URL } from "../../config/env";
 import { useDocumentTitle } from "../../hooks/useDocumentTitle";
+import { reportError } from "../../utils/errorReporter";
 
-
+const RESET_PASSWORD_ERROR_MESSAGE =
+  "Unable to reset password. Please try again or request a new reset link.";
+const RESET_PASSWORD_CONNECTION_MESSAGE =
+  "Unable to reset password right now. Please check your connection and try again.";
 
 const ResetPassword = () => {
   useDocumentTitle("Reset Password");
@@ -101,13 +105,23 @@ const ResetPassword = () => {
           setSuccess(true);
           showSuccessToast("Password reset successfully!");
         } else {
-          const errorMessage = data.message || "Failed to reset password";
-          showErrorToast(errorMessage);
-          setErrors({ form: errorMessage });
+          const error = new Error("Password reset request failed");
+          reportError(error, {
+            source: "auth",
+            feature: "reset-password",
+            status: response.status,
+          }).catch(() => {});
+          showErrorToast(RESET_PASSWORD_ERROR_MESSAGE);
+          setErrors({ form: RESET_PASSWORD_ERROR_MESSAGE });
         }
       } catch (err) {
-        showErrorToast("Connection error. Please check if the server is running.");
-        console.error("Reset password error:", err);
+        reportError(new Error("Password reset request could not be completed"), {
+          source: "auth",
+          feature: "reset-password",
+          reason: err?.name || "request-failed",
+        }).catch(() => {});
+        showErrorToast(RESET_PASSWORD_CONNECTION_MESSAGE);
+        setErrors({ form: RESET_PASSWORD_CONNECTION_MESSAGE });
       } finally {
         setLoading(false);
       }
