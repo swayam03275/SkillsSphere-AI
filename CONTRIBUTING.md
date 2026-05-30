@@ -42,6 +42,16 @@ Before opening a PR, ensure:
 - Documentation is updated when behavior changes.
 - No sensitive data, tokens, or secrets are committed.
 
+## Dependency Update Automation
+
+Dependabot is configured in `.github/dependabot.yml` to check the root
+workspace, `client/`, `server/`, `ai-ml/`, and GitHub Actions every Monday
+morning in the Asia/Kolkata timezone.
+
+Minor and patch updates are grouped per workspace so maintainers get useful
+dependency coverage without a flood of small pull requests. Major version
+updates remain separate for easier review and testing.
+
 ## What to Contribute
 
 - Feature scaffolding aligned with modules in `README.md`
