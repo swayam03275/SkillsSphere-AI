@@ -77,8 +77,6 @@ export const uploadAvatar = asyncHandler(async (req, res, next) => {
   const uploadedAvatar = await uploadAvatarBuffer(req.file.buffer, req.user._id);
   const previousPublicId = currentUser.profilePicPublicId;
   const previousProfilePic = currentUser.profilePic;
-  const baseUrl = getBackendUrl();
-  const profilePic = `${baseUrl}${buildAvatarFileUrl(req.file.filename)}`;
 
   const updatedUser = await User.findByIdAndUpdate(
     req.user._id,

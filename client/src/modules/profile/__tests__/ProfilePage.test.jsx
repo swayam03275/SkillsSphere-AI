@@ -44,14 +44,22 @@ const createStore = (user = baseUser) =>
         }
         return state;
       },
+      notifications: (state = { unreadCount: 0 }) => state,
     },
   });
+
+import { ToastProvider } from "../../../shared/components/toast/ToastProvider";
+import { ThemeProvider } from "../../../shared/contexts/ThemeContext";
 
 const renderProfile = (user = baseUser) =>
   render(
     <Provider store={createStore(user)}>
       <MemoryRouter>
-        <ProfilePage />
+        <ThemeProvider>
+          <ToastProvider>
+            <ProfilePage />
+          </ToastProvider>
+        </ThemeProvider>
       </MemoryRouter>
     </Provider>,
   );

@@ -81,10 +81,14 @@ const createMockStore = (token = 'test-token') => {
   })
 }
 
+import { ToastProvider } from '../../../../shared/components/toast/ToastProvider'
+
 const renderWithProviders = (component, { store = createMockStore() } = {}) => {
   return render(
     <Provider store={store}>
-      <MemoryRouter>{component}</MemoryRouter>
+      <MemoryRouter>
+        <ToastProvider>{component}</ToastProvider>
+      </MemoryRouter>
     </Provider>
   )
 }
