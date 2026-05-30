@@ -116,11 +116,20 @@ export const processAnswerSubmission = async ({
   transcript,
   audioFile,
 }) => {
-  if (pendingSubmissions.get(sessionId)) {
-    throw new AppError("Answer submission already in progress for this session", 429);
-  }
+  const lockKey = `interview_lock:${sessionId}`;
+  const useRedis = redisClient.isReady;
 
-  pendingSubmissions.set(sessionId, true);
+  if (useRedis) {
+    const acquired = await redisClient.set(lockKey, "LOCKED", { NX: true, EX: 30 });
+    if (!acquired) {
+      throw new AppError("Answer submission already in progress for this session", 429);
+    }
+  } else {
+    if (pendingSubmissions.get(sessionId)) {
+      throw new AppError("Answer submission already in progress for this session", 429);
+    }
+    pendingSubmissions.set(sessionId, true);
+  }
 
   try {
     const session = await InterviewSession.findOne({
@@ -226,7 +235,11 @@ export const processAnswerSubmission = async ({
       nextQuestion,
     };
   } finally {
-    pendingSubmissions.delete(sessionId);
+    if (useRedis) {
+      await redisClient.del(lockKey).catch(console.error);
+    } else {
+      pendingSubmissions.delete(sessionId);
+    }
   }
 };
 
@@ -428,18 +441,19 @@ export const listAvailableTopics = async () => {
 export const getTutorSessionsList = async (tutorId, page, limit) => {
   const skip = (page - 1) * limit;
 
-  const authorizedRoadmaps = await LearningProgress.find({ tutorsTracking: tutorId }).select("user");
-  const authorizedStudentIds = authorizedRoadmaps.map(r => r.user);
+  // Find all students assigned to this tutor
+  const roadmaps = await LearningProgress.find({ tutorsTracking: tutorId }).select("user");
+  const studentIds = roadmaps.map((r) => r.user);
 
   const [sessions, total] = await Promise.all([
-    InterviewSession.find({ status: 'completed', userId: { $in: authorizedStudentIds } })
+    InterviewSession.find({ userId: { $in: studentIds }, status: "completed" })
       .populate('userId', 'name email')
       .select('topic difficulty status overallScore tutorOverallScore duration createdAt')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .lean(),
-    InterviewSession.countDocuments({ status: 'completed', userId: { $in: authorizedStudentIds } }),
+    InterviewSession.countDocuments({ status: 'completed' }),
   ]);
   return { sessions, total, page, pages: Math.ceil(total / limit) };
 };
@@ -457,7 +471,33 @@ export const getTutorSessionDetails = async (sessionId, tutorId) => {
     throw new AppError("You are not authorized to view this interview session", 403);
   }
 
-  return session;
+  return {
+    id: session._id,
+    userId: session.userId || { name: 'Unknown User' },
+    topic: session.topic,
+    difficulty: session.difficulty,
+    status: session.status,
+    overallScore: session.overallScore,
+    tutorOverallScore: session.tutorOverallScore,
+    tutorOverallFeedback: session.tutorOverallFeedback,
+    weakConcepts: session.weakConcepts || [],
+    duration: session.duration,
+    totalQuestions: session.totalQuestions,
+    answers: (session.answers || []).map((a) => ({
+      questionId: a.questionId,
+      questionText: a.questionText,
+      transcript: a.transcript,
+      audioPath: a.audioPath,
+      scores: a.scores || {},
+      tutorScores: a.tutorScores || {},
+      tutorFeedback: a.tutorFeedback || "",
+      concepts: a.concepts || { detected: [], missed: [], expected: [] },
+      fillerWords: a.fillerWords,
+      speakingSpeed: a.speakingSpeed,
+    })),
+    startedAt: session.startedAt,
+    completedAt: session.completedAt,
+  };
 };
 
 export const addTutorFeedback = async (sessionId, tutorId, { tutorOverallScore, tutorOverallFeedback, answersFeedback }) => {

@@ -623,6 +623,11 @@ const InterviewSession = () => {
                   <><Trophy size={18} /> View Detailed Analytics</>
                 )}
               </button>
+              {error && (
+                <span className="text-sm font-semibold text-red-500 flex items-center justify-center gap-1.5 bg-red-50 dark:bg-red-500/10 px-3 py-2 rounded-lg mt-2">
+                  <AlertCircle size={16} /> {error}
+                </span>
+              )}
             </div>
           )}
 

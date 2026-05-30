@@ -185,11 +185,11 @@ const InterviewLobby = () => {
                   variant="primary"
                   size="lg"
                   className={`w-full py-5 text-lg font-bold rounded-2xl flex items-center justify-center gap-3 transition-all duration-300 ${
-                    !isMediaReady || starting || loading 
+                    !isMediaReady || starting || loading || !topic
                       ? "opacity-60 cursor-not-allowed grayscale" 
                       : "shadow-[0_15px_30px_-10px_rgba(79,70,229,0.5)] hover:shadow-[0_20px_40px_-10px_rgba(79,70,229,0.7)] hover:-translate-y-1 hover:scale-[1.02] bg-gradient-to-r from-indigo-600 to-purple-600 border-none"
                   }`}
-                  disabled={!isMediaReady || starting || loading}
+                  disabled={!isMediaReady || starting || loading || !topic}
                   onClick={handleStartInterview}
                 >
                   {starting ? (

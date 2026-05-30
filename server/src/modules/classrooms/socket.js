@@ -165,9 +165,7 @@ export function initClassroomSockets(io) {
         !targetSocket.data ||
         targetSocket.data.roomId !== socket.data.roomId
       ) {
-        socket.emit("unauthorized", {
-          message: "Target user is not in your classroom",
-        });
+        // Gracefully and silently drop the unauthorized stream injection attempt
         return;
       }
 
@@ -191,9 +189,7 @@ export function initClassroomSockets(io) {
         !targetSocket.data ||
         targetSocket.data.roomId !== socket.data.roomId
       ) {
-        socket.emit("unauthorized", {
-          message: "Target user is not in your classroom",
-        });
+        // Gracefully and silently drop the unauthorized stream signaling answer
         return;
       }
 

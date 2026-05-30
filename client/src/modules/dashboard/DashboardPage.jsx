@@ -18,12 +18,31 @@ const ROLE_LABELS = {
   recruiter: "Recruiter",
 };
 
-const DASHBOARD_SIDEBAR_ITEMS = [
-  { label: "Update Resume", icon: FileText, to: "/resume-analyzer" },
-  { label: "Find Matches", icon: Target, to: "/job-matcher" },
-  { label: "Applied Jobs", icon: Briefcase, to: "/my-applications" },
-  { label: "Live Classrooms", icon: Video, to: "/classrooms" },
-];
+const getSidebarItems = (role) => {
+  if (role === "tutor") {
+    return [
+      { label: "Analytics", icon: Target, to: "/tutor/analytics" },
+      { label: "Roadmaps", icon: FileText, to: "/tutor/roadmaps" },
+      { label: "Interviews", icon: Video, to: "/tutor/interviews" },
+      { label: "Classrooms", icon: Video, to: "/classrooms" },
+    ];
+  }
+  if (role === "recruiter") {
+    return [
+      { label: "Manage Jobs", icon: Briefcase, to: "/recruiter/jobs" },
+      { label: "Talent Finder", icon: Target, to: "/recruiter/talent-finder" },
+      { label: "Analytics", icon: FileText, to: "/recruiter/analytics" },
+    ];
+  }
+  // Default to student
+  return [
+    { label: "Update Resume", icon: FileText, to: "/resume-analyzer" },
+    { label: "Find Matches", icon: Target, to: "/job-matcher" },
+    { label: "Applied Jobs", icon: Briefcase, to: "/my-applications" },
+    { label: "Mock Interviews", icon: Video, to: "/mock-interview" },
+    { label: "Live Classrooms", icon: Video, to: "/classrooms" },
+  ];
+};
 
 const DashboardPage = () => {
   useDocumentTitle("Dashboard");
@@ -70,7 +89,7 @@ const DashboardPage = () => {
             </div>
 
             <nav className="mt-10 space-y-3">
-              {DASHBOARD_SIDEBAR_ITEMS.map((item) => {
+              {getSidebarItems(user?.role).map((item) => {
                 const Icon = item.icon;
                 return (
                   <Link

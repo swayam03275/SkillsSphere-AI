@@ -14,18 +14,8 @@ import ConceptGraph from "../../../database/models/ConceptGraph.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const seedInterviewData = async () => {
+export const seedInterviewData = async () => {
   try {
-    const mongoUri = process.env.MONGO_URI;
-    if (!mongoUri) {
-      console.error("MONGO_URI not found in environment variables");
-      process.exit(1);
-    }
-
-    console.log("[seed] Connecting to MongoDB...");
-    await mongoose.connect(mongoUri);
-    console.log("[seed] Connected successfully");
-
     // Load seed data from JSON files
     const questions = JSON.parse(
       readFileSync(join(__dirname, "questions.json"), "utf-8")
@@ -65,11 +55,15 @@ const seedInterviewData = async () => {
     });
 
     console.log("[seed] Done! ✅");
-    process.exit(0);
   } catch (error) {
     console.error("[seed] Error:", error.message);
-    process.exit(1);
   }
 };
 
-seedInterviewData();
+// Run if called directly
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const mongoUri = process.env.MONGO_URI;
+  if (mongoUri) {
+    mongoose.connect(mongoUri).then(() => seedInterviewData().then(() => process.exit(0)));
+  }
+}

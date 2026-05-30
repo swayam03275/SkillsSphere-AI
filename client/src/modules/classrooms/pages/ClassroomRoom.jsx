@@ -96,8 +96,7 @@ export default function ClassroomRoom() {
         s.on("webrtc-offer", (payload) => {
           // Security check: Verify that the caller is a registered participant in this room
           if (!activeSocketIdsRef.current.has(payload.callerSocketId)) {
-            console.error(`Blocked unauthorized WebRTC stream injection from socket: ${payload.callerSocketId}`);
-            toast.error("Security Warning: Blocked an unauthorized stream injection attempt from outside this classroom.");
+            console.warn(`Silently dropped unauthorized WebRTC stream injection from socket: ${payload.callerSocketId}`);
             return;
           }
 
@@ -119,7 +118,7 @@ export default function ClassroomRoom() {
         // Receiving an answer
         s.on("webrtc-answer", (payload) => {
           if (!activeSocketIdsRef.current.has(payload.answererSocketId)) {
-            console.error(`Blocked unauthorized WebRTC signaling answer from socket: ${payload.answererSocketId}`);
+            console.warn(`Silently dropped unauthorized WebRTC signaling answer from socket: ${payload.answererSocketId}`);
             return;
           }
           const item = peersRef.current.find(p => p.peerId === payload.answererSocketId);
