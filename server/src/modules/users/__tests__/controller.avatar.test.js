@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import test, { afterEach, mock } from "node:test";
+import fs from "node:fs/promises";
+import path from "node:path";
 import { v2 as cloudinary } from "cloudinary";
 import User from "../../../database/models/User.js";
 import { removeAvatar, uploadAvatar } from "../controller.js";
@@ -63,9 +65,19 @@ test("uploadAvatar - uploads to Cloudinary, stores URL and public ID, and delete
     return { result: "ok" };
   });
 
+  const tempAvatarPath = path.join(
+    process.cwd(),
+    "src",
+    "uploads",
+    "avatars",
+    `__test-avatar-${Date.now()}.png`
+  );
+  await fs.mkdir(path.dirname(tempAvatarPath), { recursive: true });
+  await fs.writeFile(tempAvatarPath, Buffer.from("avatar-bytes"));
+
   const response = await invokeController(uploadAvatar, {
     user: { _id: userId },
-    file: { buffer: Buffer.from("avatar-bytes") },
+    file: { path: tempAvatarPath },
   });
 
   assert.equal(response.statusCode, 200);
@@ -77,6 +89,7 @@ test("uploadAvatar - uploads to Cloudinary, stores URL and public ID, and delete
   assert.equal(response.data.user.profilePic, uploaded.secure_url);
   assert.equal(response.data.user.profilePicPublicId, uploaded.public_id);
   assert.deepEqual(destroyedIds, [oldPublicId]);
+  await assert.rejects(fs.access(tempAvatarPath));
 });
 
 test("removeAvatar - clears user avatar fields and deletes Cloudinary image by public ID", async () => {

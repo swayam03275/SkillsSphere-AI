@@ -40,7 +40,7 @@ const fileFilter = (_req, file, cb) => {
 };
 
 const upload = multer({
-  storage: multer.memoryStorage(),
+  storage,
   fileFilter,
   limits: { fileSize: AVATAR_MAX_SIZE },
 });

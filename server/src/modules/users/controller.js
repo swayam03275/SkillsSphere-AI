@@ -8,6 +8,7 @@ import InterviewSession from "../../database/models/InterviewSession.js";
 import AnalysisHistory from "../../database/models/AnalysisHistory.js";
 import ClassroomSession from "../../database/models/ClassroomSession.js";
 import JobPosting from "../../database/models/JobPosting.js";
+import fsPromises from "fs/promises";
 import AppError from "../../utils/AppError.js";
 import asyncHandler from "../../utils/asyncHandler.js";
 import { cascadeDeleteUser } from "../../utils/cascadeDelete.js";
@@ -231,7 +232,7 @@ export const updateProfile = asyncHandler(async (req, res, next) => {
  * @access  Private
  */
 export const uploadAvatar = asyncHandler(async (req, res, next) => {
-  if (!req.file?.buffer) {
+  if (!req.file?.buffer && !req.file?.path) {
     return next(new AppError("No image file provided", 400));
   }
 
@@ -240,40 +241,48 @@ export const uploadAvatar = asyncHandler(async (req, res, next) => {
     return next(new AppError("User not found", 404));
   }
 
-  const uploadedAvatar = await uploadAvatarBuffer(req.file.buffer, req.user._id);
+  const uploadBuffer = req.file.buffer ?? (await fsPromises.readFile(req.file.path));
+  let uploadedAvatar;
   const previousPublicId = currentUser.profilePicPublicId;
   const previousProfilePic = currentUser.profilePic;
 
+  try {
+    uploadedAvatar = await uploadAvatarBuffer(uploadBuffer, req.user._id);
 
-  const updatedUser = await User.findByIdAndUpdate(
-    req.user._id,
-    {
-      profilePic: uploadedAvatar.secure_url,
-      profilePicPublicId: uploadedAvatar.public_id,
-    },
-    { new: true }
-  ).select("-password -__v");
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        profilePic: uploadedAvatar.secure_url,
+        profilePicPublicId: uploadedAvatar.public_id,
+      },
+      { new: true }
+    ).select("-password -__v");
 
-  if (!updatedUser) {
-    await deleteCloudinaryAsset(uploadedAvatar.public_id).catch((error) => {
-      console.error("[uploadAvatar] Failed to clean up orphaned Cloudinary avatar:", error.message);
+    if (!updatedUser) {
+      await deleteCloudinaryAsset(uploadedAvatar.public_id).catch((error) => {
+        console.error("[uploadAvatar] Failed to clean up orphaned Cloudinary avatar:", error.message);
+      });
+      return next(new AppError("User not found", 404));
+    }
+
+    if (previousPublicId) {
+      await deleteCloudinaryAsset(previousPublicId).catch((error) => {
+        console.error("[uploadAvatar] Failed to delete previous Cloudinary avatar:", error.message);
+      });
+    } else {
+      safeDeleteAvatarByUrl(previousProfilePic);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Profile photo updated",
+      user: updatedUser,
     });
-    return next(new AppError("User not found", 404));
+  } finally {
+    if (req.file?.path) {
+      await fsPromises.unlink(req.file.path).catch(() => {});
+    }
   }
-
-  if (previousPublicId) {
-    await deleteCloudinaryAsset(previousPublicId).catch((error) => {
-      console.error("[uploadAvatar] Failed to delete previous Cloudinary avatar:", error.message);
-    });
-  } else {
-    safeDeleteAvatarByUrl(previousProfilePic);
-  }
-
-  res.status(200).json({
-    success: true,
-    message: "Profile photo updated",
-    user: updatedUser,
-  });
 });
 
 /**
