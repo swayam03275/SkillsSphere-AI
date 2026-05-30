@@ -1,6 +1,5 @@
 import os
 import tempfile
-import asyncio
 from fastapi import APIRouter, UploadFile, File, HTTPException, WebSocket, WebSocketDisconnect
 from services.whisper_service import transcribe_audio
 
@@ -102,6 +101,6 @@ async def websocket_transcribe(websocket: WebSocket):
         print(f"WebSocket transcription error: {e}")
         try:
             await websocket.close()
-        except:
+        except Exception:
             pass
 

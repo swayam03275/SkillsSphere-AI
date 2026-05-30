@@ -1,5 +1,6 @@
 import path from "path";
 import fs from "fs";
+const fsPromises = fs.promises;
 import crypto from "crypto";
 import { parseResume } from "../../utils/parseResume.js";
 import Resume from "../../database/models/Resume.js";

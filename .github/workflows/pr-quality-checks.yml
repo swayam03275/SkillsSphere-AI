@@ -75,25 +75,27 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
 
-      - name: Install dependencies
+      - name: Install workspace dependencies
         if: steps.client_check.outputs.exists == 'true'
         run: npm ci
 
       - name: Run lint
         if: steps.client_check.outputs.exists == 'true'
         working-directory: client
-        run: npm run lint --if-present
+        run: npm run lint
 
       - name: Run tests
         if: steps.client_check.outputs.exists == 'true'
         working-directory: client
-        run: npm test --if-present
+        run: npm run test:run
 
       - name: Run build
         if: steps.client_check.outputs.exists == 'true'
         working-directory: client
-        run: npm run build --if-present
+        run: npm run build
 
 
   server_checks:
@@ -123,15 +125,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
 
-      - name: Install dependencies
+      - name: Install workspace dependencies
         if: steps.server_check.outputs.exists == 'true'
         run: npm ci
 
       - name: Run lint
         if: steps.server_check.outputs.exists == 'true'
         working-directory: server
-        run: npm run lint --if-present
+        run: npm run lint
 
       - name: Run tests
         if: steps.server_check.outputs.exists == 'true'
@@ -139,12 +143,33 @@ jobs:
         env:
           MONGO_URI: mongodb://localhost:27017/test_db
           JWT_SECRET: ci_test_secret
-        run: npm test --if-present
+        run: npm test
 
       - name: Run build
         if: steps.server_check.outputs.exists == 'true'
         working-directory: server
         run: npm run build --if-present
+
+
+  interview_ai_service_lint:
+    name: Interview AI Service Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install flake8
+        run: python -m pip install --upgrade pip flake8
+
+      - name: Run flake8
+        working-directory: interview-ai-service
+        run: flake8 . --max-line-length=160 --extend-ignore=E203,W503
 
 
   aiml_checks:
