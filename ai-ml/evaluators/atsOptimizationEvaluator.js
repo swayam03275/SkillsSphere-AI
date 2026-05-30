@@ -17,7 +17,7 @@ export const atsOptimizationEvaluator = ({ resumeData, weight = 0.15 }) => {
     experience: experience.length > 0,
     education: education.length > 0,
     skills: skills.length > 0,
-    summary: /summary|profile|objective|about me/gi.test(resumeText),
+    summary: /^[^a-z]*(summary|profile|objective|about\s+me)[^a-z]*$/gim.test(resumeText),
   };
 
   const contactResults = {
