@@ -35,6 +35,11 @@ import { logEvaluatorConfig } from "./src/config/evaluatorConfig.js";
 import { setIO } from "./src/utils/socketIO.js";
 import { initNotificationSockets } from "./src/modules/notifications/socket.js";
 import { verifySocketToken } from "./src/middleware/authMiddleware.js";
+import {
+  SOCKET_AUTH_ERROR_CODES,
+  createSocketAuthError,
+  getSocketAuthErrorMessage,
+} from "./src/middleware/socketAuthError.js";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./src/config/swaggerConfig.js";
 import analyticsRoutes from "./src/modules/analytics/routes.js";
@@ -69,10 +74,27 @@ const io = new Server(server, {
 io.use(async (socket, next) => {
   try {
     const token = socket.handshake.auth?.token;
+    if (!token) {
+      return next(
+        createSocketAuthError("Missing auth token", SOCKET_AUTH_ERROR_CODES.missingToken),
+      );
+    }
+
     socket.user = await verifySocketToken(token);
     next();
   } catch (err) {
-    next(new Error(`Socket authentication failed: ${err.message}`));
+    const message = getSocketAuthErrorMessage(err, "Invalid auth token");
+    const errorCode =
+      message === "Missing auth token"
+        ? SOCKET_AUTH_ERROR_CODES.missingToken
+        : SOCKET_AUTH_ERROR_CODES.invalidToken;
+
+    next(
+      createSocketAuthError(
+        message === "Missing auth token" ? message : `Socket authentication failed: ${message}`,
+        errorCode,
+      ),
+    );
   }
 });
 

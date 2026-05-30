@@ -11,7 +11,7 @@ import JobPosting from "../../database/models/JobPosting.js";
 import AppError from "../../utils/AppError.js";
 import asyncHandler from "../../utils/asyncHandler.js";
 import { cascadeDeleteUser } from "../../utils/cascadeDelete.js";
-import { getBackendUrl } from "../../config/env.js";
+
 import { safeDeleteAvatarByUrl } from "../../utils/fileUtils.js";
 import { deleteCloudinaryAsset, uploadAvatarBuffer } from "../../config/cloudinary.js";
 
@@ -77,6 +77,7 @@ export const uploadAvatar = asyncHandler(async (req, res, next) => {
   const uploadedAvatar = await uploadAvatarBuffer(req.file.buffer, req.user._id);
   const previousPublicId = currentUser.profilePicPublicId;
   const previousProfilePic = currentUser.profilePic;
+
 
   const updatedUser = await User.findByIdAndUpdate(
     req.user._id,

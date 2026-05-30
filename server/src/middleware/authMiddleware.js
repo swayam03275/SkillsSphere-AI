@@ -75,12 +75,26 @@ export const authorizeRoles = (...roles) => {
  * @throws {Error} If token is missing, invalid, or user no longer exists
  */
 export const verifySocketToken = async (token) => {
-  if (!token) throw new Error("Authentication required");
-  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  if (!token) {
+    throw new Error("Missing auth token");
+  }
+
+  let decoded;
+
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+  } catch {
+    throw new Error("Invalid auth token");
+  }
+
   if (decoded.jti && await isTokenBlacklisted(decoded.jti)) {
     throw new Error("Token has been revoked");
   }
+
   const user = await User.findById(decoded.userId).select("-password").lean();
-  if (!user) throw new Error("User not found");
+  if (!user) {
+    throw new Error("User not found");
+  }
+
   return user;
 };
