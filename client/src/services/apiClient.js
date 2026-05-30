@@ -4,10 +4,10 @@ const getApiBaseUrl = () => {
     return (
       env?.VITE_API_URL ||
       env?.VITE_API_BASE_URL ||
-      "http://localhost:5001"
+      "http://localhost:5000"
     );
   } catch {
-    return "http://localhost:5001";
+    return "http://localhost:5000";
   }
 };
 

@@ -136,7 +136,7 @@ export default function JobMatcherPage() {
               {message || "No suitable jobs found matching your profile yet. Check back as new positions are posted!"}
             </p>
             <button
-              onClick={() => navigate("/job-board")}
+              onClick={() => navigate("/jobs")}
               className="px-8 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-colors border border-white/10"
             >
               Browse All Jobs
@@ -190,7 +190,7 @@ export default function JobMatcherPage() {
             {/* Browse all jobs link */}
             <div className="mt-10 text-center">
               <button
-                onClick={() => navigate("/job-board")}
+                onClick={() => navigate("/jobs")}
                 className="text-sm text-slate-500 hover:text-blue-400 transition-colors font-medium"
               >
                 ← Browse all job listings
