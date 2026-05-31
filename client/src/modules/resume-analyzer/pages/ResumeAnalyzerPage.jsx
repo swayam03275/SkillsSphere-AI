@@ -1,11 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import {
-  useToast,
-  LoadingState,
-  ErrorState,
-  PageHeader,
-} from "../../../shared/components";
+import { useToast, ErrorState, PageHeader } from "../../../shared/components";
 import Navbar from "../../../shared/landing/Navbar";
 import Footer from "../../../modules/landing/components/Footer";
 
@@ -22,9 +17,95 @@ import {
   deleteResume,
 } from "../services/resumeService";
 import { syncRoadmap } from "../../roadmap/services/roadmapService";
-import { FileText, Sparkles, RefreshCw, Clock, Check, X, Edit2, Trash2, CheckCircle2, ArrowLeft } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowLeft,
+  Check,
+  CheckCircle2,
+  Clock,
+  Edit2,
+  FileText,
+  Loader2,
+  RefreshCw,
+  ShieldCheck,
+  Sparkles,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
 import ConfirmDialog from "../../../shared/components/ConfirmDialog";
+
+const MAX_UPLOAD_RETRY_ATTEMPTS = 3;
+const UPLOAD_TIMEOUT_MS = 30000;
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const isRecoverableUploadError = (err) => {
+  const status = Number(err?.status || 0);
+  return status === 0 || status >= 500 || /network|timeout/i.test(err?.message || "");
+};
+
+const getResumeUploadErrorMessage = (err) => {
+  const rawMessage = err?.message || "";
+  const status = Number(err?.status || 0);
+
+  if (/timeout/i.test(rawMessage)) {
+    return "Resume upload timed out. Your selected file is still available, and you can retry.";
+  }
+
+  if (status === 0 || /network/i.test(rawMessage)) {
+    return "Network error while uploading your resume. Your selected file is still available, and you can retry.";
+  }
+
+  if (status >= 500) {
+    return "The resume parser is temporarily unavailable. Your selected file is still available, and you can retry.";
+  }
+
+  if (/empty/i.test(rawMessage)) {
+    return "The resume appears to be empty or unreadable. Please upload a text-readable PDF or DOCX file.";
+  }
+
+  if (/corrupt|invalid pdf|invalid docx|parse|parser|unreadable/i.test(rawMessage)) {
+    return "We could not read this resume. It may be corrupted, scanned, or password-protected. Please upload a clean PDF or DOCX file.";
+  }
+
+  if (status >= 400) {
+    return rawMessage || "The resume was rejected. Please check the file and upload a valid PDF or DOCX.";
+  }
+
+  return rawMessage || "Failed to analyze resume. Please try again.";
+};
+
+const retryRecoverableUpload = async (operation, onRetry) => {
+  let lastError;
+
+  for (let attempt = 1; attempt <= MAX_UPLOAD_RETRY_ATTEMPTS; attempt += 1) {
+    let timeoutId;
+    try {
+      const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = window.setTimeout(() => {
+          const error = new Error("Upload timeout");
+          error.status = 0;
+          reject(error);
+        }, UPLOAD_TIMEOUT_MS);
+      });
+      const result = await Promise.race([operation(), timeoutPromise]);
+      return result;
+    } catch (err) {
+      lastError = err;
+      if (!isRecoverableUploadError(err) || attempt === MAX_UPLOAD_RETRY_ATTEMPTS) {
+        throw err;
+      }
+
+      const delay = 600 * 2 ** (attempt - 1);
+      onRetry?.(attempt + 1);
+      await sleep(delay);
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
+  }
+
+  throw lastError;
+};
 
 const ResumeAnalyzerPage = () => {
   useDocumentTitle("Resume Analyzer");
@@ -35,6 +116,10 @@ const ResumeAnalyzerPage = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [jobDescription, setJobDescription] = useState("");
   const [showScannedModal, setShowScannedModal] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState("idle");
+  const [uploadProgressLabel, setUploadProgressLabel] = useState("");
+  const [canRetryUpload, setCanRetryUpload] = useState(false);
+  const [securityCheckStatus, setSecurityCheckStatus] = useState("not-supported");
 
   // Resume Version Manager States
   const [resumes, setResumes] = useState([]);
@@ -91,19 +176,43 @@ const ResumeAnalyzerPage = () => {
   const handleFileUpload = (file) => {
     setSelectedFile(file);
     setError(null);
+    setCanRetryUpload(false);
+    setUploadStatus("selected");
+    setUploadProgressLabel("");
+    setSecurityCheckStatus("not-supported");
   };
 
-  const handleAnalyze = async () => {
+  const handleAnalyze = async ({ isRetry = false } = {}) => {
     if (!selectedFile) {
       showError("Please upload a resume first.");
       return;
     }
 
+    if (loading) return;
+
     setLoading(true);
     setError(null);
+    setCanRetryUpload(false);
+    setUploadStatus(isRetry ? "retrying" : "uploading");
+    setUploadProgressLabel(isRetry ? "Retrying upload..." : "Uploading resume...");
     try {
-      const result = await analyzeResume(selectedFile, jobDescription);
+      const result = await retryRecoverableUpload(
+        () => analyzeResume(selectedFile, jobDescription),
+        (attempt) => {
+          setUploadStatus("retrying");
+          setUploadProgressLabel(
+            `Retrying upload (${attempt}/${MAX_UPLOAD_RETRY_ATTEMPTS})...`,
+          );
+        },
+      );
+      setUploadStatus("processing");
+      setUploadProgressLabel("Processing resume...");
       setResult(result);
+      setSecurityCheckStatus(
+        result.securityScan?.status ||
+          result.securityCheck?.status ||
+          "not-supported",
+      );
       setIsViewingLatest(false); // Fresh live result — hide the "latest scan" banner
 
       if (result.isScannedPdf) {
@@ -119,9 +228,14 @@ const ResumeAnalyzerPage = () => {
 
       await loadResumesList();
       success("Resume analyzed successfully.");
+      setUploadStatus("complete");
+      setUploadProgressLabel("");
     } catch (err) {
-      const msg = err.message || "Failed to analyze resume. Please try again.";
+      const msg = getResumeUploadErrorMessage(err);
       setError(msg);
+      setUploadStatus("failed");
+      setUploadProgressLabel("");
+      setCanRetryUpload(isRecoverableUploadError(err));
       showError(msg);
       console.error(err);
     } finally {
@@ -309,6 +423,10 @@ const ResumeAnalyzerPage = () => {
     setError(null);
     setJobDescription("");
     setIsViewingLatest(false);
+    setUploadStatus("idle");
+    setUploadProgressLabel("");
+    setCanRetryUpload(false);
+    setSecurityCheckStatus("not-supported");
     warning("Resume analyzer has been reset.");
   };
 
@@ -356,10 +474,29 @@ const ResumeAnalyzerPage = () => {
           <div className="relative z-10">
             {isLoadingLatest ? (
               <ResumeSkeleton />
-            ) : loading ? (
-              <ResumeSkeleton />
             ) : error ? (
-              <ErrorState description={error} onRetry={resetAnalyzer} />
+              <div className="space-y-4">
+                <ErrorState
+                  description={error}
+                  onRetry={canRetryUpload ? () => handleAnalyze({ isRetry: true }) : resetAnalyzer}
+                />
+                {canRetryUpload && selectedFile && (
+                  <div className="flex flex-col items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-center dark:border-amber-500/30 dark:bg-amber-500/10">
+                    <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                      Your selected file is still ready: {selectedFile.name}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleAnalyze({ isRetry: true })}
+                      disabled={loading}
+                      className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                      Retry upload
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : result ? (
               <div className="space-y-6">
                 {/* Latest Scan Banner — only shown for DB-loaded results */}
@@ -393,6 +530,30 @@ const ResumeAnalyzerPage = () => {
                   jobDescription={jobDescription || result.jobDescription || ""}
                   onReset={resetAnalyzer}
                 />
+                {securityCheckStatus !== "not-supported" && (
+                  <div
+                    className={`flex items-start gap-3 rounded-2xl border p-4 ${
+                      securityCheckStatus === "failed"
+                        ? "border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-950/20 dark:text-red-300"
+                        : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-950/20 dark:text-emerald-300"
+                    }`}
+                    role={securityCheckStatus === "failed" ? "alert" : "status"}
+                  >
+                    {securityCheckStatus === "failed" ? (
+                      <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
+                    ) : (
+                      <ShieldCheck className="mt-0.5 h-5 w-5 flex-shrink-0" />
+                    )}
+                    <div>
+                      <p className="text-sm font-bold">
+                        Security check {securityCheckStatus}
+                      </p>
+                      <p className="text-xs opacity-80">
+                        This status comes from the backend response. Frontend-only virus scanning is not performed.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="space-y-10">
@@ -410,7 +571,10 @@ const ResumeAnalyzerPage = () => {
                     <FileText className="w-5 h-5" />
                     <h3 className="text-lg font-bold">Upload Resume</h3>
                   </div>
-                  <DragDropUpload onFileUpload={handleFileUpload} />
+                  <DragDropUpload
+                    onFileUpload={handleFileUpload}
+                    disabled={loading}
+                  />
 
                   {/* Post-Upload Actions */}
                   {selectedFile && (
@@ -430,14 +594,48 @@ const ResumeAnalyzerPage = () => {
                         </div>
                       </div>
 
+                      {loading && (
+                        <div className="w-full max-w-md space-y-2" role="status">
+                          <div className="flex items-center justify-center gap-2 text-sm font-semibold text-primary">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            {uploadProgressLabel || "Uploading resume..."}
+                          </div>
+                          <div
+                            className="h-2 w-full overflow-hidden rounded-full bg-primary/10"
+                            role="progressbar"
+                            aria-label="Resume upload progress"
+                          >
+                            <div className="h-full w-1/2 animate-pulse rounded-full bg-primary" />
+                          </div>
+                          <p className="text-center text-xs text-text-muted">
+                            Upload percentage is not available with the current fetch client.
+                          </p>
+                        </div>
+                      )}
+
+                      {!loading && uploadStatus !== "idle" && (
+                        <p className="text-xs font-semibold text-text-muted">
+                          Upload status: <span className="capitalize">{uploadStatus}</span>
+                        </p>
+                      )}
+
                       <button
                         id="analyze-resume-btn"
-                        onClick={handleAnalyze}
+                        onClick={() => handleAnalyze()}
                         disabled={loading}
                         className="w-full sm:w-auto px-8 py-3 bg-primary hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl shadow-lg shadow-primary/20 transition-all transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2"
                       >
-                        <Sparkles className="w-5 h-5" />
-                        Analyze Resume
+                        {loading ? (
+                          <>
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-5 h-5" />
+                            Analyze Resume
+                          </>
+                        )}
                       </button>
                     </div>
                   )}

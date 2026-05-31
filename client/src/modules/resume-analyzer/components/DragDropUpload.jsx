@@ -3,10 +3,9 @@ import { useCallback, useState } from "react";
 import { useToast } from "../../../shared/components";
 import Button from "../../../shared/landing/Button";
 const MAX_RESUME_FILE_SIZE_BYTES = 5 * 1024 * 1024;
-const SUPPORTED_RESUME_EXTENSIONS = [".pdf", ".doc", ".docx"];
+const SUPPORTED_RESUME_EXTENSIONS = [".pdf", ".docx"];
 const SUPPORTED_RESUME_MIME_TYPES = [
   "application/pdf",
-  "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
 
@@ -24,26 +23,6 @@ const isSupportedFile = (file) => {
   );
 
   return SUPPORTED_RESUME_MIME_TYPES.includes(file.type) || hasValidExtension;
-};
-
-const validateResumeFile = (file) => {
-  if (!file) {
-    return "Please choose a resume file to upload.";
-  }
-
-  if (file.size === 0) {
-    return "The selected resume file is empty. Please choose a valid PDF, DOC, or DOCX file.";
-  }
-
-  if (!isSupportedFile(file)) {
-    return "Unsupported file type. Please upload a PDF, DOC, or DOCX resume.";
-  }
-
-  if (file.size > MAX_RESUME_FILE_SIZE_BYTES) {
-    return `Resume file is too large. Please upload a file up to ${formatFileSize(MAX_RESUME_FILE_SIZE_BYTES)}.`;
-  }
-
-  return "";
 };
 
 const getUploadErrorMessage = (error) => {
@@ -66,7 +45,27 @@ const getUploadErrorMessage = (error) => {
   return error?.message || "Invalid upload response. Please try again.";
 };
 
-const DragDropUpload = ({ onFileUpload }) => {
+export const validateResumeFile = (file) => {
+  if (!file) {
+    return "Please choose a resume file to upload.";
+  }
+
+  if (file.size === 0) {
+    return "The selected resume file is empty. Please choose a valid PDF or DOCX file.";
+  }
+
+  if (!isSupportedFile(file)) {
+    return "Unsupported file type. Please upload a PDF or DOCX resume.";
+  }
+
+  if (file.size > MAX_RESUME_FILE_SIZE_BYTES) {
+    return `Resume file is too large. Please upload a file up to ${formatFileSize(MAX_RESUME_FILE_SIZE_BYTES)}.`;
+  }
+
+  return "";
+};
+
+const DragDropUpload = ({ onFileUpload, disabled = false }) => {
   const { success, warning, error: showError } = useToast();
   const [isDragActive, setIsDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -94,7 +93,7 @@ const DragDropUpload = ({ onFileUpload }) => {
         }
 
         setSelectedFile(file);
-        success(`${file.name} uploaded. Starting analysis.`);
+        success(`${file.name} selected and ready for analysis.`);
       } catch (err) {
         const message = getUploadErrorMessage(err);
         setSelectedFile(null);
@@ -205,7 +204,7 @@ const DragDropUpload = ({ onFileUpload }) => {
         </p>
         <p className="text-text-muted">
           Supported formats:{" "}
-          <span className="text-primary font-medium">PDF, DOC, DOCX</span>
+          <span className="text-primary font-medium">PDF, DOCX</span>
         </p>
         <p className="text-xs text-text-muted">
           Maximum file size: {formatFileSize(MAX_RESUME_FILE_SIZE_BYTES)}
@@ -235,20 +234,20 @@ const DragDropUpload = ({ onFileUpload }) => {
         <input
           type="file"
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 disabled:cursor-not-allowed"
-          accept=".pdf,.doc,.docx"
+          accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
           onChange={handleFileInput}
-          disabled={isUploading}
+          disabled={isUploading || disabled}
           title="Browse file"
           aria-label="Browse resume file"
         />
         <Button
           variant="secondary"
           size="lg"
-          disabled={isUploading}
-          aria-busy={isUploading}
+          disabled={isUploading || disabled}
+          aria-busy={isUploading || disabled}
           className="px-10 group-hover:scale-105 transition-transform duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          {isUploading ? (
+          {isUploading || disabled ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin" />
               Uploading...
