@@ -1,5 +1,3 @@
-import { getBackendUrl } from "./env.js";
-
 const DEFAULT_CALLBACK_PATH = "/api/auth/google/callback";
 
 export const getGoogleOAuthConfig = () => {
@@ -28,6 +26,7 @@ export const buildGoogleAuthUrl = ({ state }) => {
     redirect_uri: redirectUri,
     response_type: "code",
     scope: "email profile",
+    prompt: "select_account",
     state,
   });
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;

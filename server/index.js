@@ -1,7 +1,7 @@
-import express from "express";
-import dotenv from "dotenv";
-import cors from "cors";
 import compression from "compression";
+import cors from "cors";
+import dotenv from "dotenv";
+import express from "express";
 import mongoose from "mongoose";
 import { validateEnv } from "./src/config/validateEnv.js";
 import { setupGlobalLogSanitizer } from "./src/utils/logSanitizer.js";
@@ -14,43 +14,45 @@ setupGlobalLogSanitizer();
 // Trigger nodemon restart!!!!!
 import http from "http";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import http from "http";
 import { Server } from "socket.io";
-import connectDB, { isConnected } from "./src/database/db.js";
-import redisClient, { connectRedis } from "./src/config/redis.js";
-import requireDB from "./src/middleware/requireDB.js";
-import authRoutes from "./src/modules/auth/routes.js";
-import resumeRoutes from "./src/modules/resumes/routes.js";
-import jobRoutes from "./src/modules/jobs/routes.js";
-import roadmapRoutes from "./src/modules/roadmap/routes.js";
-import matchingRoutes from "./src/modules/matching/routes.js";
-import dashboardRoutes from "./src/modules/dashboard/routes.js";
-import coverLetterRoutes from "./src/modules/coverLetters/routes.js";
-import classroomRoutes from "./src/modules/classrooms/routes.js";
-import notificationRoutes from "./src/modules/notifications/routes.js";
-import userRoutes from "./src/modules/users/routes.js";
-import interviewRoutes from "./src/modules/interviews/routes.js";
-import fileRoutes from "./src/modules/files/routes.js";
-import recruiterRoutes from "./src/modules/recruiter/routes.js";
-import { initClassroomSockets } from "./src/modules/classrooms/socket.js";
-import { initInterviewSockets } from "./src/modules/interviews/socket.js";
-import { initRoadmapSockets } from "./src/modules/roadmap/socket.js";
-import globalErrorHandler from "./src/middleware/errorMiddleware.js";
+import swaggerUi from "swagger-ui-express";
 import { logEvaluatorConfig } from "./src/config/evaluatorConfig.js";
-import { setIO } from "./src/utils/socketIO.js";
-import { initNotificationSockets } from "./src/modules/notifications/socket.js";
+import redisClient, { connectRedis } from "./src/config/redis.js";
+import swaggerSpec from "./src/config/swaggerConfig.js";
+import connectDB, { isConnected } from "./src/database/db.js";
 import { verifySocketToken } from "./src/middleware/authMiddleware.js";
+import globalErrorHandler from "./src/middleware/errorMiddleware.js";
+import { globalLimiter } from "./src/middleware/rateLimiter.js";
+import requireDB from "./src/middleware/requireDB.js";
 import {
   SOCKET_AUTH_ERROR_CODES,
   createSocketAuthError,
   getSocketAuthErrorMessage,
 } from "./src/middleware/socketAuthError.js";
-import swaggerUi from "swagger-ui-express";
-import swaggerSpec from "./src/config/swaggerConfig.js";
 import analyticsRoutes from "./src/modules/analytics/routes.js";
-import { globalLimiter } from "./src/middleware/rateLimiter.js";
+import authRoutes from "./src/modules/auth/routes.js";
+import classroomRoutes from "./src/modules/classrooms/routes.js";
+import { initClassroomSockets } from "./src/modules/classrooms/socket.js";
+import coverLetterRoutes from "./src/modules/coverLetters/routes.js";
+import dashboardRoutes from "./src/modules/dashboard/routes.js";
+import errorReportRoutes from "./src/modules/errors/routes.js";
+import fileRoutes from "./src/modules/files/routes.js";
+import interviewRoutes from "./src/modules/interviews/routes.js";
+import { initInterviewSockets } from "./src/modules/interviews/socket.js";
+import jobRoutes from "./src/modules/jobs/routes.js";
+import matchingRoutes from "./src/modules/matching/routes.js";
+import notificationRoutes from "./src/modules/notifications/routes.js";
+import { initNotificationSockets } from "./src/modules/notifications/socket.js";
+import recruiterRoutes from "./src/modules/recruiter/routes.js";
+import resumeRoutes from "./src/modules/resumes/routes.js";
+import roadmapRoutes from "./src/modules/roadmap/routes.js";
+import { initRoadmapSockets } from "./src/modules/roadmap/socket.js";
+import userRoutes from "./src/modules/users/routes.js";
+import { setIO } from "./src/utils/socketIO.js";
 
 const app = express();
-if (process.env.TRUST_PROXY === 'true') {
+if (process.env.TRUST_PROXY === "true") {
   app.set("trust proxy", 1);
 }
 const PORT = process.env.PORT || 5000;
@@ -80,7 +82,10 @@ io.use(async (socket, next) => {
     const token = socket.handshake.auth?.token;
     if (!token) {
       return next(
-        createSocketAuthError("Missing auth token", SOCKET_AUTH_ERROR_CODES.missingToken),
+        createSocketAuthError(
+          "Missing auth token",
+          SOCKET_AUTH_ERROR_CODES.missingToken,
+        ),
       );
     }
 
@@ -95,7 +100,9 @@ io.use(async (socket, next) => {
 
     next(
       createSocketAuthError(
-        message === "Missing auth token" ? message : `Socket authentication failed: ${message}`,
+        message === "Missing auth token"
+          ? message
+          : `Socket authentication failed: ${message}`,
         errorCode,
       ),
     );
@@ -105,10 +112,12 @@ io.use(async (socket, next) => {
 setIO(io);
 
 app.use(compression());
-app.use(cors({
-  origin: ALLOWED_ORIGINS,
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: ALLOWED_ORIGINS,
+    credentials: true,
+  }),
+);
 app.use(express.json({ limit: "1mb" }));
 
 // Security headers
@@ -146,7 +155,10 @@ app.post("/api/chat", async (req, res) => {
     }
 
     if (!geminiModel) {
-      return res.status(503).json({ error: "AI service is currently unconfigured. Please set GEMINI_API_KEY in .env" });
+      return res.status(503).json({
+        error:
+          "AI service is currently unconfigured. Please set GEMINI_API_KEY in .env",
+      });
     }
 
     const prompt = `You are the "SkillsSphere Career Assistant", an expert AI specializing in tech careers, resumes, recruitment, and technical interviews. 
@@ -173,6 +185,7 @@ app.use("/api/cover-letters", requireDB, coverLetterRoutes);
 app.use("/api/classrooms", requireDB, classroomRoutes);
 app.use("/api/users", requireDB, userRoutes);
 app.use("/api/interviews", requireDB, interviewRoutes);
+app.use("/api/errors", errorReportRoutes);
 app.use("/api/files", requireDB, fileRoutes);
 app.use("/api/notifications", requireDB, notificationRoutes);
 app.use("/api/analytics", requireDB, analyticsRoutes);
@@ -205,10 +218,12 @@ const gracefulShutdown = async (signal) => {
       console.log("Express server closed.");
       process.exit(0);
     });
-    
+
     // Fallback force kill if connections hang for more than 10 seconds
     setTimeout(() => {
-      console.error("Could not close connections in time, forcefully shutting down");
+      console.error(
+        "Could not close connections in time, forcefully shutting down",
+      );
       process.exit(1);
     }, 10000);
   } catch (err) {

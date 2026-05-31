@@ -2,20 +2,20 @@ import express from "express";
 import multer from "multer";
 import { authorizeRoles, protect } from "../../middleware/authMiddleware.js";
 import cacheMiddleware from "../../middleware/cacheMiddleware.js";
+import { aiActionLimiter } from "../../middleware/rateLimiter.js";
 import {
-  startInterview,
-  getSession,
-  submitAnswer,
   completeInterview,
-  getInterviewHistory,
-  getSessionResults,
-  getAvailableTopics,
   getAIServiceStatus,
-  getTutorSessions,
+  getAvailableTopics,
+  getInterviewHistory,
+  getSession,
+  getSessionResults,
   getTutorSession,
+  getTutorSessions,
+  startInterview,
+  submitAnswer,
   submitTutorFeedback,
 } from "./controller.js";
-import { aiActionLimiter } from "../../middleware/rateLimiter.js";
 
 const router = express.Router();
 
@@ -108,10 +108,19 @@ router.get("/history", getInterviewHistory);
 // Tutor routes (must be before /:id to avoid route conflict)
 router.get("/tutor/sessions", authorizeRoles("tutor"), getTutorSessions);
 router.get("/tutor/sessions/:id", authorizeRoles("tutor"), getTutorSession);
-router.post("/tutor/sessions/:id/feedback", authorizeRoles("tutor"), submitTutorFeedback);
+router.post(
+  "/tutor/sessions/:id/feedback",
+  authorizeRoles("tutor"),
+  submitTutorFeedback,
+);
 
 router.get("/:id", getSession);
-router.post("/:id/answer", aiActionLimiter, upload.single("audio"), submitAnswer);
+router.post(
+  "/:id/answer",
+  aiActionLimiter,
+  upload.single("audio"),
+  submitAnswer,
+);
 router.post("/:id/complete", completeInterview);
 router.get("/:id/results", getSessionResults);
 

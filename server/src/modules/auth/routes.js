@@ -1,11 +1,15 @@
 import express from "express";
-import { protect } from "../../middleware/authMiddleware.js";
-import { authRateLimiter, otpRateLimiter } from "../../middleware/rateLimiter.js";
+import { getFrontendUrl } from "../../config/env.js";
 import {
   buildGoogleAuthUrl,
   GOOGLE_OAUTH_NOT_CONFIGURED_MESSAGE,
   isGoogleOAuthConfigured,
 } from "../../config/googleOAuth.js";
+import { protect } from "../../middleware/authMiddleware.js";
+import {
+  authRateLimiter,
+  otpRateLimiter,
+} from "../../middleware/rateLimiter.js";
 import {
   exchangeOAuthCode,
   forgotPassword,

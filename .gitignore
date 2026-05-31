@@ -38,6 +38,7 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+hf-cache/
 
 # Test artifacts
 .pytest_cache/
