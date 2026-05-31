@@ -1,6 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
+// Polyfill DOMMatrix for pdfjs-dist dependency in Node.js
+if (typeof global.DOMMatrix === "undefined") {
+  global.DOMMatrix = class DOMMatrix {
+    constructor() {}
+  };
+}
+
 const criticalModules = [
   "../middleware/errorMiddleware.js",
   "../middleware/authMiddleware.js",

@@ -80,33 +80,35 @@ export const getDashboardAnalytics = async (req, res) => {
     } 
     
     if (role === "tutor") {
-  const [result, activeStudents] = await Promise.all([
-    InterviewSession.aggregate([
-      { $match: { status: "completed" } },
-      { $group: {
-        _id: null,
-        averagePlatformScore: { $avg: "$overallScore" },
-        totalMockInterviewsCompleted: { $sum: 1 }
-      }}
-    ]),
-    LearningProgress.countDocuments({ overallProgress: { $gt: 0 } })
-  ]);
+      const [result, activeStudents] = await Promise.all([
+        InterviewSession.aggregate([
+          { $match: { status: "completed" } },
+          { $group: {
+            _id: null,
+            averagePlatformScore: { $avg: "$overallScore" },
+            totalMockInterviewsCompleted: { $sum: 1 }
+          }}
+        ]),
+        LearningProgress.countDocuments({ overallProgress: { $gt: 0 } })
+      ]);
 
-  const averagePlatformScore = result[0]
-    ? Math.round(result[0].averagePlatformScore)
-    : 0;
-  const totalMockInterviewsCompleted = result[0]?.totalMockInterviewsCompleted || 0;
+      const averagePlatformScore = result && result.length > 0
+        ? Math.round(result[0].averagePlatformScore)
+        : 0;
+      const totalMockInterviewsCompleted = (result && result.length > 0)
+        ? result[0].totalMockInterviewsCompleted
+        : 0;
 
-  return res.status(200).json({
-    success: true,
-    data: {
-      role,
-      averagePlatformScore,
-      totalMockInterviewsCompleted,
-      activeStudents
+      return res.status(200).json({
+        success: true,
+        data: {
+          role,
+          averagePlatformScore,
+          totalMockInterviewsCompleted,
+          activeStudents
+        }
+      });
     }
-  });
-}
 
     if (role === "recruiter") {
       // Recruiter: Talent pool density map

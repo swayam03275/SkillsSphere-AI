@@ -23,14 +23,8 @@ import {
   resetPassword,
   verifyEmail,
 } from "./controller.js";
-import mongoose from "mongoose";
 
 const router = express.Router();
-
-router.get("/debug-db", async (req, res) => {
-  const users = await mongoose.connection.db.collection('users').find({}).toArray();
-  res.json({ count: users.length, emails: users.map(u => u.email) });
-});
 
 /**
  * @openapi
@@ -115,7 +109,7 @@ router.get("/google/callback", googleOAuthCallback);
  *         description: User registered
  */
 router.post("/register", authRateLimiter, register);
-router.post("/verify-email", otpRateLimiter, authRateLimiter, verifyEmail);
+router.post("/verify-email", otpRateLimiter, verifyEmail);
 router.post("/forgot-password", authRateLimiter, forgotPassword);
 router.post("/reset-password", authRateLimiter, resetPassword);
 router.post("/resend-otp", authRateLimiter, resendOTP);

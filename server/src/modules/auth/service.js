@@ -53,8 +53,6 @@ export const registerUserAndIssueToken = async ({ name, email, password, role })
   }
 
   const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-  const emailMode = process.env.EMAIL_SERVICE_MODE || "console";
-  const skipVerification = emailMode !== "smtp";
 
   const otp = generateOTP();
   const otpExpiry = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
@@ -65,20 +63,16 @@ export const registerUserAndIssueToken = async ({ name, email, password, role })
     email,
     password: hashedPassword,
     role,
-    verificationToken: skipVerification ? undefined : hashedOtp,
-    verificationTokenExpires: skipVerification ? undefined : otpExpiry,
-    isVerified: skipVerification,
+    verificationToken: hashedOtp,
+    verificationTokenExpires: otpExpiry,
+    isVerified: false,
   });
 
-  // In SMTP mode, send real OTP email; in console mode, auto-verify the user
-  if (!skipVerification) {
-    try {
-      await sendOTP(email, otp, "verification");
-    } catch (error) {
-      throw new AppError("Failed to send verification email. Please try again.", 500);
-    }
-  } else {
-    console.log(`[AUTH] User ${email} auto-verified (EMAIL_SERVICE_MODE=${emailMode})`);
+  // Send OTP via email (SMTP) or print to console (console mode)
+  try {
+    await sendOTP(email, otp, "verification");
+  } catch (error) {
+    throw new AppError("Failed to send verification email. Please try again.", 500);
   }
 
   const token = buildAuthToken(user);
@@ -89,7 +83,7 @@ export const registerUserAndIssueToken = async ({ name, email, password, role })
       id: user._id.toString(),
       name: user.get('name'),
       email: user.get('email'),
-      isVerified: skipVerification,
+      isVerified: false,
     },
   };
 };
@@ -213,11 +207,7 @@ export const resendUserOTP = async (email) => {
 };
 
 export const loginUser = async (email, password) => {
-  console.log("LOGIN ATTEMPT:", { email, password });
-  import("fs").then(fs => fs.appendFileSync("/tmp/login_log.txt", `LOGIN ATTEMPT: ${email}\n`));
   const user = await User.findOne({ email });
-  import("fs").then(fs => fs.appendFileSync("/tmp/login_log.txt", `FOUND USER: ${user ? user._id : "NULL"}\n`));
-  console.log("FOUND USER:", user ? user._id : "NULL");
 
   if (!user) {
     throw new AppError("Invalid email or password", 401);
@@ -269,7 +259,7 @@ export const findOrCreateGoogleUser = async ({ email, name, picture }) => {
   }
 
   return User.create({
-    name,
+    name: name || email.split("@")[0],
     email,
     profilePic: picture,
     role: "student",

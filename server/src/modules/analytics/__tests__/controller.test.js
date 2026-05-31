@@ -53,12 +53,9 @@ describe("analytics controller", () => {
   });
 
   it("includes the role field in tutor dashboard analytics data", async () => {
-    mock.method(InterviewSession, "find", () => ({
-      lean: mock.fn(async () => [
-        { overallScore: 70 },
-        { overallScore: 90 },
-      ]),
-    }));
+    mock.method(InterviewSession, "aggregate", async () => [
+      { averagePlatformScore: 80, totalMockInterviewsCompleted: 2 }
+    ]);
     mock.method(LearningProgress, "countDocuments", async () => 9);
 
     const req = { user: { _id: "tutor-1", role: "tutor" } };

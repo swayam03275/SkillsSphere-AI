@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon index.js",
     "start": "node index.js",
-    "test": "node --test"
+    "test": "node --import \"data:text/javascript,globalThis.DOMMatrix = class DOMMatrix { constructor() {} };\" --test"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

@@ -1,5 +1,12 @@
 import assert from "node:assert/strict";
 import test, { afterEach, mock } from "node:test";
+
+// Polyfill DOMMatrix for pdfjs-dist dependency in Node.js
+if (typeof global.DOMMatrix === "undefined") {
+  global.DOMMatrix = class DOMMatrix {
+    constructor() {}
+  };
+}
 import express from "express";
 import globalErrorHandler from "../../../middleware/errorMiddleware.js";
 import AnalysisHistory from "../../../database/models/AnalysisHistory.js";

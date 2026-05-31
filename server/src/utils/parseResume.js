@@ -1,5 +1,13 @@
 import fs from "fs/promises";
 import path from "path";
+
+// Polyfill DOMMatrix for pdfjs-dist dependency in Node.js
+if (typeof global.DOMMatrix === "undefined") {
+  global.DOMMatrix = class DOMMatrix {
+    constructor() {}
+  };
+}
+
 import { PDFParse } from "pdf-parse";
 import mammoth from "mammoth";
 
