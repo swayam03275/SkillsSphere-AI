@@ -12,12 +12,6 @@ import { suppressReactScriptTagWarning } from '../utils/logger';
 
 suppressReactScriptTagWarning();
 
-const savedTheme =
-  localStorage.getItem("skillssphere.theme") || "light";
-
-document.documentElement.classList.toggle("dark", savedTheme === "dark");
-document.documentElement.classList.toggle("light", savedTheme === "light");
-
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <Provider store={store}>
