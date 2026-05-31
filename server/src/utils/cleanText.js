@@ -11,7 +11,7 @@ export const cleanJDText = (text = "") => {
   if (typeof text !== "string") return "";
 
   return text
-    .replace(/[•\-\*]/g, "")        // Remove bullet points first
+    .replace(/[•\-*]/g, "")        // Remove bullet points first
     .replace(/[\r\n]+/g, " ")      // Replace newlines with spaces
     .replace(/\s+/g, " ")           // Collapse multiple spaces to single space
     .trim();
