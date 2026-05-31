@@ -9,7 +9,7 @@ import InterviewSessionSkeleton from "../components/InterviewSessionSkeleton";
 import ObserverPanel from "../components/ObserverPanel";
 import RealtimeSentimentIndicator from "../components/RealtimeSentimentIndicator";
 import { analyzeText, debounce } from "../utils/sentiment";
-import Navbar from "../../../shared/landing/Navbar";
+import Navbar from "../../../modules/landing/components/Navbar";
 import Footer from "../../../modules/landing/components/Footer";
 
 import {

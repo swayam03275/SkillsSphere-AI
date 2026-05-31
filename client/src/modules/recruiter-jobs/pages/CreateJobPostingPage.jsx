@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, Briefcase } from "lucide-react";
-import Navbar from "../../../shared/landing/Navbar";
+import Navbar from "../../../modules/landing/components/Navbar";
 import Footer from "../../../modules/landing/components/Footer";
 
 import JobPostingForm from "../components/JobPostingForm";

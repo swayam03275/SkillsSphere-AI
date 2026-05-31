@@ -17,7 +17,7 @@ import {
   Loader2,
   ArrowLeft,
 } from "lucide-react";
-import Navbar from "../../../shared/landing/Navbar";
+import Navbar from "../../../modules/landing/components/Navbar";
 import Footer from "../../../modules/landing/components/Footer";
 
 import { useDocumentTitle } from "../../../hooks/useDocumentTitle";

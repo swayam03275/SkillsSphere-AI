@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { CheckCircle2, Circle, Clock, Rocket, Target, Award, Star, MessageSquare } from "lucide-react";
-import Navbar from "../../../shared/landing/Navbar";
+import Navbar from "../../../modules/landing/components/Navbar";
 import Footer from "../../../modules/landing/components/Footer";
 
 import { getMyRoadmap, updateTopicStatus } from "../services/roadmapService";

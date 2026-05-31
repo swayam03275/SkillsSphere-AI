@@ -1,4 +1,4 @@
-import Navbar from "../../shared/landing/Navbar.jsx";
+import Navbar from "../../modules/landing/components/Navbar.jsx";
 import CTA from "./components/CTA";
 import Features from "./components/Features";
 import Footer from "./components/Footer";

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { Plus, Briefcase, Search, ArrowLeft } from "lucide-react";
-import Navbar from "../../../shared/landing/Navbar";
+import Navbar from "../../../modules/landing/components/Navbar";
 import Footer from "../../../modules/landing/components/Footer";
 
 import Button from "../../../shared/components/Button";

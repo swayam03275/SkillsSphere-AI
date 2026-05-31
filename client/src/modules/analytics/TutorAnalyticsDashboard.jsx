@@ -4,7 +4,7 @@ import { TrendingUp, Users, AlertCircle, ArrowLeft } from "lucide-react";
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { apiRequest } from "../../services/apiClient.js";
-import Navbar from "../../shared/landing/Navbar";
+import Navbar from "../../modules/landing/components/Navbar";
 import Footer from "../../modules/landing/components/Footer";
 
 import { useDocumentTitle } from "../../hooks/useDocumentTitle";

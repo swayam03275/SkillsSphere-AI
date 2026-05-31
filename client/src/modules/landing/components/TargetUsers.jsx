@@ -1,5 +1,5 @@
 import { BookOpen, Briefcase, CheckCircle2, Users } from "lucide-react";
-import Card from "../../../shared/landing/Card";
+import Card from "../../../modules/landing/components/Card";
 const TargetUsers = () => {
   const users = [
     {

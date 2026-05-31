@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import Navbar from "../../shared/landing/Navbar";
+import Navbar from "../../modules/landing/components/Navbar";
 import Footer from "../../modules/landing/components/Footer";
 
 import { Link } from "react-router-dom";

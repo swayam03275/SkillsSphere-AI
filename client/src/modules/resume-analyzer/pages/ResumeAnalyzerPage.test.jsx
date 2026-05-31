@@ -33,11 +33,11 @@ vi.mock("../../../shared/components", () => ({
   ),
 }));
 
-vi.mock("../../../shared/landing/Navbar", () => ({
+vi.mock("../../../modules/landing/components/Navbar", () => ({
   default: () => <nav data-testid="navbar" />,
 }));
 
-vi.mock("../../../shared/landing/Button", () => ({
+vi.mock("../../../modules/landing/components/Button", () => ({
   default: ({ children, ...props }) => <button {...props}>{children}</button>,
 }));
 

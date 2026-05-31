@@ -8,7 +8,7 @@ import Button from "../../shared/components/Button";
 import Input from "../../shared/components/Input";
 import Select from "../../shared/components/Select";
 import GoogleOAuthButton from "../../shared/components/GoogleOAuthButton";
-import Navbar from "../../shared/landing/Navbar";
+import Navbar from "../../modules/landing/components/Navbar";
 import { API_URL } from "../../config/env";
 import { z } from "zod";
 import { useDocumentTitle } from "../../hooks/useDocumentTitle";

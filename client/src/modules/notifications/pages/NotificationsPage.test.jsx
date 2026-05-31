@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import NotificationsPage from "./NotificationsPage";
 import useNotifications from "../hooks/useNotifications";
 
-vi.mock("../../../shared/landing/Navbar", () => ({
+vi.mock("../../../modules/landing/components/Navbar", () => ({
   default: () => <nav data-testid="navbar" />,
 }));
 

@@ -1,7 +1,7 @@
 import { AlertCircle, CheckCircle2, Loader2, UploadCloud } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useToast } from "../../../shared/components";
-import Button from "../../../shared/landing/Button";
+import Button from "../../../modules/landing/components/Button";
 const MAX_RESUME_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 const SUPPORTED_RESUME_EXTENSIONS = [".pdf", ".docx"];
 const SUPPORTED_RESUME_MIME_TYPES = [

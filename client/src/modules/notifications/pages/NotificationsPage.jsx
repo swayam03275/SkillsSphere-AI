@@ -8,7 +8,7 @@ import {
   CheckCheck,
   Filter,
 } from "lucide-react";
-import Navbar from "../../../shared/landing/Navbar";
+import Navbar from "../../../modules/landing/components/Navbar";
 import Footer from "../../../modules/landing/components/Footer";
 
 import NotificationCard from "../components/NotificationCard";

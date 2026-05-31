@@ -26,7 +26,7 @@ import {
   Loader2,
   Code
 } from 'lucide-react';
-import Navbar from '../../../shared/landing/Navbar';
+import Navbar from '../../../modules/landing/components/Navbar';
 import Footer from "../../../modules/landing/components/Footer";
 
 import { Button, LoadingState, ErrorState, EmptyState } from '../../../shared/components';

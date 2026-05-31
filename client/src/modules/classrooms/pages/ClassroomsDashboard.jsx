@@ -8,7 +8,7 @@ import {
   endClassroomSession,
   getActiveClassroomSessions,
 } from "../services/classroomService";
-import Navbar from "../../../shared/landing/Navbar";
+import Navbar from "../../../modules/landing/components/Navbar";
 import Footer from "../../../modules/landing/components/Footer";
 
 import { useDocumentTitle } from "../../../hooks/useDocumentTitle";

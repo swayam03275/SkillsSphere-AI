@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import Navbar from "../../../shared/landing/Navbar";
+import Navbar from "../../../modules/landing/components/Navbar";
 import Footer from "../components/Footer";
 import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
 import { ArrowLeft, MapPin, Clock, ArrowRight } from "lucide-react";
