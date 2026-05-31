@@ -44,7 +44,7 @@ const SortableAppCard = ({ app, onClick }) => {
           {app.applicant?.profilePic ? (
             <img src={app.applicant.profilePic} alt={app.applicant.name} className="w-full h-full object-cover" />
           ) : (
-            app.applicant?.name?.charAt(0).toUpperCase() || <User size={16} />
+            app.applicant?.name?.charAt(0)?.toUpperCase() || <User size={16} />
           )}
         </div>
         <div className="flex-1 min-w-0">

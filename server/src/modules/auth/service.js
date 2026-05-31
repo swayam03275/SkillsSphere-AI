@@ -248,7 +248,7 @@ export const loginUser = async (email, password) => {
   };
 };
 
-export const findOrCreateGoogleUser = async ({ email, name, picture }) => {
+export const findOrCreateGoogleUser = async ({ email, name, picture, role = "student" }) => {
   const existing = await User.findOne({ email });
 
   if (existing) {
@@ -262,7 +262,7 @@ export const findOrCreateGoogleUser = async ({ email, name, picture }) => {
     name: name || email.split("@")[0],
     email,
     profilePic: picture,
-    role: "student",
+    role,
     provider: "google",
     isVerified: true,
   });

@@ -46,8 +46,11 @@ export const protect = asyncHandler(async (req, res, next) => {
     req.user = currentUser;
     next();
   } catch (error) {
+    if (error.name === "TokenExpiredError") {
+      return next(new AppError("Your session has expired. Please log in again.", 401));
+    }
     return next(new AppError("Invalid token. Please log in again.", 401));
-  }
+}
 });
 
 /**

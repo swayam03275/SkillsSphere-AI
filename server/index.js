@@ -12,7 +12,6 @@ setupGlobalLogSanitizer();
 
 
 // Trigger nodemon restart!!!!!
-import http from "http";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import http from "http";
 import { Server } from "socket.io";

@@ -132,7 +132,7 @@ const Navbar = () => {
         </Link>
 
         {/* Desktop Navigation */}
-        <div className="hidden lg:flex items-center gap-12 absolute left-1/2 -translate-x-1/2">
+        <div className="hidden lg:flex items-center justify-center gap-4 xl:gap-8 flex-1 px-4">
           {visibleNavLinks.map((link) => (
             <Link
               key={link.path}
@@ -246,7 +246,7 @@ const Navbar = () => {
                 <div className="w-9 h-9 rounded-full bg-[var(--surface-soft)] flex items-center justify-center text-[var(--primary)] font-bold border border-[var(--border)] overflow-hidden flex-shrink-0">
                   {avatarSrc
                     ? <img src={avatarSrc} alt={user.name} className="w-full h-full object-cover" />
-                    : (user?.name?.charAt(0).toUpperCase() || <User size={18} />)
+                    : (user?.name?.charAt(0)?.toUpperCase() || <User size={18} />)
                   }
                 </div>
                 <div className="text-left hidden xl:block">
@@ -426,7 +426,7 @@ const Navbar = () => {
                   <div className="w-10 h-10 rounded-full bg-[var(--surface-soft)] flex items-center justify-center text-[var(--primary)] font-bold border border-[var(--border)] overflow-hidden flex-shrink-0">
                     {avatarSrc
                       ? <img src={avatarSrc} alt={user.name} className="w-full h-full object-cover" />
-                      : (user?.name?.charAt(0).toUpperCase() || <User size={20} />)
+                      : (user?.name?.charAt(0)?.toUpperCase() || <User size={20} />)
                     }
                   </div>
                   <div className="overflow-hidden">

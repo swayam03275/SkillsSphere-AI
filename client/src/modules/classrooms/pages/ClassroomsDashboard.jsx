@@ -486,7 +486,7 @@ export default function ClassroomsDashboard() {
                                 />
                               ) : (
                                 <div className="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-[10px] font-bold border border-indigo-500/10">
-                                  {session.host.name?.charAt(0).toUpperCase()}
+                                  {session.host.name?.charAt(0)?.toUpperCase()}
                                 </div>
                               )}
                               <span className="text-xs text-gray-600 dark:text-slate-400">

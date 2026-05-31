@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, startTransition } from "react";
 import { useDispatch } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
 import { API_URL } from "../../config/env";
@@ -17,6 +17,7 @@ const OAuthCallback = () => {
   const location = useLocation();
   const { success, error: showError } = useToast();
   const [loading, setLoading] = useState(true);
+  const hasExchanged = useRef(false);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -40,7 +41,9 @@ const OAuthCallback = () => {
         providerError: decodedError,
       }).catch(() => {});
       showError(decodedError || OAUTH_ERROR_MESSAGE);
-      navigate("/login", { replace: true });
+      startTransition(() => {
+        navigate("/login", { replace: true });
+      });
       return;
     }
 
@@ -50,9 +53,14 @@ const OAuthCallback = () => {
         feature: "oauth-callback",
       }).catch(() => {});
       showError(OAUTH_ERROR_MESSAGE);
-      navigate("/login", { replace: true });
+      startTransition(() => {
+        navigate("/login", { replace: true });
+      });
       return;
     }
+
+    if (hasExchanged.current) return;
+    hasExchanged.current = true;
 
     const exchangeCode = async () => {
       try {
@@ -75,7 +83,9 @@ const OAuthCallback = () => {
         const redirectTo =
           sessionStorage.getItem("oauth_redirect") || fallbackPath;
         sessionStorage.removeItem("oauth_redirect");
-        navigate(redirectTo, { replace: true });
+        startTransition(() => {
+          navigate(redirectTo, { replace: true });
+        });
       } catch (err) {
         reportError(new Error("OAuth callback failed"), {
           source: "auth",
@@ -83,7 +93,9 @@ const OAuthCallback = () => {
           reason: err?.name || "exchange-failed",
         }).catch(() => {});
         showError(OAUTH_ERROR_MESSAGE);
-        navigate("/login", { replace: true });
+        startTransition(() => {
+          navigate("/login", { replace: true });
+        });
       } finally {
         setLoading(false);
       }

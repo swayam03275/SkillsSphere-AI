@@ -69,14 +69,23 @@ class ErrorBoundary extends React.Component {
             >
               Something went wrong
             </h1>
-            <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-              An unexpected error occurred while loading this page. Please try
-              again, or reload the page if the problem continues.
-            </p>
-            <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
-              Our team can use the secure error report to investigate. No stack
-              trace is shown here.
-            </p>
+            <p className="text-gray-500 text-sm max-w-md mx-auto mb-6">
+            An unexpected error occurred while loading this page. Please try again, or reload the page if the problem continues.
+          </p>
+          
+          <div className="text-left bg-red-50 text-red-900 p-4 rounded-lg mb-6 max-h-64 overflow-y-auto text-xs font-mono">
+            <strong>Error:</strong> {this.state.error?.toString()}
+            <br/><br/>
+            <strong>Component Stack:</strong>
+            <pre className="whitespace-pre-wrap">{this.state.errorInfo?.componentStack}</pre>
+            <br/>
+            <strong>Stack Trace:</strong>
+            <pre className="whitespace-pre-wrap">{this.state.error?.stack}</pre>
+          </div>
+
+          <p className="text-gray-400 text-xs mb-6">
+            Our team can use the secure error report to investigate.
+          </p>
 
             <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
               <Button

@@ -317,7 +317,11 @@ function App() {
       </Routes>
       </Suspense>
       </ErrorBoundary>
-      {token && <ChatWidget />}
+      {token && (
+        <Suspense fallback={null}>
+          <ChatWidget />
+        </Suspense>
+      )}
     </div>
   );
 }
