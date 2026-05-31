@@ -9,7 +9,19 @@ import Input from "../../shared/components/Input";
 import Select from "../../shared/components/Select";
 import Navbar from "../../shared/landing/Navbar";
 import { API_URL } from "../../config/env";
+import { z } from "zod";
 import { useDocumentTitle } from "../../hooks/useDocumentTitle";
+
+const registerSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().min(1, "Email is required").email("Please enter a valid email"),
+  password: z.string().min(1, "Password is required"),
+  confirmPassword: z.string().min(1, "Please confirm your password"),
+  role: z.string()
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+});
 
 // Helper function to calculate password strength
 const calculatePasswordStrength = (password) => {
@@ -83,23 +95,19 @@ const Register = () => {
 
   const validate = () => {
     const newErrors = {};
+    const result = registerSchema.safeParse(form);
 
-    if (!form.name.trim()) newErrors.name = "Name is required";
-    else if (form.name.trim().length < 2)
-      newErrors.name = "Name must be at least 2 characters";
+    if (!result.success) {
+      result.error.errors.forEach((err) => {
+        if (!newErrors[err.path[0]]) {
+          newErrors[err.path[0]] = err.message;
+        }
+      });
+    }
 
-    if (!form.email.trim()) newErrors.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(form.email))
-      newErrors.email = "Please enter a valid email";
-
-    if (!form.password) newErrors.password = "Password is required";
-    else if (strength.score < 4)
+    if (form.password && strength.score < 4) {
       newErrors.password = "Please create a stronger password (at least Good)";
-
-    if (!form.confirmPassword)
-      newErrors.confirmPassword = "Please confirm your password";
-    else if (form.password !== form.confirmPassword)
-      newErrors.confirmPassword = "Passwords do not match";
+    }
 
     return newErrors;
   };
