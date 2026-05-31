@@ -12,6 +12,130 @@ const toUrl = (path) => {
   return `${baseUrl}${path}`;
 };
 
+const isPlainObject = (value) => {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+};
+
+const extractApiMessage = (value) => {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const message = extractApiMessage(item);
+      if (message) {
+        return message;
+      }
+    }
+    return null;
+  }
+
+  if (!isPlainObject(value)) {
+    return null;
+  }
+
+  return (
+    extractApiMessage(value.message) ||
+    extractApiMessage(value.msg) ||
+    extractApiMessage(value.detail) ||
+    extractApiMessage(value.error) ||
+    extractApiMessage(value.details)
+  );
+};
+
+const getValidationFieldName = (location) => {
+  if (typeof location === "string") {
+    return location;
+  }
+
+  if (!Array.isArray(location)) {
+    return null;
+  }
+
+  const segments = location.filter(
+    (segment) =>
+      typeof segment === "string" && !["body", "query", "path", "header"].includes(segment),
+  );
+
+  return segments.length > 0 ? segments.join(".") : null;
+};
+
+const normalizeValidationErrors = (value) => {
+  if (!Array.isArray(value)) {
+    return {};
+  }
+
+  return value.reduce((accumulator, item) => {
+    if (!isPlainObject(item)) {
+      return accumulator;
+    }
+
+    const fieldName =
+      getValidationFieldName(item.loc) ||
+      getValidationFieldName(item.location) ||
+      getValidationFieldName(item.field) ||
+      getValidationFieldName(item.path) ||
+      getValidationFieldName(item.param);
+
+    const message =
+      extractApiMessage(item.msg) ||
+      extractApiMessage(item.message) ||
+      extractApiMessage(item.detail) ||
+      extractApiMessage(item.error);
+
+    if (fieldName && message) {
+      accumulator[fieldName] = message;
+    }
+
+    return accumulator;
+  }, {});
+};
+
+const isFieldErrorObject = (value) => {
+  if (!isPlainObject(value)) {
+    return false;
+  }
+
+  return Object.keys(value).some(
+    (key) => !["message", "detail", "details", "error", "errors", "status", "code"].includes(key),
+  );
+};
+
+const extractApiErrors = (value) => {
+  if (!isPlainObject(value)) {
+    if (Array.isArray(value)) {
+      return normalizeValidationErrors(value);
+    }
+
+    return {};
+  }
+
+  const candidates = [value.errors, value.details, value.error];
+
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) {
+      const normalizedErrors = normalizeValidationErrors(candidate);
+      if (Object.keys(normalizedErrors).length > 0) {
+        return normalizedErrors;
+      }
+    }
+
+    if (isFieldErrorObject(candidate)) {
+      return candidate;
+    }
+
+    if (isPlainObject(candidate)) {
+      const nestedErrors = extractApiErrors(candidate);
+      if (Object.keys(nestedErrors).length > 0) {
+        return nestedErrors;
+      }
+    }
+  }
+
+  return {};
+};
+
 export const apiRequest = async (path, options = {}) => {
   const { method = "GET", body, token, headers = {}, signal } = options;
 
@@ -120,19 +244,13 @@ export const normalizeApiError = (error) => {
   const data = error.data ?? error.response?.data ?? null;
 
   const message =
-    (data &&
-      typeof data === "object" &&
-      typeof data.message === "string" &&
-      data.message) ||
+    extractApiMessage(data) ||
     (typeof error.message === "string" && error.message) ||
     "Something went wrong";
 
   const errors =
-    (data &&
-      typeof data === "object" &&
-      typeof data.errors === "object" &&
-      data.errors) ||
-    (typeof error.errors === "object" && error.errors) ||
+    extractApiErrors(data) ||
+    (isFieldErrorObject(error.errors) && error.errors) ||
     {};
 
   return {
