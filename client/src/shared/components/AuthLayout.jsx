@@ -1,5 +1,5 @@
 import React from "react";
-import Navbar from "../landing/Navbar";
+import Navbar from "../../modules/landing/components/Navbar";
 
 /**
  * Shared CSS class string for the glassmorphic auth card.

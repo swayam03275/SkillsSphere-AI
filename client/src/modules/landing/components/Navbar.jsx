@@ -3,12 +3,12 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Home, FileText, LayoutDashboard, MessageSquare, LogIn, UserPlus, X, Menu, LogOut, User, ChevronDown, Briefcase, Moon, Sun, Sparkles, Rocket, Video, Bell, Search } from 'lucide-react';
 import Button from './Button';
-import { logout } from '../../features/auth/authSlice';
-import { getProtectedAssetUrl } from '../../utils/protectedAssetUrl';
-import { getSignedFileUrl } from '../../services/fileService';
-import NotificationsDropdown from '../components/NotificationsDropdown';
-import { getUnreadCount } from '../../features/notifications/notificationsSlice';
-import { useTheme } from '../contexts/ThemeContext';
+import { logout } from '../../../features/auth/authSlice';
+import { getProtectedAssetUrl } from '../../../utils/protectedAssetUrl';
+import { getSignedFileUrl } from '../../../services/fileService';
+import NotificationsDropdown from '../../../shared/components/NotificationsDropdown';
+import { getUnreadCount } from '../../../features/notifications/notificationsSlice';
+import { useTheme } from '../../../shared/contexts/ThemeContext';
 
 const Navbar = () => {
   const dispatch = useDispatch();
