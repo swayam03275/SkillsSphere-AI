@@ -34,6 +34,8 @@ export default defineConfig({
     sourcemap: false,
     // Target modern browsers for smaller output
     target: "es2020",
+    // Suppress warning for large chunks
+    chunkSizeWarningLimit: 3000,
     // Manual chunk splitting for optimal caching
     rollupOptions: {
       output: {

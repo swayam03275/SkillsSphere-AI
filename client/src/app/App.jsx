@@ -43,6 +43,7 @@ const TutorInterviewsList = lazy(() => import("../modules/mock-interview/pages/T
 const TutorAnalyticsDashboard = lazy(() => import("../modules/analytics/TutorAnalyticsDashboard"));
 const NotificationsPage = lazy(() => import("../modules/notifications/pages/NotificationsPage"));
 const ChatWidget = lazy(() => import("../modules/ai-assistant/components/ChatWidget"));
+const NotFoundPage = lazy(() => import("../modules/landing/pages/NotFoundPage"));
 import ProtectedRoute from "../shared/components/ProtectedRoute";
 import SocketNotificationListener from "../shared/components/SocketNotificationListener";
 import ScrollToTop from "../shared/components/ScrollToTop";
@@ -306,6 +307,9 @@ function App() {
             </ProtectedRoute>
           }
         />
+        
+        {/* Catch-all 404 Route */}
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
       </Suspense>
       {token && <ChatWidget />}
