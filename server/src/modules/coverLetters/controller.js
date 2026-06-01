@@ -22,17 +22,19 @@ export const getCoverLetters = asyncHandler(async (req, res, next) => {
       .lean(),
     CoverLetter.countDocuments({ user: userId })
   ]);
-
-  res.status(200).json({
-    success: true,
-    count: coverLetters.length,
-    totalCount,
+  
+res.status(200).json({
+  success: true,
+  count: coverLetters.length,
+  data: coverLetters,
+  pagination: {
+    total: totalCount,
+    page,
+    limit,
     totalPages: Math.ceil(totalCount / limit),
-    currentPage: page,
-    data: coverLetters,
-  });
+  },
 });
-
+});
 /**
  * @desc    Get single cover letter by ID
  * @route   GET /api/cover-letters/:id
