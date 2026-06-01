@@ -30,7 +30,7 @@ const ResetPassword = () => {
   const location = useLocation();
   const { success: showSuccessToast, error: showErrorToast } = useToast();
 
-  const [form, setForm] = useState({
+  const [formData, setFormData] = useState({
     email: "",
     otp: "",
     newPassword: "",
@@ -42,7 +42,7 @@ const ResetPassword = () => {
     const params = new URLSearchParams(location.search);
     const emailParam = params.get("email");
     if (emailParam) {
-      setForm((prev) => ({ ...prev, email: emailParam }));
+      setFormData((prev) => ({ ...prev, email: emailParam }));
     }
   }, [location]);
 
@@ -56,9 +56,9 @@ const ResetPassword = () => {
     // For OTP, allow only digits and max 6
     if (id === "otp") {
       const sanitized = value.replace(/\D/g, "").slice(0, 6);
-      setForm({ ...form, otp: sanitized });
+      setFormData({ ...formData, otp: sanitized });
     } else {
-      setForm({ ...form, [id]: value });
+      setFormData({ ...formData, [id]: value });
     }
 
     if (errors[id]) {
@@ -67,7 +67,7 @@ const ResetPassword = () => {
   };
 
   const validate = () => {
-    const parsed = resetSchema.safeParse(form);
+    const parsed = resetSchema.safeParse(formData);
     const newErrors = {};
 
     if (!parsed.success) {
@@ -95,9 +95,9 @@ const ResetPassword = () => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            email: form.email,
-            otp: form.otp,
-            newPassword: form.newPassword,
+            email: formData.email,
+            otp: formData.otp,
+            newPassword: formData.newPassword,
           }),
         });
 
@@ -186,7 +186,7 @@ const ResetPassword = () => {
                 type="email"
                 label="Email"
                 placeholder="Enter your registered email"
-                value={form.email}
+                value={formData.email}
                 onChange={handleChange}
                 error={errors.email}
                 disabled={loading}
@@ -197,7 +197,7 @@ const ResetPassword = () => {
                 type="text"
                 label="OTP (6-digit)"
                 placeholder="Enter 6-digit OTP"
-                value={form.otp}
+                value={formData.otp}
                 onChange={handleChange}
                 error={errors.otp}
                 helperText="Check your email for the verification code"
@@ -210,7 +210,7 @@ const ResetPassword = () => {
                 type="password"
                 label="New Password"
                 placeholder="Create a new password"
-                value={form.newPassword}
+                value={formData.newPassword}
                 onChange={handleChange}
                 error={errors.newPassword}
                 helperText="Must be at least 8 characters"
@@ -222,7 +222,7 @@ const ResetPassword = () => {
                 type="password"
                 label="Confirm Password"
                 placeholder="Confirm your new password"
-                value={form.confirmPassword}
+                value={formData.confirmPassword}
                 onChange={handleChange}
                 error={errors.confirmPassword}
                 disabled={loading}

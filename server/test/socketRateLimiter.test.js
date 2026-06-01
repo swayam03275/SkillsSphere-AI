@@ -53,8 +53,8 @@ test('socket rate limiter warns then disconnects on flood', async () => {
 
     assert.ok(ok, 'Expected disconnect and/or rate events during flood');
   } finally {
-    try { client.disconnect(); } catch (e) {}
-    try { io.close(); } catch (e) {}
-    try { server.close(); } catch (e) {}
+    try { client.disconnect(); } catch (e) { /* ignore */ }
+    try { io.close(); } catch (e) { /* ignore */ }
+    try { server.close(); } catch (e) { /* ignore */ }
   }
 });

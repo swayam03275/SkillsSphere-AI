@@ -66,7 +66,7 @@ const Register = () => {
   const { loading } = useSelector((state) => state.auth);
   const { success, warning, error: showError } = useToast();
 
-  const [form, setForm] = useState({
+  const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
@@ -76,11 +76,11 @@ const Register = () => {
 
   const [errors, setErrors] = useState({});
 
-  const strength = useMemo(() => calculatePasswordStrength(form.password), [form.password]);
+  const strength = useMemo(() => calculatePasswordStrength(formData.password), [formData.password]);
 
   const handleChange = (e) => {
     const { id, value } = e.target;
-    setForm({ ...form, [id]: value });
+    setFormData({ ...formData, [id]: value });
 
     if (errors[id] || errors.form) {
       setErrors({ ...errors, [id]: "", form: "" });
@@ -88,14 +88,14 @@ const Register = () => {
   };
 
   const handleRoleChange = (e) => {
-    setForm({ ...form, role: e.target.value });
+    setFormData({ ...formData, role: e.target.value });
     if (errors.role || errors.form) {
       setErrors({ ...errors, role: "", form: "" });
     }
   };
 
   const validate = () => {
-    const parsed = registerSchema.safeParse(form);
+    const parsed = registerSchema.safeParse(formData);
     const newErrors = {};
 
     if (!parsed.success) {
@@ -106,7 +106,7 @@ const Register = () => {
       });
     }
 
-    if (form.password && strength.score < 4) {
+    if (formData.password && strength.score < 4) {
       newErrors.password = "Please create a stronger password (at least Good)";
     }
 
@@ -125,14 +125,14 @@ const Register = () => {
       return;
     }
 
-    const email = form.email.trim().toLowerCase();
+    const email = formData.email.trim().toLowerCase();
 
     const resultAction = await dispatch(
       registerUser({
-        name: form.name.trim(),
+        name: formData.name.trim(),
         email,
-        password: form.password,
-        role: form.role,
+        password: formData.password,
+        role: formData.role,
       }),
     );
 
@@ -165,13 +165,13 @@ const Register = () => {
   ];
 
   const passwordsMatch =
-    form.password && form.confirmPassword && form.password === form.confirmPassword;
+    formData.password && formData.confirmPassword && formData.password === formData.confirmPassword;
 
   const isSubmitDisabled =
     loading ||
-    !form.password ||
-    !form.confirmPassword ||
-    form.password !== form.confirmPassword ||
+    !formData.password ||
+    !formData.confirmPassword ||
+    formData.password !== formData.confirmPassword ||
     strength.score < 4;
 
   return (
@@ -196,7 +196,7 @@ const Register = () => {
               id="name"
               label="Full Name"
               placeholder="Enter your full name"
-              value={form.name}
+              value={formData.name}
               onChange={handleChange}
               error={errors.name}
               disabled={loading}
@@ -207,7 +207,7 @@ const Register = () => {
               type="email"
               label="Email"
               placeholder="Enter your email"
-              value={form.email}
+              value={formData.email}
               onChange={handleChange}
               error={errors.email}
               disabled={loading}
@@ -219,14 +219,14 @@ const Register = () => {
                 type="password"
                 label="Password"
                 placeholder="Create a password"
-                value={form.password}
+                value={formData.password}
                 onChange={handleChange}
                 error={errors.password}
                 disabled={loading}
               />
               
               {/* Password Strength Indicator */}
-              {form.password && (
+              {formData.password && (
                 <div className="mt-1 flex flex-col gap-2">
                   <div className="flex items-center justify-between text-xs font-semibold">
                     <span className="text-slate-500 dark:text-slate-400">Password Strength:</span>
@@ -264,7 +264,7 @@ const Register = () => {
               type="password"
               label="Confirm Password"
               placeholder="Confirm your password"
-              value={form.confirmPassword}
+              value={formData.confirmPassword}
               onChange={handleChange}
               error={errors.confirmPassword}
               disabled={loading}
@@ -278,7 +278,7 @@ const Register = () => {
             <Select
               id="role"
               label="I am a"
-              value={form.role}
+              value={formData.role}
               onChange={handleRoleChange}
               options={roleOptions}
               disabled={loading}
@@ -300,7 +300,7 @@ const Register = () => {
               {errors.form}
             </p>
           )}
-          <GoogleOAuthButton role={formData.role} />
+          <GoogleOAuthButton role={form.role} />
         </form>
         {/* Footer */}
         <p className="text-center mt-4 sm:mt-5 text-slate-600 dark:text-slate-400 text-xs sm:text-sm">

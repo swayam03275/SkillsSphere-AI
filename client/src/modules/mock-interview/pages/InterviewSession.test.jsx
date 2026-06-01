@@ -3,6 +3,7 @@ import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import InterviewSession from "./InterviewSession";
 import { apiRequest } from "../../../services/apiClient";
 import { submitAnswer } from "../services/interviewService";
+import { MemoryRouter } from "react-router-dom";
 
 const navigate = vi.fn();
 const socket = {
@@ -107,7 +108,11 @@ const sessionPayload = {
 };
 
 const renderSession = async (questionText = "What is React?") => {
-  const result = render(<InterviewSession />);
+  const result = render(
+    <MemoryRouter>
+      <InterviewSession />
+    </MemoryRouter>
+  );
   await screen.findByText(questionText);
   return result;
 };

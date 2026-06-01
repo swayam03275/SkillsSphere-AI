@@ -53,7 +53,7 @@ export function attachSocketRateLimiter(io) {
               entry.lastWarning = now;
               try {
                 socket.emit("rate_warning", { remaining: Math.floor(entry.tokens), threshold: warningThreshold });
-              } catch (e) {}
+              } catch (e) { /* ignore */ }
             }
           }
           return;
@@ -64,7 +64,7 @@ export function attachSocketRateLimiter(io) {
           socket.emit("rate_limited", {
             message: "Too many events sent in a short period. Connection will be closed.",
           });
-        } catch (e) {}
+        } catch (e) { /* ignore */ }
 
         socket.disconnect(true);
       } catch (err) {

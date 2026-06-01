@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Provider } from 'react-redux'
 import { configureStore } from '@reduxjs/toolkit'
@@ -7,7 +7,6 @@ import { MemoryRouter } from 'react-router-dom'
 import CreateJobPostingPage from '../CreateJobPostingPage'
 import * as jobPostingService from '../../services/jobPostingService'
 import { ToastProvider } from '../../../../shared/components'
-import Footer from "../../../../modules/landing/components/Footer";
 
 
 // Mock the service
@@ -54,7 +53,6 @@ vi.mock('../../../../shared/components/Select', () => ({
           </option>
         ))}
       </select>
-          <Footer />
     </div>
   ),
 }))
@@ -141,13 +139,13 @@ describe('CreateJobPostingPage', () => {
     const user = userEvent.setup()
 
     // Fill required fields
-    await user.type(screen.getByTestId('input-title'), 'Test Job')
-    await user.type(screen.getByTestId('input-description'), 'Test description that is long enough')
-    await user.type(screen.getByTestId('input-skills'), 'react, node')
-    await user.type(screen.getByTestId('input-location.city'), 'Mumbai')
-    await user.type(screen.getByTestId('input-location.state'), 'MH')
-    await user.type(screen.getByTestId('input-salary.min'), '100000')
-    await user.type(screen.getByTestId('input-salary.max'), '50000') // Less than min
+    fireEvent.change(screen.getByTestId('input-title'), { target: { value: 'Test Job' } })
+    fireEvent.change(screen.getByTestId('input-description'), { target: { value: 'Test description that is long enough' } })
+    fireEvent.change(screen.getByTestId('input-skills'), { target: { value: 'react, node' } })
+    fireEvent.change(screen.getByTestId('input-location.city'), { target: { value: 'Mumbai' } })
+    fireEvent.change(screen.getByTestId('input-location.state'), { target: { value: 'MH' } })
+    fireEvent.change(screen.getByTestId('input-salary.min'), { target: { value: '100000' } })
+    fireEvent.change(screen.getByTestId('input-salary.max'), { target: { value: '50000' } }) // Less than min
 
     await user.click(screen.getByTestId('submit-btn'))
 
@@ -165,13 +163,13 @@ describe('CreateJobPostingPage', () => {
     const user = userEvent.setup()
 
     // Fill all required fields
-    await user.type(screen.getByTestId('input-title'), 'Senior Engineer')
-    await user.type(screen.getByTestId('input-description'), 'This is a detailed job description that meets minimum requirements')
-    await user.type(screen.getByTestId('input-skills'), 'React, Node.js, TypeScript')
-    await user.type(screen.getByTestId('input-location.city'), 'Mumbai')
-    await user.type(screen.getByTestId('input-location.state'), 'Maharashtra')
-    await user.type(screen.getByTestId('input-salary.min'), '800000')
-    await user.type(screen.getByTestId('input-salary.max'), '1500000')
+    fireEvent.change(screen.getByTestId('input-title'), { target: { value: 'Senior Engineer' } })
+    fireEvent.change(screen.getByTestId('input-description'), { target: { value: 'This is a detailed job description that meets minimum requirements' } })
+    fireEvent.change(screen.getByTestId('input-skills'), { target: { value: 'React, Node.js, TypeScript' } })
+    fireEvent.change(screen.getByTestId('input-location.city'), { target: { value: 'Mumbai' } })
+    fireEvent.change(screen.getByTestId('input-location.state'), { target: { value: 'Maharashtra' } })
+    fireEvent.change(screen.getByTestId('input-salary.min'), { target: { value: '800000' } })
+    fireEvent.change(screen.getByTestId('input-salary.max'), { target: { value: '1500000' } })
 
     // Change status
     await user.selectOptions(screen.getByTestId('select-status'), 'open')
@@ -212,13 +210,13 @@ describe('CreateJobPostingPage', () => {
     const user = userEvent.setup()
 
     // Fill required fields
-    await user.type(screen.getByTestId('input-title'), 'Test Job')
-    await user.type(screen.getByTestId('input-description'), 'Test description that is long enough for validation')
-    await user.type(screen.getByTestId('input-skills'), 'react')
-    await user.type(screen.getByTestId('input-location.city'), 'Mumbai')
-    await user.type(screen.getByTestId('input-location.state'), 'MH')
-    await user.type(screen.getByTestId('input-salary.min'), '100000')
-    await user.type(screen.getByTestId('input-salary.max'), '200000')
+    fireEvent.change(screen.getByTestId('input-title'), { target: { value: 'Test Job' } })
+    fireEvent.change(screen.getByTestId('input-description'), { target: { value: 'Test description that is long enough for validation' } })
+    fireEvent.change(screen.getByTestId('input-skills'), { target: { value: 'react' } })
+    fireEvent.change(screen.getByTestId('input-location.city'), { target: { value: 'Mumbai' } })
+    fireEvent.change(screen.getByTestId('input-location.state'), { target: { value: 'MH' } })
+    fireEvent.change(screen.getByTestId('input-salary.min'), { target: { value: '100000' } })
+    fireEvent.change(screen.getByTestId('input-salary.max'), { target: { value: '200000' } })
 
     await user.click(screen.getByTestId('submit-btn'))
 
@@ -244,13 +242,13 @@ describe('CreateJobPostingPage', () => {
     const user = userEvent.setup()
 
     // Fill form to bypass client validation
-    await user.type(screen.getByTestId('input-title'), 'Test Job')
-    await user.type(screen.getByTestId('input-description'), 'Test description that is long enough for validation purposes')
-    await user.type(screen.getByTestId('input-skills'), 'react, node')
-    await user.type(screen.getByTestId('input-location.city'), 'Mumbai')
-    await user.type(screen.getByTestId('input-location.state'), 'MH')
-    await user.type(screen.getByTestId('input-salary.min'), '100000')
-    await user.type(screen.getByTestId('input-salary.max'), '200000')
+    fireEvent.change(screen.getByTestId('input-title'), { target: { value: 'Test Job' } })
+    fireEvent.change(screen.getByTestId('input-description'), { target: { value: 'Test description that is long enough for validation purposes' } })
+    fireEvent.change(screen.getByTestId('input-skills'), { target: { value: 'react, node' } })
+    fireEvent.change(screen.getByTestId('input-location.city'), { target: { value: 'Mumbai' } })
+    fireEvent.change(screen.getByTestId('input-location.state'), { target: { value: 'MH' } })
+    fireEvent.change(screen.getByTestId('input-salary.min'), { target: { value: '100000' } })
+    fireEvent.change(screen.getByTestId('input-salary.max'), { target: { value: '200000' } })
 
     await user.click(screen.getByTestId('submit-btn'))
 
@@ -271,13 +269,13 @@ describe('CreateJobPostingPage', () => {
     const user = userEvent.setup()
 
     // Fill form
-    await user.type(screen.getByTestId('input-title'), 'Test Job')
-    await user.type(screen.getByTestId('input-description'), 'Test description that is long enough for validation')
-    await user.type(screen.getByTestId('input-skills'), 'react')
-    await user.type(screen.getByTestId('input-location.city'), 'Mumbai')
-    await user.type(screen.getByTestId('input-location.state'), 'MH')
-    await user.type(screen.getByTestId('input-salary.min'), '100000')
-    await user.type(screen.getByTestId('input-salary.max'), '200000')
+    fireEvent.change(screen.getByTestId('input-title'), { target: { value: 'Test Job' } })
+    fireEvent.change(screen.getByTestId('input-description'), { target: { value: 'Test description that is long enough for validation' } })
+    fireEvent.change(screen.getByTestId('input-skills'), { target: { value: 'react' } })
+    fireEvent.change(screen.getByTestId('input-location.city'), { target: { value: 'Mumbai' } })
+    fireEvent.change(screen.getByTestId('input-location.state'), { target: { value: 'MH' } })
+    fireEvent.change(screen.getByTestId('input-salary.min'), { target: { value: '100000' } })
+    fireEvent.change(screen.getByTestId('input-salary.max'), { target: { value: '200000' } })
 
     await user.click(screen.getByTestId('submit-btn'))
 
@@ -298,7 +296,7 @@ describe('CreateJobPostingPage', () => {
     })
 
     // Edit the field
-    await user.type(screen.getByTestId('input-title'), 'New Title')
+    fireEvent.change(screen.getByTestId('input-title'), { target: { value: 'New Title' } })
 
     // Error should be cleared
     await waitFor(() => {

@@ -23,7 +23,7 @@ const Login = () => {
   const { loading } = useSelector((state) => state.auth);
   const { success, warning, error: showError } = useToast();
 
-  const [form, setForm] = useState({
+  const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
@@ -33,7 +33,7 @@ const Login = () => {
 
   const handleChange = (e) => {
     const { id, value } = e.target;
-    setForm({ ...form, [id]: value });
+    setFormData({ ...formData, [id]: value });
 
     if (errors[id] || errors.form) {
       setErrors({ ...errors, [id]: "", form: "" });
@@ -43,7 +43,7 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    const parsed = loginSchema.safeParse(form);
+    const parsed = loginSchema.safeParse(formData);
     if (!parsed.success) {
       const newErrors = {};
       parsed.error.issues.forEach((issue) => {
@@ -60,8 +60,8 @@ const Login = () => {
 
     const resultAction = await dispatch(
       loginUser({
-        email: form.email.trim().toLowerCase(),
-        password: form.password,
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
         rememberMe,
       }),
     );
@@ -79,7 +79,7 @@ const Login = () => {
   };
 
   const goToVerification = () => {
-    const email = form.email.trim().toLowerCase();
+    const email = formData.email.trim().toLowerCase();
     navigate(`/verify-email?email=${encodeURIComponent(email)}`, {
       state: { email },
     });
@@ -108,7 +108,7 @@ const Login = () => {
               type="email"
               label="Email"
               placeholder="Enter your email"
-              value={form.email}
+              value={formData.email}
               onChange={handleChange}
               error={errors.email}
               disabled={loading}
@@ -119,7 +119,7 @@ const Login = () => {
               type="password"
               label="Password"
               placeholder="Enter your password"
-              value={form.password}
+              value={formData.password}
               onChange={handleChange}
               error={errors.password}
               disabled={loading}

@@ -165,7 +165,7 @@ describe("auth validation", () => {
       ["OTP with internal space", "12 456"],
       ["OTP with special characters", "!@#$%^"],
       ["six-character SQL-looking input", "admin'"],
-      ["six-character prototype-looking input", "__pro"],
+      ["six-character prototype-looking input", "__prot"],
     ];
 
     for (const [name, otp] of currentlyAcceptedOtps) {

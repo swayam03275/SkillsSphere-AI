@@ -30,7 +30,7 @@ export const searchTalent = asyncHandler(async (req, res, next) => {
       : skills.split(",").map(s => s.trim()).filter(Boolean);
     if (skillsArray.length > 0) {
       matchObj.skills = {
-        $all: skillsArray.map(skill => new RegExp(`^${skill.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, "i"))
+        $all: skillsArray.map(skill => new RegExp(`^${skill.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, "i"))
       };
     }
   }
@@ -48,7 +48,7 @@ export const searchTalent = asyncHandler(async (req, res, next) => {
     const specSkills = specMap[specialization.toLowerCase()];
     if (specSkills) {
       matchObj.skills = {
-        $in: specSkills.map(s => new RegExp(`^${s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, "i"))
+        $in: specSkills.map(s => new RegExp(`^${s.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, "i"))
       };
     }
   }

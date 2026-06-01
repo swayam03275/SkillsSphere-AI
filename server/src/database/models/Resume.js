@@ -99,10 +99,7 @@ const resumeSchema = new mongoose.Schema(
       get: decrypt,
       set: encrypt,
     },
-    isScannedPdf: {
-      type: Boolean,
-      default: false,
-    },
+
     jobSkills: {
       type: [String],
       default: [],

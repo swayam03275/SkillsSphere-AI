@@ -3,9 +3,10 @@ import { useCallback, useState } from "react";
 import { useToast } from "../../../shared/components";
 import Button from "../../../modules/landing/components/Button";
 const MAX_RESUME_FILE_SIZE_BYTES = 5 * 1024 * 1024;
-const SUPPORTED_RESUME_EXTENSIONS = [".pdf", ".docx"];
+const SUPPORTED_RESUME_EXTENSIONS = [".pdf", ".doc", ".docx"];
 const SUPPORTED_RESUME_MIME_TYPES = [
   "application/pdf",
+  "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
 
@@ -51,11 +52,11 @@ export const validateResumeFile = (file) => {
   }
 
   if (file.size === 0) {
-    return "The selected resume file is empty. Please choose a valid PDF or DOCX file.";
+    return "The selected resume file is empty. Please choose a valid PDF, DOC, or DOCX file.";
   }
 
   if (!isSupportedFile(file)) {
-    return "Unsupported file type. Please upload a PDF or DOCX resume.";
+    return "Unsupported file type. Please upload a PDF, DOC, or DOCX resume.";
   }
 
   if (file.size > MAX_RESUME_FILE_SIZE_BYTES) {
@@ -204,7 +205,7 @@ const DragDropUpload = ({ onFileUpload, disabled = false }) => {
         </p>
         <p className="text-text-muted">
           Supported formats:{" "}
-          <span className="text-primary font-medium">PDF, DOCX</span>
+          <span className="text-primary font-medium">PDF, DOC, DOCX</span>
         </p>
         <p className="text-xs text-text-muted">
           Maximum file size: {formatFileSize(MAX_RESUME_FILE_SIZE_BYTES)}

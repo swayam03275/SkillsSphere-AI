@@ -111,7 +111,7 @@ const extractApiErrors = (value) => {
     return {};
   }
 
-  const candidates = [value.errors, value.details, value.error];
+  const candidates = [value.errors, value.details, value.error, value.detail];
 
   for (const candidate of candidates) {
     if (Array.isArray(candidate)) {

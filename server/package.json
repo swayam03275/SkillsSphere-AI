@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon index.js",
     "start": "node index.js",
-    "test": "node --test"
+    "test": "node --test",
+    "lint": "eslint . --ext js,cjs --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -37,6 +38,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "eslint": "^8.57.1",
     "nodemon": "^3.1.14",
     "socket.io-client": "^4.8.3"
   }
