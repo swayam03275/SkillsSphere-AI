@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import {
   Home,
   FileText,
@@ -13,7 +14,8 @@ import {
 import Button from "./Button";
 import NotificationBell from "../../modules/notifications/components/NotificationBell";
 import { useTheme } from "../contexts/ThemeContext";
-const Navbar = ({ isAuthenticated = false, user = null }) => {
+const Navbar = () => {
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
