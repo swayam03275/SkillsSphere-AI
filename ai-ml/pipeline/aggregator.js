@@ -5,16 +5,22 @@ export function aggregateResults(evaluations, isJDProvided = true) {
   let weightedScoreSum = 0;
   const breakdown = {};
 
-  // Dynamic Weights Map
   const weights = isJDProvided ? jdWeights : noJdWeights;
+
+  const toCamel = (s) => {
+    if (!s || typeof s !== "string") return s;
+    const cleaned = s.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/[_\-\s]+/g, " ").trim().toLowerCase();
+    return cleaned.replace(/ (.)/g, (m, p1) => p1.toUpperCase());
+  };
 
   evaluations.forEach((evalResult) => {
     if (!evalResult || (evalResult.score === null && isJDProvided)) return;
 
-    // Use dynamic weight defined in the map, default to 0
-    const weight = weights[evalResult.name] || 0;
+    const raw = evalResult.name ?? evalResult.key ?? evalResult.label;
+    const name = toCamel(raw);
+    const weight = weights[name] || 0;
 
-    // Pass resolved weight back into each evaluator result
+    evalResult.name = name;
     evalResult.weight = weight;
     evalResult.weightedScore = evalResult.score !== null ? Math.round(evalResult.score * weight) : 0;
 
@@ -23,15 +29,11 @@ export function aggregateResults(evaluations, isJDProvided = true) {
       weightedScoreSum += evalResult.score * weight;
     }
 
-    breakdown[evalResult.name] = evalResult.score;
+    breakdown[name] = evalResult.score;
   });
 
-  const finalScore =
-    totalWeight > 0 ? Math.round(weightedScoreSum / totalWeight) : 0;
+  const finalScore = totalWeight > 0 ? Math.round(weightedScoreSum / totalWeight) : 0;
 
-  return {
-    score: finalScore,
-    breakdown,
-  };
+  return { score: finalScore, breakdown };
 }
 
