@@ -2,6 +2,7 @@ import React, { useEffect, Suspense, lazy } from "react";
 import { Routes, Route } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchCurrentUser, logoutUser } from "../features/auth/authSlice";
+import SkillDashboard from "../features/skill-tracker/pages/SkillDashboard";
 const LandingPage = lazy(() => import("../modules/landing/LandingPage"));
 const PrivacyPolicyPage = lazy(() => import("../modules/landing/pages/PrivacyPolicyPage"));
 const TermsOfServicePage = lazy(() => import("../modules/landing/pages/TermsOfServicePage"));
@@ -311,7 +312,15 @@ function App() {
             </ProtectedRoute>
           }
         />
-        
+        {/* Skill Tracker Dashboard */}
+        <Route
+          path="/skill-dashboard"
+          element={
+            <ProtectedRoute>
+              <SkillDashboard />
+            </ProtectedRoute>
+          }
+        />
         {/* Catch-all 404 Route */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

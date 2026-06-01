@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { Home, FileText, LayoutDashboard, MessageSquare, LogIn, UserPlus, X, Menu, LogOut, User, ChevronDown, Briefcase, Moon, Sun, Sparkles, Rocket, Video, Bell, Search } from 'lucide-react';
+import { Home, FileText, LayoutDashboard, MessageSquare, LogIn, UserPlus, X, Menu, LogOut, User, ChevronDown, Briefcase, Moon, Sun, Sparkles, Rocket, Video, Bell, Search, BarChart3 } from 'lucide-react';
 import Button from './Button';
 import { logout } from '../../features/auth/authSlice';
 import { getProtectedAssetUrl } from '../../utils/protectedAssetUrl';
@@ -84,25 +84,90 @@ const Navbar = () => {
 
   const navLinks = [
     { name: 'Home', path: '/', icon: <Home size={20} /> },
-    ...(user?.role === 'recruiter' 
+
+    ...(user?.role === 'recruiter'
       ? [
-          { name: 'Manage Jobs', path: '/recruiter/jobs', icon: <Briefcase size={20} /> },
-          { name: 'Talent Finder', path: '/recruiter/talent-finder', icon: <Search size={20} /> }
+          {
+            name: 'Manage Jobs',
+            path: '/recruiter/jobs',
+            icon: <Briefcase size={20} />
+          },
+          {
+            name: 'Talent Finder',
+            path: '/recruiter/talent-finder',
+            icon: <Search size={20} />
+          }
         ]
+
       : user?.role === 'tutor'
-      ? [{ name: 'Live Classrooms', path: '/classrooms', icon: <Video size={20} /> }]
+
+      ? [
+          {
+            name: 'Live Classrooms',
+            path: '/classrooms',
+            icon: <Video size={20} />
+          }
+        ]
+
       : [
-          { name: 'Job Board', path: '/jobs', icon: <Briefcase size={20} /> },
-          { name: 'Job Match', path: '/job-matcher', icon: <Sparkles size={20} /> },
-          { name: 'Resume Analyzer', path: '/resume-analyzer', icon: <FileText size={20} /> },
-          { name: 'Cover Letters', path: '/cover-letters', icon: <FileText size={20} /> },
-          { name: 'Roadmap', path: '/roadmap', icon: <Rocket size={20} /> },
-          { name: 'Live Classrooms', path: '/classrooms', icon: <Video size={20} /> }
+          {
+            name: 'Job Board',
+            path: '/jobs',
+            icon: <Briefcase size={20} />
+          },  
+
+          {
+            name: 'Job Match',
+            path: '/job-matcher',
+            icon: <Sparkles size={20} />
+          },
+
+          {
+            name: 'Resume Analyzer',
+            path: '/resume-analyzer',
+            icon: <FileText size={20} />
+          },
+
+          {
+            name: 'Cover Letters',
+            path: '/cover-letters',
+            icon: <FileText size={20} />
+          },
+
+          {
+            name: 'Roadmap',
+            path: '/roadmap',
+            icon: <Rocket size={20} />
+          },
+
+          {
+            name: 'Skill Tracker',
+            path: '/skill-dashboard',
+            icon: <BarChart3 size={20} />
+          },
+
+          {
+            name: 'Live Classrooms',
+            path: '/classrooms',
+            icon: <Video size={20} />
+          }
         ]
     ),
-    { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
+
+    {
+      name: 'Dashboard',
+      path: '/dashboard',
+      icon: <LayoutDashboard size={20} />
+    },
+
     ...(user?.role === 'student'
-      ? [{ name: 'Mock Interview', path: '/mock-interview', icon: <MessageSquare size={20} /> }]
+      ? [
+          {
+            name: 'Mock Interview',
+            path: '/mock-interview',
+            icon: <MessageSquare size={20} />
+          }
+        ]
       : []
     ),
   ];
