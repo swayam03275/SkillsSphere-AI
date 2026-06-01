@@ -1,6 +1,8 @@
 import { createClient } from "redis";
 import dotenv from "dotenv";
 
+import logger from "../utils/logger.js";
+
 dotenv.config();
 
 const redisClient = createClient({
@@ -14,18 +16,18 @@ const redisClient = createClient({
 });
 
 redisClient.on("error", (err) => {
-  console.error("Redis error:", err.message);
+  logger.error("Redis error:", err.message);
 });
 
 redisClient.on("connect", () => {
-  console.log("Redis Client Connected");
+  logger.log("Redis Client Connected");
 });
 
 export const connectRedis = async () => {
   try {
     await redisClient.connect();
   } catch (error) {
-    console.log("Redis connection skipped for local development");
+    logger.log("Redis connection skipped for local development");
   }
 };
 

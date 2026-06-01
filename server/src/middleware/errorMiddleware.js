@@ -1,5 +1,7 @@
 import AppError from "../utils/AppError.js";
 
+import logger from "../utils/logger.js";
+
 const handleCastErrorDB = (err) => {
   const message = `Invalid ${err.path}: ${err.value}.`;
   return new AppError(message, 400);
@@ -88,7 +90,7 @@ const globalErrorHandler = (err, req, res, next) => {
         errors: error.errors || {}, // Include field-level errors if available
       });
     } else {
-      console.error("ERROR 💥", error);
+      logger.error("ERROR 💥", error);
       res.status(500).json({
         success: false,
         status: "error",

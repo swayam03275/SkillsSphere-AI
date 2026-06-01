@@ -13,6 +13,8 @@ import Footer from "../../../shared/components/Footer";
 
 import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
 
+import logger from "../../../utils/logger";
+
 export default function ClassroomsDashboard() {
   useDocumentTitle("Classrooms Dashboard");
   const { user, token } = useSelector((state) => state.auth);
@@ -48,7 +50,7 @@ export default function ClassroomsDashboard() {
         setSessions(res.data);
       }
     } catch (err) {
-      console.error("Failed to load sessions", err);
+      logger.error("Failed to load sessions", err);
       setError("Failed to load your classroom sessions. Please try again.");
     } finally {
       setIsListLoading(false);
@@ -64,7 +66,7 @@ export default function ClassroomsDashboard() {
         setSessions(res.data);
       }
     } catch (err) {
-      console.error("Failed to load active sessions", err);
+      logger.error("Failed to load active sessions", err);
       setError("Failed to load active classrooms. Please try again.");
     } finally {
       setIsListLoading(false);
@@ -91,7 +93,7 @@ export default function ClassroomsDashboard() {
         navigate(`/classrooms/${res.data.roomId}`);
       }
     } catch (err) {
-      console.error("Failed to create room", err);
+      logger.error("Failed to create room", err);
       setError(err.message || "Failed to create live classroom session.");
     } finally {
       setIsLoading(false);
@@ -111,7 +113,7 @@ export default function ClassroomsDashboard() {
         fetchMySessions();
       }
     } catch (err) {
-      console.error("Failed to end session", err);
+      logger.error("Failed to end session", err);
       setError(err.message || "Failed to end the session.");
     }
   };

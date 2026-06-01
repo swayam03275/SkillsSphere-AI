@@ -6,6 +6,8 @@ import { runPipeline } from "../../../../ai-ml/pipeline/runPipeline.js";
 import { getIO } from "../../utils/socketIO.js";
 import mongoose from "mongoose";
 
+import logger from "../../utils/logger.js";
+
 /**
  * Evaluate a resume against all open jobs and return ranked recommendations.
  * 
@@ -152,7 +154,7 @@ try {
     return matchResult;
   } catch (error) {
     await session.abortTransaction();
-    console.error("Transaction aborted in evaluateMatches:", error);
+    logger.error("Transaction aborted in evaluateMatches:", error);
     throw error;
   } finally {
     session.endSession();

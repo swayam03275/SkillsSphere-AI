@@ -2,6 +2,8 @@ import ClassroomSession from "../../database/models/ClassroomSession.js";
 import { executeCode } from "../../utils/codeExecutor.js";
 import { getRoomLock, clearRoomLock } from "../../utils/mutex.js";
 
+import logger from "../../utils/logger.js";
+
 const roomStates = new Map();
 
 function getOrCreateRoomState(roomId) {
@@ -25,7 +27,7 @@ export function getRoomState(roomId) {
 
 export function initClassroomSockets(io) {
   io.on("connection", (socket) => {
-    console.log(`Socket connected: ${socket.id}`);
+    logger.log(`Socket connected: ${socket.id}`);
 
     // Join a specific room
     socket.on("join-room", async ({ roomId }) => {
@@ -69,7 +71,7 @@ export function initClassroomSockets(io) {
           },
         };
 
-        console.log(
+        logger.log(
           `User ${socket.data.user.name} (${socket.id}) joining room ${roomId}`,
         );
 
@@ -105,7 +107,7 @@ export function initClassroomSockets(io) {
         const state = getOrCreateRoomState(roomId);
         socket.emit("sync-state", state);
       } catch (error) {
-        console.error("Error joining classroom room:", error);
+        logger.error("Error joining classroom room:", error);
         socket.emit("error", { message: "Internal server error during join" });
         socket.disconnect(true);
       } finally {
@@ -293,7 +295,7 @@ export function initClassroomSockets(io) {
 
     // Disconnect
     socket.on("disconnect", async () => {
-      console.log(`Socket disconnected: ${socket.id}`);
+      logger.log(`Socket disconnected: ${socket.id}`);
       if (socket.data && socket.data.roomId) {
         const { roomId, user } = socket.data;
 
@@ -320,7 +322,7 @@ export function initClassroomSockets(io) {
 
             // Automatically teardown/end the classroom session in database if empty
             if (session.participants.length === 0) {
-              console.log(`Classroom ${roomId} empty. Automatically ending session.`);
+              logger.log(`Classroom ${roomId} empty. Automatically ending session.`);
               session.status = "ended";
               session.endedAt = new Date();
 
@@ -338,7 +340,7 @@ export function initClassroomSockets(io) {
             await session.save();
           }
         } catch (error) {
-          console.error("Error during socket disconnect cleanup:", error);
+          logger.error("Error during socket disconnect cleanup:", error);
         } finally {
           release();
         }

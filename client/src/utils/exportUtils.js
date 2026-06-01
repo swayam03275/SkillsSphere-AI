@@ -1,5 +1,7 @@
 import html2pdf from 'html2pdf.js';
 
+import logger from "./logger";
+
 /**
  * Exports an array of objects to a CSV file.
  * @param {string} filename The name of the file to download (e.g., "report.csv").
@@ -7,7 +9,7 @@ import html2pdf from 'html2pdf.js';
  */
 export const exportToCSV = (filename, rows) => {
   if (!rows || !rows.length) {
-    console.warn('No data to export');
+    logger.warn('No data to export');
     return;
   }
   const separator = ',';

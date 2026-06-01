@@ -3,6 +3,8 @@ import { X, Copy, Download, Check, Sparkles, FileText, Loader2, RefreshCw } from
 import html2pdf from "html2pdf.js";
 import { useToast } from "./toast/ToastProvider";
 
+import logger from "../../utils/logger";
+
 export default function CoverLetterModal({ isOpen, onClose, initialText, onRegenerate }) {
   const toast = useToast();
   const [text, setText] = useState(initialText || "");
@@ -27,7 +29,7 @@ export default function CoverLetterModal({ isOpen, onClose, initialText, onRegen
       setTimeout(() => setCopied(false), 2000);
       toast.success("Copied to clipboard!");
     } catch (err) {
-      console.error("Failed to copy text:", err);
+      logger.error("Failed to copy text:", err);
       toast.error("Failed to copy text. Please try manually.");
     }
   };
@@ -63,7 +65,7 @@ export default function CoverLetterModal({ isOpen, onClose, initialText, onRegen
       await html2pdf().set(opt).from(htmlContent).save();
       toast.success("PDF downloaded successfully.");
     } catch (err) {
-      console.error("Failed to generate PDF:", err);
+      logger.error("Failed to generate PDF:", err);
       toast.error("Failed to generate PDF. Please try again.");
     } finally {
       setIsExportingPDF(false);
@@ -80,7 +82,7 @@ export default function CoverLetterModal({ isOpen, onClose, initialText, onRegen
         toast.success("Cover letter regenerated successfully!");
       }
     } catch (err) {
-      console.error("Regeneration failed:", err);
+      logger.error("Regeneration failed:", err);
       toast.error(err?.response?.data?.message || err.message || "Failed to regenerate cover letter. Please try again.");
     } finally {
       setIsRegenerating(false);

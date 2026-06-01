@@ -1,5 +1,7 @@
 import nodemailer from "nodemailer";
 
+import logger from "./logger.js";
+
 /**
  * Sends an email using either console or SMTP based on environment configuration.
  * @param {string} to - Recipient email
@@ -11,19 +13,19 @@ export const sendEmail = async (to, subject, text, html) => {
   const mode = process.env.EMAIL_SERVICE_MODE || "console";
 
   if (mode === "console") {
-    console.log("=========================================");
-    console.log(`[EMAIL SERVICE] Mode: CONSOLE`);
-    console.log(`[EMAIL SERVICE] To: ${to}`);
-    console.log(`[EMAIL SERVICE] Subject: ${subject}`);
-    console.log(`[EMAIL SERVICE] Content: ${text}`);
-    console.log("=========================================");
+    logger.log("=========================================");
+    logger.log(`[EMAIL SERVICE] Mode: CONSOLE`);
+    logger.log(`[EMAIL SERVICE] To: ${to}`);
+    logger.log(`[EMAIL SERVICE] Subject: ${subject}`);
+    logger.log(`[EMAIL SERVICE] Content: ${text}`);
+    logger.log("=========================================");
     return;
   }
 
   // SMTP Mode
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.error("[EMAIL SERVICE] SMTP Error: EMAIL_USER or EMAIL_PASS missing. Falling back to console.");
-    console.log(`[FALLBACK] To: ${to} | Subject: ${subject} | Content: ${text}`);
+    logger.error("[EMAIL SERVICE] SMTP Error: EMAIL_USER or EMAIL_PASS missing. Falling back to console.");
+    logger.log(`[FALLBACK] To: ${to} | Subject: ${subject} | Content: ${text}`);
     return;
   }
 
@@ -47,9 +49,9 @@ export const sendEmail = async (to, subject, text, html) => {
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log(`[EMAIL SERVICE] SMTP: Email sent to ${to}`);
+    logger.log(`[EMAIL SERVICE] SMTP: Email sent to ${to}`);
   } catch (error) {
-    console.error(`[EMAIL SERVICE] SMTP Error: ${error.message}`);
+    logger.error(`[EMAIL SERVICE] SMTP Error: ${error.message}`);
     throw new Error(`Email delivery failed: ${error.message}`);
   }
 };

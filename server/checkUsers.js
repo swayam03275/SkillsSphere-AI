@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import mongoose from "mongoose";
 import connectDB from "./src/database/db.js";
 import User from "./src/database/models/User.js";

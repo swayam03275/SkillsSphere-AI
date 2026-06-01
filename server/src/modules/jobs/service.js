@@ -12,6 +12,8 @@ import Resume from "../../database/models/Resume.js";
 import redisClient from "../../config/redis.js";
 
 
+import logger from "../../utils/logger.js";
+
 /**
  * Create a new job posting
  * @param {Object} jobData - Job data
@@ -451,7 +453,7 @@ export const applyToJob = async (jobId, applicantId, options = {}) => {
 
       // Re-evaluate candidate match asynchronously
       recruiterIntelligenceService.evaluateCandidateMatch(existing._id).catch(err => {
-        console.error("Failed to evaluate candidate match on re-apply:", err);
+        logger.error("Failed to evaluate candidate match on re-apply:", err);
       });
 
       return existing;
@@ -492,7 +494,7 @@ export const applyToJob = async (jobId, applicantId, options = {}) => {
 
   } catch (error) {
     await session.abortTransaction();
-    console.error("Transaction aborted in applyToJob:", error);
+    logger.error("Transaction aborted in applyToJob:", error);
     throw error;
   } finally {
     session.endSession();
@@ -500,7 +502,7 @@ export const applyToJob = async (jobId, applicantId, options = {}) => {
 
   // Evaluate candidate match asynchronously
   recruiterIntelligenceService.evaluateCandidateMatch(application._id).catch(err => {
-    console.error("Failed to evaluate candidate match:", err);
+    logger.error("Failed to evaluate candidate match:", err);
   });
 
   return application;

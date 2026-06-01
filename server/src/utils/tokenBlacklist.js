@@ -1,5 +1,7 @@
 import redisClient from "../config/redis.js";
 
+import logger from "./logger.js";
+
 /**
  * JWT token blacklist (Redis-backed with in-memory fallback).
  */
@@ -19,7 +21,7 @@ export const blacklistToken = async (jti, exp) => {
       await redisClient.setEx(`bl_${jti}`, ttl, "1");
       return;
     } catch (err) {
-      console.error("Redis blacklist error:", err);
+      logger.error("Redis blacklist error:", err);
     }
   }
   
@@ -35,7 +37,7 @@ export const isTokenBlacklisted = async (jti) => {
       const exists = await redisClient.exists(`bl_${jti}`);
       if (exists) return true;
     } catch (err) {
-      console.error("Redis check error:", err);
+      logger.error("Redis check error:", err);
     }
   }
   

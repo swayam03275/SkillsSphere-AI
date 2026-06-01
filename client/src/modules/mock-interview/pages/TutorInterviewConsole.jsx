@@ -13,6 +13,8 @@ import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
 import { useToast } from "../../../shared/components/toast/ToastProvider";
 
 
+import logger from "../../../utils/logger";
+
 const TutorInterviewConsole = () => {
   useDocumentTitle("Tutor Interview Console");
   const { id } = useParams(); // wait, react-router-dom provides this
@@ -48,7 +50,7 @@ const TutorInterviewConsole = () => {
           setAnswersFeedback(initialFeedback);
         }
       } catch (err) {
-        console.error(err);
+        logger.error(err);
       } finally {
         setLoading(false);
       }

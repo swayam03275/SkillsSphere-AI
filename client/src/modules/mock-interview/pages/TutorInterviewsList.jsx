@@ -9,6 +9,8 @@ import Footer from "../../../shared/components/Footer";
 import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
 
 
+import logger from "../../../utils/logger";
+
 const TutorInterviewsList = () => {
   useDocumentTitle("Tutor Interviews List");
   const { token } = useSelector((state) => state.auth);
@@ -23,7 +25,7 @@ const TutorInterviewsList = () => {
           setSessions(result.data?.sessions || []);
         }
       } catch (err) {
-        console.error(err);
+        logger.error(err);
       } finally {
         setLoading(false);
       }

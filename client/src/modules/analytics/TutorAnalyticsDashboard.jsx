@@ -10,6 +10,8 @@ import Footer from "../../shared/components/Footer";
 import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 
 
+import logger from "../../utils/logger";
+
 // Custom Treemap content for better styling
 const CustomizedContent = (props) => {
   const { root, depth, x, y, width, height, index, payload, colors, rank, name } = props;
@@ -64,7 +66,7 @@ const TutorAnalyticsDashboard = () => {
           setError(result.message || "Failed to load data");
         }
       } catch (err) {
-        console.error(err);
+        logger.error(err);
         setError("Network error occurred while fetching analytics");
       } finally {
         setLoading(false);

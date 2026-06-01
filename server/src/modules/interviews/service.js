@@ -12,6 +12,8 @@ import redisClient from "../../config/redis.js";
 import Notification from "../../database/models/Notification.js";
 import { getIO } from "../../utils/socketIO.js";
 
+import logger from "../../utils/logger.js";
+
 // Guards against concurrent answer submissions for the same session.
 // Since processAnswerSubmission spans async I/O (transcription, evaluation),
 // two calls can otherwise read the same currentQuestionIndex and collide.
@@ -164,7 +166,7 @@ export const processAnswerSubmission = async ({
         const transcription = await transcribeAudio(audioFile.buffer);
         finalTranscript = transcription.transcript;
       } catch (err) {
-        console.error("[interview] Transcription failed:", err.message);
+        logger.error("[interview] Transcription failed:", err.message);
         throw new AppError("Audio transcription failed. Please try submitting text instead.", 500);
       }
     }
@@ -182,7 +184,7 @@ export const processAnswerSubmission = async ({
         question.expectedConcepts
       );
     } catch (err) {
-      console.error("[interview] Evaluation failed:", err.message);
+      logger.error("[interview] Evaluation failed:", err.message);
       evaluation = {
         technical: 0,
         communication: 0,
@@ -236,7 +238,7 @@ export const processAnswerSubmission = async ({
     };
   } finally {
     if (useRedis) {
-      await redisClient.del(lockKey).catch(console.error);
+      await redisClient.del(lockKey).catch(logger.error);
     } else {
       pendingSubmissions.delete(sessionId);
     }
@@ -315,7 +317,7 @@ export const finalizeInterview = async (sessionId, userId) => {
     await dbSession.commitTransaction();
   } catch (error) {
     await dbSession.abortTransaction();
-    console.error("Transaction aborted in finalizeInterview:", error);
+    logger.error("Transaction aborted in finalizeInterview:", error);
     throw error;
   } finally {
     dbSession.endSession();

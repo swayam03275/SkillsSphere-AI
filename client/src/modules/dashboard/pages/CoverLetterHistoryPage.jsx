@@ -18,6 +18,8 @@ import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
 import { useToast } from "../../../shared/components/toast/ToastProvider";
 
 
+import logger from "../../../utils/logger";
+
 const CoverLetterHistoryPage = () => {
   useDocumentTitle("Cover Letter History");
   const toast = useToast();
@@ -38,7 +40,7 @@ const CoverLetterHistoryPage = () => {
         setError("Failed to load cover letter history.");
       }
     } catch (err) {
-      console.error(err);
+      logger.error(err);
       setError("An error occurred while fetching history.");
     } finally {
       setLoading(false);

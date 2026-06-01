@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import connectDB from "./src/database/db.js";
 import app from "./src/app.js"; // Assuming Express app is exported
 import request from "supertest";

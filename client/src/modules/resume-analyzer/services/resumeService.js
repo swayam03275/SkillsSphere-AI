@@ -1,5 +1,7 @@
 import { apiRequest } from "../../../services/apiClient";
 
+import logger from "../../../utils/logger";
+
 const TOKEN_KEY = "skillssphere.auth.token";
 const getToken = () =>
   localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
@@ -31,7 +33,7 @@ export const getLatestResumeAnalysis = async () => {
   } catch (err) {
     // 404 means no prior scan — treat as "no data", not an error
     if (err?.status === 404 || err?.message?.includes("404")) return null;
-    console.error("[resumeService] getLatestResumeAnalysis:", err);
+    logger.error("[resumeService] getLatestResumeAnalysis:", err);
     return null;
   }
 };
@@ -59,7 +61,7 @@ export const analyzeResume = async (file, jobDescription = "") => {
 
     return response;
   } catch (error) {
-    console.error("[resumeService] Analysis Error:", error);
+    logger.error("[resumeService] Analysis Error:", error);
     throw error; // Let the caller (component) handle the UI toast/state
   }
 };
@@ -85,7 +87,7 @@ export const generateCoverLetter = async (resumeId, jobDescription, tone = "Prof
 
     return response;
   } catch (error) {
-    console.error("[resumeService] Cover Letter Generation Error:", error);
+    logger.error("[resumeService] Cover Letter Generation Error:", error);
     throw error;
   }
 };
@@ -106,7 +108,7 @@ export const getResumeList = async () => {
 
     return response.data || [];
   } catch (error) {
-    console.error("[resumeService] getResumeList Error:", error);
+    logger.error("[resumeService] getResumeList Error:", error);
     throw error;
   }
 };
@@ -127,7 +129,7 @@ export const setActiveResume = async (id) => {
 
     return response;
   } catch (error) {
-    console.error("[resumeService] setActiveResume Error:", error);
+    logger.error("[resumeService] setActiveResume Error:", error);
     throw error;
   }
 };
@@ -149,7 +151,7 @@ export const renameResume = async (id, title) => {
 
     return response;
   } catch (error) {
-    console.error("[resumeService] renameResume Error:", error);
+    logger.error("[resumeService] renameResume Error:", error);
     throw error;
   }
 };
@@ -170,7 +172,7 @@ export const deleteResume = async (id) => {
 
     return response;
   } catch (error) {
-    console.error("[resumeService] deleteResume Error:", error);
+    logger.error("[resumeService] deleteResume Error:", error);
     throw error;
   }
 };

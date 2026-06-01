@@ -2,6 +2,8 @@ import React from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+import logger from "../../utils/logger";
+
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -15,7 +17,7 @@ class ErrorBoundary extends React.Component {
   componentDidCatch(error, errorInfo) {
     this.setState({ errorInfo });
     // In a production app, we could also log this to Sentry or an external logging service
-    console.error("ErrorBoundary caught an error:", error, errorInfo);
+    logger.error("ErrorBoundary caught an error:", error, errorInfo);
   }
 
   render() {

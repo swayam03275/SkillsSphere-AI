@@ -34,6 +34,8 @@ import { getRecruiterJobs } from '../services/jobPostingService';
 import { searchTalent, matchCandidate, inviteCandidate } from '../services/talentFinderService';
 import { useDocumentTitle } from '../../../hooks/useDocumentTitle';
 
+import logger from "../../../utils/logger";
+
 const matchCategoryStyles = {
   "Excellent Match": "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
   "Moderate Match": "bg-blue-500/10 text-blue-400 border-blue-500/20",
@@ -104,7 +106,7 @@ const TalentFinderPage = () => {
           setSelectedJobId(openJobs[0]._id);
         }
       } catch (err) {
-        console.error("Failed to load recruiter jobs:", err);
+        logger.error("Failed to load recruiter jobs:", err);
       } finally {
         setJobsLoading(false);
       }

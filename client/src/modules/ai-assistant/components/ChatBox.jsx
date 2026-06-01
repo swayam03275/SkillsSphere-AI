@@ -4,6 +4,8 @@ import { X, Send, Sparkles } from "lucide-react";
 import MessageBubble from "./MessageBubble";
 import { API_URL } from "../../../config/env";
 
+import logger from "../../../utils/logger";
+
 const ChatBox = ({ onClose }) => {
   const { token } = useSelector((state) => state.auth);
   const [messages, setMessages] = useState([
@@ -38,7 +40,7 @@ const ChatBox = ({ onClose }) => {
       const data = await res.json();
       return data.reply;
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       return "Sorry, I couldn't process that. Please try again.";
     }
   };

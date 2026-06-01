@@ -25,6 +25,8 @@ import AnalysisReportPDF from "./AnalysisReportPDF";
 import { useToast } from "../../../shared/components";
 import { exportToPDF } from "../../../utils/exportUtils";
 
+import logger from "../../../utils/logger";
+
 const ATS_BREAKDOWN_CONFIG = [
   { key: "formatting", label: "Formatting", offset: 4 },
   { key: "keywords", label: "Keywords", offset: -3 },
@@ -222,7 +224,7 @@ const AnalysisResult = ({ result, file, jobDescription, onReset }) => {
       });
       success("Report exported to PDF successfully.");
     } catch (err) {
-      console.error("PDF Export Error:", err);
+      logger.error("PDF Export Error:", err);
       const message = "We couldn't export the PDF report. Please try again.";
       setExportError(message);
       showError(err.message || message);

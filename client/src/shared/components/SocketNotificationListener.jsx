@@ -2,6 +2,8 @@ import React, { useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { io } from "socket.io-client";
 import { useToast } from "./toast/ToastProvider";
+import logger from "../../utils/logger";
+
 import {
   addLiveNotification,
   getUnreadCount,
@@ -89,7 +91,7 @@ const SocketNotificationListener = () => {
     };
 
     const handleConnectError = (err) => {
-      console.warn("[Socket] Connection refused:", err.message);
+      logger.warn("[Socket] Connection refused:", err.message);
       dispatch(setSocketStatus("disconnected"));
       socket.disconnect();
     };

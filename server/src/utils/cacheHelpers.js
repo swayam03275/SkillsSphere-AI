@@ -1,5 +1,7 @@
 import redisClient from "../config/redis.js";
 
+import logger from "./logger.js";
+
 export const invalidateCacheByPrefix = async (prefix) => {
   try {
     let cursor = 0;
@@ -15,9 +17,9 @@ export const invalidateCacheByPrefix = async (prefix) => {
 
     if (keys.length > 0) {
       await redisClient.del(keys);
-      console.log(`Cache invalidated for ${keys.length} keys matching: ${prefix}:*`);
+      logger.log(`Cache invalidated for ${keys.length} keys matching: ${prefix}:*`);
     }
   } catch (error) {
-    console.error(`Failed to invalidate cache for prefix: ${prefix}`, error);
+    logger.error(`Failed to invalidate cache for prefix: ${prefix}`, error);
   }
 };

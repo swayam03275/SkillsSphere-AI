@@ -20,6 +20,8 @@ import {
 } from "../services/jobPostingService";
 import { useToast } from "../../../shared/components/toast/ToastProvider";
 
+import logger from "../../../utils/logger";
+
 const STATUS_FILTERS = [
   { value: "all", label: "All Jobs" },
   { value: "open", label: "Open" },
@@ -55,7 +57,7 @@ const RecruiterJobsPage = () => {
       setError(
         err.message || "Failed to load job postings. Please try again later.",
       );
-      console.error("Failed to fetch jobs:", err);
+      logger.error("Failed to fetch jobs:", err);
     } finally {
       setLoading(false);
     }
@@ -83,7 +85,7 @@ const RecruiterJobsPage = () => {
               "Failed to load job postings. Please try again later.",
           );
         }
-        console.error("Failed to fetch jobs:", err);
+        logger.error("Failed to fetch jobs:", err);
       } finally {
         if (!ignore) {
           setLoading(false);
@@ -157,7 +159,7 @@ const RecruiterJobsPage = () => {
 
   const handleViewRecommendations = (job) => {
     // navigate(`/recruiter/jobs/${job.id}/recommendations`);
-    console.log("View recommendations", job);
+    logger.log("View recommendations", job);
   };
 
   const handleViewApplicants = (job) => {

@@ -3,6 +3,8 @@ import User from "../../database/models/User.js";
 import LearningProgress from "../../database/models/LearningProgress.js";
 import InterviewSession from "../../database/models/InterviewSession.js";
 
+import logger from "../../utils/logger.js";
+
 /**
  * Compile global/class-wide student skill data.
  * This runs a MongoDB aggregation pipeline to count skill frequencies
@@ -46,7 +48,7 @@ export const getSkillGapHeatmap = async (req, res) => {
       data: chartData
     });
   } catch (error) {
-    console.error("Error in getSkillGapHeatmap aggregation:", error);
+    logger.error("Error in getSkillGapHeatmap aggregation:", error);
     res.status(500).json({ success: false, message: "Failed to compile skill gap data" });
   }
 };
@@ -129,7 +131,7 @@ export const getDashboardAnalytics = async (req, res) => {
 
     res.status(403).json({ success: false, message: "Role not recognized for analytics" });
   } catch (error) {
-    console.error("Error in getDashboardAnalytics:", error);
+    logger.error("Error in getDashboardAnalytics:", error);
     res.status(500).json({ success: false, message: "Failed to fetch analytics" });
   }
 };

@@ -1,5 +1,7 @@
 import LearningProgress from "../../database/models/LearningProgress.js";
 
+import logger from "../../utils/logger.js";
+
 /**
  * Initialize roadmap-related socket events.
  * Every socket has socket.user attached (from io.use middleware in index.js)
@@ -34,7 +36,7 @@ export function initRoadmapSockets(io) {
           socket.emit("roadmap-error", { message: "Not authorized to access this roadmap room" });
         }
       } catch (err) {
-        console.error("Error joining roadmap room:", err);
+        logger.error("Error joining roadmap room:", err);
         socket.emit("roadmap-error", { message: "Internal server error joining room" });
       }
     });

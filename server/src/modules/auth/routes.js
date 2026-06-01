@@ -6,6 +6,8 @@ import {
   isGoogleOAuthConfigured,
 } from "../../config/googleOAuth.js";
 import { protect } from "../../middleware/authMiddleware.js";
+import logger from "../../utils/logger.js";
+
 import {
   authRateLimiter,
   otpRateLimiter,
@@ -73,7 +75,7 @@ router.get("/google", (req, res) => {
   );
 
   if (!isGoogleOAuthConfigured()) {
-    console.error("[AUTH] Google OAuth env vars are missing in server/.env");
+    logger.error("[AUTH] Google OAuth env vars are missing in server/.env");
     return res.redirect(
       `${redirectTarget}?error=${encodeURIComponent(GOOGLE_OAUTH_NOT_CONFIGURED_MESSAGE)}`,
     );

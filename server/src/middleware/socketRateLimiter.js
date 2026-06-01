@@ -1,3 +1,4 @@
+import logger from "../utils/logger.js";
 const DEFAULT_WINDOW_MS = parseInt(process.env.SOCKET_RATE_WINDOW_MS, 10) || 10000;
 const DEFAULT_MAX_EVENTS = parseInt(process.env.SOCKET_RATE_MAX_EVENTS, 10) || 50;
 const WHITELIST = new Set(
@@ -13,7 +14,7 @@ const WARNING_COOLDOWN_MS = parseInt(process.env.SOCKET_RATE_WARNING_COOLDOWN_MS
 
 export function attachSocketRateLimiter(io) {
   if (!ENABLED) {
-    console.info("Socket rate limiter disabled via SOCKET_RATE_ENABLED=false");
+    logger.info("Socket rate limiter disabled via SOCKET_RATE_ENABLED=false");
     return;
   }
   const state = new Map();
@@ -59,7 +60,7 @@ export function attachSocketRateLimiter(io) {
           return;
         }
 
-        console.warn(`Socket ${socket.id} rate-limited (events in ${windowMs}ms > ${maxEvents})`);
+        logger.warn(`Socket ${socket.id} rate-limited (events in ${windowMs}ms > ${maxEvents})`);
         try {
           socket.emit("rate_limited", {
             message: "Too many events sent in a short period. Connection will be closed.",
@@ -68,7 +69,7 @@ export function attachSocketRateLimiter(io) {
 
         socket.disconnect(true);
       } catch (err) {
-        console.error("[socketRateLimiter] error:", err);
+        logger.error("[socketRateLimiter] error:", err);
       }
     });
 

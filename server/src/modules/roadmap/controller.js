@@ -6,6 +6,8 @@ import AppError from "../../utils/AppError.js";
 import { getIO } from "../../utils/socketIO.js";
 import { createNotification } from "../notifications/service.js";
 
+import logger from "../../utils/logger.js";
+
 /**
  * Get the current user's learning progress and roadmap
  */
@@ -153,7 +155,7 @@ export const updateTopicStatus = asyncHandler(async (req, res) => {
       io.to(`roadmap_${progress._id}`).emit("new-roadmap-comment", populated);
     }
   } catch (error) {
-    console.error("Failed to save status change comment log:", error);
+    logger.error("Failed to save status change comment log:", error);
   }
 
   res.status(200).json({
@@ -285,7 +287,7 @@ export const assignTutorResource = asyncHandler(async (req, res) => {
       io.to(`user_${studentId}`).emit("new-notification", notif);
     }
   } catch (error) {
-    console.error("Failed to process resource assignment notification/log:", error);
+    logger.error("Failed to process resource assignment notification/log:", error);
   }
 
   res.status(200).json({
@@ -386,7 +388,7 @@ export const verifyTopic = asyncHandler(async (req, res) => {
       io.to(`user_${studentId}`).emit("new-notification", notif);
     }
   } catch (error) {
-    console.error("Failed to process milestone verification notification/log:", error);
+    logger.error("Failed to process milestone verification notification/log:", error);
   }
 
   res.status(200).json({
@@ -461,7 +463,7 @@ export const addTutorMilestone = asyncHandler(async (req, res) => {
       }
     }
   } catch (error) {
-    console.error("Failed to process custom milestone notification/log:", error);
+    logger.error("Failed to process custom milestone notification/log:", error);
   }
 
   res.status(201).json({
@@ -660,7 +662,7 @@ export const postRoadmapComment = asyncHandler(async (req, res) => {
       }
     }
   } catch (error) {
-    console.error("Error creating comment notification:", error);
+    logger.error("Error creating comment notification:", error);
   }
 
   res.status(201).json({

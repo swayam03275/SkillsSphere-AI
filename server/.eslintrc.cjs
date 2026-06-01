@@ -5,6 +5,7 @@ module.exports = {
   parserOptions: { ecmaVersion: 'latest', sourceType: 'module' },
   rules: {
     'no-unused-vars': 'off',
-    'no-undef': 'off'
+    'no-undef': 'off',
+    'no-console': ['error', { allow: ['time', 'timeEnd'] }]
   }
 };

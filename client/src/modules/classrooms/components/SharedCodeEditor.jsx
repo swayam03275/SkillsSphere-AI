@@ -3,9 +3,11 @@ import Editor from "@monaco-editor/react";
 import { Code2, Info, Play, Terminal, XCircle, Loader2, Copy, Download } from "lucide-react";
 import { useToast } from "../../../shared/components/toast/ToastProvider";
 
+import logger from "../../../utils/logger";
+
 export default function SharedCodeEditor({ socket, roomId, userRole }) {
   const { success } = useToast();
-  const [code, setCode] = useState(`// Welcome to SkillSphere AI Live Coding Classroom!\n// Type your collaborative code here...\n\nfunction helloWorld() {\n  console.log("Welcome to class!");\n}`);
+  const [code, setCode] = useState(`// Welcome to SkillSphere AI Live Coding Classroom!\n// Type your collaborative code here...\n\nfunction helloWorld() {\n  logger.log("Welcome to class!");\n}`);
   const [language, setLanguage] = useState("javascript");
   const [lastEditorInfo, setLastEditorInfo] = useState("");
   const [isExecuting, setIsExecuting] = useState(false);
@@ -117,7 +119,7 @@ export default function SharedCodeEditor({ socket, roomId, userRole }) {
       await navigator.clipboard.writeText(code);
       success("Code copied to clipboard!");
     } catch (err) {
-      console.error("Failed to copy", err);
+      logger.error("Failed to copy", err);
     }
   };
 

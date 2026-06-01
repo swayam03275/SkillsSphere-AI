@@ -15,6 +15,8 @@ import ClassroomSession from "../../../database/models/ClassroomSession.js";
 import JobPosting from "../../../database/models/JobPosting.js";
 import { deleteProfile } from "../controller.js";
 
+import logger from "../../../utils/logger.js";
+
 test("deleteProfile - cascades deletion to files and relational models", async () => {
   const userId = new mongoose.Types.ObjectId();
   const mockUser = {
@@ -105,7 +107,7 @@ test("deleteProfile - cascades deletion to files and relational models", async (
   };
 
   const next = (err) => {
-    console.error("Next called with error:", err);
+    logger.error("Next called with error:", err);
     rejectResponse(err);
   };
 

@@ -11,6 +11,8 @@ dotenv.config({ path: join(dirname(fileURLToPath(import.meta.url)), "../../../..
 import QuestionBank from "../../../database/models/QuestionBank.js";
 import ConceptGraph from "../../../database/models/ConceptGraph.js";
 
+import logger from "../../../utils/logger.js";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -25,38 +27,38 @@ export const seedInterviewData = async () => {
     );
 
     // Seed QuestionBank
-    console.log(`[seed] Seeding ${questions.length} questions...`);
+    logger.log(`[seed] Seeding ${questions.length} questions...`);
     const existingQuestions = await QuestionBank.countDocuments();
     if (existingQuestions > 0) {
-      console.log(`[seed] QuestionBank already has ${existingQuestions} questions. Clearing...`);
+      logger.log(`[seed] QuestionBank already has ${existingQuestions} questions. Clearing...`);
       await QuestionBank.deleteMany({});
     }
     await QuestionBank.insertMany(questions);
-    console.log(`[seed] ✅ ${questions.length} questions seeded`);
+    logger.log(`[seed] ✅ ${questions.length} questions seeded`);
 
     // Seed ConceptGraphs
-    console.log(`[seed] Seeding ${conceptGraphs.length} concept graphs...`);
+    logger.log(`[seed] Seeding ${conceptGraphs.length} concept graphs...`);
     const existingGraphs = await ConceptGraph.countDocuments();
     if (existingGraphs > 0) {
-      console.log(`[seed] ConceptGraph already has ${existingGraphs} graphs. Clearing...`);
+      logger.log(`[seed] ConceptGraph already has ${existingGraphs} graphs. Clearing...`);
       await ConceptGraph.deleteMany({});
     }
     await ConceptGraph.insertMany(conceptGraphs);
-    console.log(`[seed] ✅ ${conceptGraphs.length} concept graphs seeded`);
+    logger.log(`[seed] ✅ ${conceptGraphs.length} concept graphs seeded`);
 
     // Summary
-    console.log("\n[seed] === Seed Summary ===");
+    logger.log("\n[seed] === Seed Summary ===");
     const topicCounts = await QuestionBank.aggregate([
       { $group: { _id: "$topic", count: { $sum: 1 } } },
       { $sort: { _id: 1 } },
     ]);
     topicCounts.forEach(({ _id, count }) => {
-      console.log(`[seed]   ${_id}: ${count} questions`);
+      logger.log(`[seed]   ${_id}: ${count} questions`);
     });
 
-    console.log("[seed] Done! ✅");
+    logger.log("[seed] Done! ✅");
   } catch (error) {
-    console.error("[seed] Error:", error.message);
+    logger.error("[seed] Error:", error.message);
   }
 };
 

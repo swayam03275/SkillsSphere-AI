@@ -30,6 +30,6 @@
     "concurrently": "^8.2.2",
     "postcss": "^8.5.12",
     "tailwindcss": "^4.2.4",
-    "turbo": "^1.13.0"
+    "turbo": "^2.9.16"
   }
 }

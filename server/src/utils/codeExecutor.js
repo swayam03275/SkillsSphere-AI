@@ -1,5 +1,7 @@
 import axios from 'axios';
 
+import logger from "./logger.js";
+
 /**
  * Executes code using the public Piston API.
  * @param {string} language - The programming language (e.g., 'javascript', 'python', 'cpp')
@@ -54,7 +56,7 @@ export const executeCode = async (language, code) => {
     return { output: "No output returned.", isError: false };
 
   } catch (error) {
-    console.error("Code execution failed:", error.message);
+    logger.error("Code execution failed:", error.message);
     
     // Fallback if Piston API is down or unreachable
     if (error.code === 'ENOTFOUND' || error.response?.status >= 500) {

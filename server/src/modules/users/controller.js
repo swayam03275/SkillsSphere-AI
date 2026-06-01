@@ -16,6 +16,8 @@ import { cascadeDeleteUser } from "../../utils/cascadeDelete.js";
 import { safeDeleteAvatarByUrl } from "../../utils/fileUtils.js";
 import { deleteCloudinaryAsset, uploadAvatarBuffer } from "../../config/cloudinary.js";
 
+import logger from "../../utils/logger.js";
+
 export const DEFAULT_USER_PREFERENCES = {
   notifications: {
     emailNotifications: true,
@@ -260,14 +262,14 @@ export const uploadAvatar = asyncHandler(async (req, res, next) => {
 
     if (!updatedUser) {
       await deleteCloudinaryAsset(uploadedAvatar.public_id).catch((error) => {
-        console.error("[uploadAvatar] Failed to clean up orphaned Cloudinary avatar:", error.message);
+        logger.error("[uploadAvatar] Failed to clean up orphaned Cloudinary avatar:", error.message);
       });
       return next(new AppError("User not found", 404));
     }
 
     if (previousPublicId) {
       await deleteCloudinaryAsset(previousPublicId).catch((error) => {
-        console.error("[uploadAvatar] Failed to delete previous Cloudinary avatar:", error.message);
+        logger.error("[uploadAvatar] Failed to delete previous Cloudinary avatar:", error.message);
       });
     } else {
       safeDeleteAvatarByUrl(previousProfilePic);
@@ -303,7 +305,7 @@ export const removeAvatar = asyncHandler(async (req, res, next) => {
 
   if (previousPublicId) {
     await deleteCloudinaryAsset(previousPublicId).catch((error) => {
-      console.error("[removeAvatar] Failed to delete Cloudinary avatar:", error.message);
+      logger.error("[removeAvatar] Failed to delete Cloudinary avatar:", error.message);
     });
   } else {
     safeDeleteAvatarByUrl(previousProfilePic);

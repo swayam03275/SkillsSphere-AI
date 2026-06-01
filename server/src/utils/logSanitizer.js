@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 const PII_KEYS = [
   "email",
   "phone",

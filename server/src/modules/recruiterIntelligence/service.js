@@ -2,6 +2,8 @@ import JobApplication from "../../database/models/JobApplication.js";
 import LearningProgress from "../../database/models/LearningProgress.js";
 import { runPipeline } from "../../../../ai-ml/pipeline/runPipeline.js";
 
+import logger from "../../utils/logger.js";
+
 /**
  * Evaluates a candidate's application to generate AI Match Scores
  * @param {string} applicationId - ID of the job application
@@ -14,7 +16,7 @@ export const evaluateCandidateMatch = async (applicationId) => {
       .populate("resume");
 
     if (!application || !application.job || !application.resume) {
-      console.error("Missing required data for candidate evaluation");
+      logger.error("Missing required data for candidate evaluation");
       return null;
     }
 
@@ -198,7 +200,7 @@ export const evaluateCandidateMatch = async (applicationId) => {
     return application;
 
   } catch (error) {
-    console.error("Error evaluating candidate match:", error);
+    logger.error("Error evaluating candidate match:", error);
     return null;
   }
 };

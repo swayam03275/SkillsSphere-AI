@@ -5,6 +5,7 @@ import express from "express";
 import mongoose from "mongoose";
 import { validateEnv } from "./src/config/validateEnv.js";
 import { setupGlobalLogSanitizer } from "./src/utils/logSanitizer.js";
+import logger from "./src/utils/logger.js";
 
 dotenv.config({ override: true });
 validateEnv();
@@ -172,7 +173,7 @@ User message: ${message}`;
 
     res.json({ reply });
   } catch (error) {
-    console.error("Chat API error:", error);
+    logger.error("Chat API error:", error);
     res.status(500).json({ error: "Failed to generate AI response" });
   }
 });
@@ -207,35 +208,35 @@ app.use("/api/*", (req, res) => {
 app.use(globalErrorHandler);
 
 server.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  logger.log(`Server running on http://localhost:${PORT}`);
 });
 
 // --- Graceful Shutdown ---
 const gracefulShutdown = async (signal) => {
-  console.log(`\nReceived ${signal}. Gracefully shutting down...`);
+  logger.log(`\nReceived ${signal}. Gracefully shutting down...`);
   try {
     if (redisClient && redisClient.isReady) {
       await redisClient.quit();
-      console.log("Redis client disconnected.");
+      logger.log("Redis client disconnected.");
     }
     if (mongoose.connection.readyState === 1) {
       await mongoose.connection.close();
-      console.log("MongoDB connection closed.");
+      logger.log("MongoDB connection closed.");
     }
     server.close(() => {
-      console.log("Express server closed.");
+      logger.log("Express server closed.");
       process.exit(0);
     });
 
     // Fallback force kill if connections hang for more than 10 seconds
     setTimeout(() => {
-      console.error(
+      logger.error(
         "Could not close connections in time, forcefully shutting down",
       );
       process.exit(1);
     }, 10000);
   } catch (err) {
-    console.error("Error during graceful shutdown:", err);
+    logger.error("Error during graceful shutdown:", err);
     process.exit(1);
   }
 };

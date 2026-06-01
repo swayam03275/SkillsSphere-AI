@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Video, VideoOff, Mic } from "lucide-react";
+import logger from "../../../utils/logger";
+
 const CameraCheck = ({ onStreamReady }) => {
   const videoRef = useRef(null);
   const [stream, setStream] = useState(null);
@@ -49,7 +51,7 @@ const CameraCheck = ({ onStreamReady }) => {
           setMicLevel(Math.min(100, average * 2.5));
         };
       } catch (err) {
-        console.error("Error accessing media devices:", err);
+        logger.error("Error accessing media devices:", err);
         setError("Camera or Microphone access denied. Please enable permissions to proceed.");
         onStreamReady(false);
       }

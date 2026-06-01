@@ -2,6 +2,8 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
+import logger from "./logger.js";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -26,7 +28,7 @@ export const safeDeletePhysicalFile = (filePath) => {
     }
     return false;
   } catch (err) {
-    console.error(`[safeDeletePhysicalFile] Failed to delete file ${filePath}:`, err.message);
+    logger.error(`[safeDeletePhysicalFile] Failed to delete file ${filePath}:`, err.message);
     return false;
   }
 };
@@ -54,7 +56,7 @@ export const safeDeleteAvatarByUrl = (avatarUrl) => {
     const filePath = path.join(__dirname, "..", "uploads", "avatars", filename);
     return safeDeletePhysicalFile(filePath);
   } catch (err) {
-    console.error(`[safeDeleteAvatarByUrl] Failed to delete avatar ${avatarUrl}:`, err.message);
+    logger.error(`[safeDeleteAvatarByUrl] Failed to delete avatar ${avatarUrl}:`, err.message);
     return false;
   }
 };

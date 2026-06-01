@@ -5,6 +5,8 @@ import JobPosting from "../../../database/models/JobPosting.js";
 import JobApplication from "../../../database/models/JobApplication.js";
 import AppError from "../../../utils/AppError.js";
 
+import logger from "../../../utils/logger.js";
+
 describe("Job Controller", () => {
   let req, res, next;
 
@@ -55,7 +57,7 @@ describe("Job Controller", () => {
       
       // Since res.status() returns res, we check the first call's first argument
       if (next.mock.calls.length > 0) {
-        console.error("Next was called with error:", next.mock.calls[0].arguments[0]);
+        logger.error("Next was called with error:", next.mock.calls[0].arguments[0]);
       }
       assert.equal(res.status.mock.calls.length, 1);
       assert.equal(res.status.mock.calls[0].arguments[0], 201);

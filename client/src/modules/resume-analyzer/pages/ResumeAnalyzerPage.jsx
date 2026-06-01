@@ -35,6 +35,8 @@ import {
 import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
 import ConfirmDialog from "../../../shared/components/ConfirmDialog";
 
+import logger from "../../../utils/logger";
+
 const MAX_UPLOAD_RETRY_ATTEMPTS = 3;
 const UPLOAD_TIMEOUT_MS = 30000;
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -141,7 +143,7 @@ const ResumeAnalyzerPage = () => {
       const data = await getResumeList();
       setResumes(data || []);
     } catch (err) {
-      console.error("Failed to load resumes list:", err);
+      logger.error("Failed to load resumes list:", err);
     } finally {
       setLoadingResumes(false);
     }
@@ -237,7 +239,7 @@ const ResumeAnalyzerPage = () => {
       setUploadProgressLabel("");
       setCanRetryUpload(isRecoverableUploadError(err));
       showError(msg);
-      console.error(err);
+      logger.error(err);
     } finally {
       setLoading(false);
     }

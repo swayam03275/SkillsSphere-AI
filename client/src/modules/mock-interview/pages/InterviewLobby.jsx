@@ -11,6 +11,8 @@ import { Play, GraduationCap, History, Loader2, Sparkles, Zap, ChevronRight, Arr
 import { getTopics, startSession } from "../services/interviewService";
 import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
 
+import logger from "../../../utils/logger";
+
 const DIFFICULTY_LEVELS = [
   { value: "easy", label: "Easy" },
   { value: "medium", label: "Medium" },
@@ -40,7 +42,7 @@ const InterviewLobby = () => {
         }
       } catch (err) {
         setError("Failed to load interview topics. Please try again.");
-        console.error("[InterviewLobby] Error fetching topics:", err);
+        logger.error("[InterviewLobby] Error fetching topics:", err);
       } finally {
         setLoading(false);
       }
@@ -61,7 +63,7 @@ const InterviewLobby = () => {
       }
     } catch (err) {
       setError(err.message || "Failed to start interview. Please try again.");
-      console.error("[InterviewLobby] Error starting session:", err);
+      logger.error("[InterviewLobby] Error starting session:", err);
     } finally {
       setStarting(false);
     }

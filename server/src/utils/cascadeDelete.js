@@ -15,6 +15,8 @@ import ClassroomSession from "../database/models/ClassroomSession.js";
 import JobPosting from "../database/models/JobPosting.js";
 import Notification from "../database/models/Notification.js";
 
+import logger from "./logger.js";
+
 /**
  * Sweeps and deletes all physical files and MongoDB documents associated with a user.
  * This ensures GDPR compliance and prevents storage bloat.
@@ -110,7 +112,7 @@ export const cascadeDeleteUser = async (userId) => {
     await session.commitTransaction();
   } catch (error) {
     await session.abortTransaction();
-    console.error("Transaction aborted in cascadeDeleteUser:", error);
+    logger.error("Transaction aborted in cascadeDeleteUser:", error);
     throw error;
   } finally {
     session.endSession();
@@ -119,7 +121,7 @@ export const cascadeDeleteUser = async (userId) => {
   // 1. Delete profile picture from Cloudinary, or from disk for legacy local avatars.
   if (user.profilePicPublicId) {
     await deleteCloudinaryAsset(user.profilePicPublicId).catch((error) => {
-      console.error("[cascadeDeleteUser] Failed to delete Cloudinary avatar:", error.message);
+      logger.error("[cascadeDeleteUser] Failed to delete Cloudinary avatar:", error.message);
     });
   } else {
     safeDeleteAvatarByUrl(user.profilePic);

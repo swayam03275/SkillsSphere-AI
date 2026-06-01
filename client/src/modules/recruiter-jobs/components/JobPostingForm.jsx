@@ -4,6 +4,8 @@ import Input from "../../../shared/components/Input";
 import Select from "../../../shared/components/Select";
 import Button from "../../../shared/components/Button";
 import { useToast } from "../../../shared/components";
+import logger from "../../../utils/logger";
+
 const STATUS_OPTIONS = [
   { value: "draft", label: "Draft" },
   { value: "open", label: "Open" },
@@ -68,7 +70,7 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
         return JSON.parse(savedDraft);
       }
     } catch (e) {
-      console.error("Failed to load draft:", e);
+      logger.error("Failed to load draft:", e);
     }
 
     return {
@@ -107,7 +109,7 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
     try {
       localStorage.setItem(draftKey, JSON.stringify(formData));
     } catch (e) {
-      console.error("Failed to save draft:", e);
+      logger.error("Failed to save draft:", e);
     }
   }, [formData, draftKey]);
 
