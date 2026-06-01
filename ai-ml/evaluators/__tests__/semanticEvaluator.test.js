@@ -30,20 +30,21 @@ await describe("semanticEvaluator", async () => {
     assert.ok(result.summary.toLowerCase().includes("missing"));
   });
 
-  await it("propagates provider failure for pipeline safe handling (missing API key)", async () => {
+  await it("returns unavailable result when HF API key is missing (CI friendly)", async () => {
     const originalKey = process.env.HF_API_TOKEN;
     delete process.env.HF_API_TOKEN;
 
     try {
-      await assert.rejects(
-        async () => {
-          await semanticEvaluator({
-            resumeText: "test resume with experience",
-            jobDescription: "test job description",
-          });
-        },
-        /HF_API_TOKEN/
-      );
+      const result = await semanticEvaluator({
+        resumeText: "test resume with experience",
+        jobDescription: "test job description",
+      });
+
+      assert.strictEqual(result.key, "semanticMatch");
+      assert.strictEqual(result.label, "Semantic Match");
+      assert.strictEqual(result.score, null);
+      assert.ok(result.meta && result.meta.unavailable === true);
+      assert.ok(result.summary.toLowerCase().includes("unconfigured") || result.summary.toLowerCase().includes("not set"));
     } finally {
       process.env.HF_API_TOKEN = originalKey;
     }

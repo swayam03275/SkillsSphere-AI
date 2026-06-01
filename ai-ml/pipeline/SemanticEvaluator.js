@@ -1,6 +1,7 @@
 import crypto from "crypto";
-import mongoose from "mongoose";
-import SemanticCache from "../../server/src/database/models/SemanticCache.js";
+// Lazily import optional DB dependencies to keep the evaluator test-friendly
+let mongoose;
+let SemanticCache;
 
 const HF_MODEL_URL =
   "https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2/pipeline/sentence-similarity";
@@ -100,8 +101,7 @@ async function callHFOnce(sourceText, compareText, hfToken) {
 }
 
 // ─── computeSimilarity: retry with exponential backoff on 429 ─────────────────
-const computeSimilarity = async (sourceText, compareText) => {
-  const hfToken = process.env.HF_API_TOKEN;
+const computeSimilarity = async (sourceText, compareText, hfToken) => {
   if (!hfToken) throw new Error("HF_API_TOKEN environment variable is not set");
 
   // Short-circuit if the circuit breaker is open
@@ -184,8 +184,18 @@ export const semanticEvaluator = async ({ resumeText = "", jobDescription = "" }
     };
   }
 
-  if (!process.env.HF_API_TOKEN) {
-    throw new Error("HF_API_TOKEN environment variable is not set");
+  const hfToken = process.env.HF_API_TOKEN;
+  if (!hfToken) {
+    // If no HF token is configured, do not throw — return an 'unavailable' result
+    // so pipelines and CI do not fail. This also makes the evaluator opt-in.
+    return {
+      key: KEY,
+      label: LABEL,
+      score: null,
+      summary: "Semantic matching is unconfigured: HF_API_TOKEN not set.",
+      details: {},
+      meta: { unavailable: true, reason: "no_token" },
+    };
   }
 
   try {
@@ -193,21 +203,28 @@ export const semanticEvaluator = async ({ resumeText = "", jobDescription = "" }
     const jdHash = getHash(jobDescription);
 
     // 🔍 Cache check — skip API entirely if we've seen this pair before
-    if (mongoose.connection.readyState === 1) {
-      const cachedResult = await SemanticCache.findOne({ resumeHash, jdHash });
-      if (cachedResult) {
-        console.log("[semanticEvaluator] ⚡ Cache hit — skipping API call.");
-        return {
-          key: KEY, label: LABEL,
-          score: cachedResult.score,
-          summary: cachedResult.summary,
-          details: cachedResult.details,
-          meta: { ...cachedResult.meta, cached: true },
-        };
+    try {
+      if (!mongoose) mongoose = await import('mongoose');
+      if (!SemanticCache) SemanticCache = (await import('../../server/src/database/models/SemanticCache.js')).default;
+
+      if (mongoose.connection && mongoose.connection.readyState === 1) {
+        const cachedResult = await SemanticCache.findOne({ resumeHash, jdHash });
+        if (cachedResult) {
+          console.log("[semanticEvaluator] ⚡ Cache hit — skipping API call.");
+          return {
+            key: KEY, label: LABEL,
+            score: cachedResult.score,
+            summary: cachedResult.summary,
+            details: cachedResult.details,
+            meta: { ...cachedResult.meta, cached: true },
+          };
+        }
       }
+    } catch (e) {
+      // If DB or model isn't available (e.g., running unit tests), skip caching.
     }
 
-    const similarity = await computeSimilarity(resumeText, jobDescription);
+    const similarity = await computeSimilarity(resumeText, jobDescription, hfToken);
     const normalized = Math.max(0, Math.min(1, similarity));
     const score = roundToTwo(normalized * 100);
     const feedback = buildFeedback(score);
