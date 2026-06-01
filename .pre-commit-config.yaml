@@ -1,0 +1,35 @@
+repos:
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        name: Detect Secrets
+        description: Prevents credentials and secrets from being committed to the repository.
+        args:
+          - "--baseline"
+          - ".secrets.baseline"
+          - "--exclude-files"
+          - ".secrets.baseline"
+          - "--exclude-files"
+          - "package-lock.json"
+          - "--exclude-files"
+          - ".*\\.md$"
+          - "--exclude-files"
+          - ".*\\.example$"
+          - "--exclude-files"
+          - ".*\\.sample$"
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-merge-conflict
+        name: Check for merge conflicts
+      - id: check-added-large-files
+        name: Block large file commits
+        args: ["--maxkb=1000"]
+      - id: detect-private-key
+        name: Detect private keys
+      - id: end-of-file-fixer
+        name: Fix end of file
+      - id: trailing-whitespace
+        name: Trim trailing whitespace
