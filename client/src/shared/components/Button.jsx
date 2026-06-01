@@ -96,8 +96,8 @@ const Button = ({
     SIZE_STYLES[size] ?? SIZE_STYLES.md,
     fullWidth ? "w-full" : "",
     isDisabled
-      ? "opacity-50 cursor-not-allowed pointer-events-none"
-      : "cursor-pointer",
+      ? "opacity-50 cursor-not-allowed"
+      : "cursor-pointer active:scale-[0.98]",
     className,
   ]
     .filter(Boolean)
