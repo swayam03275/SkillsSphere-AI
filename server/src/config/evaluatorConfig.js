@@ -1,3 +1,4 @@
+import logger from "../utils/logger.js";
 const DEFAULTS = {
   toggles: {
     skillMatch: true,
@@ -85,7 +86,7 @@ export const logEvaluatorConfig = () => {
     ? " (fallback applied: at least one evaluator must remain enabled)"
     : "";
 
-  console.log("Evaluator config:");
-  console.log(`- toggles: ${JSON.stringify(config.toggles)}${fallbackNote}`);
-  console.log(`- weights: ${JSON.stringify(config.weights)}`);
+  logger.log("Evaluator config:");
+  logger.log(`- toggles: ${JSON.stringify(config.toggles)}${fallbackNote}`);
+  logger.log(`- weights: ${JSON.stringify(config.weights)}`);
 };

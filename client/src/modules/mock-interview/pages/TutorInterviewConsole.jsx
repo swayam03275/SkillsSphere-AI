@@ -1,14 +1,26 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { PlayCircle, PauseCircle, Save, ArrowLeft, MessageSquare, CheckCircle, AlertCircle } from "lucide-react";
 import { apiRequest } from "../../../services/apiClient.js";
-import Navbar from "../../../shared/landing/Navbar";
+import Navbar from "../../../shared/components/Navbar";
+import Footer from "../../../shared/components/Footer";
+
+import Input from "../../../shared/components/Input";
+import TextArea from "../../../shared/components/TextArea";
+import { API_URL } from "../../../config/env";
+import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
+import { useToast } from "../../../shared/components/toast/ToastProvider";
+
+
+import logger from "../../../utils/logger";
 
 const TutorInterviewConsole = () => {
+  useDocumentTitle("Tutor Interview Console");
   const { id } = useParams(); // wait, react-router-dom provides this
   const navigate = useNavigate();
   const { token } = useSelector((state) => state.auth);
+  const toast = useToast();
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -38,7 +50,7 @@ const TutorInterviewConsole = () => {
           setAnswersFeedback(initialFeedback);
         }
       } catch (err) {
-        console.error(err);
+        logger.error(err);
       } finally {
         setLoading(false);
       }
@@ -64,10 +76,16 @@ const TutorInterviewConsole = () => {
   };
 
   const submitFeedback = async () => {
+    const parsedOverallScore = parseInt(overallScore, 10);
+    if (isNaN(parsedOverallScore) || parsedOverallScore < 0 || parsedOverallScore > 100) {
+      toast.error("Please provide a valid overall score between 0 and 100.");
+      return;
+    }
+
     setSaving(true);
     try {
       const feedbackData = {
-        tutorOverallScore: parseInt(overallScore, 10),
+        tutorOverallScore: parsedOverallScore,
         tutorOverallFeedback: overallFeedback,
         answersFeedback: Object.entries(answersFeedback).map(([qId, data]) => ({
           questionId: qId,
@@ -82,10 +100,10 @@ const TutorInterviewConsole = () => {
       });
       
       if (result.success) {
-        alert("Feedback saved successfully!");
+        toast.success("Feedback saved successfully!");
       }
     } catch (err) {
-      alert("Failed to save feedback");
+      toast.error("Failed to save feedback");
     } finally {
       setSaving(false);
     }
@@ -97,27 +115,27 @@ const TutorInterviewConsole = () => {
       else activeAudio.pause();
     } else {
       if (activeAudio) activeAudio.pause();
-      const audio = new Audio(`http://localhost:5000/${url.replace(/\\/g, "/")}`);
+      const audio = new Audio(`${API_URL}/${url.replace(/\\/g, "/")}`);
       audio.play();
       setActiveAudio(audio);
     }
   };
 
-  if (loading) return <div className="min-h-screen bg-slate-50 dark:bg-slate-900 px-6 pb-6 pt-24"><Navbar /><div className="text-center">Loading session data...</div></div>;
-  if (!session) return <div className="min-h-screen bg-slate-50 dark:bg-slate-900 px-6 pb-6 pt-24"><Navbar /><div className="text-center">Session not found</div></div>;
+  if (loading) return <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-900"><Navbar /><div className="flex-1 pt-24 text-center">Loading session data...</div><Footer /></div>;
+  if (!session || !session.userId || !session.answers) return <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-900"><Navbar /><div className="flex-1 pt-24 text-center">Session data is incomplete or missing.</div><Footer /></div>;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 px-6 pb-6 pt-24">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
       <Navbar />
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="flex-1 px-6 pb-6 pt-24 max-w-5xl mx-auto w-full space-y-6">
         
         <div className="flex items-center justify-between">
           <div>
-            <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-indigo-600 mb-2">
-              <ArrowLeft size={16} /> Back
-            </button>
+            <Link to="/tutor/interviews" className="flex items-center gap-2 text-indigo-600 mb-2 hover:text-indigo-500 transition-colors">
+              <ArrowLeft size={16} /> Back to Interviews
+            </Link>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Interview Player Console</h1>
-            <p className="text-slate-500">Evaluating {session.userId?.name}'s mock interview on {session.topic}</p>
+            <p className="text-slate-500">Evaluating {session.userId.name || 'Unknown User'}'s mock interview on {session.topic}</p>
           </div>
           <button 
             onClick={submitFeedback}
@@ -134,25 +152,25 @@ const TutorInterviewConsole = () => {
               <h2 className="text-lg font-bold mb-4 border-b pb-2 dark:border-slate-700">Overall Grading</h2>
               
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">AI Overall Score: {session.overallScore}%</label>
-                <label className="block text-sm font-medium mb-1 mt-4">Tutor Override Score (%)</label>
-                <input 
+                <label className="block text-sm font-medium mb-3">AI Overall Score: {session.overallScore}%</label>
+                <Input 
+                  id="overallScore"
+                  label="Tutor Override Score (%)"
                   type="number" 
                   min="0" max="100"
                   value={overallScore}
                   onChange={(e) => setOverallScore(e.target.value)}
-                  className="w-full p-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-1">Tutor Summary Feedback</label>
-                <textarea 
-                  rows="4"
+                <TextArea 
+                  id="overallFeedback"
+                  label="Tutor Summary Feedback"
+                  rows={4}
                   value={overallFeedback}
                   onChange={(e) => setOverallFeedback(e.target.value)}
                   placeholder="Provide overall impressions..."
-                  className="w-full p-2 border rounded-md dark:bg-slate-900 dark:border-slate-700"
                 />
               </div>
             </div>
@@ -203,21 +221,21 @@ const TutorInterviewConsole = () => {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between items-center">
                         <span>Technical:</span> 
-                        <input type="number" className="w-16 p-1 border rounded dark:bg-slate-900" 
+                        <Input id={`tech-${ans.questionId}`} type="number" min="0" max="100" className="w-20" 
                           value={answersFeedback[ans.questionId]?.tutorScores?.technical || ""}
                           onChange={(e) => handleAnswerFeedbackChange(ans.questionId, "tutorScores", parseInt(e.target.value) || 0, "technical")}
                         />
                       </div>
                       <div className="flex justify-between items-center">
                         <span>Communication:</span> 
-                        <input type="number" className="w-16 p-1 border rounded dark:bg-slate-900" 
+                        <Input id={`comm-${ans.questionId}`} type="number" min="0" max="100" className="w-20" 
                           value={answersFeedback[ans.questionId]?.tutorScores?.communication || ""}
                           onChange={(e) => handleAnswerFeedbackChange(ans.questionId, "tutorScores", parseInt(e.target.value) || 0, "communication")}
                         />
                       </div>
                       <div className="flex justify-between items-center">
                         <span>Relevance:</span> 
-                        <input type="number" className="w-16 p-1 border rounded dark:bg-slate-900" 
+                        <Input id={`rel-${ans.questionId}`} type="number" min="0" max="100" className="w-20" 
                           value={answersFeedback[ans.questionId]?.tutorScores?.relevance || ""}
                           onChange={(e) => handleAnswerFeedbackChange(ans.questionId, "tutorScores", parseInt(e.target.value) || 0, "relevance")}
                         />
@@ -227,15 +245,15 @@ const TutorInterviewConsole = () => {
                 </div>
                 
                 <div className="mt-4 pt-4 border-t dark:border-slate-700">
-                  <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                  <div className="mb-2 flex items-center gap-2 font-medium text-sm">
                     <MessageSquare size={16} /> Question Feedback
-                  </label>
-                  <textarea 
-                    rows="2"
+                  </div>
+                  <TextArea 
+                    id={`feedback-${ans.questionId}`}
+                    rows={2}
                     placeholder="Specific feedback for this answer..."
                     value={answersFeedback[ans.questionId]?.tutorFeedback || ""}
                     onChange={(e) => handleAnswerFeedbackChange(ans.questionId, "tutorFeedback", e.target.value)}
-                    className="w-full p-2 border rounded-md dark:bg-slate-900 dark:border-slate-700 text-sm"
                   />
                 </div>
               </div>
@@ -243,6 +261,7 @@ const TutorInterviewConsole = () => {
           </div>
         </div>
       </div>
+          <Footer />
     </div>
   );
 };

@@ -5,7 +5,7 @@ import dns from "dns";
 import { verifyLink, verifyLinks } from "../linkVerifier.js";
 
 // Setup DNS mock to resolve to a safe IP by default
-mock.method(dns.promises, "resolve", async () => ["8.8.8.8"]);
+mock.method(dns.promises, "lookup", async () => ({ address: "8.8.8.8" }));
 
 test("verifyLink - returns false if url is missing", async () => {
   const result = await verifyLink(null);
@@ -14,17 +14,17 @@ test("verifyLink - returns false if url is missing", async () => {
 });
 
 test("verifyLink - blocks SSRF via localhost IP", async () => {
-  mock.method(dns.promises, "resolve", async () => ["127.0.0.1"]);
+  mock.method(dns.promises, "lookup", async () => ({ address: "127.0.0.1" }));
   const result = await verifyLink("http://localhost:5000");
   assert.equal(result.isValid, false);
-  assert.equal(result.error, "Blocked SSRF attempt (Internal IP)");
+  assert.equal(result.error, "Access to private IP is forbidden");
 });
 
 test("verifyLink - blocks SSRF via cloud metadata IP", async () => {
-  mock.method(dns.promises, "resolve", async () => ["169.254.169.254"]);
+  mock.method(dns.promises, "lookup", async () => ({ address: "169.254.169.254" }));
   const result = await verifyLink("http://169.254.169.254/latest/meta-data/");
   assert.equal(result.isValid, false);
-  assert.equal(result.error, "Blocked SSRF attempt (Internal IP)");
+  assert.equal(result.error, "Access to private IP is forbidden");
 });
 
 test("verifyLink - blocks SSRF via file protocol", async () => {
@@ -34,7 +34,8 @@ test("verifyLink - blocks SSRF via file protocol", async () => {
 });
 
 test("verifyLink - handles successful link verification", async () => {
-  // Mock axios.get to return a successful response
+  // Re-establish safe DNS mock and mock axios.get to return a successful response
+  mock.method(dns.promises, "lookup", async () => ({ address: "8.8.8.8" }));
   mock.method(axios, "get", async () => {
     return { status: 200 };
   });
@@ -49,7 +50,8 @@ test("verifyLink - handles successful link verification", async () => {
 });
 
 test("verifyLink - handles error status like 404 as invalid", async () => {
-  // Mock axios.get to throw an error for 404
+  // Re-establish safe DNS mock and mock axios.get to throw an error for 404
+  mock.method(dns.promises, "lookup", async () => ({ address: "8.8.8.8" }));
   mock.method(axios, "get", async () => {
     const err = new Error("Request failed with status code 404");
     err.response = { status: 404 };
@@ -64,6 +66,7 @@ test("verifyLink - handles error status like 404 as invalid", async () => {
 });
 
 test("verifyLink - handles bot protection (403, 429) as potentially valid", async () => {
+  mock.method(dns.promises, "lookup", async () => ({ address: "8.8.8.8" }));
   mock.method(axios, "get", async () => {
     const err = new Error("Request failed with status code 403");
     err.response = { status: 403 };
@@ -78,6 +81,7 @@ test("verifyLink - handles bot protection (403, 429) as potentially valid", asyn
 });
 
 test("verifyLinks - verifies multiple links in parallel", async () => {
+  mock.method(dns.promises, "lookup", async () => ({ address: "8.8.8.8" }));
   let calls = 0;
   mock.method(axios, "get", async () => {
     calls++;

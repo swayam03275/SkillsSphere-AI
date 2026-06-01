@@ -78,3 +78,22 @@ export const getTrackedRoadmaps = async () => {
     token: getToken(),
   });
 };
+
+export const getRoadmapComments = async (roadmapId, milestoneId = "") => {
+  let url = `/api/roadmap/${roadmapId}/comments`;
+  if (milestoneId) {
+    url += `?milestoneId=${milestoneId}`;
+  }
+  return await apiRequest(url, {
+    method: "GET",
+    token: getToken(),
+  });
+};
+
+export const postRoadmapComment = async (roadmapId, milestoneId, content, type = "comment") => {
+  return await apiRequest(`/api/roadmap/${roadmapId}/comments`, {
+    method: "POST",
+    body: { milestoneId, content, type },
+    token: getToken(),
+  });
+};

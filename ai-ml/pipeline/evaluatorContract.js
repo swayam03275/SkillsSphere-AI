@@ -1,8 +1,9 @@
-import { z } from "zod";
+import { z } from 'zod';
+
+let validateEvaluatorResult;
 
 const flexibleRecordSchema = z.record(z.string(), z.unknown()).default({});
-
-export const evaluatorResultSchema = z
+const evaluatorResultSchema = z
   .object({
     key: z.string().trim().min(1),
     label: z.string().trim().min(1),
@@ -15,5 +16,7 @@ export const evaluatorResultSchema = z
   })
   .strict();
 
-export const validateEvaluatorResult = (result) => evaluatorResultSchema.parse(result);
+validateEvaluatorResult = (result) => evaluatorResultSchema.parse(result);
+
+export { validateEvaluatorResult };
 

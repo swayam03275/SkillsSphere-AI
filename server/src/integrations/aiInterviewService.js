@@ -15,6 +15,8 @@
 
 import WebSocket from "ws";
 
+import logger from "../utils/logger.js";
+
 const AI_SERVICE_URL =
   process.env.INTERVIEW_AI_URL || "http://localhost:8000";
 const EVAL_TIMEOUT = parseInt(process.env.INTERVIEW_AI_TIMEOUT || "5000", 10);
@@ -77,7 +79,7 @@ const fetchWithRetry = async (endpoint, options, timeoutMs) => {
       clearTimeout(timeout);
 
       const duration = Date.now() - startTime;
-      console.log(
+      logger.log(
         `[aiInterviewService] ${endpoint} responded in ${duration}ms (attempt ${attempt})`
       );
 
@@ -103,7 +105,7 @@ const fetchWithRetry = async (endpoint, options, timeoutMs) => {
 
       if (attempt < MAX_RETRIES) {
         const backoff = Math.pow(2, attempt - 1) * 500; // 500ms, 1s, 2s
-        console.log(
+        logger.log(
           `[aiInterviewService] Attempt ${attempt} failed for ${endpoint}, retrying in ${backoff}ms...`
         );
         await sleep(backoff);
@@ -183,7 +185,7 @@ export const transcribeAudio = async (audioBuffer, filename = "audio.webm") => {
   const available = await isServiceAvailable();
 
   if (!available) {
-    console.warn(
+    logger.warn(
       "[aiInterviewService] ⚠️ Python AI service is not reachable at",
       AI_SERVICE_URL
     );
@@ -231,7 +233,7 @@ export const evaluateAnswer = async (
   const available = await isServiceAvailable();
 
   if (!available) {
-    console.warn(
+    logger.warn(
       "[aiInterviewService] ⚠️ Python service unavailable, falling back to mock evaluation"
     );
     return {
@@ -262,7 +264,7 @@ export const evaluateAnswer = async (
       err.name === "AbortError" ||
       err.message.includes("timed out")
     ) {
-      console.warn(`[aiInterviewService] ⚠️ AI Service unreachable or timed out: ${err.message}`);
+      logger.warn(`[aiInterviewService] ⚠️ AI Service unreachable or timed out: ${err.message}`);
       return {
         technical_accuracy: 75,
         communication_quality: 80,
@@ -272,10 +274,10 @@ export const evaluateAnswer = async (
       };
     }
 
-    console.warn(
+    logger.warn(
       `[aiInterviewService] ⚠️ Evaluation failed: ${err.message}`
     );
-    console.warn("[aiInterviewService] Falling back to mock evaluation");
+    logger.warn("[aiInterviewService] Falling back to mock evaluation");
     return {
       technical_accuracy: 75,
       communication_quality: 80,

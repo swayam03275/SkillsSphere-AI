@@ -1,6 +1,5 @@
 import fs from "fs/promises";
 import path from "path";
-import { PDFParse } from "pdf-parse";
 import mammoth from "mammoth";
 
 import { createRequire } from "module";
@@ -89,6 +88,12 @@ export const parseResume = async (filePath) => {
   let text = "";
 
   if (extension === ".pdf") {
+    if (typeof global !== "undefined") {
+      global.DOMMatrix = global.DOMMatrix || class DOMMatrix {};
+      global.ImageData = global.ImageData || class ImageData {};
+      global.Path2D = global.Path2D || class Path2D {};
+    }
+    const { PDFParse } = await import("pdf-parse");
     const fileBuffer = await fs.readFile(filePath);
     const parser = new PDFParse({ data: fileBuffer });
     try {

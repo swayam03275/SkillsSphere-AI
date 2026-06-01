@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import Navbar from "../../../shared/landing/Navbar";
+import { useNavigate, Link } from "react-router-dom";
+import Navbar from "../../../shared/components/Navbar";
+import Footer from "../../../shared/components/Footer";
+
 import CameraCheck from "../components/CameraCheck";
 import PersonaSelector from "../components/PersonaSelector";
 import Button from "../../../shared/components/Button";
 import Select from "../../../shared/components/Select";
-import { Play, GraduationCap, History, Loader2, Sparkles, Zap, ChevronRight } from "lucide-react";
+import { Play, GraduationCap, History, Loader2, Sparkles, Zap, ChevronRight, ArrowLeft } from "lucide-react";
 import { getTopics, startSession } from "../services/interviewService";
+import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
+
+import logger from "../../../utils/logger";
 
 const DIFFICULTY_LEVELS = [
   { value: "easy", label: "Easy" },
@@ -15,6 +20,7 @@ const DIFFICULTY_LEVELS = [
 ];
 
 const InterviewLobby = () => {
+  useDocumentTitle("Interview Lobby");
   const navigate = useNavigate();
   const [isMediaReady, setIsMediaReady] = useState(false);
   const [selectedPersona, setSelectedPersona] = useState("friendly");
@@ -36,7 +42,7 @@ const InterviewLobby = () => {
         }
       } catch (err) {
         setError("Failed to load interview topics. Please try again.");
-        console.error("[InterviewLobby] Error fetching topics:", err);
+        logger.error("[InterviewLobby] Error fetching topics:", err);
       } finally {
         setLoading(false);
       }
@@ -57,7 +63,7 @@ const InterviewLobby = () => {
       }
     } catch (err) {
       setError(err.message || "Failed to start interview. Please try again.");
-      console.error("[InterviewLobby] Error starting session:", err);
+      logger.error("[InterviewLobby] Error starting session:", err);
     } finally {
       setStarting(false);
     }
@@ -69,7 +75,7 @@ const InterviewLobby = () => {
   }));
 
   return (
-    <div className="min-h-screen bg-[#d8dde5] dark:bg-slate-950 text-gray-900 dark:text-slate-100 overflow-hidden relative">
+    <div className="min-h-screen bg-[#d8dde5] dark:bg-slate-950 text-gray-900 dark:text-slate-100 overflow-hidden relative pt-24">
       {/* Premium Animated Backgrounds */}
       <div className="pointer-events-none absolute -left-28 top-12 h-[500px] w-[500px] rounded-full bg-indigo-500/20 blur-[120px] dark:bg-indigo-600/15 animate-pulse" />
       <div className="pointer-events-none absolute -right-24 top-1/4 h-[600px] w-[600px] rounded-full bg-violet-500/20 blur-[120px] dark:bg-violet-600/15 animate-pulse" style={{ animationDelay: "2s" }} />
@@ -77,10 +83,19 @@ const InterviewLobby = () => {
 
       <Navbar />
 
-      <main className="relative z-10 pt-28 pb-12 max-w-[1200px] mx-auto px-4 sm:px-8 min-h-[calc(100vh-80px)] flex flex-col gap-10">
+      <main className="relative z-10 pt-8 pb-12 max-w-[1200px] mx-auto px-4 sm:px-8 min-h-[calc(100vh-80px)] flex flex-col gap-10">
         
         {/* Header Section */}
         <header className="text-center mb-2 animate-[fadeIn_0.8s_ease-out]">
+          <div className="mb-6">
+            <Link 
+              to="/dashboard" 
+              className="inline-flex items-center gap-2 text-sm text-blue-500 hover:text-blue-400 transition-colors"
+            >
+              <ArrowLeft size={16} />
+              Back to Dashboard
+            </Link>
+          </div>
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-xs font-bold uppercase tracking-widest mb-6">
             <Sparkles size={14} /> Cognitive Evaluation Engine
           </div>
@@ -174,11 +189,11 @@ const InterviewLobby = () => {
                   variant="primary"
                   size="lg"
                   className={`w-full py-5 text-lg font-bold rounded-2xl flex items-center justify-center gap-3 transition-all duration-300 ${
-                    !isMediaReady || starting || loading 
+                    !isMediaReady || starting || loading || !topic
                       ? "opacity-60 cursor-not-allowed grayscale" 
                       : "shadow-[0_15px_30px_-10px_rgba(79,70,229,0.5)] hover:shadow-[0_20px_40px_-10px_rgba(79,70,229,0.7)] hover:-translate-y-1 hover:scale-[1.02] bg-gradient-to-r from-indigo-600 to-purple-600 border-none"
                   }`}
-                  disabled={!isMediaReady || starting || loading}
+                  disabled={!isMediaReady || starting || loading || !topic}
                   onClick={handleStartInterview}
                 >
                   {starting ? (
@@ -205,6 +220,7 @@ const InterviewLobby = () => {
 
         </div>
       </main>
+          <Footer />
     </div>
   );
 };

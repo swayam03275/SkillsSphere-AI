@@ -6,6 +6,8 @@ import { runPipeline } from "../../../../ai-ml/pipeline/runPipeline.js";
 import { getIO } from "../../utils/socketIO.js";
 import mongoose from "mongoose";
 
+import logger from "../../utils/logger.js";
+
 /**
  * Evaluate a resume against all open jobs and return ranked recommendations.
  * 
@@ -81,11 +83,18 @@ export const evaluateMatches = async (user, resume, preFilteredJobs = null) => {
   // Cross-Role Notification System for Job Matching Skill Gaps
   // If a candidate matches poorly (< 60%), generate alerts for Tutors and Recruiters
   const io = getIO();
+  
   const session = await mongoose.startSession();
-  session.startTransaction();
+session.startTransaction();
 
-  try {
-    const notificationsToEmit = [];
+try {
+  // Find tutor inside transaction with consistent sort
+  const tutor = await User.findOne({ role: "tutor" })
+    .sort({ createdAt: 1 })
+    .session(session);
+
+  const notificationsToEmit = [];
+  const notificationDocs = [];
 
     for (const rec of recommendations) {
       if (rec.score > 0 && rec.score < 60) {
@@ -93,32 +102,36 @@ export const evaluateMatches = async (user, resume, preFilteredJobs = null) => {
         
         if (jobFull) {
           // 1. Notify Recruiter (if known)
-          if (jobFull.postedBy) {
-            const notif = await Notification.create([{
-              userId: jobFull.postedBy,
+          if (jobFull.recruiter) {
+            notificationDocs.push({
+              userId: jobFull.recruiter,
               type: "skill_gap_alert",
               title: "Candidate Skill Gap Alert",
               message: `${user.name || "A candidate"} showed interest but has a skill gap for ${jobFull.title} (Score: ${rec.score}%).`,
               relatedData: { jobId: jobFull._id, studentId: user._id, score: rec.score }
-            }], { session });
-            notificationsToEmit.push({ room: `user_${jobFull.postedBy}`, notif: notif[0] });
+            });
           }
 
           // 2. Notify a Tutor to intervene
           // In a real system, find the specifically assigned tutor. Here we find any available tutor.
-          const tutor = await User.findOne({ role: "tutor" }).session(session);
           if (tutor) {
-            const tutorNotif = await Notification.create([{
+            notificationDocs.push({
               userId: tutor._id,
               type: "skill_gap_alert",
               title: "Student Needs Mentoring Intervention",
               message: `${user.name || "A student"} scored ${rec.score}% for ${jobFull.title}. They need guidance to bridge this gap.`,
               relatedData: { jobId: jobFull._id, studentId: user._id, score: rec.score }
-            }], { session });
-            notificationsToEmit.push({ room: `user_${tutor._id}`, notif: tutorNotif[0] });
+            });
           }
         }
       }
+    }
+
+    if (notificationDocs.length > 0) {
+      const createdNotifs = await Notification.insertMany(notificationDocs, { session });
+      createdNotifs.forEach(notif => {
+        notificationsToEmit.push({ room: `user_${notif.userId}`, notif });
+      });
     }
 
     // 4. Persist MatchResult for analytics and retrieval
@@ -141,7 +154,7 @@ export const evaluateMatches = async (user, resume, preFilteredJobs = null) => {
     return matchResult;
   } catch (error) {
     await session.abortTransaction();
-    console.error("Transaction aborted in evaluateMatches:", error);
+    logger.error("Transaction aborted in evaluateMatches:", error);
     throw error;
   } finally {
     session.endSession();

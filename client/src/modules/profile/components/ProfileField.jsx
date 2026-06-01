@@ -1,6 +1,5 @@
 import React from "react";
 import PropTypes from "prop-types";
-
 /**
  * ProfileField — A single read-only info row used inside the profile cards.
  *

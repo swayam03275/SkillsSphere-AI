@@ -5,6 +5,8 @@ import asyncHandler from "../utils/asyncHandler.js";
 import { verifySignedFileUrl } from "../utils/signedFileUrl.js";
 import { isTokenBlacklisted } from "../utils/tokenBlacklist.js";
 
+const PROTECTED_PATH_RE = /^\/api\/files\/(avatars|resumes)\/[^/]+$/;
+
 /**
  * Auth for file downloads. Accepts JWT via Authorization header or a signed URL
  * so <img src="..."> can load protected avatars without custom fetch logic.
@@ -14,6 +16,10 @@ export const protectFileAccess = asyncHandler(async (req, res, next) => {
   const { exp, sig, uid } = req.query;
 
   if (exp && sig) {
+    if (!PROTECTED_PATH_RE.test(requestPath)) {
+      return next(new AppError("Invalid file path.", 400));
+    }
+
     const isValid = verifySignedFileUrl(requestPath, exp, sig, uid);
     if (!isValid) {
       return next(new AppError("Signed URL is invalid or expired.", 401));
@@ -43,7 +49,7 @@ export const protectFileAccess = asyncHandler(async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    if (decoded.jti && isTokenBlacklisted(decoded.jti)) {
+    if (decoded.jti && await isTokenBlacklisted(decoded.jti)) {
       return next(new AppError("Token has been revoked. Please log in again.", 401));
     }
 

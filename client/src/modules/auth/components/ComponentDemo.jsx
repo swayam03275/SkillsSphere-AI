@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Input, Button, Select } from "../../../shared/components";
-
 const ROLE_OPTIONS = [
   { value: "student",   label: "Student" },
   { value: "tutor",     label: "Tutor" },
@@ -9,20 +8,20 @@ const ROLE_OPTIONS = [
 ];
 
 const ComponentDemo = () => {
-  const [form, setForm] = useState({ fullName: "", email: "", password: "", role: "" });
+  const [formData, setFormData] = useState({ fullName: "", email: "", password: "", role: "" });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   const handleChange = (field) => (e) =>
-    setForm((prev) => ({ ...prev, [field]: e.target.value }));
+    setFormData((prev) => ({ ...prev, [field]: e.target.value }));
 
   const validate = () => {
     const errs = {};
-    if (!form.fullName.trim())     errs.fullName = "Full name is required.";
-    if (!form.email.includes("@")) errs.email    = "Enter a valid email address.";
-    if (form.password.length < 8)  errs.password = "Password must be at least 8 characters.";
-    if (!form.role)                 errs.role     = "Please select your role.";
+    if (!formData.fullName.trim())     errs.fullName = "Full name is required.";
+    if (!formData.email.includes("@")) errs.email    = "Enter a valid email address.";
+    if (formData.password.length < 8)  errs.password = "Password must be at least 8 characters.";
+    if (!formData.role)                 errs.role     = "Please select your role.";
     return errs;
   };
 
@@ -36,7 +35,7 @@ const ComponentDemo = () => {
   };
 
   const handleReset = () => {
-    setForm({ fullName: "", email: "", password: "", role: "" });
+    setFormData({ fullName: "", email: "", password: "", role: "" });
     setErrors({});
     setSubmitted(false);
   };
@@ -60,7 +59,7 @@ const ComponentDemo = () => {
             <div className="text-center py-6">
               <p className="text-slate-700 font-semibold text-lg">Welcome aboard! 🎉</p>
               <p className="text-slate-500 text-sm mt-1">
-                Account created for <strong>{form.email}</strong>
+                Account created for <strong>{formData.email}</strong>
               </p>
               <Button variant="outline" size="sm" className="mt-6" onClick={handleReset}>
                 Start over
@@ -72,7 +71,7 @@ const ComponentDemo = () => {
                 id="reg-name"
                 label="Full Name"
                 placeholder="Jane Doe"
-                value={form.fullName}
+                value={formData.fullName}
                 onChange={handleChange("fullName")}
                 error={errors.fullName}
                 required
@@ -82,7 +81,7 @@ const ComponentDemo = () => {
                 label="Email Address"
                 type="email"
                 placeholder="jane@example.com"
-                value={form.email}
+                value={formData.email}
                 onChange={handleChange("email")}
                 error={errors.email}
                 required
@@ -92,7 +91,7 @@ const ComponentDemo = () => {
                 label="Password"
                 type="password"
                 placeholder="Min 8 characters"
-                value={form.password}
+                value={formData.password}
                 onChange={handleChange("password")}
                 error={errors.password}
                 helperText={!errors.password ? "Use at least 8 characters." : undefined}
@@ -102,7 +101,7 @@ const ComponentDemo = () => {
                 id="reg-role"
                 label="I am a…"
                 options={ROLE_OPTIONS}
-                value={form.role}
+                value={formData.role}
                 onChange={handleChange("role")}
                 error={errors.role}
                 placeholder="Select your role"

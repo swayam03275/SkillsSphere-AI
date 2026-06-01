@@ -1,17 +1,23 @@
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
-import { Sparkles, FileUp, AlertCircle, Briefcase } from "lucide-react";
-import Navbar from "../../../shared/landing/Navbar";
+import { useNavigate, Link } from "react-router-dom";
+import { Sparkles, FileUp, AlertCircle, Briefcase, ArrowLeft } from "lucide-react";
+import Navbar from "../../../shared/components/Navbar";
+import Footer from "../../../shared/components/Footer";
+
 import LoadingState from "../../../shared/components/LoadingState";
 import { JobViewerCard, Pagination } from "../../../shared/components";
 import JobApplyForm from "../../student-jobs/components/JobApplyForm";
 import { applyToJob, getMyAppliedJobIds } from "../../student-jobs/services/jobService";
 import { getRecommendations } from "../services/matcherService";
+import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
+import { useToast } from "../../../shared/components/toast/ToastProvider";
 
 export default function JobMatcherPage() {
+  useDocumentTitle("Job Matcher");
   const { token, user } = useSelector((state) => state.auth);
   const navigate = useNavigate();
+  const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [jobs, setJobs] = useState([]);
@@ -67,7 +73,7 @@ export default function JobMatcherPage() {
         setAppliedJobIds((prev) => new Set([...prev, jobId]));
         setApplyModalJob(null);
       } else {
-        alert(msg);
+        toast.error(msg);
       }
     } finally {
       setApplyingJobId(null);
@@ -75,15 +81,20 @@ export default function JobMatcherPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[var(--background)] dark:bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] text-gray-900 dark:text-slate-100 flex flex-col">
+    <main className="min-h-screen bg-[var(--background)] dark:bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] text-gray-900 dark:text-slate-100 flex flex-col pt-24">
       <Navbar />
 
-      {/* Spacer for fixed navbar */}
-      <div className="h-32 md:h-40 shrink-0"></div>
 
       <div className="container mx-auto px-4 pb-12 flex-1">
         {/* Header */}
         <div className="mb-16 text-center max-w-3xl mx-auto">
+          <Link 
+            to="/dashboard" 
+            className="inline-flex items-center gap-2 text-sm text-blue-500 hover:text-blue-400 mb-6 transition-colors"
+          >
+            <ArrowLeft size={16} />
+            Back to Dashboard
+          </Link>
           <h1 className="text-5xl md:text-6xl font-black mb-6 tracking-tight leading-tight">
             <span className="text-gradient">Smart Job</span> Matching
           </h1>
@@ -210,6 +221,7 @@ export default function JobMatcherPage() {
           isSubmitting={!!applyingJobId}
         />
       )}
+          <Footer />
     </main>
   );
 }

@@ -2,11 +2,16 @@ import React, { useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, Briefcase } from "lucide-react";
-import Navbar from "../../../shared/landing/Navbar";
+import Navbar from "../../../shared/components/Navbar";
+import Footer from "../../../shared/components/Footer";
+
 import JobPostingForm from "../components/JobPostingForm";
 import { createJobPosting } from "../services/jobPostingService";
+import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
+
 
 const CreateJobPostingPage = () => {
+  useDocumentTitle("Create Job Posting");
   const navigate = useNavigate();
   const { token } = useSelector((state) => state.auth);
 
@@ -27,19 +32,20 @@ const CreateJobPostingPage = () => {
       if (error.errors) {
         setFieldErrors(error.errors);
       }
+      throw error;
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] p-3 sm:p-5 pt-20 sm:pt-28 text-slate-100">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#020617] text-slate-900 dark:text-white flex flex-col">
       <Navbar />
 
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 py-8">
+      <div className="flex-1 pt-24 pb-16 px-4 sm:px-6 mx-auto flex w-full max-w-3xl flex-col gap-6">
         <Link 
           to="/recruiter/jobs" 
-          className="inline-flex items-center gap-2 text-slate-400 hover:text-blue-400 transition-colors w-fit group"
+          className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-blue-400 transition-colors w-fit group"
         >
           <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
           <span>Back to Jobs</span>
@@ -50,9 +56,9 @@ const CreateJobPostingPage = () => {
             <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400">
               <Briefcase size={24} />
             </div>
-            <h1 className="text-3xl font-bold text-white">Create Job Posting</h1>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Create Job Posting</h1>
           </div>
-          <p className="text-slate-400 mt-2">
+          <p className="text-slate-600 dark:text-slate-400 mt-2">
             Fill in the details below to post a new job. We'll use this information to recommend the best candidates.
           </p>
         </div>
@@ -66,7 +72,7 @@ const CreateJobPostingPage = () => {
           </div>
         )}
 
-        <div className="bg-slate-900/70 border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl backdrop-blur">
+        <div className="bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl backdrop-blur">
           <JobPostingForm 
             onSubmit={handleSubmit} 
             isLoading={isSubmitting} 
@@ -74,7 +80,8 @@ const CreateJobPostingPage = () => {
           />
         </div>
       </div>
-    </main>
+          <Footer />
+    </div>
   );
 };
 

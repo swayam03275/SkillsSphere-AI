@@ -33,13 +33,14 @@ async def transcribe(audio: UploadFile = File(...)):
 
     # Save uploaded audio to a temp file for faster-whisper to process
     suffix = os.path.splitext(audio.filename)[1] if audio.filename else ".webm"
+    tmp_path = None
     try:
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
             content = await audio.read()
             tmp.write(content)
             tmp_path = tmp.name
 
-        transcript = transcribe_audio(tmp_path)
+        transcript = await asyncio.to_thread(transcribe_audio, tmp_path)
 
         return {"transcript": transcript}
 
@@ -50,7 +51,7 @@ async def transcribe(audio: UploadFile = File(...)):
         )
     finally:
         # Clean up temp file
-        if "tmp_path" in locals() and os.path.exists(tmp_path):
+        if tmp_path and os.path.exists(tmp_path):
             os.unlink(tmp_path)
 
 @router.websocket("/ws/transcribe")
@@ -79,12 +80,13 @@ async def websocket_transcribe(websocket: WebSocket):
                         break
                         
                     # Save accumulated bytes to a temp file and transcribe
+                    tmp_path = None
                     with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as tmp:
                         tmp.write(audio_buffer)
                         tmp_path = tmp.name
                     
                     try:
-                        transcript = transcribe_audio(tmp_path)
+                        transcript = await asyncio.to_thread(transcribe_audio, tmp_path)
                         await websocket.send_json({"transcript": transcript})
                     except Exception as e:
                         await websocket.send_json({"error": str(e)})

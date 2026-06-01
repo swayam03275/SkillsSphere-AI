@@ -36,7 +36,7 @@ export function saveInterviewSession(session) {
     session.timestamp = Date.now();
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session));
   } catch (error) {
-    console.error("Error saving interview session:", error);
+    logger.error("Error saving interview session:", error);
   }
 }
 
@@ -57,7 +57,7 @@ export function loadInterviewSession() {
     
     return session;
   } catch (error) {
-    console.error("Error loading interview session (data might be corrupted):", error);
+    logger.error("Error loading interview session (data might be corrupted):", error);
     clearInterviewSession();
     return null;
   }

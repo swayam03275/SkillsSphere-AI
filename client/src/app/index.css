@@ -70,6 +70,7 @@
   pointer-events: none;
   z-index: 0;
   animation: orbFloat 18s ease-in-out infinite alternate;
+  will-change: transform;
 }
 
 :root:not(.dark) body::after {
@@ -84,6 +85,7 @@
   pointer-events: none;
   z-index: 0;
   animation: orbFloat 22s ease-in-out infinite alternate-reverse;
+  will-change: transform;
 }
 
 @keyframes orbFloat {
@@ -92,13 +94,6 @@
   100% { transform: translate(-20px, 30px) scale(0.96); }
 }
 
-/* ── Gradient text utility ── */
-.text-gradient {
-  background: var(--grad-text);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
 
 /* ── Gradient card border (light mode) ── */
 :root:not(.dark) .gradient-border {

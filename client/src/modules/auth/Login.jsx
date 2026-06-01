@@ -5,16 +5,25 @@ import { loginUser } from "../../features/auth/authSlice";
 import Input from "../../shared/components/Input";
 import Button from "../../shared/components/Button";
 import { useToast } from "../../shared/components";
-import Navbar from "../../shared/landing/Navbar";
+import Navbar from "../../shared/components/Navbar";
+import { API_URL } from "../../config/env";
+import { z } from "zod";
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
+
+const loginSchema = z.object({
+  email: z.string().min(1, "Email is required").email("Please enter a valid email"),
+  password: z.string().min(1, "Password is required"),
+});
 
 const Login = () => {
+  useDocumentTitle("Login");
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
   const { loading } = useSelector((state) => state.auth);
   const { success, warning, error: showError } = useToast();
 
-  const [form, setForm] = useState({
+  const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
@@ -24,7 +33,7 @@ const Login = () => {
 
   const handleChange = (e) => {
     const { id, value } = e.target;
-    setForm({ ...form, [id]: value });
+    setFormData({ ...formData, [id]: value });
 
     if (errors[id] || errors.form) {
       setErrors({ ...errors, [id]: "", form: "" });
@@ -33,24 +42,26 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    let newErrors = {};
-
-    if (!form.email) newErrors.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(form.email))
-      newErrors.email = "Please enter a valid email";
-    if (!form.password) newErrors.password = "Password is required";
-
-    setErrors(newErrors);
-
-    if (Object.keys(newErrors).length > 0) {
+    
+    const parsed = loginSchema.safeParse(formData);
+    if (!parsed.success) {
+      const newErrors = {};
+      parsed.error.issues.forEach((issue) => {
+        if (!newErrors[issue.path[0]]) {
+          newErrors[issue.path[0]] = issue.message;
+        }
+      });
+      setErrors(newErrors);
       warning("Please fix the highlighted login fields before continuing.");
       return;
     }
 
+    setErrors({});
+
     const resultAction = await dispatch(
       loginUser({
-        email: form.email.trim().toLowerCase(),
-        password: form.password,
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
         rememberMe,
       }),
     );
@@ -68,7 +79,7 @@ const Login = () => {
   };
 
   const goToVerification = () => {
-    const email = form.email.trim().toLowerCase();
+    const email = formData.email.trim().toLowerCase();
     navigate(`/verify-email?email=${encodeURIComponent(email)}`, {
       state: { email },
     });
@@ -97,7 +108,7 @@ const Login = () => {
               type="email"
               label="Email"
               placeholder="Enter your email"
-              value={form.email}
+              value={formData.email}
               onChange={handleChange}
               error={errors.email}
               disabled={loading}
@@ -108,7 +119,7 @@ const Login = () => {
               type="password"
               label="Password"
               placeholder="Enter your password"
-              value={form.password}
+              value={formData.password}
               onChange={handleChange}
               error={errors.password}
               disabled={loading}
@@ -164,7 +175,6 @@ const Login = () => {
                 if (location.state?.from?.pathname) {
                   sessionStorage.setItem('oauth_redirect', location.state.from.pathname);
                 }
-                const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
                 const redirect = encodeURIComponent(`${window.location.origin}/auth/callback`);
                 window.location.href = `${API_URL}/api/auth/google?redirect=${redirect}`;
               }}

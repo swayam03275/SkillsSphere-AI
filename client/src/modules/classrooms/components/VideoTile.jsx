@@ -1,6 +1,5 @@
 import React, { useRef, useEffect } from "react";
 import { Hand, MicOff, VideoOff } from "lucide-react";
-
 export default function VideoTile({ stream, user, isMuted, isHandRaised, isScreenShare, isLocal }) {
   const videoRef = useRef();
 

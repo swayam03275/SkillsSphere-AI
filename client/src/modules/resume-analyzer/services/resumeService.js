@@ -1,5 +1,7 @@
 import { apiRequest } from "../../../services/apiClient";
 
+import logger from "../../../utils/logger";
+
 const TOKEN_KEY = "skillssphere.auth.token";
 const getToken = () =>
   localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
@@ -31,7 +33,7 @@ export const getLatestResumeAnalysis = async () => {
   } catch (err) {
     // 404 means no prior scan — treat as "no data", not an error
     if (err?.status === 404 || err?.message?.includes("404")) return null;
-    console.error("[resumeService] getLatestResumeAnalysis:", err);
+    logger.error("[resumeService] getLatestResumeAnalysis:", err);
     return null;
   }
 };
@@ -59,7 +61,7 @@ export const analyzeResume = async (file, jobDescription = "") => {
 
     return response;
   } catch (error) {
-    console.error("[resumeService] Analysis Error:", error);
+    logger.error("[resumeService] Analysis Error:", error);
     throw error; // Let the caller (component) handle the UI toast/state
   }
 };
@@ -85,7 +87,92 @@ export const generateCoverLetter = async (resumeId, jobDescription, tone = "Prof
 
     return response;
   } catch (error) {
-    console.error("[resumeService] Cover Letter Generation Error:", error);
+    logger.error("[resumeService] Cover Letter Generation Error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch all resume versions for the student.
+ */
+export const getResumeList = async () => {
+  try {
+    const response = await apiRequest("/api/resume/list", {
+      method: "GET",
+      token: getToken(),
+    });
+
+    if (!response || response.success === false) {
+      throw new Error(response?.message || "Failed to fetch resume list.");
+    }
+
+    return response.data || [];
+  } catch (error) {
+    logger.error("[resumeService] getResumeList Error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Set a specific resume version as active.
+ */
+export const setActiveResume = async (id) => {
+  try {
+    const response = await apiRequest(`/api/resume/${id}/active`, {
+      method: "PATCH",
+      token: getToken(),
+    });
+
+    if (!response || response.success === false) {
+      throw new Error(response?.message || "Failed to update active resume.");
+    }
+
+    return response;
+  } catch (error) {
+    logger.error("[resumeService] setActiveResume Error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Rename a specific resume version.
+ */
+export const renameResume = async (id, title) => {
+  try {
+    const response = await apiRequest(`/api/resume/${id}/rename`, {
+      method: "PATCH",
+      body: { title },
+      token: getToken(),
+    });
+
+    if (!response || response.success === false) {
+      throw new Error(response?.message || "Failed to rename resume.");
+    }
+
+    return response;
+  } catch (error) {
+    logger.error("[resumeService] renameResume Error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Delete a specific resume version.
+ */
+export const deleteResume = async (id) => {
+  try {
+    const response = await apiRequest(`/api/resume/${id}`, {
+      method: "DELETE",
+      token: getToken(),
+    });
+
+    if (!response || response.success === false) {
+      throw new Error(response?.message || "Failed to delete resume.");
+    }
+
+    return response;
+  } catch (error) {
+    logger.error("[resumeService] deleteResume Error:", error);
     throw error;
   }
 };

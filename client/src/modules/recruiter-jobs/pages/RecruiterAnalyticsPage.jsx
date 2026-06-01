@@ -42,11 +42,15 @@ import {
   PolarRadiusAxis,
   Radar
 } from "recharts";
-import Navbar from "../../../shared/landing/Navbar";
+import Navbar from "../../../shared/components/Navbar";
+import Footer from "../../../shared/components/Footer";
+
 import LoadingState from "../../../shared/components/LoadingState";
 import ErrorState from "../../../shared/components/ErrorState";
 import { getRecruiterAnalytics } from "../services/jobPostingService";
 import { exportToCSV, exportToPDF } from "../../../utils/exportUtils";
+import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
+
 
 // Month label helper
 const MONTH_NAMES = [
@@ -80,7 +84,7 @@ const STATUS_CONFIG = {
     label: "Closed",
     color: "#64748b",
     bg: "bg-slate-500/10",
-    text: "text-slate-400",
+    text: "text-slate-600 dark:text-slate-400",
     border: "border-slate-500/20",
   },
 };
@@ -92,8 +96,8 @@ const MATCH_COLORS = ["#10b981", "#3b82f6", "#f59e0b", "#ef4444"];
 const CustomBarTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-slate-950 border border-white/10 p-3 rounded-xl shadow-2xl backdrop-blur-md">
-        <p className="text-xs text-slate-400 mb-1">{label}</p>
+      <div className="bg-slate-950 border border-slate-200 dark:border-white/10 p-3 rounded-xl shadow-2xl backdrop-blur-md">
+        <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">{label}</p>
         <p className="text-sm font-bold text-blue-400">
           {payload[0].value} {payload[0].value === 1 ? "job" : "jobs"}
         </p>
@@ -106,8 +110,8 @@ const CustomBarTooltip = ({ active, payload, label }) => {
 const CustomPieTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-slate-950 border border-white/10 p-3 rounded-xl shadow-2xl backdrop-blur-md">
-        <p className="text-xs text-slate-400 mb-1">{payload[0].name}</p>
+      <div className="bg-slate-950 border border-slate-200 dark:border-white/10 p-3 rounded-xl shadow-2xl backdrop-blur-md">
+        <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">{payload[0].name}</p>
         <p className="text-sm font-bold" style={{ color: payload[0].payload.fill }}>
           {payload[0].value} {payload[0].value === 1 ? "candidate" : "candidates"}
         </p>
@@ -126,7 +130,7 @@ const CircularProgressRing = ({ value, color, label, icon: Icon }) => {
   const strokeDashoffset = circumference - (Math.min(value, 100) / 100) * circumference;
 
   return (
-    <div className="flex flex-col items-center p-6 bg-slate-900/30 border border-white/5 rounded-2xl">
+    <div className="flex flex-col items-center p-6 bg-gray-50 dark:bg-slate-900/30 border border-gray-200 dark:border-white/5 rounded-2xl">
       <div className="relative flex items-center justify-center">
         <svg height={radius * 2} width={radius * 2} className="transform -rotate-90">
           <circle
@@ -150,11 +154,11 @@ const CircularProgressRing = ({ value, color, label, icon: Icon }) => {
           />
         </svg>
         <div className="absolute flex flex-col items-center justify-center text-center">
-          {Icon && <Icon size={14} className="text-slate-400 mb-0.5" />}
-          <span className="text-lg font-black text-white">{value}%</span>
+          {Icon && <Icon size={14} className="text-slate-600 dark:text-slate-400 mb-0.5" />}
+          <span className="text-lg font-black text-slate-900 dark:text-white">{value}%</span>
         </div>
       </div>
-      <span className="mt-3 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">
+      <span className="mt-3 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest text-center">
         {label}
       </span>
     </div>
@@ -163,22 +167,23 @@ const CircularProgressRing = ({ value, color, label, icon: Icon }) => {
 
 // Summary Metric Cards
 const SummaryMetricCard = ({ icon: Icon, color, bg, hoverBorder, label, value, subtext }) => (
-  <div className={`group relative rounded-2xl border border-white/10 bg-slate-900/40 p-5 shadow-2xl backdrop-blur-md transition-all hover:${hoverBorder} duration-300`}>
+  <div className={`group relative rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-slate-900/40 p-5 shadow-2xl backdrop-blur-md transition-all hover:${hoverBorder} duration-300`}>
     <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/[0.01] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
     <div className="relative">
       <div className="mb-2 flex items-center justify-between">
         <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${bg} ${color} group-hover:scale-110 transition-transform duration-300`}>
           <Icon size={18} />
         </div>
-        <span className="text-3xl font-black text-white tracking-tight">{value}</span>
+        <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{value}</span>
       </div>
       <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{label}</p>
-      {subtext && <p className="text-[10px] text-slate-400 mt-1 font-medium">{subtext}</p>}
+      {subtext && <p className="text-[10px] text-slate-600 dark:text-slate-400 mt-1 font-medium">{subtext}</p>}
     </div>
   </div>
 );
 
 const RecruiterAnalyticsPage = () => {
+  useDocumentTitle("Recruiter Analytics");
   const { token } = useSelector((state) => state.auth);
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -312,31 +317,31 @@ const RecruiterAnalyticsPage = () => {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] p-5 pt-28 text-slate-100">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#020617] text-slate-900 dark:text-white flex flex-col">
         <Navbar />
         <div className="py-20">
           <LoadingState message="Aggregating hiring intelligence analytics..." />
         </div>
-      </main>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] p-5 pt-28 text-slate-100">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#020617] text-slate-900 dark:text-white flex flex-col">
         <Navbar />
         <div className="mx-auto max-w-5xl py-8">
           <ErrorState message={error} onRetry={fetchAnalytics} />
         </div>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] p-4 sm:p-6 pt-24 sm:pt-32 text-slate-100">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#020617] text-slate-900 dark:text-white flex flex-col">
       <Navbar />
 
-      <div id="analytics-dashboard" className="mx-auto flex w-full max-w-7xl flex-col gap-8">
+      <div id="analytics-dashboard" className="flex-1 w-full mx-auto flex max-w-7xl flex-col gap-8 pt-24 pb-16 px-4 sm:px-6">
         
         {/* Header Block */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -353,11 +358,11 @@ const RecruiterAnalyticsPage = () => {
           </div>
           <div className="flex items-center gap-3 relative">
             <Link
-              to="/recruiter/jobs"
-              className="inline-flex items-center gap-2 rounded-xl border border-white/5 bg-slate-900/40 px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-slate-800 hover:text-white backdrop-blur-sm transition-all duration-300 w-fit"
+              to="/dashboard"
+              className="inline-flex items-center gap-2 rounded-xl border border-gray-200 dark:border-white/5 bg-white dark:bg-slate-900/40 px-4 py-2.5 text-sm font-semibold text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white backdrop-blur-sm transition-all duration-300 w-fit"
             >
               <ArrowLeft size={16} />
-              Back to Jobs
+              Back to Dashboard
             </Link>
             
             <div className="relative">
@@ -371,17 +376,17 @@ const RecruiterAnalyticsPage = () => {
               </button>
               
               {isExportDropdownOpen && (
-                <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-white/10 bg-slate-900/95 p-2 shadow-2xl backdrop-blur-md z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-gray-200 dark:border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/95 p-2 shadow-2xl backdrop-blur-md z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                   <button
                     onClick={handleExportPDF}
-                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-white dark:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors"
                   >
                     <FileEdit size={14} />
                     Export as PDF Snapshot
                   </button>
                   <button
                     onClick={handleExportCSV}
-                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-white dark:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors"
                   >
                     <BarChart3 size={14} />
                     Export Summary (CSV)
@@ -442,13 +447,13 @@ const RecruiterAnalyticsPage = () => {
         </section>
 
         {/* Segmented Tab Controller */}
-        <div className="flex border-b border-white/5 p-1 bg-slate-900/30 backdrop-blur-md rounded-2xl w-full sm:w-max">
+        <div className="flex border-b border-gray-200 dark:border-white/5 p-1 bg-white dark:bg-slate-900/30 backdrop-blur-md rounded-2xl w-full sm:w-max">
           <button
             onClick={() => setActiveTab("overview")}
             className={`flex-1 sm:flex-initial px-6 py-2.5 text-xs font-extrabold tracking-wider uppercase rounded-xl transition-all duration-300 ${
               activeTab === "overview"
-                ? "bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]"
-                : "text-slate-400 hover:text-slate-200"
+                ? "bg-blue-600 text-slate-900 dark:text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-200"
             }`}
           >
             Hiring Overview
@@ -457,8 +462,8 @@ const RecruiterAnalyticsPage = () => {
             onClick={() => setActiveTab("ai_ats")}
             className={`flex-1 sm:flex-initial px-6 py-2.5 text-xs font-extrabold tracking-wider uppercase rounded-xl transition-all duration-300 ${
               activeTab === "ai_ats"
-                ? "bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]"
-                : "text-slate-400 hover:text-slate-200"
+                ? "bg-blue-600 text-slate-900 dark:text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-200"
             }`}
           >
             AI & ATS Intelligence
@@ -467,8 +472,8 @@ const RecruiterAnalyticsPage = () => {
             onClick={() => setActiveTab("specialty")}
             className={`flex-1 sm:flex-initial px-6 py-2.5 text-xs font-extrabold tracking-wider uppercase rounded-xl transition-all duration-300 ${
               activeTab === "specialty"
-                ? "bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]"
-                : "text-slate-400 hover:text-slate-200"
+                ? "bg-blue-600 text-slate-900 dark:text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-200"
             }`}
           >
             Technical & OSS Insights
@@ -484,46 +489,46 @@ const RecruiterAnalyticsPage = () => {
               {/* Applicant Workflow Timeline Summary */}
               {totalApplicants > 0 && (
                 <div className="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-4">
-                  <div className="group relative rounded-2xl border border-white/5 bg-slate-900/30 p-5 shadow-inner transition-all hover:border-amber-500/20">
+                  <div className="group relative rounded-2xl border border-white/5 bg-white dark:bg-slate-900/30 p-5 shadow-inner transition-all hover:border-amber-500/20">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400">
                         <Clock size={18} />
                       </div>
                       <div>
-                        <p className="text-2xl font-black text-white">{applicantsByStatus.pending || 0}</p>
+                        <p className="text-2xl font-black text-slate-900 dark:text-white">{applicantsByStatus.pending || 0}</p>
                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Pending Review</p>
                       </div>
                     </div>
                   </div>
-                  <div className="group relative rounded-2xl border border-white/5 bg-slate-900/30 p-5 shadow-inner transition-all hover:border-blue-500/20">
+                  <div className="group relative rounded-2xl border border-white/5 bg-white dark:bg-slate-900/30 p-5 shadow-inner transition-all hover:border-blue-500/20">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400">
                         <Eye size={18} />
                       </div>
                       <div>
-                        <p className="text-2xl font-black text-white">{applicantsByStatus.reviewed || 0}</p>
+                        <p className="text-2xl font-black text-slate-900 dark:text-white">{applicantsByStatus.reviewed || 0}</p>
                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Reviewed</p>
                       </div>
                     </div>
                   </div>
-                  <div className="group relative rounded-2xl border border-white/5 bg-slate-900/30 p-5 shadow-inner transition-all hover:border-emerald-500/20">
+                  <div className="group relative rounded-2xl border border-white/5 bg-white dark:bg-slate-900/30 p-5 shadow-inner transition-all hover:border-emerald-500/20">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
                         <UserCheck size={18} />
                       </div>
                       <div>
-                        <p className="text-2xl font-black text-white">{applicantsByStatus.shortlisted || 0}</p>
+                        <p className="text-2xl font-black text-slate-900 dark:text-white">{applicantsByStatus.shortlisted || 0}</p>
                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Shortlisted</p>
                       </div>
                     </div>
                   </div>
-                  <div className="group relative rounded-2xl border border-white/5 bg-slate-900/30 p-5 shadow-inner transition-all hover:border-red-500/20">
+                  <div className="group relative rounded-2xl border border-white/5 bg-white dark:bg-slate-900/30 p-5 shadow-inner transition-all hover:border-red-500/20">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10 text-red-400">
                         <UserX size={18} />
                       </div>
                       <div>
-                        <p className="text-2xl font-black text-white">{applicantsByStatus.rejected || 0}</p>
+                        <p className="text-2xl font-black text-slate-900 dark:text-white">{applicantsByStatus.rejected || 0}</p>
                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Rejected</p>
                       </div>
                     </div>
@@ -535,7 +540,7 @@ const RecruiterAnalyticsPage = () => {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 
                 {/* Status Distribution */}
-                <div className="rounded-2xl border border-white/10 bg-slate-900/50 overflow-hidden backdrop-blur-md shadow-2xl">
+                <div className="rounded-2xl border border-gray-200 dark:border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/50 overflow-hidden backdrop-blur-md shadow-2xl">
                   <div className="border-b border-white/5 bg-white/5 px-6 py-4 flex items-center gap-2">
                     <BarChart3 className="text-blue-400" size={18} />
                     <h2 className="text-sm font-bold uppercase tracking-wider text-slate-200">Postings Status</h2>
@@ -567,9 +572,9 @@ const RecruiterAnalyticsPage = () => {
                           {statusPieData.map((item) => (
                             <div key={item.name} className="flex items-center gap-2">
                               <div className="h-3 w-3 rounded-full" style={{ backgroundColor: item.fill }} />
-                              <span className="text-xs text-slate-400 font-bold">
+                              <span className="text-xs text-slate-600 dark:text-slate-400 font-bold">
                                 {item.name}{" "}
-                                <span className="text-white font-extrabold">({item.value})</span>
+                                <span className="text-slate-900 dark:text-white font-extrabold">({item.value})</span>
                               </span>
                             </div>
                           ))}
@@ -585,13 +590,13 @@ const RecruiterAnalyticsPage = () => {
                 </div>
 
                 {/* Posting Timeline */}
-                <div className="rounded-2xl border border-white/10 bg-slate-900/50 overflow-hidden backdrop-blur-md shadow-2xl">
+                <div className="rounded-2xl border border-gray-200 dark:border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/50 overflow-hidden backdrop-blur-md shadow-2xl">
                   <div className="border-b border-white/5 bg-white/5 px-6 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <TrendingUp className="text-emerald-400" size={18} />
                       <h2 className="text-sm font-bold uppercase tracking-wider text-slate-200">Posting History</h2>
                     </div>
-                    <div className="flex items-center gap-1 text-[10px] text-slate-400 bg-white/5 px-2 py-0.5 rounded border border-white/5 font-semibold uppercase tracking-wider">
+                    <div className="flex items-center gap-1 text-[10px] text-slate-600 dark:text-slate-400 bg-white/5 px-2 py-0.5 rounded border border-white/5 font-semibold uppercase tracking-wider">
                       <Calendar size={10} /> 6 Months
                     </div>
                   </div>
@@ -625,7 +630,7 @@ const RecruiterAnalyticsPage = () => {
               {/* Demand & Job listing detail rows */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Top demanded skills */}
-                <div className="rounded-2xl border border-white/10 bg-slate-900/50 overflow-hidden backdrop-blur-md p-6 space-y-4">
+                <div className="rounded-2xl border border-gray-200 dark:border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/50 overflow-hidden backdrop-blur-md p-6 space-y-4">
                   <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2 pb-3 border-b border-white/5">
                     <Zap size={16} className="text-amber-400" /> Dominated Demanded Skills
                   </h3>
@@ -637,10 +642,10 @@ const RecruiterAnalyticsPage = () => {
                         return (
                           <div key={item.skill} className="group">
                             <div className="flex items-center justify-between mb-1">
-                              <span className="text-xs font-semibold text-slate-300 capitalize">{item.skill}</span>
+                              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 capitalize">{item.skill}</span>
                               <span className="text-[10px] font-bold text-slate-500">{item.count} {item.count === 1 ? "job" : "jobs"}</span>
                             </div>
-                            <div className="h-1.5 w-full rounded-full bg-slate-800/80 overflow-hidden border border-white/[0.02]">
+                            <div className="h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-800/80 overflow-hidden border border-white/[0.02]">
                               <div
                                 className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-1000"
                                 style={{ width: `${percentage}%` }}
@@ -659,7 +664,7 @@ const RecruiterAnalyticsPage = () => {
                 </div>
 
                 {/* Applicants Per Job Bar */}
-                <div className="rounded-2xl border border-white/10 bg-slate-900/50 overflow-hidden backdrop-blur-md p-6 space-y-4">
+                <div className="rounded-2xl border border-gray-200 dark:border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/50 overflow-hidden backdrop-blur-md p-6 space-y-4">
                   <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2 pb-3 border-b border-white/5">
                     <Users size={16} className="text-violet-400" /> Applicants Per Job
                   </h3>
@@ -671,10 +676,10 @@ const RecruiterAnalyticsPage = () => {
                         return (
                           <div key={item._id} className="group">
                             <div className="flex items-center justify-between mb-1">
-                              <span className="text-xs font-semibold text-slate-300 truncate max-w-[150px]">{item.title}</span>
+                              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate max-w-[150px]">{item.title}</span>
                               <span className="text-[10px] font-bold text-slate-500">{item.count} app{item.count !== 1 ? "s" : ""}</span>
                             </div>
-                            <div className="h-1.5 w-full rounded-full bg-slate-800/80 overflow-hidden border border-white/[0.02]">
+                            <div className="h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-800/80 overflow-hidden border border-white/[0.02]">
                               <div
                                 className="h-full rounded-full bg-gradient-to-r from-violet-500 to-purple-500 transition-all duration-1000"
                                 style={{ width: `${percentage}%` }}
@@ -693,7 +698,7 @@ const RecruiterAnalyticsPage = () => {
                 </div>
 
                 {/* Recent Jobs list */}
-                <div className="rounded-2xl border border-white/10 bg-slate-900/50 overflow-hidden backdrop-blur-md p-6 space-y-4">
+                <div className="rounded-2xl border border-gray-200 dark:border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/50 overflow-hidden backdrop-blur-md p-6 space-y-4">
                   <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2 pb-3 border-b border-white/5">
                     <Clock size={16} className="text-indigo-400" /> Recent Posting Activities
                   </h3>
@@ -702,9 +707,9 @@ const RecruiterAnalyticsPage = () => {
                       {recentJobs.map((job) => {
                         const config = STATUS_CONFIG[job.status] || STATUS_CONFIG.draft;
                         return (
-                          <div key={job._id} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/20 border border-white/5">
+                          <div key={job._id} className="flex items-center justify-between p-2.5 rounded-xl bg-gray-50 dark:bg-slate-900/30 border border-gray-200 dark:border-white/5">
                             <div className="min-w-0">
-                              <h4 className="text-xs font-bold text-slate-200 truncate">{job.title}</h4>
+                              <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200 truncate">{job.title}</h4>
                               <p className="text-[10px] text-slate-500 mt-0.5">{new Date(job.createdAt).toLocaleDateString()}</p>
                             </div>
                             <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider border ${config.bg} ${config.text} ${config.border}`}>
@@ -748,12 +753,12 @@ const RecruiterAnalyticsPage = () => {
                   label="ATS-Ready (80%+)"
                   icon={CheckCircle}
                 />
-                <div className="flex flex-col items-center justify-center p-6 bg-slate-900/30 border border-white/5 rounded-2xl text-center">
+                <div className="flex flex-col items-center justify-center p-6 bg-gray-50 dark:bg-slate-900/30 border border-gray-200 dark:border-white/5 rounded-2xl text-center">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-500/10 text-red-400 mb-3 animate-pulse">
                     <ShieldAlert size={24} />
                   </div>
-                  <span className="text-2xl font-black text-white">{lowAtsCount}</span>
-                  <span className="mt-2 text-xs font-bold text-slate-400 uppercase tracking-widest">
+                  <span className="text-2xl font-black text-slate-900 dark:text-white">{lowAtsCount}</span>
+                  <span className="mt-2 text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest">
                     Low ATS Compatibility (&lt;50%)
                   </span>
                 </div>
@@ -763,7 +768,7 @@ const RecruiterAnalyticsPage = () => {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
                 {/* Match Category Pie Chart */}
-                <div className="lg:col-span-2 rounded-2xl border border-white/10 bg-slate-900/50 overflow-hidden backdrop-blur-md shadow-2xl">
+                <div className="lg:col-span-2 rounded-2xl border border-gray-200 dark:border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/50 overflow-hidden backdrop-blur-md shadow-2xl">
                   <div className="border-b border-white/5 bg-white/5 px-6 py-4 flex items-center gap-2">
                     <Sparkles className="text-blue-400" size={18} />
                     <h2 className="text-sm font-bold uppercase tracking-wider text-slate-200">Match Category Distributions</h2>
@@ -795,9 +800,9 @@ const RecruiterAnalyticsPage = () => {
                           {matchCategoryPieData.map((item) => (
                             <div key={item.name} className="flex items-center gap-2">
                               <div className="h-3 w-3 rounded-full" style={{ backgroundColor: item.fill }} />
-                              <span className="text-xs text-slate-400 font-bold">
+                              <span className="text-xs text-slate-600 dark:text-slate-400 font-bold">
                                 {item.name}{" "}
-                                <span className="text-white font-extrabold">({item.value})</span>
+                                <span className="text-slate-900 dark:text-white font-extrabold">({item.value})</span>
                               </span>
                             </div>
                           ))}
@@ -813,27 +818,27 @@ const RecruiterAnalyticsPage = () => {
                 </div>
 
                 {/* Recruiter Insight Alerts */}
-                <div className="rounded-2xl border border-white/10 bg-slate-900/50 overflow-hidden backdrop-blur-md p-6 space-y-6">
+                <div className="rounded-2xl border border-gray-200 dark:border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/50 overflow-hidden backdrop-blur-md p-6 space-y-6">
                   <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2 pb-3 border-b border-white/5">
                     <Award size={16} className="text-emerald-400" /> Talent Quality Index
                   </h3>
                   <div className="space-y-4 pt-1">
                     <div className="p-4 rounded-xl bg-slate-950/40 border border-white/5 space-y-1">
                       <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Top Talent Concentration</span>
-                      <p className="text-lg font-black text-white">
+                      <p className="text-lg font-black text-slate-900 dark:text-white">
                         {totalApplicants > 0 ? Math.round((topCandidatesCount / totalApplicants) * 100) : 0}%
                       </p>
-                      <p className="text-[10px] text-slate-400 leading-normal">
+                      <p className="text-[10px] text-slate-600 dark:text-slate-400 leading-normal">
                         Candidates scoring above 85% represent excellent job skill fit.
                       </p>
                     </div>
 
                     <div className="p-4 rounded-xl bg-slate-950/40 border border-white/5 space-y-1">
                       <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">ATS Optimization Index</span>
-                      <p className="text-lg font-black text-white">
+                      <p className="text-lg font-black text-slate-900 dark:text-white">
                         {atsReadyPercentage}% Ready
                       </p>
-                      <p className="text-[10px] text-slate-400 leading-normal">
+                      <p className="text-[10px] text-slate-600 dark:text-slate-400 leading-normal">
                         Candidates possessing highly compatible resumes requiring minimal layout adjustments.
                       </p>
                     </div>
@@ -850,7 +855,7 @@ const RecruiterAnalyticsPage = () => {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
                 {/* Specialization Bar Chart */}
-                <div className="lg:col-span-2 rounded-2xl border border-white/10 bg-slate-900/50 overflow-hidden backdrop-blur-md p-6 shadow-2xl">
+                <div className="lg:col-span-2 rounded-2xl border border-gray-200 dark:border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/50 overflow-hidden backdrop-blur-md p-6 shadow-2xl">
                   <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2 pb-4 border-b border-white/5 mb-6">
                     <Code size={18} className="text-blue-400" /> Specialization Demographics
                   </h3>
@@ -874,7 +879,7 @@ const RecruiterAnalyticsPage = () => {
                 </div>
 
                 {/* Contribution details & stages */}
-                <div className="rounded-2xl border border-white/10 bg-slate-900/50 overflow-hidden backdrop-blur-md p-6 space-y-6">
+                <div className="rounded-2xl border border-gray-200 dark:border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/50 overflow-hidden backdrop-blur-md p-6 space-y-6">
                   <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2 pb-3 border-b border-white/5">
                     <BookOpen size={16} className="text-indigo-400" /> Career & Contributions
                   </h3>
@@ -884,8 +889,8 @@ const RecruiterAnalyticsPage = () => {
                     <div className="p-4 bg-slate-950/40 border border-white/5 rounded-xl flex items-center justify-between">
                       <div className="space-y-0.5">
                         <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">OSS Activity Rate</span>
-                        <span className="block text-lg font-black text-white">{ossContributorPercentage}%</span>
-                        <span className="block text-[9px] text-slate-400">High or Medium Open Source milestones</span>
+                        <span className="block text-lg font-black text-slate-900 dark:text-white">{ossContributorPercentage}%</span>
+                        <span className="block text-[9px] text-slate-600 dark:text-slate-400">High or Medium Open Source milestones</span>
                       </div>
                       <div className="h-10 w-10 bg-blue-500/15 border border-blue-500/20 text-blue-400 rounded-lg flex items-center justify-center font-extrabold text-sm shadow">
                         {ossContributorCount}
@@ -896,10 +901,10 @@ const RecruiterAnalyticsPage = () => {
                     <div className="p-4 bg-slate-950/40 border border-white/5 rounded-xl flex items-center justify-between">
                       <div className="space-y-0.5">
                         <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Roadmap Active Rate</span>
-                        <span className="block text-lg font-black text-white">
+                        <span className="block text-lg font-black text-slate-900 dark:text-white">
                           {totalApplicants > 0 ? Math.round((activeRoadmapCount / totalApplicants) * 100) : 0}%
                         </span>
-                        <span className="block text-[9px] text-slate-400">High or Medium roadmap completion</span>
+                        <span className="block text-[9px] text-slate-600 dark:text-slate-400">High or Medium roadmap completion</span>
                       </div>
                       <div className="h-10 w-10 bg-indigo-500/15 border border-indigo-500/20 text-indigo-400 rounded-lg flex items-center justify-center font-extrabold text-sm shadow">
                         {activeRoadmapCount}
@@ -915,7 +920,8 @@ const RecruiterAnalyticsPage = () => {
 
         </div>
       </div>
-    </main>
+          <Footer />
+    </div>
   );
 };
 

@@ -1,9 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import Editor from "@monaco-editor/react";
-import { Code2, Info, Play, Terminal, XCircle, Loader2 } from "lucide-react";
+import { Code2, Info, Play, Terminal, XCircle, Loader2, Copy, Download } from "lucide-react";
+import { useToast } from "../../../shared/components/toast/ToastProvider";
+
+import logger from "../../../utils/logger";
 
 export default function SharedCodeEditor({ socket, roomId, userRole }) {
-  const [code, setCode] = useState(`// Welcome to SkillSphere AI Live Coding Classroom!\n// Type your collaborative code here...\n\nfunction helloWorld() {\n  console.log("Welcome to class!");\n}`);
+  const { success } = useToast();
+  const [code, setCode] = useState(`// Welcome to SkillSphere AI Live Coding Classroom!\n// Type your collaborative code here...\n\nfunction helloWorld() {\n  logger.log("Welcome to class!");\n}`);
   const [language, setLanguage] = useState("javascript");
   const [lastEditorInfo, setLastEditorInfo] = useState("");
   const [isExecuting, setIsExecuting] = useState(false);
@@ -110,6 +114,36 @@ export default function SharedCodeEditor({ socket, roomId, userRole }) {
     });
   };
 
+  const handleCopyCode = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      success("Code copied to clipboard!");
+    } catch (err) {
+      logger.error("Failed to copy", err);
+    }
+  };
+
+  const handleDownloadCode = () => {
+    const extMap = {
+      javascript: "js",
+      python: "py",
+      html: "html",
+      css: "css",
+      cpp: "cpp"
+    };
+    const ext = extMap[language] || "txt";
+    const blob = new Blob([code], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `skillssphere-code.${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    success("Code file downloaded!");
+  };
+
   return (
     <div className="flex-1 flex flex-col bg-[#0b0f19] rounded-2xl overflow-hidden border border-slate-800 h-full relative">
       {/* Editor Header / Controls */}
@@ -132,6 +166,22 @@ export default function SharedCodeEditor({ socket, roomId, userRole }) {
               </option>
             ))}
           </select>
+          
+          <button
+            onClick={handleCopyCode}
+            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors"
+            title="Copy Code"
+          >
+            <Copy size={16} />
+          </button>
+          
+          <button
+            onClick={handleDownloadCode}
+            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors"
+            title="Download Code"
+          >
+            <Download size={16} />
+          </button>
           
           <button
             onClick={handleRunCode}

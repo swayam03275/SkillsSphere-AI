@@ -8,7 +8,7 @@ describe("authCodeStore", () => {
     const code2 = await generateAuthCode("user123");
 
     assert.equal(typeof code1, "string");
-    assert.equal(code1.length, 48);
+    assert.equal(code1.length, 36);
     assert.notEqual(code1, code2);
   });
 

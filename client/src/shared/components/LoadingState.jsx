@@ -13,11 +13,11 @@ import { Loader2 } from "lucide-react";
 const LoadingState = ({ 
   title = "Loading...", 
   description, 
-  icon = <Loader2 className="w-16 h-16 text-primary animate-spin mb-6" />,
+  icon = <Loader2 className="w-16 h-16 text-brand-500 animate-spin mb-6" />,
   className = ""
 }) => {
   return (
-    <div className={`flex flex-col items-center justify-center py-20 animate-pulse ${className}`}>
+    <div className={`flex flex-col items-center justify-center min-h-[80vh] w-full flex-1 animate-in fade-in duration-300 ${className}`}>
       {icon}
       <p className="text-2xl font-heading font-medium text-text-main">
         {title}

@@ -1,4 +1,5 @@
 import React from "react";
+import { API_URL } from "../../config/env";
 
 /**
  * GoogleOAuthButton — branded Google sign-in button used on Login & Register pages.
@@ -8,13 +9,16 @@ import React from "react";
  * @param {object} props
  * @param {string} [props.label] - Button text (default: "Continue with Google")
  */
-const GoogleOAuthButton = ({ label = "Continue with Google" }) => {
+const GoogleOAuthButton = ({ label = "Continue with Google", role }) => {
   const handleClick = () => {
-    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
     const redirect = encodeURIComponent(
       `${window.location.origin}/auth/callback`,
     );
-    window.location.href = `${API_URL}/api/auth/google?redirect=${redirect}`;
+    let url = `${API_URL}/api/auth/google?redirect=${redirect}`;
+    if (role) {
+      url += `&role=${encodeURIComponent(role)}`;
+    }
+    window.location.href = url;
   };
 
   return (

@@ -9,6 +9,10 @@ import {
   getResumeResult,
   getLatestResume,
   compareVersions,
+  listResumes,
+  setActiveResume,
+  renameResume,
+  deleteResume,
 } from "./controller.js";
 import { generateCoverLetterForResume } from "./coverLetter.controller.js";
 import { resumeAnalysisLimiter, aiActionLimiter } from "../../middleware/rateLimiter.js";
@@ -100,6 +104,10 @@ router.post(
  *         description: Success
  */
 router.get("/me/latest", protect, getLatestResume);
+router.get("/list", protect, authorizeRoles("student"), listResumes);
+router.patch("/:id/active", protect, authorizeRoles("student"), setActiveResume);
+router.patch("/:id/rename", protect, authorizeRoles("student"), renameResume);
+router.delete("/:id", protect, authorizeRoles("student"), deleteResume);
 
 /**
  * @openapi

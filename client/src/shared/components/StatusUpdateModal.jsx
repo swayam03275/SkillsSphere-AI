@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import PropTypes from 'prop-types';
-import { X, Send, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { X, Send, AlertCircle } from 'lucide-react';
 import Button from './Button';
 import TextArea from './TextArea';
 import Select from './Select';
+import { useToast } from './toast/ToastProvider';
 
 const StatusUpdateModal = ({ isOpen, onClose, onUpdate, currentStatus, applicantName }) => {
+  const toast = useToast();
   const [status, setStatus] = useState(currentStatus || 'reviewed');
   const [comment, setComment] = useState('');
   const [loading, setLoading] = useState(false);
@@ -22,6 +24,7 @@ const StatusUpdateModal = ({ isOpen, onClose, onUpdate, currentStatus, applicant
       onClose();
     } catch (err) {
       setError(err.message || "Failed to update status.");
+      toast.error(err.message || "Failed to update status.");
     } finally {
       setLoading(false);
     }
@@ -50,6 +53,7 @@ const StatusUpdateModal = ({ isOpen, onClose, onUpdate, currentStatus, applicant
           </div>
           <button 
             onClick={onClose}
+            aria-label="Close modal"
             className="p-2 hover:bg-slate-800 rounded-xl text-slate-400 transition-colors"
           >
             <X size={20} />

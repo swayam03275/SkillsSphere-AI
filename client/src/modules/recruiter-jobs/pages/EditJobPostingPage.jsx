@@ -2,12 +2,17 @@ import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { ArrowLeft, Edit3 } from "lucide-react";
-import Navbar from "../../../shared/landing/Navbar";
+import Navbar from "../../../shared/components/Navbar";
+import Footer from "../../../shared/components/Footer";
+
 import JobPostingForm from "../components/JobPostingForm";
 import LoadingState from "../../../shared/components/LoadingState";
 import { updateJobPosting, getJobPostingById } from "../services/jobPostingService";
+import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
+
 
 const EditJobPostingPage = () => {
+  useDocumentTitle("Edit Job Posting");
   const { id } = useParams();
   const navigate = useNavigate();
   const { token } = useSelector((state) => state.auth);
@@ -54,19 +59,20 @@ const EditJobPostingPage = () => {
       if (error.errors) {
         setFieldErrors(error.errors);
       }
+      throw error;
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] p-3 sm:p-5 pt-20 sm:pt-28 text-slate-100">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#020617] text-slate-900 dark:text-white flex flex-col">
       <Navbar />
 
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 py-8">
+      <div className="flex-1 pt-24 pb-16 px-4 sm:px-6 mx-auto flex w-full max-w-3xl flex-col gap-6">
         <Link 
           to="/recruiter/jobs" 
-          className="inline-flex items-center gap-2 text-slate-400 hover:text-blue-400 transition-colors w-fit group"
+          className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-blue-400 transition-colors w-fit group"
         >
           <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
           <span>Back to Jobs</span>
@@ -77,9 +83,9 @@ const EditJobPostingPage = () => {
             <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400">
               <Edit3 size={24} />
             </div>
-            <h1 className="text-3xl font-bold text-white">Edit Job Posting</h1>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Edit Job Posting</h1>
           </div>
-          <p className="text-slate-400 mt-2">
+          <p className="text-slate-600 dark:text-slate-400 mt-2">
             Update the details below to edit your job posting. Changes will be reflected immediately.
           </p>
         </div>
@@ -93,7 +99,7 @@ const EditJobPostingPage = () => {
           </div>
         )}
 
-        <div className="bg-slate-900/70 border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl backdrop-blur">
+        <div className="bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl backdrop-blur">
           {isLoadingData ? (
             <div className="py-12">
               <LoadingState message="Loading job details..." />
@@ -106,13 +112,14 @@ const EditJobPostingPage = () => {
               fieldErrors={fieldErrors} 
             />
           ) : (
-            <div className="text-center py-10 text-slate-400">
+            <div className="text-center py-10 text-slate-600 dark:text-slate-400">
               Could not load job data.
             </div>
           )}
         </div>
       </div>
-    </main>
+          <Footer />
+    </div>
   );
 };
 

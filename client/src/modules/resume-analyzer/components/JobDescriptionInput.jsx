@@ -9,7 +9,6 @@ import {
   FileText,
 } from "lucide-react";
 import { TextArea, Button, useToast } from "../../../shared/components";
-
 /**
  * Cleans raw JD text:
  * - Collapses 3+ blank lines to 2

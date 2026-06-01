@@ -1,6 +1,5 @@
 import React from "react";
 import { UserCheck, Rocket, GraduationCap, Handshake, Briefcase } from "lucide-react";
-
 const PERSONAS = [
   {
     id: "friendly",

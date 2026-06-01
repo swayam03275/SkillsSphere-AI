@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import mongoose from "mongoose";
 import { safeDeleteAvatarByUrl, safeDeletePhysicalFile } from "./fileUtils.js";
+import { deleteCloudinaryAsset } from "../config/cloudinary.js";
 import User from "../database/models/User.js";
 import Resume from "../database/models/Resume.js";
 import MatchResult from "../database/models/MatchResult.js";
@@ -13,6 +14,8 @@ import AnalysisHistory from "../database/models/AnalysisHistory.js";
 import ClassroomSession from "../database/models/ClassroomSession.js";
 import JobPosting from "../database/models/JobPosting.js";
 import Notification from "../database/models/Notification.js";
+
+import logger from "./logger.js";
 
 /**
  * Sweeps and deletes all physical files and MongoDB documents associated with a user.
@@ -109,14 +112,20 @@ export const cascadeDeleteUser = async (userId) => {
     await session.commitTransaction();
   } catch (error) {
     await session.abortTransaction();
-    console.error("Transaction aborted in cascadeDeleteUser:", error);
+    logger.error("Transaction aborted in cascadeDeleteUser:", error);
     throw error;
   } finally {
     session.endSession();
   }
 
-  // 1. Delete physical profile picture (avatar) if it exists locally
-  safeDeleteAvatarByUrl(user.profilePic);
+  // 1. Delete profile picture from Cloudinary, or from disk for legacy local avatars.
+  if (user.profilePicPublicId) {
+    await deleteCloudinaryAsset(user.profilePicPublicId).catch((error) => {
+      logger.error("[cascadeDeleteUser] Failed to delete Cloudinary avatar:", error.message);
+    });
+  } else {
+    safeDeleteAvatarByUrl(user.profilePic);
+  }
 
   // Delete physical PDF/DOCX files
   for (const resume of resumes) {

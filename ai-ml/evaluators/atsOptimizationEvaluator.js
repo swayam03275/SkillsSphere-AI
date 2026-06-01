@@ -23,7 +23,7 @@ export const atsOptimizationEvaluator = ({ resumeData }) => {
     experience: experience.length > 0,
     education: education.length > 0,
     skills: skills.length > 0,
-    summary: /summary|profile|objective|about me/gi.test(resumeText),
+    summary: /^[^a-z]*(summary|professional summary|profile|professional profile|objective|about\s+me)[^a-z]*$/im.test(resumeText),
   };
 
   // Fallback to regex detection from resumeText when structured fields are missing

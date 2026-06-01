@@ -1,19 +1,19 @@
 import axios from "axios";
 import dns from "dns/promises";
+import ipaddr from "ipaddr.js";
 
 // Function to check if an IP is private/local
 const isPrivateIP = (ip) => {
-  const parts = ip.split(".").map(Number);
-  if (parts.length !== 4) return false;
-
-  return (
-    parts[0] === 10 ||
-    (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) ||
-    (parts[0] === 192 && parts[1] === 168) ||
-    parts[0] === 127 ||
-    (parts[0] === 169 && parts[1] === 254) ||
-    parts[0] === 0 // 0.0.0.0
-  );
+  try {
+    const parsedIp = ipaddr.parse(ip);
+    const range = parsedIp.range();
+    return [
+      "unspecified", "broadcast", "multicast", "linkLocal", 
+      "loopback", "private", "reserved"
+    ].includes(range);
+  } catch (err) {
+    return false; // Invalid IP format
+  }
 };
 
 /**
@@ -26,6 +26,9 @@ export const verifyLink = async (url) => {
 
   try {
     const parsedUrl = new URL(url);
+    if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+      return { url, isValid: false, status: 400, error: "Unsupported protocol" };
+    }
     const hostname = parsedUrl.hostname;
 
     // Check if hostname is directly an IP and private
@@ -65,7 +68,7 @@ export const verifyLink = async (url) => {
   } catch (error) {
     // Handle cases where the site exists but blocks automated GETs (like LinkedIn)
     // If it's a 403 or 429, we still consider it "potentially valid" if it's a known domain
-    const isBotProtected = error.response && [403, 429, 999].includes(error.response.status);
+    const isBotProtected = !!(error.response && [403, 429, 999].includes(error.response.status));
     
     return {
       url,

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import fs from "fs/promises";
 import path from "path";
 import {
+  fileFilter,
   validateAndPersistResumeFile,
   persistValidatedResumeFile,
   removeUploadedFile,
@@ -30,6 +31,35 @@ const runMiddleware = (middleware, req) =>
       else resolve({ statusCode: 200, body: null, nextCalled: true });
     });
   });
+
+const runFileFilter = (file) =>
+  new Promise((resolve) => {
+    fileFilter(null, file, (error, accepted) => {
+      resolve({ error, accepted });
+    });
+  });
+
+describe("fileFilter", () => {
+  it("accepts allowed extensions even when the mimetype is incorrect", async () => {
+    const result = await runFileFilter({
+      originalname: "resume.docx",
+      mimetype: "application/octet-stream",
+    });
+
+    assert.equal(result.error, null);
+    assert.equal(result.accepted, true);
+  });
+
+  it("rejects files with unsupported extensions", async () => {
+    const result = await runFileFilter({
+      originalname: "resume.exe",
+      mimetype: "application/octet-stream",
+    });
+
+    assert.equal(result.accepted, false);
+    assert.equal(result.error?.code, "INVALID_FILE_TYPE");
+  });
+});
 
 describe("validateAndPersistResumeFile middleware", () => {
   it("returns 400 and never writes spoofed pdf to uploads", async () => {

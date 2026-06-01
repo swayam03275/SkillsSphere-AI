@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { encrypt, decrypt } from "../../utils/encryption.js";
 
 const resumeSchema = new mongoose.Schema(
   {
@@ -10,46 +11,78 @@ const resumeSchema = new mongoose.Schema(
     name: {
       type: String,
       default: null,
+      get: decrypt,
+      set: encrypt,
     },
     email: {
       type: String,
       default: null,
+      get: decrypt,
+      set: encrypt,
+    },
+    isScannedPdf: {
+      type: Boolean,
+      default: false,
+    },
+    title: {
+      type: String,
+      default: "My Resume",
+    },
+    isActive: {
+      type: Boolean,
+      default: false,
     },
     phone: {
       type: String,
       default: null,
+      get: decrypt,
+      set: encrypt,
     },
     skills: {
       type: [String],
       default: [],
     },
     education: {
-      type: [String],
+      type: mongoose.Schema.Types.Mixed,
       default: [],
+      get: decrypt,
+      set: encrypt,
     },
     experience: {
-      type: [String],
+      type: mongoose.Schema.Types.Mixed,
       default: [],
+      get: decrypt,
+      set: encrypt,
     },
     projects: {
-      type: [String],
+      type: mongoose.Schema.Types.Mixed,
       default: [],
+      get: decrypt,
+      set: encrypt,
     },
     certifications: {
-      type: [String],
+      type: mongoose.Schema.Types.Mixed,
       default: [],
+      get: decrypt,
+      set: encrypt,
     },
     linkedin: {
       type: String,
       default: null,
+      get: decrypt,
+      set: encrypt,
     },
     github: {
       type: String,
       default: null,
+      get: decrypt,
+      set: encrypt,
     },
     portfolio: {
       type: String,
       default: null,
+      get: decrypt,
+      set: encrypt,
     },
     keywords: {
       type: [String],
@@ -63,7 +96,10 @@ const resumeSchema = new mongoose.Schema(
       type: String,
       default: null,
       select: false, // Don't include in queries by default for privacy
+      get: decrypt,
+      set: encrypt,
     },
+
     jobSkills: {
       type: [String],
       default: [],
@@ -143,6 +179,8 @@ const resumeSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+    toJSON: { getters: true },
+    toObject: { getters: true },
   }
 );
 
@@ -152,6 +190,29 @@ const Resume = mongoose.model("Resume", resumeSchema);
 Resume.schema.index({ user: 1 });
 Resume.schema.index({ skills: 1 });
 Resume.schema.index({ createdAt: -1 });
+Resume.schema.index(
+  {
+    name: "text",
+    email: "text",
+    skills: "text",
+    education: "text",
+    experience: "text",
+    projects: "text",
+  },
+  {
+    name: "ResumeTextIndex",
+    weights: {
+      name: 10,
+      skills: 8,
+      education: 5,
+      experience: 4,
+      projects: 3,
+      email: 1,
+    },
+  }
+);
 
 export default Resume;
+
+
 

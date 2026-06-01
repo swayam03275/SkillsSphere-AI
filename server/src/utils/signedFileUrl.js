@@ -1,7 +1,16 @@
 import crypto from "crypto";
 
-const getSigningSecret = () =>
-  process.env.FILE_URL_SIGNING_SECRET || process.env.JWT_SECRET || "";
+const PROTECTED_PATH_RE = /^\/api\/files\/(avatars|resumes)\/[^/]+$/;
+
+const getSigningSecret = () => {
+  const secret = process.env.FILE_URL_SIGNING_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error(
+      "FILE_URL_SIGNING_SECRET must be set and at least 32 characters"
+    );
+  }
+  return secret;
+};
 
 const buildSignaturePayload = (path, expiresAt, extra = "") =>
   `${extra ? `${path}.${extra}` : path}.${expiresAt}`;
@@ -30,7 +39,7 @@ export const normalizeProtectedFilePath = (input) => {
     path = filename ? `/api/files/resumes/${filename}` : path;
   }
 
-  if (!/^\/api\/files\/(avatars|resumes)\/[^/]+$/.test(path)) {
+  if (!PROTECTED_PATH_RE.test(path)) {
     return null;
   }
 
@@ -39,9 +48,6 @@ export const normalizeProtectedFilePath = (input) => {
 
 export const buildSignedFileUrl = ({ path, expiresAt, extra = "" }) => {
   const secret = getSigningSecret();
-  if (!secret) {
-    throw new Error("FILE_URL_SIGNING_SECRET is not configured");
-  }
 
   const payload = buildSignaturePayload(path, expiresAt, extra);
   const sig = crypto.createHmac("sha256", secret).update(payload).digest("hex");
@@ -52,8 +58,14 @@ export const buildSignedFileUrl = ({ path, expiresAt, extra = "" }) => {
 };
 
 export const verifySignedFileUrl = (path, expiresAt, sig, extra = "") => {
-  const secret = getSigningSecret();
-  if (!secret) return false;
+  if (!PROTECTED_PATH_RE.test(path)) return false;
+
+  let secret;
+  try {
+    secret = getSigningSecret();
+  } catch {
+    return false;
+  }
 
   if (typeof sig !== "string" || sig.length === 0) return false;
 

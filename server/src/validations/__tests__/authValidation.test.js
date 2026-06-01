@@ -1,0 +1,266 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import {
+  validateForgotPasswordInput,
+  validateLoginInput,
+  validateRegisterInput,
+  validateResetPasswordInput,
+  validateVerifyEmailInput,
+} from "../authValidation.js";
+
+const validRegisterPayload = (overrides = {}) => ({
+  name: "Test User",
+  email: "user@example.com",
+  password: "Password1!",
+  role: "student",
+  ...overrides,
+});
+
+const validVerifyEmailPayload = (overrides = {}) => ({
+  email: "user@example.com",
+  otp: "123456",
+  ...overrides,
+});
+
+const validResetPasswordPayload = (overrides = {}) => ({
+  email: "user@example.com",
+  otp: "123456",
+  newPassword: "Password1!",
+  ...overrides,
+});
+
+const fieldMessages = (result, field) =>
+  result.errors
+    .filter((error) => error.field === field)
+    .map((error) => error.message);
+
+describe("auth validation", () => {
+  describe("Email validation", () => {
+    const validEmails = [
+      ["standard valid email", "user@example.com", "user@example.com"],
+      ["email with subdomain", "user@mail.example.co.in", "user@mail.example.co.in"],
+      ["email with plus alias", "first.last+jobs@example.com", "first.last+jobs@example.com"],
+      ["uppercase email is normalized", "USER@EXAMPLE.COM", "user@example.com"],
+      ["trimmed email is accepted", "  user@example.com  ", "user@example.com"],
+    ];
+
+    for (const [name, email, normalizedEmail] of validEmails) {
+      it(`accepts ${name}`, () => {
+        const result = validateRegisterInput(validRegisterPayload({ email }));
+
+        assert.equal(result.isValid, true);
+        assert.equal(result.data.email, normalizedEmail);
+      });
+    }
+
+    const invalidEmails = [
+      ["missing @", "user.example.com"],
+      ["missing domain", "user@"],
+      ["missing local part", "@example.com"],
+      ["spaces inside address", "user name@example.com"],
+      ["invalid special characters", "user<>name@example.com"],
+      [
+        "unicode/localized local and domain",
+        "\u0909\u092a\u092f\u094b\u0917\u0915\u0930\u094d\u0924\u093e@\u0909\u0926\u093e\u0939\u0930\u0923.\u092d\u093e\u0930\u0924",
+      ],
+      ["unicode/localized local part", "\u7528\u6237@example.com"],
+      ["SQL-like payload", "' OR '1'='1"],
+      ["XSS-like payload", "<script>alert(1)</script>"],
+      ["javascript URL payload", "javascript:alert(1)"],
+    ];
+
+    for (const [name, email] of invalidEmails) {
+      it(`rejects email with ${name}`, () => {
+        const result = validateRegisterInput(validRegisterPayload({ email }));
+
+        assert.equal(result.isValid, false);
+        assert.ok(fieldMessages(result, "email").length > 0);
+      });
+    }
+
+    it("documents that extremely long syntactically valid emails are accepted by the current schema", () => {
+      const email = `${"a".repeat(250)}@example.com`;
+      const result = validateForgotPasswordInput({ email });
+
+      assert.equal(result.isValid, true);
+      assert.equal(result.data.email, email);
+    });
+  });
+
+  describe("Password validation", () => {
+    it("accepts a valid strong password", () => {
+      const result = validateRegisterInput(
+        validRegisterPayload({ password: "StrongPass1!" }),
+      );
+
+      assert.equal(result.isValid, true);
+    });
+
+    it("rejects a password that is too short", () => {
+      const result = validateRegisterInput(validRegisterPayload({ password: "Ab1!xyz" }));
+
+      assert.equal(result.isValid, false);
+      assert.ok(fieldMessages(result, "password").includes("Password must be at least 8 characters"));
+    });
+
+    const currentlyAcceptedPasswords = [
+      ["missing uppercase letter", "password1!"],
+      ["missing lowercase letter", "PASSWORD1!"],
+      ["missing number", "Password!"],
+      ["missing special character", "Password1"],
+      ["common weak password", "password"],
+      ["password with spaces", "Pass word1!"],
+      ["very long password", `A1!${"a".repeat(200)}`],
+      ["unicode password", "\u092a\u093e\u0938\u0935\u0930\u094d\u0921123!"],
+      ["SQL-looking string", "' OR '1'='1"],
+      ["XSS-looking string", "<script>alert(1)</script>"],
+    ];
+
+    for (const [name, password] of currentlyAcceptedPasswords) {
+      it(`accepts ${name} because current password validation only enforces length`, () => {
+        const result = validateRegisterInput(validRegisterPayload({ password }));
+
+        assert.equal(result.isValid, true);
+        assert.equal(result.data.password, password);
+      });
+    }
+
+    it("applies the same minimum length rule to reset passwords", () => {
+      const result = validateResetPasswordInput(
+        validResetPasswordPayload({ newPassword: "short" }),
+      );
+
+      assert.equal(result.isValid, false);
+      assert.ok(fieldMessages(result, "newPassword").length > 0);
+    });
+  });
+
+  describe("OTP validation", () => {
+    it("accepts a valid six-character OTP format", () => {
+      const result = validateVerifyEmailInput(validVerifyEmailPayload({ otp: "123456" }));
+
+      assert.equal(result.isValid, true);
+      assert.equal(result.data.otp, "123456");
+    });
+
+    const invalidOtps = [
+      ["empty OTP", ""],
+      ["too short OTP", "12345"],
+      ["too long OTP", "1234567"],
+      ["SQL injection-like input", "1; DROP TABLE users;"],
+      ["XSS-like input", "<script>alert(1)</script>"],
+    ];
+
+    for (const [name, otp] of invalidOtps) {
+      it(`rejects ${name}`, () => {
+        const result = validateVerifyEmailInput(validVerifyEmailPayload({ otp }));
+
+        assert.equal(result.isValid, false);
+        assert.ok(fieldMessages(result, "otp").length > 0);
+      });
+    }
+
+    const currentlyAcceptedOtps = [
+      ["non-numeric OTP", "abcdef"],
+      ["OTP with internal space", "12 456"],
+      ["OTP with special characters", "!@#$%^"],
+      ["six-character SQL-looking input", "admin'"],
+      ["six-character prototype-looking input", "__prot"],
+    ];
+
+    for (const [name, otp] of currentlyAcceptedOtps) {
+      it(`accepts ${name} because current OTP validation only enforces exact length`, () => {
+        const result = validateVerifyEmailInput(validVerifyEmailPayload({ otp }));
+
+        assert.equal(result.isValid, true);
+        assert.equal(result.data.otp, otp);
+      });
+    }
+
+    it("applies the same exact-length OTP rule during password reset", () => {
+      const result = validateResetPasswordInput(validResetPasswordPayload({ otp: "1234567" }));
+
+      assert.equal(result.isValid, false);
+      assert.ok(fieldMessages(result, "otp").length > 0);
+    });
+  });
+
+  describe("Security payloads", () => {
+    const suspiciousPayloads = [
+      "' OR '1'='1",
+      "admin'--",
+      "1; DROP TABLE users;",
+      "<script>alert(1)</script>",
+      "<img src=x onerror=alert(1)>",
+      "javascript:alert(1)",
+      "__proto__",
+      "constructor",
+      "prototype",
+    ];
+
+    for (const payload of suspiciousPayloads) {
+      it(`rejects suspicious payload as an email: ${payload}`, () => {
+        const result = validateLoginInput({
+          email: payload,
+          password: "Password1!",
+        });
+
+        assert.equal(result.isValid, false);
+        assert.ok(fieldMessages(result, "email").length > 0);
+      });
+    }
+
+    for (const payload of suspiciousPayloads) {
+      it(`safely treats suspicious password payload as inert string when it satisfies current length rules: ${payload}`, () => {
+        const result = validateLoginInput({
+          email: "user@example.com",
+          password: payload,
+        });
+
+        assert.equal(result.isValid, payload.length >= 8);
+      });
+    }
+
+    it("does not let prototype pollution-looking role values pass enum validation", () => {
+      for (const role of ["__proto__", "constructor", "prototype"]) {
+        const result = validateRegisterInput(validRegisterPayload({ role }));
+
+        assert.equal(result.isValid, false);
+        assert.ok(fieldMessages(result, "role").length > 0);
+      }
+    });
+  });
+
+  describe("Locale and Unicode inputs", () => {
+    const acceptedNames = [
+      ["accented Latin characters", "Jos\u00e9 \u00c1lvarez"],
+      ["Hindi text", "\u0906\u0930\u0935 \u0936\u0930\u094d\u092e\u093e"],
+      ["right-to-left characters", "\u0639\u0644\u064a \u062d\u0633\u0646"],
+      ["mixed-language input", "Aarav \u0936\u0930\u094d\u092e\u093e"],
+      ["emoji-containing name", "Sam \ud83d\ude0a"],
+    ];
+
+    for (const [name, value] of acceptedNames) {
+      it(`accepts name with ${name}`, () => {
+        const result = validateRegisterInput(validRegisterPayload({ name: value }));
+
+        assert.equal(result.isValid, true);
+        assert.equal(result.data.name, value);
+      });
+    }
+
+    it("rejects names that are shorter than two trimmed characters", () => {
+      const result = validateRegisterInput(validRegisterPayload({ name: "  A  " }));
+
+      assert.equal(result.isValid, false);
+      assert.ok(fieldMessages(result, "name").includes("Name must be at least 2 characters"));
+    });
+
+    it("normalizes uppercase role values after trimming", () => {
+      const result = validateRegisterInput(validRegisterPayload({ role: "  RECRUITER  " }));
+
+      assert.equal(result.isValid, true);
+      assert.equal(result.data.role, "recruiter");
+    });
+  });
+});

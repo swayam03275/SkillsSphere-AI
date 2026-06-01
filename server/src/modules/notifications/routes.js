@@ -22,12 +22,14 @@ router.get("/unread-count", getUnreadCount);
 
 router.post("/", createNotification);
 
+router.patch("/mark-all/read", markAllAsRead);
+
 router.get("/:id", getNotification);
 
 router.patch("/:id/read", markAsRead);
 
 router.patch("/mark-all/read", markAllAsRead);
-
+router.patch("/:id/read", markAsRead);
 router.delete("/:id", deleteNotificationById);
 
 router.delete("/", deleteAllNotificationsForUser);

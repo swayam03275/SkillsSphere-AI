@@ -1,5 +1,4 @@
 import React from "react";
-
 const StatCard = ({ icon: Icon, label, value, color, className = "" }) => {
   const colorVariants = {
     blue: "border-blue-500/30 from-blue-500/5 text-blue-400 bg-blue-500/20",

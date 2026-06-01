@@ -11,6 +11,8 @@ import gapAnalyzer from "../utils/gapAnalyzer.js";
 import { classifyResume } from "../utils/resumeClassifier.js";
 import { aggregateResults } from "./aggregator.js";
 import { validateEvaluatorResult } from "./evaluatorContract.js";
+import safeEval from "./safeEval.js";
+import logger from "../utils/logger.js";
 import { extractSkillsFromText } from "../utils/skillNormalizer.js";
 import techKeywords from "../config/keywords.js";
 import { getBenchmarkForRole } from "../config/benchmarks.js";
@@ -21,34 +23,8 @@ export async function runPipeline({
   jobSkills = [],
   jobDescription = "",
 }) {
-  // ADD — safe wrapper for all evaluator calls
-  async function safeEval(name, fn, fallback = { score: 0, error: true, details: {}, meta: {} }) {
-    try {
-      const result = await fn();
-      // Remove name from validation as it's not in the strict schema
-      const { name: _name, ...dataToValidate } = { ...result };
-      const validated = validateEvaluatorResult({ 
-        key: dataToValidate.key || name, 
-        label: dataToValidate.label || name,
-        ...dataToValidate 
-      });
-      // Add name back for compatibility with legacy aggregator code
-      return { ...validated, name };
-    } catch (err) {
-      console.error(`[runPipeline] Evaluator "${name}" contract violation or failure:`, err.message);
-      return { 
-        ...fallback, 
-        key: name, 
-        label: name,
-        name, // compatibility
-        weight: 0,
-        weightedScore: 0,
-        summary: "Evaluator failed to run."
-      };
-    }
-  }
+  const _safeEval = (name, fn, fallback) => safeEval(name, fn, validateEvaluatorResult, fallback);
 
-  // ADD — handles both string and object experience entries
   function parseExperience(experience = []) {
     return experience
       .map((entry) => {
@@ -65,7 +41,7 @@ export async function runPipeline({
 
   const isJDProvided = !!(jobDescription && jobDescription.trim().length > 0);
   
-  // 🔥 AUTO-EXTRACT / BENCHMARK: 
+  
   let finalJobSkills = jobSkills;
   let finalJobDescription = jobDescription;
   let mode = isJDProvided ? "match" : "benchmark";
@@ -74,8 +50,7 @@ export async function runPipeline({
     const allKeywords = Object.values(techKeywords).flat();
     finalJobSkills = extractSkillsFromText(jobDescription, allKeywords);
   } else if (!isJDProvided) {
-    // Determine benchmark based on classification (or default to full stack)
-    // Classification happens later, so we use a pre-classification or default
+    
     const detectedField = resumeData.classification?.field || "full stack developer";
     finalJobSkills = getBenchmarkForRole(detectedField);
     finalJobDescription = `A standard role for ${detectedField} requiring skills like ${finalJobSkills.join(", ")}.`;
@@ -97,7 +72,7 @@ export async function runPipeline({
     techStandard
   ] = await Promise.all([
     // 🟢 Skill Match
-    safeEval("skillMatch", () =>
+    _safeEval("skillMatch", () =>
       skillEvaluator({
         resumeSkills: resumeData.skills || [],
         jobSkills: finalJobSkills,
@@ -105,7 +80,7 @@ export async function runPipeline({
     ),
 
     // 🟡 Keyword Match
-    safeEval("keywordMatch", () =>
+    _safeEval("keywordMatch", () =>
       keywordEvaluator({
         resumeText,
         jobDescription: finalJobDescription,
@@ -115,7 +90,7 @@ export async function runPipeline({
     ),
 
     // 🔵 Experience Match
-    safeEval("experienceMatch", () =>
+    _safeEval("experienceMatch", () =>
       experienceEvaluator({
         candidateExperienceText: parseExperience(resumeData.experience),
         jobDescription: finalJobDescription,
@@ -144,7 +119,7 @@ export async function runPipeline({
           meta: {},
         };
       } else {
-        return await safeEval("semanticMatch", () =>
+        return await _safeEval("semanticMatch", () =>
           semanticEvaluator({
             resumeText,
             jobDescription,
@@ -154,35 +129,35 @@ export async function runPipeline({
     })(),
 
     // 🟣 Consistency Match
-    safeEval("consistencyMatch", () =>
+    _safeEval("consistencyMatch", () =>
       consistencyEvaluator({
         resumeText,
       }),
     ),
 
     // 🟠 Readability Match
-    safeEval("readabilityMatch", () =>
+    _safeEval("readabilityMatch", () =>
       readabilityEvaluator({
         resumeText,
       }),
     ),
 
     // 💥 Impact Match
-    safeEval("impactMatch", () =>
+    _safeEval("impactMatch", () =>
       impactEvaluator({
         resumeText,
       }),
     ),
 
     // 🏗️ ATS Optimization
-    safeEval("atsOptimization", () =>
+    _safeEval("atsOptimization", () =>
       atsOptimizationEvaluator({
         resumeData,
       }),
     ),
 
     // 🏛️ Tech Standard
-    safeEval("techStandard", () =>
+    _safeEval("techStandard", () =>
       techStandardEvaluator({
         resumeText,
       }),

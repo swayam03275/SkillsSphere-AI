@@ -12,10 +12,13 @@
     "install-all": "node scripts/install-all.js",
     "predev": "node scripts/verify-python-env.js",
     "dev": "node scripts/dev-all.js",
-    "dev:web": "concurrently \"cd client && npm run dev\" \"cd server && npm run dev\"",
+    "dev:web": "turbo run dev",
+    "build": "turbo run build",
     "quickstart": "node scripts/quickstart.js",
     "python:setup": "node scripts/python-setup.js",
-    "python:run": "node scripts/python-run.js"
+    "python:run": "node scripts/python-run.js",
+    "install:git-hooks": "node scripts/install-git-hooks.js",
+    "security:check-env": "node scripts/prevent-env-commit.js"
   },
   "dependencies": {
     "gcp-metadata": "^5.3.0",
@@ -26,6 +29,7 @@
     "autoprefixer": "^10.5.0",
     "concurrently": "^8.2.2",
     "postcss": "^8.5.12",
-    "tailwindcss": "^4.2.4"
+    "tailwindcss": "^4.2.4",
+    "turbo": "^2.9.16"
   }
 }

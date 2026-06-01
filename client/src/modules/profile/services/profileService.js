@@ -34,6 +34,24 @@ export const removeAvatar = async (token) => {
   } catch (error) { throw handleProfileError(error); }
 };
 
+export const getUserPreferences = async (token) => {
+  try {
+    const response = await apiRequest("/api/users/preferences", { token });
+    return { success: true, preferences: response.preferences };
+  } catch (error) { throw handleProfileError(error); }
+};
+
+export const updateUserPreferences = async (preferences, token) => {
+  try {
+    const response = await apiRequest("/api/users/preferences", {
+      method: "PUT",
+      body: preferences,
+      token,
+    });
+    return { success: true, preferences: response.preferences };
+  } catch (error) { throw handleProfileError(error); }
+};
+
 export const deleteProfile = async (token) => {
   try {
     const response = await apiRequest("/api/users/me", { method: "DELETE", token });

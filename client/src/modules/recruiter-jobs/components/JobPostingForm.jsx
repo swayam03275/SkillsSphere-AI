@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import PropTypes from "prop-types";
 import Input from "../../../shared/components/Input";
 import Select from "../../../shared/components/Select";
 import Button from "../../../shared/components/Button";
+import { useToast } from "../../../shared/components";
+import logger from "../../../utils/logger";
 
 const STATUS_OPTIONS = [
   { value: "draft", label: "Draft" },
@@ -35,9 +37,44 @@ const stringToArray = (str) =>
 const arrayToString = (arr) =>
   Array.isArray(arr) ? arr.join(", ") : arr || "";
 
+const getSubmitErrorMessage = (error) => {
+  if (error?.status === 0 || /network/i.test(error?.message || "")) {
+    return "Network error. Please check your connection and try again.";
+  }
+
+  if (error?.status >= 500) {
+    return "Server error. Please try posting the job again in a moment.";
+  }
+
+  if (error?.status === 400 || error?.status === 422 || error?.errors) {
+    return error?.message || "Please fix the highlighted fields and try again.";
+  }
+
+  return error?.message || "Something went wrong while posting the job. Please try again.";
+};
+
 const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldErrors = {} }) => {
-  const [formData, setFormData] = useState({
-    title: initialData.title || "",
+  const { success, error: showError } = useToast();
+  const isEditMode = Boolean(initialData?._id || initialData?.id);
+  const submitButtonText = isEditMode ? "Update Job" : "Post Job";
+  const loadingButtonText = isEditMode ? "Updating..." : "Posting...";
+  
+  // Unique draft key based on edit mode so we don't mix new drafts with edits
+  const draftKey = isEditMode ? `job_draft_${initialData._id || initialData.id}` : "job_draft_new";
+
+  const [formData, setFormData] = useState(() => {
+    // Attempt to load from local storage
+    try {
+      const savedDraft = localStorage.getItem(draftKey);
+      if (savedDraft) {
+        return JSON.parse(savedDraft);
+      }
+    } catch (e) {
+      logger.error("Failed to load draft:", e);
+    }
+
+    return {
+      title: initialData.title || "",
     description: initialData.description || "",
     skills: arrayToString(initialData.skills),
     requirements: arrayToString(initialData.requirements),
@@ -58,16 +95,32 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
       currency: initialData.salary?.currency || "INR",
       isNegotiable: initialData.salary?.isNegotiable || false,
     },
-  });
+  };
+});
 
   const [errors, setErrors] = useState({});
+  const [submitError, setSubmitError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submitLockRef = useRef(false);
+  const isFormSubmitting = isLoading || isSubmitting;
+
+  // Auto-save draft whenever formData changes
+  React.useEffect(() => {
+    try {
+      localStorage.setItem(draftKey, JSON.stringify(formData));
+    } catch (e) {
+      logger.error("Failed to save draft:", e);
+    }
+  }, [formData, draftKey]);
 
   // Merge local validation errors with backend field errors
   const allErrors = { ...errors, ...fieldErrors };
 
   const handleChange = (e) => {
+    if (isFormSubmitting) return;
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
+    setSubmitError("");
     // Clear error when user types
     if (errors[id]) {
       setErrors((prev) => ({ ...prev, [id]: null }));
@@ -75,20 +128,24 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
   };
 
   const handleLocationChange = (field, value) => {
+    if (isFormSubmitting) return;
     setFormData((prev) => ({
       ...prev,
       location: { ...prev.location, [field]: value },
     }));
+    setSubmitError("");
     if (errors[`location.${field}`]) {
       setErrors((prev) => ({ ...prev, [`location.${field}`]: null }));
     }
   };
 
   const handleSalaryChange = (field, value) => {
+    if (isFormSubmitting) return;
     setFormData((prev) => ({
       ...prev,
       salary: { ...prev.salary, [field]: value },
     }));
+    setSubmitError("");
     if (errors[`salary.${field}`]) {
       setErrors((prev) => ({ ...prev, [`salary.${field}`]: null }));
     }
@@ -128,10 +185,19 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validate())  return; 
-      // Explicit field mapping — only sends fields defined in the JobPosting schema
+    if (isFormSubmitting || submitLockRef.current) return;
+
+    setSubmitError("");
+
+    if (!validate()) {
+      const message = "Please fix the highlighted fields before posting the job.";
+      setSubmitError(message);
+      showError(message);
+      return;
+    }
+    // Explicit field mapping: only sends fields defined in the JobPosting schema.
     const payload = {
       title: formData.title.trim(),
       description: formData.description.trim(),
@@ -156,11 +222,49 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
       },
     };
 
-    onSubmit(payload);
+    submitLockRef.current = true;
+    setIsSubmitting(true);
+
+    try {
+      const response = await onSubmit(payload);
+
+      if (response === false || response?.success === false) {
+        throw new Error(response?.message || "Unexpected response from the server. Please try again.");
+      }
+
+      // Clear draft on successful submit
+      localStorage.removeItem(draftKey);
+      success("Job posted successfully.");
+    } catch (error) {
+      const message = getSubmitErrorMessage(error);
+      setSubmitError(message);
+      showError(message);
+    } finally {
+      submitLockRef.current = false;
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-6"
+      noValidate
+      aria-busy={isFormSubmitting}
+      aria-label="Job posting form"
+    >
+      {submitError && (
+        <div
+          className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm flex items-start gap-3"
+          role="alert"
+        >
+          <svg className="w-5 h-5 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fillRule="evenodd" d="M18 10A8 8 0 1 1 2 10a8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
+          </svg>
+          <p>{submitError}</p>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Input
           id="title"
@@ -169,6 +273,7 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
           value={formData.title}
           onChange={handleChange}
           error={allErrors.title}
+          disabled={isFormSubmitting}
           required
         />
         <Select
@@ -178,6 +283,7 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
           value={formData.status}
           onChange={handleChange}
           error={allErrors.status}
+          disabled={isFormSubmitting}
           required
         />
       </div>
@@ -190,6 +296,7 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
           value={formData.jobLevel}
           onChange={handleChange}
           error={allErrors.jobLevel}
+          disabled={isFormSubmitting}
           required
         />
         <Input
@@ -201,6 +308,7 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
           value={formData.experienceRequired}
           onChange={handleChange}
           error={allErrors.experienceRequired}
+          disabled={isFormSubmitting}
           required
         />
       </div>
@@ -221,6 +329,7 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
           placeholder="Describe the role, responsibilities, and team..."
           value={formData.description}
           onChange={handleChange}
+          disabled={isFormSubmitting}
         />
         {allErrors.description && (
           <p data-testid="error-description" className="text-xs text-red-400 flex items-center gap-1 mt-1">
@@ -249,6 +358,7 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
           placeholder="e.g. react, typescript, node.js, aws"
           value={formData.skills}
           onChange={handleChange}
+          disabled={isFormSubmitting}
         />
         <p className="text-xs text-slate-500">Comma-separated. Stored in lowercase — used to match candidates.</p>
         {allErrors.skills && <p data-testid="error-skills" className="text-xs text-red-400">{allErrors.skills}</p>}
@@ -265,6 +375,7 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
           placeholder="e.g. 3+ years experience, B.Tech in CS, Strong DSA"
           value={formData.requirements}
           onChange={handleChange}
+          disabled={isFormSubmitting}
         />
         <p className="text-xs text-slate-500">Comma-separated list of candidate qualifications.</p>
       </div>
@@ -280,6 +391,7 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
           placeholder="e.g. Design microservices, Lead code reviews, Mentor juniors"
           value={formData.responsibilities}
           onChange={handleChange}
+          disabled={isFormSubmitting}
         />
         <p className="text-xs text-slate-500">Comma-separated list of key responsibilities.</p>
       </div>
@@ -295,6 +407,7 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
           placeholder="e.g. remote, fintech, startup, react"
           value={formData.keywords}
           onChange={handleChange}
+          disabled={isFormSubmitting}
         />
         <p className="text-xs text-slate-500">Comma-separated keywords to improve job discoverability.</p>
       </div>
@@ -309,6 +422,7 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
             value={formData.location.city}
             onChange={(e) => handleLocationChange("city", e.target.value)}
             error={allErrors["location.city"]}
+            disabled={isFormSubmitting}
             required
           />
           <Input
@@ -318,6 +432,7 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
             value={formData.location.state}
             onChange={(e) => handleLocationChange("state", e.target.value)}
             error={allErrors["location.state"]}
+            disabled={isFormSubmitting}
             required
           />
           <Input
@@ -327,6 +442,7 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
             value={formData.location.country}
             onChange={(e) => handleLocationChange("country", e.target.value)}
             error={allErrors["location.country"]}
+            disabled={isFormSubmitting}
             required
           />
         </div>
@@ -336,6 +452,7 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
             id="location.remote"
             checked={formData.location.remote}
             onChange={(e) => handleLocationChange("remote", e.target.checked)}
+            disabled={isFormSubmitting}
             className="rounded border-slate-600 bg-slate-800 text-blue-600 focus:ring-blue-500"
           />
           <label htmlFor="location.remote" className="text-sm text-gray-300">
@@ -355,6 +472,7 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
             value={formData.salary.min}
             onChange={(e) => handleSalaryChange("min", e.target.value)}
             error={allErrors["salary.min"]}
+            disabled={isFormSubmitting}
             required
           />
           <Input
@@ -365,6 +483,7 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
             value={formData.salary.max}
             onChange={(e) => handleSalaryChange("max", e.target.value)}
             error={allErrors["salary.max"]}
+            disabled={isFormSubmitting}
             required
           />
           <Select
@@ -374,6 +493,7 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
             value={formData.salary.currency}
             onChange={(e) => handleSalaryChange("currency", e.target.value)}
             error={allErrors["salary.currency"]}
+            disabled={isFormSubmitting}
           />
         </div>
         <div className="mt-4 flex items-center gap-2">
@@ -382,6 +502,7 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
             id="salary.isNegotiable"
             checked={formData.salary.isNegotiable}
             onChange={(e) => handleSalaryChange("isNegotiable", e.target.checked)}
+            disabled={isFormSubmitting}
             className="rounded border-slate-600 bg-slate-800 text-blue-600 focus:ring-blue-500"
           />
           <label htmlFor="salary.isNegotiable" className="text-sm text-gray-300">
@@ -394,10 +515,35 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
         <Button
           type="submit"
           variant="primary"
-          loading={isLoading}
-          className="px-8 bg-blue-600 hover:bg-blue-500"
+          disabled={isFormSubmitting}
+          aria-busy={isFormSubmitting}
+          className="px-8 bg-blue-600 hover:bg-blue-500 min-w-32"
         >
-          {(initialData._id || initialData.id) ? "Update Job Posting" : "Create Job Posting"}
+          {isFormSubmitting && (
+            <svg
+              data-testid="submit-spinner"
+              className="h-4 w-4 animate-spin"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+              />
+            </svg>
+          )}
+          {isFormSubmitting ? loadingButtonText : submitButtonText}
         </Button>
       </div>
     </form>

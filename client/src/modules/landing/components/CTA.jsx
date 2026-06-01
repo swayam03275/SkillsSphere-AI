@@ -1,7 +1,6 @@
 import { useSelector } from "react-redux";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
-
 const CTA = () => {
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const isRecruiter = user?.role === "recruiter";

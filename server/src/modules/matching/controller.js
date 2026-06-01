@@ -14,8 +14,6 @@ export const evaluate = asyncHandler(async (req, res, next) => {
   let resume;
 
   if (req.file) {
-    // 1. Fresh upload-then-parse flow
-    // If a file is provided, we parse it and update the user's stored resume
     const parsedData = await parseResume(req.file.path);
     
     resume = await resumeService.upsertResume(req.user._id, {
@@ -28,6 +26,10 @@ export const evaluate = asyncHandler(async (req, res, next) => {
         mimeType: req.file.mimetype,
       },
     }, true);
+
+    if (req.file?.path) {
+      await fsPromises.unlink(req.file.path).catch(() => {});
+    }
   } else {
     // 2. Resume library reuse flow
     // If no file is provided, we use the user's latest parsed resume record

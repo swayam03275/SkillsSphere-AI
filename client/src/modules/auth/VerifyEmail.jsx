@@ -10,6 +10,8 @@ import Button from "../../shared/components/Button";
 import Input from "../../shared/components/Input";
 import { useToast } from "../../shared/components";
 import { ShieldCheck, ArrowLeft, CheckCircle } from "lucide-react";
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
+
 
 const OTP_LENGTH = 6;
 const COOLDOWN_SECONDS = 60;
@@ -17,6 +19,7 @@ const COOLDOWN_SECONDS = 60;
 const isValidEmail = (email) => /\S+@\S+\.\S+/.test(email);
 
 const VerifyEmail = () => {
+  useDocumentTitle("Verify Email");
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();

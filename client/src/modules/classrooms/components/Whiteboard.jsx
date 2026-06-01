@@ -1,6 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
 import { Trash2, Eraser, Edit2 } from "lucide-react";
-
 export default function Whiteboard({ socket, roomId, userRole }) {
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);

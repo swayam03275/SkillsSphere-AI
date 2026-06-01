@@ -1,5 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
+import logger from "./logger.js";
+
 /**
  * Service to interact with the Gemini API for text generation tasks.
  */
@@ -54,7 +56,7 @@ export const generateCoverLetter = async (prompt) => {
       text: text.trim(),
     };
   } catch (error) {
-    console.error("Gemini API Error:", error.message || error);
+    logger.error("Gemini API Error:", error.message || error);
 
     let errorMessage = "Failed to generate cover letter due to an API error.";
 

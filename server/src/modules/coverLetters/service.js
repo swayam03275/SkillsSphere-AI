@@ -34,7 +34,7 @@ export const generateCoverLetterService = async (userId, resumeId, jobDescriptio
     : "my diverse skill set and technical capabilities";
 
   const formattedProjects = resume.projects && resume.projects.length > 0
-    ? resume.projects[0] // Highlight the first project
+    ? resume.projects[0].title || resume.projects[0].name || "a key project"
     : "various technical projects and hands-on coursework";
 
   // Construct a professional, dynamic cover letter template

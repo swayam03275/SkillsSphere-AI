@@ -1,6 +1,12 @@
 import LearningProgress from "../../database/models/LearningProgress.js";
+import User from "../../database/models/User.js";
+import RoadmapComment from "../../database/models/RoadmapComment.js";
 import asyncHandler from "../../utils/asyncHandler.js";
 import AppError from "../../utils/AppError.js";
+import { getIO } from "../../utils/socketIO.js";
+import { createNotification } from "../notifications/service.js";
+
+import logger from "../../utils/logger.js";
 
 /**
  * Get the current user's learning progress and roadmap
@@ -104,12 +110,59 @@ export const updateTopicStatus = asyncHandler(async (req, res) => {
     topic.completedAt = Date.now();
   }
 
+  // --- Achievement Calculation Logic ---
+  let newBadgesEarned = [];
+  if (status === "completed") {
+    const hasBadge = (badgeName) => progress.achievements?.some(a => a.badge === badgeName);
+    
+    // 1. First Milestone Completed
+    const completedTopics = progress.roadmap.filter(t => t.status === "completed");
+    if (completedTopics.length === 1 && !hasBadge("First Milestone Completed")) {
+      progress.achievements.push({ badge: "First Milestone Completed" });
+      newBadgesEarned.push("First Milestone Completed");
+    }
+
+    // 2. Open Source Explorer
+    if (topic.type === "contribution" && !hasBadge("Open Source Explorer")) {
+      progress.achievements.push({ badge: "Open Source Explorer" });
+      newBadgesEarned.push("Open Source Explorer");
+    }
+
+    // 3. Roadmap Champion
+    // overallProgress is calculated in a pre-save hook, but we can do a quick calc here
+    const totalTopics = progress.roadmap.length;
+    if (totalTopics > 0 && completedTopics.length === totalTopics && !hasBadge("Roadmap Champion")) {
+      progress.achievements.push({ badge: "Roadmap Champion" });
+      newBadgesEarned.push("Roadmap Champion");
+    }
+  }
+  // -------------------------------------
+
   await progress.save();
+
+  // Create system comment
+  try {
+    const systemComment = await RoadmapComment.create({
+      roadmap: progress._id,
+      milestoneId: topicId,
+      sender: req.user._id,
+      content: `Marked milestone as ${status.replace("_", " ")}`,
+      type: "status_change",
+    });
+    const populated = await systemComment.populate("sender", "name email role");
+    const io = getIO();
+    if (io) {
+      io.to(`roadmap_${progress._id}`).emit("new-roadmap-comment", populated);
+    }
+  } catch (error) {
+    logger.error("Failed to save status change comment log:", error);
+  }
 
   res.status(200).json({
     success: true,
     message: `Topic marked as ${status.replace("_", " ")}`,
-    data: progress
+    data: progress,
+    newBadges: newBadgesEarned
   });
 });
 
@@ -209,6 +262,34 @@ export const assignTutorResource = asyncHandler(async (req, res) => {
 
   await progress.save();
 
+  // Create system comment log and send notification
+  try {
+    const systemComment = await RoadmapComment.create({
+      roadmap: progress._id,
+      milestoneId: topicId,
+      sender: req.user._id,
+      content: `Assigned resource: "${title.trim()}" (${type})`,
+      type: "task_assigned",
+    });
+    const populated = await systemComment.populate("sender", "name email role");
+    const io = getIO();
+    if (io) {
+      io.to(`roadmap_${progress._id}`).emit("new-roadmap-comment", populated);
+      
+      // Notify student
+      const notif = await createNotification({
+        userId: studentId,
+        title: "New Resource Assigned",
+        message: `Tutor ${req.user.name} assigned resource "${title.trim()}" to "${topic.topicName}"`,
+        type: "system",
+        metadata: { roadmapId: progress._id.toString(), milestoneId: topicId }
+      });
+      io.to(`user_${studentId}`).emit("new-notification", notif);
+    }
+  } catch (error) {
+    logger.error("Failed to process resource assignment notification/log:", error);
+  }
+
   res.status(200).json({
     success: true,
     message: "Resource assigned successfully by tutor",
@@ -253,12 +334,68 @@ export const verifyTopic = asyncHandler(async (req, res) => {
     topic.verifiedAt = null;
   }
 
+  // --- Achievement Calculation Logic ---
+  let newBadgesEarned = [];
+  if (isVerified) {
+    const hasBadge = (badgeName) => progress.achievements?.some(a => a.badge === badgeName);
+    
+    // 1. First Milestone Completed
+    const completedTopics = progress.roadmap.filter(t => t.status === "completed");
+    if (completedTopics.length === 1 && !hasBadge("First Milestone Completed")) {
+      progress.achievements.push({ badge: "First Milestone Completed" });
+      newBadgesEarned.push("First Milestone Completed");
+    }
+
+    // 2. Open Source Explorer
+    if (topic.type === "contribution" && !hasBadge("Open Source Explorer")) {
+      progress.achievements.push({ badge: "Open Source Explorer" });
+      newBadgesEarned.push("Open Source Explorer");
+    }
+
+    // 3. Roadmap Champion
+    const totalTopics = progress.roadmap.length;
+    if (totalTopics > 0 && completedTopics.length === totalTopics && !hasBadge("Roadmap Champion")) {
+      progress.achievements.push({ badge: "Roadmap Champion" });
+      newBadgesEarned.push("Roadmap Champion");
+    }
+  }
+  // -------------------------------------
+
   await progress.save();
+
+  // Create system comment log and send notification
+  try {
+    const systemComment = await RoadmapComment.create({
+      roadmap: progress._id,
+      milestoneId: topicId,
+      sender: req.user._id,
+      content: isVerified ? "Milestone verified by tutor" : "Milestone verification removed",
+      type: "status_change",
+    });
+    const populated = await systemComment.populate("sender", "name email role");
+    const io = getIO();
+    if (io) {
+      io.to(`roadmap_${progress._id}`).emit("new-roadmap-comment", populated);
+      
+      // Notify student
+      const notif = await createNotification({
+        userId: studentId,
+        title: isVerified ? "Milestone Verified" : "Milestone Verification Removed",
+        message: `Tutor ${req.user.name} ${isVerified ? "verified" : "removed verification for"} milestone "${topic.topicName}"`,
+        type: "system",
+        metadata: { roadmapId: progress._id.toString(), milestoneId: topicId }
+      });
+      io.to(`user_${studentId}`).emit("new-notification", notif);
+    }
+  } catch (error) {
+    logger.error("Failed to process milestone verification notification/log:", error);
+  }
 
   res.status(200).json({
     success: true,
     message: isVerified ? "Milestone verified by tutor" : "Milestone verification removed",
-    data: progress
+    data: progress,
+    newBadges: newBadgesEarned
   });
 });
 
@@ -298,6 +435,37 @@ export const addTutorMilestone = asyncHandler(async (req, res) => {
 
   await progress.save();
 
+  // Create system comment log and send notification
+  try {
+    const newTopic = progress.roadmap[progress.roadmap.length - 1];
+    if (newTopic) {
+      const systemComment = await RoadmapComment.create({
+        roadmap: progress._id,
+        milestoneId: newTopic._id,
+        sender: req.user._id,
+        content: `Custom milestone added by tutor: "${topicName.trim()}"`,
+        type: "status_change",
+      });
+      const populated = await systemComment.populate("sender", "name email role");
+      const io = getIO();
+      if (io) {
+        io.to(`roadmap_${progress._id}`).emit("new-roadmap-comment", populated);
+        
+        // Notify student
+        const notif = await createNotification({
+          userId: studentId,
+          title: "New Custom Milestone Added",
+          message: `Tutor ${req.user.name} added custom milestone "${topicName.trim()}" to your roadmap`,
+          type: "system",
+          metadata: { roadmapId: progress._id.toString(), milestoneId: newTopic._id.toString() }
+        });
+        io.to(`user_${studentId}`).emit("new-notification", notif);
+      }
+    }
+  } catch (error) {
+    logger.error("Failed to process custom milestone notification/log:", error);
+  }
+
   res.status(201).json({
     success: true,
     message: "Custom milestone added successfully by tutor",
@@ -313,6 +481,11 @@ export const optInRecruiterTracking = asyncHandler(async (req, res) => {
 
   if (!recruiterId) {
     throw new AppError("Recruiter ID is required", 400);
+  }
+
+  const recruiter = await User.findById(recruiterId);
+  if (!recruiter || recruiter.role !== "recruiter") {
+    throw new AppError("Invalid user ID or user is not a recruiter", 403);
   }
 
   const progress = await LearningProgress.findOne({ user: req.user._id });
@@ -339,6 +512,11 @@ export const optInTutorTracking = asyncHandler(async (req, res) => {
 
   if (!tutorId) {
     throw new AppError("Tutor ID is required", 400);
+  }
+
+  const tutor = await User.findById(tutorId);
+  if (!tutor || tutor.role !== "tutor") {
+    throw new AppError("Invalid user ID or user is not a tutor", 403);
   }
 
   const progress = await LearningProgress.findOne({ user: req.user._id });
@@ -372,5 +550,123 @@ export const getTrackedRoadmaps = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     data: roadmaps
+  });
+});
+
+/**
+ * Get comments/collaboration feed for a specific learning roadmap
+ */
+export const getRoadmapComments = asyncHandler(async (req, res) => {
+  const { id: roadmapId } = req.params;
+  const { milestoneId } = req.query;
+
+  const progress = await LearningProgress.findById(roadmapId);
+  if (!progress) {
+    throw new AppError("Roadmap not found", 404);
+  }
+
+  // Auth check: student themselves, tracking tutor, or tracking recruiter
+  const isStudent = progress.user.toString() === req.user._id.toString();
+  const isTutor = progress.tutorsTracking && progress.tutorsTracking.some(id => id.toString() === req.user._id.toString());
+  const isRecruiter = progress.recruitersTracking && progress.recruitersTracking.some(id => id.toString() === req.user._id.toString());
+
+  if (!isStudent && !isTutor && !isRecruiter) {
+    throw new AppError("You are not authorized to view comments for this roadmap", 403);
+  }
+
+  const query = { roadmap: roadmapId };
+  if (milestoneId) {
+    query.milestoneId = milestoneId;
+  }
+
+  const comments = await RoadmapComment.find(query)
+    .populate("sender", "name email role")
+    .sort({ createdAt: 1 });
+
+  res.status(200).json({
+    success: true,
+    data: comments
+  });
+});
+
+/**
+ * Add a comment or collaboration log on a milestone
+ */
+export const postRoadmapComment = asyncHandler(async (req, res) => {
+  const { id: roadmapId } = req.params;
+  const { milestoneId, content, type = "comment" } = req.body;
+
+  if (!milestoneId || !content) {
+    throw new AppError("milestoneId and content are required", 400);
+  }
+
+  const progress = await LearningProgress.findById(roadmapId).populate("user", "name email");
+  if (!progress) {
+    throw new AppError("Roadmap not found", 404);
+  }
+
+  // Auth check
+  const isStudent = progress.user._id.toString() === req.user._id.toString();
+  const isTutor = progress.tutorsTracking && progress.tutorsTracking.some(id => id.toString() === req.user._id.toString());
+  const isRecruiter = progress.recruitersTracking && progress.recruitersTracking.some(id => id.toString() === req.user._id.toString());
+
+  if (!isStudent && !isTutor && !isRecruiter) {
+    throw new AppError("You are not authorized to comment on this roadmap", 403);
+  }
+
+  // Find the milestone name for the notification
+  const milestone = progress.roadmap.id(milestoneId);
+  const milestoneName = milestone ? milestone.topicName : "Milestone";
+
+  const comment = await RoadmapComment.create({
+    roadmap: roadmapId,
+    milestoneId,
+    sender: req.user._id,
+    content,
+    type
+  });
+
+  const populatedComment = await comment.populate("sender", "name email role");
+
+  // Emit in real-time via Socket.io
+  const io = getIO();
+  if (io) {
+    io.to(`roadmap_${roadmapId}`).emit("new-roadmap-comment", populatedComment);
+  }
+
+  // Send notifications
+  try {
+    if (isStudent && progress.tutorsTracking && progress.tutorsTracking.length > 0) {
+      for (const tutorId of progress.tutorsTracking) {
+        const notif = await createNotification({
+          userId: tutorId,
+          title: "New Roadmap Comment",
+          message: `${req.user.name} commented on "${milestoneName}": ${content}`,
+          type: "message",
+          metadata: { roadmapId, milestoneId }
+        });
+        if (io) {
+          io.to(`user_${tutorId}`).emit("new-notification", notif);
+        }
+      }
+    } else if (isTutor && progress.user) {
+      const notif = await createNotification({
+        userId: progress.user._id,
+        title: "New Roadmap Comment",
+        message: `Tutor ${req.user.name} commented on "${milestoneName}": ${content}`,
+        type: "message",
+        metadata: { roadmapId, milestoneId }
+      });
+      if (io) {
+        io.to(`user_${progress.user._id}`).emit("new-notification", notif);
+      }
+    }
+  } catch (error) {
+    logger.error("Error creating comment notification:", error);
+  }
+
+  res.status(201).json({
+    success: true,
+    data: populatedComment
   });
 });

@@ -3,8 +3,6 @@ import PropTypes from "prop-types";
 import { Search, Filter, Calendar, IndianRupee, X } from "lucide-react";
 import Input from "../../../shared/components/Input";
 import Select from "../../../shared/components/Select";
-
-
 const JobFilters = ({ onFilterChange }) => {
   const [filters, setFilters] = useState({
     designation: "",

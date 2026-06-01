@@ -3,6 +3,8 @@ import User from "../../database/models/User.js";
 import LearningProgress from "../../database/models/LearningProgress.js";
 import InterviewSession from "../../database/models/InterviewSession.js";
 
+import logger from "../../utils/logger.js";
+
 /**
  * Compile global/class-wide student skill data.
  * This runs a MongoDB aggregation pipeline to count skill frequencies
@@ -46,7 +48,7 @@ export const getSkillGapHeatmap = async (req, res) => {
       data: chartData
     });
   } catch (error) {
-    console.error("Error in getSkillGapHeatmap aggregation:", error);
+    logger.error("Error in getSkillGapHeatmap aggregation:", error);
     res.status(500).json({ success: false, message: "Failed to compile skill gap data" });
   }
 };
@@ -80,24 +82,33 @@ export const getDashboardAnalytics = async (req, res) => {
     } 
     
     if (role === "tutor") {
-      // Tutor: Aggregated performance metrics
-      const allInterviews = await InterviewSession.find({ status: "completed" }).lean();
-      const averagePlatformScore = allInterviews.length > 0
-        ? Math.round(allInterviews.reduce((acc, curr) => acc + curr.overallScore, 0) / allInterviews.length)
-        : 0;
-        
-      const activeStudents = await LearningProgress.countDocuments({ overallProgress: { $gt: 0 } });
+  const [result, activeStudents] = await Promise.all([
+    InterviewSession.aggregate([
+      { $match: { status: "completed" } },
+      { $group: {
+        _id: null,
+        averagePlatformScore: { $avg: "$overallScore" },
+        totalMockInterviewsCompleted: { $sum: 1 }
+      }}
+    ]),
+    LearningProgress.countDocuments({ overallProgress: { $gt: 0 } })
+  ]);
 
-      return res.status(200).json({
-        success: true,
-        data: {
-          role,
-          averagePlatformScore,
-          totalMockInterviewsCompleted: allInterviews.length,
-          activeStudents
-        }
-      });
+  const averagePlatformScore = result[0]
+    ? Math.round(result[0].averagePlatformScore)
+    : 0;
+  const totalMockInterviewsCompleted = result[0]?.totalMockInterviewsCompleted || 0;
+
+  return res.status(200).json({
+    success: true,
+    data: {
+      role,
+      averagePlatformScore,
+      totalMockInterviewsCompleted,
+      activeStudents
     }
+  });
+}
 
     if (role === "recruiter") {
       // Recruiter: Talent pool density map
@@ -120,7 +131,7 @@ export const getDashboardAnalytics = async (req, res) => {
 
     res.status(403).json({ success: false, message: "Role not recognized for analytics" });
   } catch (error) {
-    console.error("Error in getDashboardAnalytics:", error);
+    logger.error("Error in getDashboardAnalytics:", error);
     res.status(500).json({ success: false, message: "Failed to fetch analytics" });
   }
 };

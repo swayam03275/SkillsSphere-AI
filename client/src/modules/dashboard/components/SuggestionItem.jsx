@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { 
+
   AlertCircle, 
   Sparkles, 
   TrendingUp, 
@@ -21,7 +22,7 @@ const SuggestionItem = ({ suggestion }) => {
         bg: "bg-red-500/5",
         border: "border-red-500/20",
         label: "Critical Action",
-        textColor: "text-red-300"
+        textColor: "text-red-600 dark:text-red-300"
       };
     }
     
@@ -31,7 +32,7 @@ const SuggestionItem = ({ suggestion }) => {
         bg: "bg-blue-500/5",
         border: "border-blue-500/20",
         label: "Strategic Tip",
-        textColor: "text-blue-300"
+        textColor: "text-blue-600 dark:text-blue-300"
       };
     }
 
@@ -41,7 +42,7 @@ const SuggestionItem = ({ suggestion }) => {
         bg: "bg-emerald-500/5",
         border: "border-emerald-500/20",
         label: "Growth Area",
-        textColor: "text-emerald-300"
+        textColor: "text-emerald-600 dark:text-emerald-300"
       };
     }
 
@@ -50,17 +51,17 @@ const SuggestionItem = ({ suggestion }) => {
       bg: "bg-amber-500/5",
       border: "border-amber-500/20",
       label: "Critical Action",
-      textColor: "text-amber-300"
+      textColor: "text-amber-600 dark:text-amber-300"
     };
   }, [text, priority]);
 
   const { icon, bg, border, label, textColor } = suggestionDetails;
 
   return (
-    <div className={`group flex flex-col gap-2 p-4 rounded-xl border ${bg} ${border} transition-all duration-300 hover:bg-white/[0.02]`}>
+    <div className={`group flex flex-col gap-2 p-4 rounded-xl border ${bg} ${border} transition-all duration-300 hover:bg-gray-50 dark:hover:bg-white/[0.02]`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className={`p-1.5 rounded-lg ${bg} border border-white/5`}>
+          <div className={`p-1.5 rounded-lg ${bg} border border-gray-200 dark:border-white/5`}>
             {icon}
           </div>
           <span className={`text-[10px] font-bold uppercase tracking-widest ${textColor}`}>{label}</span>
@@ -72,7 +73,7 @@ const SuggestionItem = ({ suggestion }) => {
           const cleanWord = word.toLowerCase().replace(/[^a-z]/g, '');
           const isHighlight = ['skills', 'projects', 'metrics', 'achievements', 'keywords', 'experience', 'ats', 'readability'].includes(cleanWord);
           return (
-            <span key={i} className={isHighlight ? 'text-white font-bold' : ''}>
+            <span key={i} className={isHighlight ? 'text-gray-900 dark:text-white font-bold' : ''}>
               {word}{' '}
             </span>
           );

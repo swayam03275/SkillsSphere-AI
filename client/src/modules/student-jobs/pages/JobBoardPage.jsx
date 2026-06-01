@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useSelector } from "react-redux";
-import { Briefcase, Info } from "lucide-react";
-import Navbar from "../../../shared/landing/Navbar";
+import { Link } from "react-router-dom";
+import { Briefcase, Info, ArrowLeft } from "lucide-react";
+import Navbar from "../../../shared/components/Navbar";
+import Footer from "../../../shared/components/Footer";
+
 import ErrorState from "../../../shared/components/ErrorState";
 import EmptyState from "../../../shared/components/EmptyState";
 import { JobViewerCard, Pagination } from "../../../shared/components";
@@ -9,9 +12,13 @@ import JobFilters from "../components/JobFilters";
 import JobApplyForm from "../components/JobApplyForm";
 import { getJobs, applyToJob, getMyAppliedJobIds } from "../services/jobService";
 import JobCardSkeleton from "../components/JobCardSkeleton";
+import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
+import { useToast } from "../../../shared/components/toast/ToastProvider";
 
 const JobBoardPage = () => {
+  useDocumentTitle("Job Board");
   const { token, user } = useSelector((state) => state.auth);
+  const toast = useToast();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -80,7 +87,7 @@ const JobBoardPage = () => {
         setAppliedJobIds((prev) => new Set([...prev, jobId]));
         setApplyModalJob(null);
       } else {
-        alert(msg);
+        toast.error(msg);
       }
     } finally {
       setApplyingJobId(null);
@@ -88,15 +95,21 @@ const JobBoardPage = () => {
   };
 
   return (
-    <main className="min-h-screen bg-white dark:bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] text-gray-900 dark:text-slate-100 flex flex-col">
+    <main className="min-h-screen bg-white dark:bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] text-gray-900 dark:text-slate-100 flex flex-col pt-24">
       <Navbar />
       
-      {/* Spacer to push content below the fixed Navbar */}
-      <div className="h-32 md:h-40 shrink-0"></div>
+
       
       <div className="container mx-auto px-4 pb-12 flex-1">
         {/* Header Section */}
         <div className="mb-16 text-center max-w-3xl mx-auto">
+          <Link 
+            to="/dashboard" 
+            className="inline-flex items-center gap-2 text-sm text-blue-500 hover:text-blue-400 mb-6 transition-colors"
+          >
+            <ArrowLeft size={16} />
+            Back to Dashboard
+          </Link>
           <h1 className="text-5xl md:text-6xl font-black mb-6 tracking-tight leading-tight">
             <span className="text-gradient">Opportunities</span> Await
           </h1>
@@ -189,6 +202,7 @@ const JobBoardPage = () => {
           isSubmitting={!!applyingJobId}
         />
       )}
+          <Footer />
     </main>
   );
 };

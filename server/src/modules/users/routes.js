@@ -1,11 +1,21 @@
 import express from "express";
 import { protect } from "../../middleware/authMiddleware.js";
 import { uploadAvatarMiddleware } from "../../middleware/uploadAvatar.js";
-import { updateProfile, deleteProfile, uploadAvatar, removeAvatar } from "./controller.js";
+import {
+  updateProfile,
+  deleteProfile,
+  uploadAvatar,
+  removeAvatar,
+  getPreferences,
+  updatePreferences,
+} from "./controller.js";
 
 const router = express.Router();
 
 router.use(protect);
+
+router.get("/preferences", getPreferences);
+router.put("/preferences", updatePreferences);
 
 // 👤 Update profile name
 router.put("/me", updateProfile);

@@ -12,6 +12,13 @@ import redisClient from "../../config/redis.js";
 import Notification from "../../database/models/Notification.js";
 import { getIO } from "../../utils/socketIO.js";
 
+import logger from "../../utils/logger.js";
+
+// Guards against concurrent answer submissions for the same session.
+// Since processAnswerSubmission spans async I/O (transcription, evaluation),
+// two calls can otherwise read the same currentQuestionIndex and collide.
+const pendingSubmissions = new Map();
+
 /**
  * Select random questions from the bank for a given topic and difficulty.
  * Avoids repeating questions from the user's last 3 sessions on the same topic.
@@ -111,110 +118,131 @@ export const processAnswerSubmission = async ({
   transcript,
   audioFile,
 }) => {
-  const session = await InterviewSession.findOne({
-    _id: sessionId,
-    userId,
-    status: "in_progress",
-  });
+  const lockKey = `interview_lock:${sessionId}`;
+  const useRedis = redisClient.isReady;
 
-  if (!session) {
-    throw new AppError("Active interview session not found", 404);
+  if (useRedis) {
+    const acquired = await redisClient.set(lockKey, "LOCKED", { NX: true, EX: 30 });
+    if (!acquired) {
+      throw new AppError("Answer submission already in progress for this session", 429);
+    }
+  } else {
+    if (pendingSubmissions.get(sessionId)) {
+      throw new AppError("Answer submission already in progress for this session", 429);
+    }
+    pendingSubmissions.set(sessionId, true);
   }
 
-  const currentIndex = session.currentQuestionIndex;
+  try {
+    const session = await InterviewSession.findOne({
+      _id: sessionId,
+      userId,
+      status: "in_progress",
+    });
 
-  if (currentIndex >= session.totalQuestions) {
-    throw new AppError("All questions have been answered", 400);
-  }
+    if (!session) {
+      throw new AppError("Active interview session not found", 404);
+    }
 
-  const currentAnswer = session.answers[currentIndex];
+    const currentIndex = session.currentQuestionIndex;
 
-  // Get the full question details for evaluation
-  const question = await QuestionBank.findById(currentAnswer.questionId);
+    if (currentIndex >= session.totalQuestions) {
+      throw new AppError("All questions have been answered", 400);
+    }
 
-  if (!question) {
-    throw new AppError("Question not found in bank", 500);
-  }
+    const currentAnswer = session.answers[currentIndex];
 
-  // Step 1: If audio file provided, transcribe it via Python service
-  let finalTranscript = transcript;
-  if (audioFile && !transcript) {
+    // Get the full question details for evaluation
+    const question = await QuestionBank.findById(currentAnswer.questionId);
+
+    if (!question) {
+      throw new AppError("Question not found in bank", 500);
+    }
+
+    // Step 1: If audio file provided, transcribe it via Python service
+    let finalTranscript = transcript;
+    if (audioFile && !transcript) {
+      try {
+        const transcription = await transcribeAudio(audioFile.buffer);
+        finalTranscript = transcription.transcript;
+      } catch (err) {
+        logger.error("[interview] Transcription failed:", err.message);
+        throw new AppError("Audio transcription failed. Please try submitting text instead.", 500);
+      }
+    }
+
+    if (!finalTranscript || finalTranscript.trim().length === 0) {
+      throw new AppError("No transcript available for evaluation", 400);
+    }
+
+    // Step 2: Evaluate the answer via Python service
+    let evaluation;
     try {
-      const transcription = await transcribeAudio(audioFile.buffer);
-      finalTranscript = transcription.transcript;
+      evaluation = await evaluateAnswer(
+        finalTranscript,
+        question.expectedAnswer,
+        question.expectedConcepts
+      );
     } catch (err) {
-      console.error("[interview] Transcription failed:", err.message);
-      // Fall back — allow text-only submission
-      throw new AppError("Audio transcription failed. Please try submitting text instead.", 500);
+      logger.error("[interview] Evaluation failed:", err.message);
+      evaluation = {
+        technical: 0,
+        communication: 0,
+        relevance: 0,
+        concepts: { detected: [], missed: question.expectedConcepts },
+        fillerWords: 0,
+        speakingSpeed: "normal",
+      };
+    }
+
+    // Step 3: Update the session with the answer data
+    session.answers[currentIndex].transcript = finalTranscript;
+    session.answers[currentIndex].scores = {
+      technical: evaluation.technical || 0,
+      communication: evaluation.communication || 0,
+      relevance: evaluation.relevance || 0,
+    };
+    session.answers[currentIndex].concepts.detected =
+      evaluation.concepts?.detected || [];
+    session.answers[currentIndex].concepts.missed =
+      evaluation.concepts?.missed || [];
+    session.answers[currentIndex].fillerWords = evaluation.fillerWords || 0;
+    session.answers[currentIndex].speakingSpeed =
+      evaluation.speakingSpeed || "normal";
+    session.answers[currentIndex].answeredAt = new Date();
+
+    if (audioFile) {
+      session.answers[currentIndex].audioPath = audioFile.path || null;
+    }
+
+    // Move to next question
+    session.currentQuestionIndex = currentIndex + 1;
+    await session.save();
+
+    // Prepare response
+    const isLastQuestion = currentIndex + 1 >= session.totalQuestions;
+    const nextQuestion = !isLastQuestion
+      ? {
+          index: currentIndex + 1,
+          questionText: session.answers[currentIndex + 1].questionText,
+          questionId: session.answers[currentIndex + 1].questionId,
+        }
+      : null;
+
+    return {
+      scores: session.answers[currentIndex].scores,
+      concepts: session.answers[currentIndex].concepts,
+      transcript: finalTranscript,
+      isLastQuestion,
+      nextQuestion,
+    };
+  } finally {
+    if (useRedis) {
+      await redisClient.del(lockKey).catch(logger.error);
+    } else {
+      pendingSubmissions.delete(sessionId);
     }
   }
-
-  if (!finalTranscript || finalTranscript.trim().length === 0) {
-    throw new AppError("No transcript available for evaluation", 400);
-  }
-
-  // Step 2: Evaluate the answer via Python service
-  let evaluation;
-  try {
-    evaluation = await evaluateAnswer(
-      finalTranscript,
-      question.expectedAnswer,
-      question.expectedConcepts
-    );
-  } catch (err) {
-    console.error("[interview] Evaluation failed:", err.message);
-    // Use fallback scores so the interview can continue
-    evaluation = {
-      technical: 0,
-      communication: 0,
-      relevance: 0,
-      concepts: { detected: [], missed: question.expectedConcepts },
-      fillerWords: 0,
-      speakingSpeed: "normal",
-    };
-  }
-
-  // Step 3: Update the session with the answer data
-  session.answers[currentIndex].transcript = finalTranscript;
-  session.answers[currentIndex].scores = {
-    technical: evaluation.technical || 0,
-    communication: evaluation.communication || 0,
-    relevance: evaluation.relevance || 0,
-  };
-  session.answers[currentIndex].concepts.detected =
-    evaluation.concepts?.detected || [];
-  session.answers[currentIndex].concepts.missed =
-    evaluation.concepts?.missed || [];
-  session.answers[currentIndex].fillerWords = evaluation.fillerWords || 0;
-  session.answers[currentIndex].speakingSpeed =
-    evaluation.speakingSpeed || "normal";
-  session.answers[currentIndex].answeredAt = new Date();
-
-  if (audioFile) {
-    session.answers[currentIndex].audioPath = audioFile.path || null;
-  }
-
-  // Move to next question
-  session.currentQuestionIndex = currentIndex + 1;
-  await session.save();
-
-  // Prepare response
-  const isLastQuestion = currentIndex + 1 >= session.totalQuestions;
-  const nextQuestion = !isLastQuestion
-    ? {
-        index: currentIndex + 1,
-        questionText: session.answers[currentIndex + 1].questionText,
-        questionId: session.answers[currentIndex + 1].questionId,
-      }
-    : null;
-
-  return {
-    scores: session.answers[currentIndex].scores,
-    concepts: session.answers[currentIndex].concepts,
-    transcript: finalTranscript,
-    isLastQuestion,
-    nextQuestion,
-  };
 };
 
 /**
@@ -289,7 +317,7 @@ export const finalizeInterview = async (sessionId, userId) => {
     await dbSession.commitTransaction();
   } catch (error) {
     await dbSession.abortTransaction();
-    console.error("Transaction aborted in finalizeInterview:", error);
+    logger.error("Transaction aborted in finalizeInterview:", error);
     throw error;
   } finally {
     dbSession.endSession();
@@ -415,18 +443,19 @@ export const listAvailableTopics = async () => {
 export const getTutorSessionsList = async (tutorId, page, limit) => {
   const skip = (page - 1) * limit;
 
-  const authorizedRoadmaps = await LearningProgress.find({ tutorsTracking: tutorId }).select("user");
-  const authorizedStudentIds = authorizedRoadmaps.map(r => r.user);
+  // Find all students assigned to this tutor
+  const roadmaps = await LearningProgress.find({ tutorsTracking: tutorId }).select("user");
+  const studentIds = roadmaps.map((r) => r.user);
 
   const [sessions, total] = await Promise.all([
-    InterviewSession.find({ status: 'completed', userId: { $in: authorizedStudentIds } })
+    InterviewSession.find({ userId: { $in: studentIds }, status: "completed" })
       .populate('userId', 'name email')
       .select('topic difficulty status overallScore tutorOverallScore duration createdAt')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .lean(),
-    InterviewSession.countDocuments({ status: 'completed', userId: { $in: authorizedStudentIds } }),
+    InterviewSession.countDocuments({ userId: { $in: studentIds }, status: 'completed' }),
   ]);
   return { sessions, total, page, pages: Math.ceil(total / limit) };
 };
@@ -444,7 +473,33 @@ export const getTutorSessionDetails = async (sessionId, tutorId) => {
     throw new AppError("You are not authorized to view this interview session", 403);
   }
 
-  return session;
+  return {
+    id: session._id,
+    userId: session.userId || { name: 'Unknown User' },
+    topic: session.topic,
+    difficulty: session.difficulty,
+    status: session.status,
+    overallScore: session.overallScore,
+    tutorOverallScore: session.tutorOverallScore,
+    tutorOverallFeedback: session.tutorOverallFeedback,
+    weakConcepts: session.weakConcepts || [],
+    duration: session.duration,
+    totalQuestions: session.totalQuestions,
+    answers: (session.answers || []).map((a) => ({
+      questionId: a.questionId,
+      questionText: a.questionText,
+      transcript: a.transcript,
+      audioPath: a.audioPath,
+      scores: a.scores || {},
+      tutorScores: a.tutorScores || {},
+      tutorFeedback: a.tutorFeedback || "",
+      concepts: a.concepts || { detected: [], missed: [], expected: [] },
+      fillerWords: a.fillerWords,
+      speakingSpeed: a.speakingSpeed,
+    })),
+    startedAt: session.startedAt,
+    completedAt: session.completedAt,
+  };
 };
 
 export const addTutorFeedback = async (sessionId, tutorId, { tutorOverallScore, tutorOverallFeedback, answersFeedback }) => {

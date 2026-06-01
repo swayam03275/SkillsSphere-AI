@@ -156,8 +156,8 @@ export const googleLogin = asyncHandler(async (req, res, next) => {
     token: jwtToken,
     user: {
       id: user._id.toString(),
-      name: user.name,
-      email: user.email,
+      name: user.get('name'),
+      email: user.get('email'),
       role: user.role,
     },
   });
@@ -170,13 +170,27 @@ export const googleOAuthCallback = asyncHandler(async (req, res, next) => {
     process.env.FRONTEND_URL || "http://localhost:5174";
   const fallbackCallbackUrl = `${frontendRedirectBase}/auth/callback`;
   let callbackUrl = fallbackCallbackUrl;
+  let requestedRole = "student";
 
   if (typeof state === "string" && state.length > 0) {
     try {
       const decoded = Buffer.from(decodeURIComponent(state), "base64").toString(
         "utf8",
       );
-      const decodedUrl = new URL(decoded);
+      
+      let stateObj;
+      try {
+        stateObj = JSON.parse(decoded);
+      } catch {
+        // Fallback for legacy state which was just a raw URL string
+        stateObj = { redirect: decoded };
+      }
+
+      if (stateObj.role) {
+        requestedRole = stateObj.role;
+      }
+
+      const decodedUrl = new URL(stateObj.redirect);
       const fallbackOrigin = new URL(frontendRedirectBase).origin;
       const isAllowedLocalhost =
         decodedUrl.hostname === "localhost" ||
@@ -233,7 +247,7 @@ export const googleOAuthCallback = asyncHandler(async (req, res, next) => {
 
   let user;
   try {
-    user = await findOrCreateGoogleUser(googleUser);
+    user = await findOrCreateGoogleUser({ ...googleUser, role: requestedRole });
   } catch (error) {
     const message =
       error instanceof AppError

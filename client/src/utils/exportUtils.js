@@ -1,5 +1,7 @@
 import html2pdf from 'html2pdf.js';
 
+import logger from "./logger";
+
 /**
  * Exports an array of objects to a CSV file.
  * @param {string} filename The name of the file to download (e.g., "report.csv").
@@ -7,7 +9,7 @@ import html2pdf from 'html2pdf.js';
  */
 export const exportToCSV = (filename, rows) => {
   if (!rows || !rows.length) {
-    console.warn('No data to export');
+    logger.warn('No data to export');
     return;
   }
   const separator = ',';
@@ -44,19 +46,19 @@ export const exportToCSV = (filename, rows) => {
  * @param {string} elementId The ID of the HTML element to capture.
  * @param {string} filename The name of the PDF file to download (e.g., "report.pdf").
  */
-export const exportToPDF = (elementId, filename) => {
+export const exportToPDF = async (elementId, filename, options = {}) => {
   const element = document.getElementById(elementId);
   if (!element) {
-    console.warn(`Element with ID ${elementId} not found.`);
-    return;
+    throw new Error(`Element with ID ${elementId} not found.`);
   }
   const opt = {
     margin:       0.2,
     filename:     filename,
     image:        { type: 'jpeg', quality: 1.0 },
     html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#0f172a' },
-    jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' }
+    jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' },
+    ...options,
   };
   
-  html2pdf().set(opt).from(element).save();
+  return html2pdf().set(opt).from(element).save();
 };

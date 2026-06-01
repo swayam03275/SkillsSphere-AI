@@ -2,7 +2,6 @@ import React, { useState, useCallback } from "react";
 import { Bell } from "lucide-react";
 import NotificationDropdown from "./NotificationDropdown";
 import useNotifications from "../hooks/useNotifications";
-
 /**
  * Notification Bell Icon with dropdown
  * Shows unread badge and manages dropdown visibility

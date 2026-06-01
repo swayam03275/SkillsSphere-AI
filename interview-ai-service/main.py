@@ -9,6 +9,12 @@ app = FastAPI(
     version="1.0.0",
 )
 
+@app.middleware("http")
+async def add_security_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response
+
 # Allow the Node.js backend to communicate with this service
 app.add_middleware(
     CORSMiddleware,

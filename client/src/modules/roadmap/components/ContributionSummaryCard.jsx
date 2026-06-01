@@ -1,6 +1,5 @@
 import React from "react";
 import { Star, TrendingUp, Award } from "lucide-react";
-
 const ContributionSummaryCard = ({ roadmap }) => {
   if (!roadmap || !roadmap.roadmap) return null;
 
@@ -18,8 +17,7 @@ const ContributionSummaryCard = ({ roadmap }) => {
     ? Math.round((completedContributions / totalContributions) * 100) 
     : 0;
 
-  // Simple placeholder formula for "Boost" metric
-  const readinessBoost = completedContributions * 18; 
+  const readinessBoost = roadmap.readinessBoost || 0;
 
   return (
     <div className="bg-[var(--surface)] border border-amber-500/20 p-5 rounded-2xl shadow-[0_0_20px_rgba(245,158,11,0.05)] relative overflow-hidden group hover:border-amber-500/40 transition-all flex flex-col justify-between">

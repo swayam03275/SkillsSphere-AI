@@ -2,10 +2,14 @@ import multer from "multer";
 import fs from "fs";
 import fsPromises from "fs/promises";
 import path from "path";
+import { fileURLToPath } from "url";
 import { validateResumeBufferSignatureSync } from "../utils/validateFileSignature.js";
 import asyncHandler from "../utils/asyncHandler.js";
 
-const uploadDirectory = path.join(process.cwd(), "src", "uploads");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const uploadDirectory = path.join(__dirname, "..", "uploads");
 
 if (!fs.existsSync(uploadDirectory)) {
   fs.mkdirSync(uploadDirectory, { recursive: true });
@@ -19,7 +23,7 @@ const allowedMimeTypes = [
 ];
 const allowedExtensions = [".pdf", ".doc", ".docx", ".txt"];
 
-const fileFilter = (_req, file, cb) => {
+export const fileFilter = (_req, file, cb) => {
   const extension = path.extname(file.originalname).toLowerCase();
   const hasAllowedMimeType = allowedMimeTypes.includes(file.mimetype);
   const hasAllowedExtension = allowedExtensions.includes(extension);
@@ -31,7 +35,7 @@ const fileFilter = (_req, file, cb) => {
     return cb(traversalError, false);
   }
 
-  if (hasAllowedMimeType && hasAllowedExtension) {
+  if (hasAllowedExtension) {
     cb(null, true);
   } else {
     const typeError = new Error("Only PDF, DOC, DOCX, and TXT files are allowed");

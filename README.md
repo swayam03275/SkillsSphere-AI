@@ -89,6 +89,13 @@ SkillSphere AI aims to simplify the path from learning to hiring by giving users
    - Protection against user enumeration
    - OTP attempt limiting for security
 
+9. **AI Talent Finder & Candidate Direct Search**
+   Advanced talent discovery search engine for recruiters. (Route: `/recruiter/talent-finder`)
+   - Search the database of opted-in candidate resumes by name, email, skills, and background text
+   - Advanced filters for technical specializations, graduation year range, and minimum ATS scores
+   - Dynamic AI pipeline evaluation to compute a match scorecard against any of the recruiter's active jobs
+   - One-click recruiter invitation triggers that deliver real-time Socket.IO notifications to candidate dashboards
+
 ---
 
 ## Target Users
@@ -170,7 +177,7 @@ To avoid manual installation of Python dependencies, Node modules, and OS-level 
 
 ### Steps
 1. Clone the repository and navigate to the root directory.
-2. Ensure you have created your `.env` files in both the `server` and `interview-ai-service` directories (refer to `.env.example`).
+2. Ensure you have created your local `.env` file from `.env.example`. Keep real secrets out of git.
 3. Run the following command from the root directory:
 
    ```bash
@@ -192,12 +199,14 @@ The following structure keeps the project modular and easy to scale for new cont
 SkillSphere-AI/
 ├── client/                          # React frontend (Vite)
 │   ├── src/
-│   │   ├── modules/                 # Feature-based modules (Auth, Resumes, etc.)
+│   │   ├── modules/                 # Feature-based modules (Auth, Resumes, recruiter-jobs, etc.)
+│   │   │   └── recruiter-jobs/      # Talent Finder dashboard, page, services
 │   │   ├── shared/                  # Reusable UI components
 │   │   └── services/                # API service layer
 ├── server/                          # Express backend
 │   ├── src/
-│   │   ├── modules/                 # Backend business logic (Auth, Resumes, Jobs, Roadmap)
+│   │   ├── modules/                 # Backend business logic (Auth, Resumes, recruiter, etc.)
+│   │   │   └── recruiter/           # Talent Finder controller and routes
 │   │   ├── database/                # Mongoose models (User, Resume, JobApplication, LearningProgress)
 │   │   └── middleware/              # Auth, RBAC, and Upload handlers
 ├── ai-ml/                           # AI/ML intelligence layer
@@ -231,6 +240,10 @@ SkillSphere-AI/
 - `GET /api/roadmap/me`: fetch user's learning roadmap and progress
 - `POST /api/roadmap/sync`: sync roadmap with latest analysis suggestions
 - `PATCH /api/roadmap/update-topic`: update status of a specific roadmap milestone
+
+- `GET /api/recruiter/talent-finder`: search candidate directory of opted-in student resumes (Recruiter only; filters: `query`, `specializations`, `gradYearMin`, `gradYearMax`, `atsMin`, `limit`, `page`)
+- `POST /api/recruiter/match-candidate`: run Gemini AI matching pipeline on candidate's resume text against a specific job description (Recruiter only)
+- `POST /api/recruiter/invite-candidate`: send job application invitation to a candidate (Recruiter only; sends real-time socket notification)
 
 - `GET /uploads/:filename`
 - `POST /api/jobs`: create a new job (Recruiter only)
@@ -277,6 +290,7 @@ This approach keeps contributions focused, reviewable, and scalable.
 - Issue Templates: `.github/ISSUE_TEMPLATE/`
 - Detailed Structure Notes: `docs/PROJECT_STRUCTURE.md`
 - PR Quality Gates: `docs/QUALITY_GATES.md`
+- Secure Environment Setup: `docs/SECURITY_ENVIRONMENT.md`
 
 ## PR Checks and Code Review Safety
 
@@ -342,14 +356,13 @@ Optional env var (defaults to `base`): `WHISPER_MODEL_SIZE=tiny|base|small|mediu
 
 ### Server
 
-1. Copy example file:
+1. Copy the root example file:
 
 ```bash
-cd server
 cp .env.example .env
 ```
 
-2. Update required values in `server/.env`:
+2. Update required values in `.env`:
 
 - `MONGO_URI`
 - `JWT_SECRET`
@@ -357,6 +370,8 @@ cp .env.example .env
 - `GOOGLE_CLIENT_SECRET`
 - `GEMINI_API_KEY` (Required for AI Cover Letter Generation)
 - `REDIS_URL` (Required for caching API responses, e.g., redis://localhost:6379)
+
+For secure setup, pre-commit protection, and credential rotation steps, see `docs/SECURITY_ENVIRONMENT.md`.
 
 ```env
 # AI/ML Configuration (Required for semantic matching — free tier)
@@ -389,10 +404,9 @@ INTERVIEW_AI_TRANSCRIBE_TIMEOUT=30000
 
 ### Client
 
-1. Copy example file:
+1. Copy the root example file if you have not already:
 
 ```bash
-cd client
 cp .env.example .env
 ```
 
@@ -407,7 +421,7 @@ cp .env.example .env
 
 ## 🔐 Google OAuth Setup
 
-- `JWT_SECRET=skillsphere_dev_jwt_secret_1234567890abcdef`
+- `JWT_SECRET=replace_with_a_long_random_secret`
 - `JWT_EXPIRES_IN=7d`
 - `EMAIL_SERVICE_MODE=console` (Use "smtp" for real emails)
 - `EMAIL_HOST=smtp.mailtrap.io`
@@ -426,7 +440,7 @@ cp .env.example .env
 http://localhost:5000/api/auth/google/callback
 ```
 
-6. Copy Client ID and Client Secret into `server/.env`:
+6. Copy Client ID and Client Secret into `.env`:
 
 ```env
 GOOGLE_CLIENT_ID=your_google_client_id
@@ -453,7 +467,7 @@ To use real email notifications (OTP verification, password reset) via Gmail, fo
    - Enter a name (e.g., "SkillsSphere AI").
    - Click **Create**.
    - Copy the **16-character code** (e.g., `abcd efgh ijkl mnop`).
-3. **Update `server/.env`**:
+3. **Update `.env`**:
 
    ```env
    EMAIL_SERVICE_MODE=smtp
@@ -469,6 +483,6 @@ To use real email notifications (OTP verification, password reset) via Gmail, fo
 ### 📝 Testing Email Verification (Console Mode)
 
 For local development and testing without configuring an SMTP provider:
-1. Set `EMAIL_SERVICE_MODE=console` in `server/.env`.
+1. Set `EMAIL_SERVICE_MODE=console` in `.env`.
 2. When registering a user, the server will output the 6-digit OTP directly to your terminal console instead of sending an email.
 3. Retrieve this OTP from the server command line logs and enter it in the frontend verification modal to complete the registration flow.

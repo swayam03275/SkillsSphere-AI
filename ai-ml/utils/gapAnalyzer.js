@@ -93,7 +93,9 @@ export default function gapAnalyzer({
     );
   }
 
-  if (techStandard?.score < 60) {
+
+  // 4. 🏛️ Domain Specialization
+  if ((techStandard?.score ?? Infinity) < 60) {
     const techSuggestions = techStandard.details?.suggestions || techStandard.suggestions || [];
     techSuggestions.forEach(s => categorizedSuggestions.strategic.push(s));
   } else {
@@ -112,6 +114,7 @@ export default function gapAnalyzer({
     contributionSuggestions.push("Contribute infrastructure or CI/CD improvements to an open-source project");
   } else {
     contributionSuggestions.push("Publish a GitHub project demonstrating your core skills and best practices");
+
   }
 
   // Flatten and prioritize

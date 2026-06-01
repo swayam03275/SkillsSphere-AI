@@ -1,6 +1,18 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 const ThemeContext = createContext();
+
+const canUseStorage = () => typeof window !== "undefined";
+
+const readStoredTheme = () => {
+  if (!canUseStorage()) return "light";
+
+  try {
+    return localStorage.getItem("skillssphere.theme") || "light";
+  } catch {
+    return "light";
+  }
+};
 
 export const useTheme = () => {
   const context = useContext(ThemeContext);
@@ -12,7 +24,7 @@ export const useTheme = () => {
 
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
-    return localStorage.getItem("skillssphere.theme") || "light";
+    return readStoredTheme();
   });
 
   useEffect(() => {
@@ -20,7 +32,13 @@ export const ThemeProvider = ({ children }) => {
     root.classList.toggle("dark", theme === "dark");
     root.classList.toggle("light", theme === "light");
     root.dataset.theme = theme;
-    localStorage.setItem("skillssphere.theme", theme);
+    if (canUseStorage()) {
+      try {
+        localStorage.setItem("skillssphere.theme", theme);
+      } catch {
+        // Ignore storage failures; theme still applies in memory.
+      }
+    }
   }, [theme]);
 
   const toggleTheme = () => {

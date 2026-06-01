@@ -1,19 +1,23 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { io } from "socket.io-client";
 import { submitAnswer, completeInterview } from "../services/interviewService";
 import { apiRequest } from "../../../services/apiClient";
+import { SOCKET_URL } from "../../../config/env";
 import InterviewSessionSkeleton from "../components/InterviewSessionSkeleton";
 import ObserverPanel from "../components/ObserverPanel";
 import RealtimeSentimentIndicator from "../components/RealtimeSentimentIndicator";
 import { analyzeText, debounce } from "../utils/sentiment";
-import Navbar from "../../../shared/landing/Navbar";
+import Navbar from "../../../shared/components/Navbar";
+import Footer from "../../../shared/components/Footer";
+
 import {
   saveInterviewSession,
   loadInterviewSession,
   clearInterviewSession
 } from "../../../utils/interviewSessionStorage";
+import logger from "../../../utils/logger";
 import {
   Send,
   CheckCircle,
@@ -33,10 +37,65 @@ import {
   RefreshCw,
   Info
 } from "lucide-react";
+import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
 
 const TOKEN_KEY = "skillssphere.auth.token";
+const REQUEST_TIMEOUT_MS = 20000;
+const MAX_RETRY_ATTEMPTS = 3;
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const isRecoverableError = (error) => {
+  const status = Number(error?.status || 0);
+  return (
+    error?.name === "AbortError" ||
+    error?.message === "Request timeout" ||
+    status === 0 ||
+    status >= 500
+  );
+};
+
+const withTimeout = async (operation, timeoutMs = REQUEST_TIMEOUT_MS) => {
+  let timeoutId;
+  try {
+    return await Promise.race([
+      operation(),
+      new Promise((_, reject) => {
+        timeoutId = window.setTimeout(() => {
+          const error = new Error("Request timeout");
+          error.status = 0;
+          reject(error);
+        }, timeoutMs);
+      }),
+    ]);
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+};
+
+const retryRecoverable = async (operation, onRetry) => {
+  let lastError;
+
+  for (let attempt = 1; attempt <= MAX_RETRY_ATTEMPTS; attempt += 1) {
+    try {
+      return await withTimeout(operation);
+    } catch (error) {
+      lastError = error;
+      if (!isRecoverableError(error) || attempt === MAX_RETRY_ATTEMPTS) {
+        throw error;
+      }
+
+      const delay = 500 * 2 ** (attempt - 1);
+      onRetry?.(attempt + 1, delay);
+      await sleep(delay);
+    }
+  }
+
+  throw lastError;
+};
 
 const InterviewSession = () => {
+  useDocumentTitle("Interview Session");
   const { id: sessionId } = useParams();
   const navigate = useNavigate();
   const textareaRef = useRef(null);
@@ -55,6 +114,9 @@ const InterviewSession = () => {
   const [isLastQuestion, setIsLastQuestion] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [analysis, setAnalysis] = useState(null);
+  const [requestStatus, setRequestStatus] = useState(null);
+  const [uploadStatus, setUploadStatus] = useState("idle");
+  const [mediaWarning, setMediaWarning] = useState(null);
 
   const debouncedAnalyze = useRef(
     debounce((text) => {
@@ -73,8 +135,74 @@ const InterviewSession = () => {
   const [socketStatus, setSocketStatus] = useState("connecting");
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = useRef(null);
+  const mediaStreamRef = useRef(null);
+  const mediaTrackCleanupRef = useRef([]);
+  const failedActionRef = useRef(null);
 
   const isObserver = user && session && user._id !== session.userId;
+
+  const persistBackup = useCallback(
+    (overrides = {}) => {
+      if (!sessionId) return;
+
+      const transcriptMap = session?.answers?.reduce((acc, item, index) => {
+        if (item?.transcript) {
+          acc[index] = item.transcript;
+        }
+        return acc;
+      }, {}) || {};
+
+      saveInterviewSession({
+        sessionId,
+        currentIndex,
+        answer,
+        transcripts: transcriptMap,
+        messages: answer
+          ? [{ role: "candidate", content: answer, timestamp: Date.now() }]
+          : [],
+        elapsedTime,
+        uploadStatus,
+        currentQuestion,
+        ...overrides,
+      });
+    },
+    [
+      answer,
+      currentIndex,
+      currentQuestion,
+      elapsedTime,
+      session,
+      sessionId,
+      uploadStatus,
+    ],
+  );
+
+  const clearMediaTrackListeners = useCallback(() => {
+    mediaTrackCleanupRef.current.forEach((cleanup) => cleanup());
+    mediaTrackCleanupRef.current = [];
+  }, []);
+
+  const attachMediaTrackListeners = useCallback(
+    (stream) => {
+      clearMediaTrackListeners();
+      const handleEnded = () => {
+        setIsRecording(false);
+        setUploadStatus("failed");
+        setMediaWarning(
+          "Audio input was disconnected. Your answer is saved, and you can retry the microphone.",
+        );
+        persistBackup({ uploadStatus: "failed" });
+      };
+
+      stream.getTracks().forEach((track) => {
+        track.addEventListener("ended", handleEnded);
+        mediaTrackCleanupRef.current.push(() => {
+          track.removeEventListener("ended", handleEnded);
+        });
+      });
+    },
+    [clearMediaTrackListeners, persistBackup],
+  );
 
   // Timer
   useEffect(() => {
@@ -84,29 +212,39 @@ const InterviewSession = () => {
     return () => clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    if (session && !isObserver) {
+      persistBackup();
+    }
+  }, [session, isObserver, persistBackup]);
+
   // Fetch session on mount
   useEffect(() => {
     const fetchSession = async () => {
       try {
         const token =
           localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
-        const res = await apiRequest(`/api/interviews/${sessionId}`, {
-          method: "GET",
-          token,
-        });
+        setRequestStatus("Loading interview session...");
+        const res = await retryRecoverable(
+          () =>
+            apiRequest(`/api/interviews/${sessionId}`, {
+              method: "GET",
+              token,
+            }),
+          (attempt) => setRequestStatus(`Retrying session load (${attempt}/${MAX_RETRY_ATTEMPTS})...`),
+        );
         const data = res.data;
         setSession(data);
 
         let idx = 0;
         const savedSession = loadInterviewSession();
         if (savedSession && savedSession.sessionId === sessionId) {
-           idx = savedSession.currentIndex;
-           if (savedSession.messages && savedSession.messages.length > 0) {
-              const lastMsg = savedSession.messages[savedSession.messages.length - 1];
-              if (lastMsg.role === "candidate") {
-                setAnswer(lastMsg.content);
-              }
-           }
+           idx = Math.min(savedSession.currentIndex, data.answers.length - 1);
+           setElapsedTime(savedSession.elapsedTime || 0);
+           setUploadStatus(savedSession.uploadStatus || "idle");
+           setAnswer(savedSession.answer || savedSession.messages?.at(-1)?.content || "");
+           setRecoveryMessage("Recovered saved interview progress.");
+           setTimeout(() => setRecoveryMessage(null), 3000);
         } else {
           const unansweredIdx = data.answers.findIndex(
             (a) => !a.transcript && !a.scores,
@@ -124,12 +262,24 @@ const InterviewSession = () => {
         saveInterviewSession({
           sessionId,
           currentIndex: idx,
-          messages: [],
+          answer: savedSession?.answer || "",
+          elapsedTime: savedSession?.elapsedTime || 0,
+          uploadStatus: savedSession?.uploadStatus || "idle",
+          currentQuestion: {
+            questionText: data.answers[idx]?.questionText,
+            questionId: data.answers[idx]?.questionId,
+          },
+          messages: savedSession?.messages || [],
         });
       } catch (err) {
-        setError("Failed to load interview session.");
-        console.error("[InterviewSession] Error:", err);
+        setError(
+          err.message === "Request timeout"
+            ? "The interview session request timed out. Please check your connection and try again."
+            : "Failed to load interview session.",
+        );
+        logger.error("[InterviewSession] Error:", err);
       } finally {
+        setRequestStatus(null);
         setLoading(false);
       }
     };
@@ -141,8 +291,7 @@ const InterviewSession = () => {
     if (!session || !user) return;
     const token = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
     
-    const socketUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
-    const newSocket = io(socketUrl, { 
+    const newSocket = io(SOCKET_URL, {
       auth: { token },
       reconnection: true,
       reconnectionAttempts: 10,
@@ -150,7 +299,7 @@ const InterviewSession = () => {
       reconnectionDelayMax: 5000
     });
 
-    newSocket.on("connect", () => {
+    const handleConnect = () => {
       setSocketStatus("connected");
       newSocket.emit("join-interview", { sessionId });
       
@@ -162,59 +311,79 @@ const InterviewSession = () => {
             currentIndex: savedSession.currentIndex,
             previousMessages: savedSession.messages,
             activeTopic: session?.topic,
-            lastAiResponse: session?.answers?.[savedSession.currentIndex]?.questionText
+            lastAiResponse: session?.answers?.[savedSession.currentIndex]?.questionText,
+            elapsedTime: savedSession.elapsedTime,
+            uploadStatus: savedSession.uploadStatus,
           });
-          setRecoveryMessage("Reconnected");
+          setRecoveryMessage("Reconnected and resynced interview progress.");
           setTimeout(() => setRecoveryMessage(null), 3000);
           
           if (messageQueue.current.length > 0) {
             messageQueue.current.forEach(msg => newSocket.emit("submit-answer", msg));
             messageQueue.current = [];
+            setUploadStatus("submitted");
           }
         }
       }
       wasConnected.current = true;
-    });
+    };
 
-    newSocket.on("disconnect", () => {
+    const handleDisconnect = () => {
       setSocketStatus("disconnected");
-    });
+      setRecoveryMessage("Connection lost. Your answer is saved locally.");
+      persistBackup();
+    };
 
-    newSocket.on("reconnect_attempt", () => {
+    const handleReconnectAttempt = () => {
       setSocketStatus("reconnecting");
-    });
+      setRecoveryMessage("Reconnecting to the interview room...");
+    };
 
-    newSocket.on("interview-participants", (pts) => {
+    const handleParticipants = (pts) => {
       setParticipants(pts.filter(p => p.user.id !== user._id));
-    });
+    };
 
-    newSocket.on("participant-joined", (data) => {
+    const handleParticipantJoined = (data) => {
       setParticipants(prev => [...prev.filter(p => p.socketId !== data.socketId), data]);
-    });
+    };
 
-    newSocket.on("participant-left", (data) => {
+    const handleParticipantLeft = (data) => {
       setParticipants(prev => prev.filter(p => p.socketId !== data.socketId));
-    });
+    };
 
-    newSocket.on("interview-typing", ({ text }) => {
+    const handleTyping = ({ text }) => {
       setLiveTyping(text);
-    });
+    };
 
-    newSocket.on("answer-evaluated", (data) => {
+    const handleAnswerEvaluated = (data) => {
       handleEvaluationResult(data);
-    });
+      setUploadStatus("idle");
+    };
 
-    newSocket.on("live-transcript", (data) => {
+    const handleLiveTranscript = (data) => {
       if (data.transcript) {
         setAnswer((prev) => (prev ? prev + " " + data.transcript : data.transcript));
       }
-    });
+    };
 
-    newSocket.on("evaluation-error", (err) => {
+    const handleEvaluationError = (err) => {
       setError(err.message || "Failed to submit answer.");
-      console.error("[InterviewSession] Socket evaluation error:", err);
+      setUploadStatus("failed");
+      failedActionRef.current = "submit";
+      logger.error("[InterviewSession] Socket evaluation error:", err);
       setSubmitting(false);
-    });
+    };
+
+    newSocket.on("connect", handleConnect);
+    newSocket.on("disconnect", handleDisconnect);
+    newSocket.io.on("reconnect_attempt", handleReconnectAttempt);
+    newSocket.on("interview-participants", handleParticipants);
+    newSocket.on("participant-joined", handleParticipantJoined);
+    newSocket.on("participant-left", handleParticipantLeft);
+    newSocket.on("interview-typing", handleTyping);
+    newSocket.on("answer-evaluated", handleAnswerEvaluated);
+    newSocket.on("live-transcript", handleLiveTranscript);
+    newSocket.on("evaluation-error", handleEvaluationError);
 
     setSocket(newSocket);
 
@@ -229,6 +398,16 @@ const InterviewSession = () => {
 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      newSocket.off("connect", handleConnect);
+      newSocket.off("disconnect", handleDisconnect);
+      newSocket.io.off("reconnect_attempt", handleReconnectAttempt);
+      newSocket.off("interview-participants", handleParticipants);
+      newSocket.off("participant-joined", handleParticipantJoined);
+      newSocket.off("participant-left", handleParticipantLeft);
+      newSocket.off("interview-typing", handleTyping);
+      newSocket.off("answer-evaluated", handleAnswerEvaluated);
+      newSocket.off("live-transcript", handleLiveTranscript);
+      newSocket.off("evaluation-error", handleEvaluationError);
       if (mediaRecorderRef.current) {
         if (mediaRecorderRef.current.state !== "inactive") {
           mediaRecorderRef.current.stop();
@@ -237,12 +416,13 @@ const InterviewSession = () => {
           mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
         }
       }
+      clearMediaTrackListeners();
       if (newSocket && newSocket.connected) {
         newSocket.emit("end-audio-stream", { sessionId });
       }
       newSocket.close();
     };
-  }, [session, user, sessionId]);
+  }, [clearMediaTrackListeners, persistBackup, session, user, sessionId]);
 
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
@@ -255,6 +435,9 @@ const InterviewSession = () => {
     setShowScores(true);
     setAnswer("");
     setSubmitting(false);
+    setRequestStatus(null);
+    setUploadStatus("idle");
+    failedActionRef.current = null;
 
     if (data.isLastQuestion) {
       setIsLastQuestion(true);
@@ -270,44 +453,82 @@ const InterviewSession = () => {
   };
 
   const handleSubmitAnswer = async () => {
-    if (!answer.trim()) return;
+    if (!answer.trim() || submitting || requestStatus) return;
+    const transcript = answer.trim();
     setSubmitting(true);
     setError(null);
+    setRequestStatus(null);
+    setUploadStatus("submitting");
+    persistBackup({
+      answer: transcript,
+      uploadStatus: "submitting",
+      messages: [{ role: "candidate", content: transcript, timestamp: Date.now() }],
+    });
 
     if (socket && socketStatus === "connected") {
-      socket.emit("submit-answer", { sessionId, transcript: answer.trim(), audioBuffer: null });
+      socket.emit("submit-answer", { sessionId, transcript, audioBuffer: null });
     } else if (socket && (socketStatus === "disconnected" || socketStatus === "reconnecting")) {
-      messageQueue.current.push({ sessionId, transcript: answer.trim(), audioBuffer: null });
-      setRecoveryMessage("Offline: Queued");
+      messageQueue.current.push({ sessionId, transcript, audioBuffer: null });
+      setUploadStatus("queued");
+      setRecoveryMessage("Offline: answer queued and saved locally.");
       setTimeout(() => setRecoveryMessage(null), 3000);
-      setAnswer("");
       setSubmitting(false);
       return;
     } else {
       try {
-        const res = await submitAnswer(sessionId, answer.trim());
+        const res = await retryRecoverable(
+          () => submitAnswer(sessionId, transcript),
+          (attempt) => setRequestStatus(`Retrying answer submission (${attempt}/${MAX_RETRY_ATTEMPTS})...`),
+        );
         handleEvaluationResult(res.data);
       } catch (err) {
-        setError(err.message || "Failed to submit answer.");
-        console.error("[InterviewSession] Submit error:", err);
+        failedActionRef.current = "submit";
+        setUploadStatus("failed");
+        setError(
+          err.message === "Request timeout"
+            ? "Answer submission timed out. Your answer is saved and can be retried."
+            : err.message || "Failed to submit answer. Your answer is saved and can be retried.",
+        );
+        logger.error("[InterviewSession] Submit error:", err);
         setSubmitting(false);
+        setRequestStatus(null);
       }
     }
   };
 
   const handleComplete = async () => {
+    if (completing || requestStatus) return;
     setCompleting(true);
     setError(null);
 
     try {
-      await completeInterview(sessionId);
+      await retryRecoverable(
+        () => completeInterview(sessionId),
+        (attempt) => setRequestStatus(`Retrying final submission (${attempt}/${MAX_RETRY_ATTEMPTS})...`),
+      );
       clearInterviewSession();
       navigate(`/mock-interview/${sessionId}/results`, { replace: true });
     } catch (err) {
-      setError(err.message || "Failed to complete interview.");
-      console.error("[InterviewSession] Complete error:", err);
+      failedActionRef.current = "complete";
+      setError(
+        err.message === "Request timeout"
+          ? "Saving results timed out. Please retry when your connection is stable."
+          : err.message || "Failed to complete interview.",
+      );
+      logger.error("[InterviewSession] Complete error:", err);
     } finally {
       setCompleting(false);
+      setRequestStatus(null);
+    }
+  };
+
+  const handleManualRetry = () => {
+    if (failedActionRef.current === "submit") {
+      handleSubmitAnswer();
+    } else if (failedActionRef.current === "complete") {
+      handleComplete();
+    } else if (failedActionRef.current === "media") {
+      startRecording();
     }
   };
 
@@ -318,17 +539,17 @@ const InterviewSession = () => {
   };
 
   const handleAnswerChange = (e) => {
-    setAnswer(e.target.value);
-    debouncedAnalyze(e.target.value);
+    const nextAnswer = e.target.value;
+    setAnswer(nextAnswer);
+    debouncedAnalyze(nextAnswer);
     
-    saveInterviewSession({
-      sessionId,
-      currentIndex,
-      messages: [{ role: "candidate", content: e.target.value, timestamp: Date.now() }],
+    persistBackup({
+      answer: nextAnswer,
+      messages: [{ role: "candidate", content: nextAnswer, timestamp: Date.now() }],
     });
 
     if (socket && !isObserver) {
-      socket.emit("interview-typing", { sessionId, text: e.target.value });
+      socket.emit("interview-typing", { sessionId, text: nextAnswer });
     }
   };
 
@@ -340,25 +561,59 @@ const InterviewSession = () => {
 
   const startRecording = async () => {
     try {
+      setMediaWarning(null);
+      setError(null);
+      setUploadStatus("starting");
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
       mediaRecorderRef.current = mediaRecorder;
+      mediaStreamRef.current = stream;
+      attachMediaTrackListeners(stream);
 
       if (socket && socketStatus === "connected") {
         socket.emit("start-audio-stream", { sessionId });
       }
 
       mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0 && socket && socketStatus === "connected") {
-          socket.emit("audio-chunk", { sessionId, chunk: event.data });
+        try {
+          if (event.data.size > 0 && socket && socketStatus === "connected") {
+            setUploadStatus("uploading");
+            socket.emit("audio-chunk", { sessionId, chunk: event.data });
+          } else if (event.data.size > 0) {
+            setUploadStatus("queued");
+            setRecoveryMessage("Audio upload paused until the connection recovers.");
+          }
+        } catch (err) {
+          setUploadStatus("failed");
+          failedActionRef.current = "media";
+          setError("Audio upload failed. Your typed answer is still saved.");
+          logger.error("[InterviewSession] Audio chunk error:", err);
         }
+      };
+
+      mediaRecorder.onerror = (event) => {
+        setUploadStatus("failed");
+        failedActionRef.current = "media";
+        setError("Recording failed. Your answer is saved, and you can retry recording.");
+        logger.error("[InterviewSession] Media recorder error:", event.error || event);
+      };
+
+      mediaRecorder.onstop = () => {
+        setUploadStatus((status) => (status === "failed" ? "failed" : "idle"));
       };
 
       mediaRecorder.start(1000);
       setIsRecording(true);
+      setUploadStatus("uploading");
+      persistBackup({ uploadStatus: "uploading" });
     } catch (err) {
-      console.error("Error accessing microphone:", err);
+      logger.error("Error accessing microphone:", err);
+      setIsRecording(false);
+      setUploadStatus("failed");
+      failedActionRef.current = "media";
+      setMediaWarning("Microphone access was denied or unavailable. Check your device and retry.");
       setError("Microphone access denied or unavailable.");
+      persistBackup({ uploadStatus: "failed" });
     }
   };
 
@@ -367,15 +622,18 @@ const InterviewSession = () => {
       mediaRecorderRef.current.stop();
       mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
     }
+    clearMediaTrackListeners();
+    mediaStreamRef.current = null;
     if (socket && socketStatus === "connected") {
       socket.emit("end-audio-stream", { sessionId });
     }
+    setUploadStatus("idle");
     setIsRecording(false);
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#020617]">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#020617] pt-24">
         <Navbar />
         <InterviewSessionSkeleton />
       </div>
@@ -384,7 +642,7 @@ const InterviewSession = () => {
 
   if (error && !session) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#020617] flex flex-col">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#020617] flex flex-col pt-24">
         <Navbar />
         <div className="flex-1 flex flex-col items-center justify-center p-8">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 p-10 rounded-3xl flex flex-col items-center max-w-md text-center shadow-xl">
@@ -403,16 +661,32 @@ const InterviewSession = () => {
     );
   }
 
-  const totalQuestions = session?.totalQuestions || 0;
+  const totalQuestions = session?.totalQuestions || session?.answers?.length || 0;
+  const progressPercent = totalQuestions
+    ? ((currentIndex + 1) / totalQuestions) * 100
+    : 0;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#020617] flex flex-col font-sans transition-colors duration-300">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#020617] flex flex-col font-sans transition-colors duration-300 pt-24">
       <Navbar />
 
       <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 mt-24 sm:mt-28 flex flex-col lg:flex-row gap-8 items-start">
         
         {/* LEFT COLUMN: Telemetry & Status */}
         <div className="w-full lg:w-1/3 flex flex-col gap-6">
+          <div className="flex justify-start">
+            <button
+              onClick={() => {
+                if (window.confirm("Are you sure you want to exit? Your progress may be lost.")) {
+                  navigate("/dashboard");
+                }
+              }}
+              className="inline-flex items-center gap-2 text-sm text-red-500 hover:text-red-400 transition-colors"
+            >
+              <AlertCircle size={16} />
+              Exit Session
+            </button>
+          </div>
           
           {/* Status Card */}
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-sm border border-slate-200 dark:border-white/10 flex flex-col gap-6">
@@ -447,8 +721,23 @@ const InterviewSession = () => {
                 </div>
               </div>
               {recoveryMessage && (
-                <div className="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 p-2 rounded-lg flex items-center gap-2">
-                  <RefreshCw size={14} className="animate-spin" /> {recoveryMessage}
+                <div className="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 p-2 rounded-lg flex items-center gap-2" role="status">
+                  <RefreshCw size={14} className={socketStatus === "connected" ? "" : "animate-spin"} /> {recoveryMessage}
+                </div>
+              )}
+              {requestStatus && (
+                <div className="text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/10 p-2 rounded-lg flex items-center gap-2" role="status">
+                  <Loader2 size={14} className="animate-spin" /> {requestStatus}
+                </div>
+              )}
+              {mediaWarning && (
+                <div className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 p-2 rounded-lg flex items-center gap-2" role="alert">
+                  <MicOff size={14} /> {mediaWarning}
+                </div>
+              )}
+              {uploadStatus !== "idle" && (
+                <div className="text-xs text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-white/5 p-2 rounded-lg">
+                  Audio status: <span className="font-bold capitalize">{uploadStatus}</span>
                 </div>
               )}
             </div>
@@ -465,7 +754,7 @@ const InterviewSession = () => {
             <div className="h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
               <div
                 className="h-full bg-blue-600 dark:bg-blue-500 rounded-full transition-all duration-500"
-                style={{ width: `${((currentIndex + 1) / totalQuestions) * 100}%` }}
+                style={{ width: `${progressPercent}%` }}
               />
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5">
@@ -548,8 +837,18 @@ const InterviewSession = () => {
                     {isObserver ? liveTyping.trim().split(/\s+/).filter(Boolean).length : answer.trim().split(/\s+/).filter(Boolean).length} words
                   </span>
                   {error && (
-                    <span className="text-sm font-semibold text-red-500 flex items-center gap-1.5 bg-red-50 dark:bg-red-500/10 px-3 py-1 rounded-lg">
+                    <span className="text-sm font-semibold text-red-500 flex flex-wrap items-center gap-1.5 bg-red-50 dark:bg-red-500/10 px-3 py-1 rounded-lg">
                       <AlertCircle size={16} /> {error}
+                      {failedActionRef.current && (
+                        <button
+                          type="button"
+                          onClick={handleManualRetry}
+                          disabled={submitting || completing || Boolean(requestStatus)}
+                          className="ml-2 underline underline-offset-2 disabled:opacity-50"
+                        >
+                          Retry
+                        </button>
+                      )}
                     </span>
                   )}
                 </div>
@@ -563,7 +862,7 @@ const InterviewSession = () => {
                           : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-white/5"
                       }`}
                       onClick={isRecording ? stopRecording : startRecording}
-                      disabled={submitting}
+                      disabled={submitting || Boolean(requestStatus)}
                     >
                       {isRecording ? <><MicOff size={18} /> Stop</> : <><Mic size={18} /> Record</>}
                     </button>
@@ -573,7 +872,7 @@ const InterviewSession = () => {
                     <button
                       className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-blue-500/25 hover:-translate-y-0.5"
                       onClick={handleSubmitAnswer}
-                      disabled={!answer.trim() || submitting}
+                      disabled={!answer.trim() || submitting || Boolean(requestStatus)}
                     >
                       {submitting ? (
                         <><Loader2 className="animate-spin" size={18} /> Evaluating</>
@@ -600,7 +899,7 @@ const InterviewSession = () => {
               <button
                 className="w-full sm:w-auto bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 border-none py-3.5 px-8 rounded-xl font-bold cursor-pointer flex justify-center items-center gap-2 transition-all shadow-lg hover:-translate-y-0.5 disabled:opacity-50"
                 onClick={handleComplete}
-                disabled={completing}
+                disabled={completing || Boolean(requestStatus)}
               >
                 {completing ? (
                   <><Loader2 className="animate-spin" size={18} /> Saving Results...</>
@@ -608,6 +907,21 @@ const InterviewSession = () => {
                   <><Trophy size={18} /> View Detailed Analytics</>
                 )}
               </button>
+              {error && (
+                <span className="text-sm font-semibold text-red-500 flex items-center justify-center gap-1.5 bg-red-50 dark:bg-red-500/10 px-3 py-2 rounded-lg mt-2">
+                  <AlertCircle size={16} /> {error}
+                  {failedActionRef.current && (
+                    <button
+                      type="button"
+                      onClick={handleManualRetry}
+                      disabled={submitting || completing || Boolean(requestStatus)}
+                      className="ml-2 underline underline-offset-2 disabled:opacity-50"
+                    >
+                      Retry
+                    </button>
+                  )}
+                </span>
+              )}
             </div>
           )}
 
@@ -628,6 +942,7 @@ const InterviewSession = () => {
           isConductor={true} 
         />
       )}
+          <Footer />
     </div>
   );
 };

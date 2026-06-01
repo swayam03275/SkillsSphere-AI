@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   getNotifications,
@@ -13,17 +13,22 @@ import {
  * Custom hook for managing notifications
  * Provides access to notifications state and dispatch functions
  */
-export const useNotifications = () => {
+export const useNotifications = ({ page = 1, limit = 10, filter = "all" } = {}) => {
   const dispatch = useDispatch();
-  const { items, unreadCount, loading, error, pagination } = useSelector(
+  const { items, unreadCount, loading, error, pagination, socketStatus } = useSelector(
     (state) => state.notifications,
   );
+  const isRead = useMemo(() => {
+    if (filter === "read") return true;
+    if (filter === "unread") return false;
+    return undefined;
+  }, [filter]);
 
   // Fetch notifications on component mount
   useEffect(() => {
-    dispatch(getNotifications({ page: 1, limit: 10 }));
+    dispatch(getNotifications({ page, limit, isRead }));
     dispatch(getUnreadCount());
-  }, [dispatch]);
+  }, [dispatch, page, limit, isRead]);
 
   // Mark single notification as read
   const handleMarkAsRead = useCallback(
@@ -55,9 +60,9 @@ export const useNotifications = () => {
   const handleLoadMore = useCallback(() => {
     const nextPage = pagination.page + 1;
     if (nextPage <= pagination.pages) {
-      dispatch(getNotifications({ page: nextPage, limit: 10 }));
+      dispatch(getNotifications({ page: nextPage, limit, isRead }));
     }
-  }, [dispatch, pagination]);
+  }, [dispatch, pagination, limit, isRead]);
 
   return {
     notifications: items,
@@ -65,12 +70,13 @@ export const useNotifications = () => {
     loading,
     error,
     pagination,
+    socketStatus,
     markAsRead: handleMarkAsRead,
     markAllAsRead: handleMarkAllAsRead,
     deleteNotification: handleDeleteNotification,
     deleteAllNotifications: handleDeleteAllNotifications,
     loadMore: handleLoadMore,
-    hasMore: pagination.page < pagination.pages,
+    hasMore: pagination.pages > 1 && pagination.page < pagination.pages,
   };
 };
 

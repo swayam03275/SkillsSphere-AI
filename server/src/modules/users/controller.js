@@ -8,13 +8,181 @@ import InterviewSession from "../../database/models/InterviewSession.js";
 import AnalysisHistory from "../../database/models/AnalysisHistory.js";
 import ClassroomSession from "../../database/models/ClassroomSession.js";
 import JobPosting from "../../database/models/JobPosting.js";
+import fsPromises from "fs/promises";
 import AppError from "../../utils/AppError.js";
 import asyncHandler from "../../utils/asyncHandler.js";
-import fs from "fs";
-import path from "path";
-import { buildAvatarFileUrl } from "../../utils/uploadPaths.js";
 import { cascadeDeleteUser } from "../../utils/cascadeDelete.js";
+
 import { safeDeleteAvatarByUrl } from "../../utils/fileUtils.js";
+import { deleteCloudinaryAsset, uploadAvatarBuffer } from "../../config/cloudinary.js";
+
+import logger from "../../utils/logger.js";
+
+export const DEFAULT_USER_PREFERENCES = {
+  notifications: {
+    emailNotifications: true,
+    interviewReminders: true,
+    jobAlerts: true,
+    applicationStatusUpdates: true,
+    platformUpdates: false,
+  },
+  emailFrequency: "weekly",
+  privacy: {
+    profileVisibility: "recruiters",
+    showResumeToRecruiters: true,
+    showInterviewHistory: false,
+    allowPersonalizedRecommendations: true,
+  },
+};
+
+const NOTIFICATION_KEYS = Object.keys(DEFAULT_USER_PREFERENCES.notifications);
+const PRIVACY_KEYS = Object.keys(DEFAULT_USER_PREFERENCES.privacy);
+const TOP_LEVEL_KEYS = ["notifications", "emailFrequency", "privacy"];
+const EMAIL_FREQUENCIES = ["instant", "daily", "weekly", "never"];
+const PROFILE_VISIBILITIES = ["public", "recruiters", "private"];
+
+const isPlainObject = (value) =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
+
+const toPlainPreferences = (preferences = {}) =>
+  typeof preferences?.toObject === "function" ? preferences.toObject() : preferences || {};
+
+export const getDefaultPreferences = () => ({
+  notifications: { ...DEFAULT_USER_PREFERENCES.notifications },
+  emailFrequency: DEFAULT_USER_PREFERENCES.emailFrequency,
+  privacy: { ...DEFAULT_USER_PREFERENCES.privacy },
+});
+
+export const mergePreferencesWithDefaults = (preferences = {}) => {
+  const plain = toPlainPreferences(preferences);
+
+  return {
+    notifications: {
+      ...DEFAULT_USER_PREFERENCES.notifications,
+      ...(isPlainObject(plain.notifications) ? plain.notifications : {}),
+    },
+    emailFrequency: plain.emailFrequency || DEFAULT_USER_PREFERENCES.emailFrequency,
+    privacy: {
+      ...DEFAULT_USER_PREFERENCES.privacy,
+      ...(isPlainObject(plain.privacy) ? plain.privacy : {}),
+    },
+  };
+};
+
+const rejectUnknownKeys = (payload, allowedKeys, label) => {
+  const unknownKeys = Object.keys(payload).filter((key) => !allowedKeys.includes(key));
+  if (unknownKeys.length > 0) {
+    throw new AppError(`Unknown ${label} field: ${unknownKeys[0]}`, 400);
+  }
+};
+
+export const validateAndMergePreferences = (currentPreferences = {}, payload = {}) => {
+  if (!isPlainObject(payload)) {
+    throw new AppError("Preferences payload must be an object", 400);
+  }
+
+  rejectUnknownKeys(payload, TOP_LEVEL_KEYS, "preferences");
+
+  const nextPreferences = mergePreferencesWithDefaults(currentPreferences);
+
+  if (payload.notifications !== undefined) {
+    if (!isPlainObject(payload.notifications)) {
+      throw new AppError("Notification preferences must be an object", 400);
+    }
+
+    rejectUnknownKeys(payload.notifications, NOTIFICATION_KEYS, "notification preference");
+
+    NOTIFICATION_KEYS.forEach((key) => {
+      if (payload.notifications[key] !== undefined) {
+        if (typeof payload.notifications[key] !== "boolean") {
+          throw new AppError(`${key} must be a boolean`, 400);
+        }
+        nextPreferences.notifications[key] = payload.notifications[key];
+      }
+    });
+  }
+
+  if (payload.emailFrequency !== undefined) {
+    if (!EMAIL_FREQUENCIES.includes(payload.emailFrequency)) {
+      throw new AppError("Invalid email frequency", 400);
+    }
+    nextPreferences.emailFrequency = payload.emailFrequency;
+  }
+
+  if (payload.privacy !== undefined) {
+    if (!isPlainObject(payload.privacy)) {
+      throw new AppError("Privacy settings must be an object", 400);
+    }
+
+    rejectUnknownKeys(payload.privacy, PRIVACY_KEYS, "privacy setting");
+
+    PRIVACY_KEYS.forEach((key) => {
+      if (payload.privacy[key] === undefined) return;
+
+      if (key === "profileVisibility") {
+        if (!PROFILE_VISIBILITIES.includes(payload.privacy[key])) {
+          throw new AppError("Invalid profile visibility", 400);
+        }
+        nextPreferences.privacy[key] = payload.privacy[key];
+        return;
+      }
+
+      if (typeof payload.privacy[key] !== "boolean") {
+        throw new AppError(`${key} must be a boolean`, 400);
+      }
+      nextPreferences.privacy[key] = payload.privacy[key];
+    });
+  }
+
+  return nextPreferences;
+};
+
+/**
+ * @desc    Get current user preferences
+ * @route   GET /api/users/preferences
+ * @access  Private
+ */
+export const getPreferences = asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user._id).select("preferences");
+
+  if (!user) {
+    return next(new AppError("User not found", 404));
+  }
+
+  res.status(200).json({
+    success: true,
+    preferences: mergePreferencesWithDefaults(user.preferences),
+  });
+});
+
+/**
+ * @desc    Update current user preferences
+ * @route   PUT /api/users/preferences
+ * @access  Private
+ */
+export const updatePreferences = asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user._id).select("preferences");
+
+  if (!user) {
+    return next(new AppError("User not found", 404));
+  }
+
+  let preferences;
+  try {
+    preferences = validateAndMergePreferences(user.preferences, req.body);
+  } catch (error) {
+    return next(error);
+  }
+
+  user.preferences = preferences;
+  await user.save({ validateModifiedOnly: true });
+
+  res.status(200).json({
+    success: true,
+    message: "Preferences updated successfully",
+    preferences: mergePreferencesWithDefaults(user.preferences),
+  });
+});
 
 /**
  * @desc    Update user profile details
@@ -66,32 +234,57 @@ export const updateProfile = asyncHandler(async (req, res, next) => {
  * @access  Private
  */
 export const uploadAvatar = asyncHandler(async (req, res, next) => {
-  if (!req.file) {
+  if (!req.file?.buffer && !req.file?.path) {
     return next(new AppError("No image file provided", 400));
   }
 
-  // Delete the old avatar from disk if it was a local upload
   const currentUser = await User.findById(req.user._id);
-  safeDeleteAvatarByUrl(currentUser?.profilePic);
-
-  const baseUrl = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
-  const profilePic = `${baseUrl}${buildAvatarFileUrl(req.file.filename)}`;
-
-  const updatedUser = await User.findByIdAndUpdate(
-    req.user._id,
-    { profilePic },
-    { new: true }
-  ).select("-password -__v");
-
-  if (!updatedUser) {
+  if (!currentUser) {
     return next(new AppError("User not found", 404));
   }
 
-  res.status(200).json({
-    success: true,
-    message: "Profile photo updated",
-    user: updatedUser,
-  });
+  const uploadBuffer = req.file.buffer ?? (await fsPromises.readFile(req.file.path));
+  let uploadedAvatar;
+  const previousPublicId = currentUser.profilePicPublicId;
+  const previousProfilePic = currentUser.profilePic;
+
+  try {
+    uploadedAvatar = await uploadAvatarBuffer(uploadBuffer, req.user._id);
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        profilePic: uploadedAvatar.secure_url,
+        profilePicPublicId: uploadedAvatar.public_id,
+      },
+      { new: true }
+    ).select("-password -__v");
+
+    if (!updatedUser) {
+      await deleteCloudinaryAsset(uploadedAvatar.public_id).catch((error) => {
+        logger.error("[uploadAvatar] Failed to clean up orphaned Cloudinary avatar:", error.message);
+      });
+      return next(new AppError("User not found", 404));
+    }
+
+    if (previousPublicId) {
+      await deleteCloudinaryAsset(previousPublicId).catch((error) => {
+        logger.error("[uploadAvatar] Failed to delete previous Cloudinary avatar:", error.message);
+      });
+    } else {
+      safeDeleteAvatarByUrl(previousProfilePic);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Profile photo updated",
+      user: updatedUser,
+    });
+  } finally {
+    if (req.file?.path) {
+      await fsPromises.unlink(req.file.path).catch(() => {});
+    }
+  }
 });
 
 /**
@@ -103,11 +296,20 @@ export const removeAvatar = asyncHandler(async (req, res, next) => {
   const user = await User.findById(req.user._id);
   if (!user) return next(new AppError("User not found", 404));
 
-  // Delete file from disk if it's a local upload
-  safeDeleteAvatarByUrl(user.profilePic);
+  const previousPublicId = user.profilePicPublicId;
+  const previousProfilePic = user.profilePic;
 
   user.profilePic = null;
+  user.profilePicPublicId = null;
   await user.save();
+
+  if (previousPublicId) {
+    await deleteCloudinaryAsset(previousPublicId).catch((error) => {
+      logger.error("[removeAvatar] Failed to delete Cloudinary avatar:", error.message);
+    });
+  } else {
+    safeDeleteAvatarByUrl(previousProfilePic);
+  }
 
   res.status(200).json({
     success: true,

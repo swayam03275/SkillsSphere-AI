@@ -9,6 +9,11 @@ services:
       - mongodb_data:/data/db
     networks:
       - skillssphere-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:alpine
@@ -16,6 +21,11 @@ services:
       - "6379:6379"
     networks:
       - skillssphere-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   server:
     build:
@@ -31,8 +41,10 @@ services:
     env_file:
       - ./server/.env
     depends_on:
-      - mongodb
-      - redis
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - skillssphere-network
 

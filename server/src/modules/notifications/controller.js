@@ -86,10 +86,10 @@ export const createNotification = asyncHandler(async (req, res) => {
     throw error;
   }
 
-  if (userId !== req.user._id.toString()) {
-    throw new AppError("You can only create notifications for yourself", 403);
+  if (req.user.role !== "admin" && userId !== req.user._id.toString()) {
+    throw new AppError("Not authorized to create notifications for other users", 403);
   }
-
+  
   const notification = await createNotificationService({
     userId,
     title,

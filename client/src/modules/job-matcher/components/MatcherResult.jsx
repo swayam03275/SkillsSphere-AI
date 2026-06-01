@@ -1,7 +1,6 @@
 import MatchScoreCard from "./MatchScoreCard";
 import MissingSkillsList from "./MissingSkillsList";
 import RecommendedJobsList from "./RecommendedJobsList";
-
 export default function MatcherResult({ data }) {
   return (
     <div className="grid md:grid-cols-3 gap-6">

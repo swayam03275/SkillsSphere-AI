@@ -10,6 +10,8 @@ import {
   getSkillTrends,
 } from "../services/dashboardService";
 import { getRecruiterJobs } from "../../recruiter-jobs/services/jobPostingService";
+import Footer from "../../../shared/components/Footer";
+
 
 vi.mock("../services/dashboardService", () => ({
   getAnalysisHistory: vi.fn(),
@@ -25,7 +27,7 @@ vi.mock("../../recruiter-jobs/services/jobPostingService", () => ({
   getRecruiterJobs: vi.fn(),
 }));
 
-vi.mock("../../../shared/landing/Navbar", () => ({
+vi.mock("../../../shared/components/Navbar", () => ({
   default: () => <nav data-testid="navbar">Navbar</nav>,
 }));
 
@@ -71,7 +73,8 @@ vi.mock("recharts", () => ({
   CartesianGrid: () => null,
   Tooltip: () => null,
   BarChart: ({ children }) => <div>{children}</div>,
-  Bar: ({ children }) => <div>{children}</div>,
+  Bar: ({ children }) => <div>{children}      <Footer />
+    </div>,
   Cell: () => null,
 }));
 

@@ -1,11 +1,17 @@
 import express from "express";
-import { protect } from "../../middleware/authMiddleware.js";
-import { authRateLimiter, otpRateLimiter } from "../../middleware/rateLimiter.js";
+import { getFrontendUrl } from "../../config/env.js";
 import {
   buildGoogleAuthUrl,
   GOOGLE_OAUTH_NOT_CONFIGURED_MESSAGE,
   isGoogleOAuthConfigured,
 } from "../../config/googleOAuth.js";
+import { protect } from "../../middleware/authMiddleware.js";
+import logger from "../../utils/logger.js";
+
+import {
+  authRateLimiter,
+  otpRateLimiter,
+} from "../../middleware/rateLimiter.js";
 import {
   exchangeOAuthCode,
   forgotPassword,
@@ -21,6 +27,7 @@ import {
 } from "./controller.js";
 
 const router = express.Router();
+
 
 /**
  * @openapi
@@ -38,7 +45,7 @@ router.get("/me", protect, getMe);
 
 // Initiate Google OAuth
 router.get("/google", (req, res) => {
-  const envFrontendOrigin = process.env.FRONTEND_URL || "http://localhost:5174";
+  const envFrontendOrigin = getFrontendUrl();
   const refererHeader = req.get("referer");
   let inferredFrontendOrigin = envFrontendOrigin;
 
@@ -52,16 +59,23 @@ router.get("/google", (req, res) => {
 
   const fallbackCallback = `${inferredFrontendOrigin}/auth/callback`;
   const requestedRedirect = req.query.redirect;
+  const role = req.query.role;
   const redirectTarget =
     typeof requestedRedirect === "string" && requestedRedirect.length > 0
       ? requestedRedirect
       : fallbackCallback;
+
+  const stateObj = { redirect: redirectTarget };
+  if (role) {
+    stateObj.role = role;
+  }
+
   const state = encodeURIComponent(
-    Buffer.from(redirectTarget, "utf8").toString("base64"),
+    Buffer.from(JSON.stringify(stateObj), "utf8").toString("base64"),
   );
 
   if (!isGoogleOAuthConfigured()) {
-    console.error("[AUTH] Google OAuth env vars are missing in server/.env");
+    logger.error("[AUTH] Google OAuth env vars are missing in server/.env");
     return res.redirect(
       `${redirectTarget}?error=${encodeURIComponent(GOOGLE_OAUTH_NOT_CONFIGURED_MESSAGE)}`,
     );

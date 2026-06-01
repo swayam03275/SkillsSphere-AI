@@ -1,6 +1,9 @@
 import InterviewSession from "../../database/models/InterviewSession.js";
+import LearningProgress from "../../database/models/LearningProgress.js";
 import { processAnswerSubmission } from "./service.js";
 import { transcribeAudioStream } from "../../integrations/aiInterviewService.js";
+
+import logger from "../../utils/logger.js";
 
 export function initInterviewSockets(io) {
   io.on("connection", (socket) => {
@@ -16,6 +19,18 @@ export function initInterviewSockets(io) {
         const user = socket.user; // populated by auth middleware
         if (!user) {
           socket.emit("unauthorized", { message: "User authentication required" });
+          return;
+        }
+
+        const userId = user._id;
+        const isOwner = session.userId.equals(userId);
+        const isConductor = session.conductorId && session.conductorId.equals(userId);
+        const isObserver = session.observers && session.observers.some((id) => id.equals(userId));
+        const isTutor = user.role === "tutor" &&
+          await LearningProgress.findOne({ user: session.userId, tutorsTracking: userId });
+
+        if (!isOwner && !isConductor && !isObserver && !isTutor) {
+          socket.emit("unauthorized", { message: "You are not authorized to join this interview session" });
           return;
         }
 
@@ -52,7 +67,7 @@ export function initInterviewSockets(io) {
         socket.emit("interview-participants", participants);
 
       } catch (error) {
-        console.error("Error joining interview room:", error);
+        logger.error("Error joining interview room:", error);
         socket.emit("error", { message: "Internal server error during join" });
       }
     });
@@ -85,7 +100,11 @@ export function initInterviewSockets(io) {
 
     // Handle answer submission
     socket.on("submit-answer", async ({ sessionId, transcript, audioBuffer }) => {
-      if (!socket.data || socket.data.sessionId !== sessionId) return;
+      logger.log(`[Socket] Received submit-answer for session ${sessionId}, transcript: ${transcript}`);
+      if (!socket.data || socket.data.sessionId !== sessionId) {
+        logger.log(`[Socket] Missing socket.data or mismatched sessionId. socket.data:`, socket.data);
+        return;
+      }
 
       try {
         const audioFile = audioBuffer ? { buffer: audioBuffer } : null;
@@ -97,10 +116,11 @@ export function initInterviewSockets(io) {
           audioFile,
         });
 
+        logger.log(`[Socket] Answer evaluated successfully for session ${sessionId}`);
         // Emit the result back to this specific client
         socket.emit("answer-evaluated", result);
       } catch (error) {
-        console.error("Error evaluating answer via socket:", error);
+        logger.error("Error evaluating answer via socket:", error);
         socket.emit("evaluation-error", { message: error.message || "Failed to evaluate answer" });
       }
     });
@@ -119,18 +139,18 @@ export function initInterviewSockets(io) {
             if (parsed.transcript !== undefined) {
               socket.emit("live-transcript", { transcript: parsed.transcript });
             } else if (parsed.error) {
-              console.error("Python WS Error:", parsed.error);
+              logger.error("Python WS Error:", parsed.error);
             }
           } catch (err) {
-            console.error("Failed to parse Python WS message", err);
+            logger.error("Failed to parse Python WS message", err);
           }
         });
 
         pyWs.on("error", (err) => {
-          console.error("Python WS Connection Error:", err);
+          logger.error("Python WS Connection Error:", err);
         });
       } catch (error) {
-        console.error("Failed to start audio stream", error);
+        logger.error("Failed to start audio stream", error);
       }
     });
 

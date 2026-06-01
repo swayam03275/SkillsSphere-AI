@@ -1,6 +1,10 @@
 import path from "path";
+import { fileURLToPath } from "url";
 
-const UPLOADS_ROOT = path.join(process.cwd(), "src", "uploads");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const UPLOADS_ROOT = path.join(__dirname, "..", "uploads");
 const AVATARS_DIR = path.join(UPLOADS_ROOT, "avatars");
 const RESUMES_DIR = UPLOADS_ROOT;
 

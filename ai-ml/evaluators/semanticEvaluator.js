@@ -102,7 +102,7 @@ export const semanticEvaluator = async ({ resumeText = "", jobDescription = "" }
 
     // 🔍 Check cache first - ONLY IF CONNECTED TO DB
     let cachedResult = null;
-    if (mongoose.connection.readyState === 1) {
+    if (mongoose && mongoose.connection && mongoose.connection.readyState === 1 && SemanticCache) {
       cachedResult = await SemanticCache.findOne({ resumeHash, jdHash });
     }
     
@@ -142,7 +142,7 @@ export const semanticEvaluator = async ({ resumeText = "", jobDescription = "" }
     };
 
     // 💾 Save to cache ONLY IF CONNECTED TO DB
-    if (mongoose.connection.readyState === 1) {
+    if (mongoose && mongoose.connection && mongoose.connection.readyState === 1 && SemanticCache) {
       await SemanticCache.create({
         resumeHash,
         jdHash,

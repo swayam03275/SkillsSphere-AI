@@ -28,7 +28,7 @@ jobs:
           node-version: 20
 
       - name: Lint Markdown files
-        run: npx -y markdownlint-cli2 "**/*.md" "!**/node_modules/**"
+        run: npx -y markdownlint-cli2 "**/*.md" "!**/node_modules/**" "!**/venv/**" "!**/.venv/**"
 
       - name: Lint GitHub Actions workflow syntax
         uses: reviewdog/action-actionlint@v1
@@ -78,7 +78,6 @@ jobs:
 
       - name: Install dependencies
         if: steps.client_check.outputs.exists == 'true'
-        working-directory: client
         run: npm ci
 
       - name: Run lint
@@ -127,7 +126,6 @@ jobs:
 
       - name: Install dependencies
         if: steps.server_check.outputs.exists == 'true'
-        working-directory: server
         run: npm ci
 
       - name: Run lint

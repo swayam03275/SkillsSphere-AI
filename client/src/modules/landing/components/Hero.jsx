@@ -1,6 +1,5 @@
 import { CheckCircle2, FileSearch, LineChart, MessageSquareText, Sparkles, Video } from "lucide-react";
-import Button from "../../../shared/landing/Button";
-
+import Button from "../../../shared/components/Button";
 const headingGradientStyle = {
   backgroundImage: "linear-gradient(135deg, #7C3AED 0%, #4F46E5 50%, #059669 100%)",
   WebkitBackgroundClip: "text",

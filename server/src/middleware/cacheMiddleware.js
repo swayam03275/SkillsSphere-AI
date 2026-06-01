@@ -1,5 +1,7 @@
 import redisClient from "../config/redis.js";
 
+import logger from "../utils/logger.js";
+
 const cacheMiddleware = (prefix, ttlSeconds) => {
   return async (req, res, next) => {
     if (req.method !== "GET") {
@@ -19,18 +21,20 @@ const cacheMiddleware = (prefix, ttlSeconds) => {
       }
 
       const originalJson = res.json.bind(res);
-      res.json = (body) => {
+      res.json = async (body) => {
         if (res.statusCode >= 200 && res.statusCode < 300) {
-          redisClient.setEx(key, ttlSeconds, JSON.stringify(body)).catch((err) => {
-            console.error("Redis set error:", err);
-          });
+          try {
+            await redisClient.setEx(key, ttlSeconds, JSON.stringify(body));
+          } catch (err) {
+            logger.error("Redis set error:", err);
+          }
         }
         return originalJson(body);
       };
 
       next();
     } catch (error) {
-      console.error("Cache middleware error:", error);
+      logger.error("Cache middleware error:", error);
       next();
     }
   };

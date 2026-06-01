@@ -17,9 +17,15 @@ import {
   Loader2,
   ArrowLeft,
 } from "lucide-react";
-import Navbar from "../../../shared/landing/Navbar";
+import Navbar from "../../../shared/components/Navbar";
+import Footer from "../../../shared/components/Footer";
+
+import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
+import logger from "../../../utils/logger";
+
 
 const InterviewResults = () => {
+  useDocumentTitle("Interview Results");
   const { id: sessionId } = useParams();
   const navigate = useNavigate();
   const [results, setResults] = useState(null);
@@ -34,7 +40,7 @@ const InterviewResults = () => {
         setResults(res.data);
       } catch (err) {
         setError("Failed to load results.");
-        console.error("[InterviewResults] Error:", err);
+        logger.error("[InterviewResults] Error:", err);
       } finally {
         setLoading(false);
       }
@@ -64,7 +70,7 @@ const InterviewResults = () => {
   if (error || !results) {
     return (
       <div className="max-w-[900px] mx-auto px-8 pb-8 pt-24 flex flex-col gap-6">
-        <Navbar />
+        
         <div className="flex-1 flex flex-col items-center justify-center gap-4 text-slate-400">
           <AlertTriangle size={48} />
           <p>{error || "No results found."}</p>
@@ -130,7 +136,7 @@ const InterviewResults = () => {
 
   return (
     <div className="max-w-[900px] mx-auto px-8 pb-8 pt-24 flex flex-col gap-6">
-      <Navbar />
+      
       {/* Header */}
       <div className="text-center">
         <h1 className="text-3xl font-extrabold bg-gradient-to-br from-indigo-500 to-purple-500 bg-clip-text text-transparent">Interview Results</h1>
@@ -320,7 +326,14 @@ const InterviewResults = () => {
         >
           <ArrowLeft size={16} /> View History
         </button>
+        <button
+          className="bg-white/5 text-indigo-300 border border-indigo-500/30 py-3 px-8 rounded-full font-bold cursor-pointer flex items-center gap-2 hover:bg-indigo-500/10"
+          onClick={() => navigate("/dashboard")}
+        >
+          Back to Dashboard
+        </button>
       </div>
+          <Footer />
     </div>
   );
 };

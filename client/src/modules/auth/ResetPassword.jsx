@@ -4,14 +4,33 @@ import Input from "../../shared/components/Input";
 import Button from "../../shared/components/Button";
 import { KeyRound, ArrowLeft, CheckCircle } from "lucide-react";
 import { useToast } from "../../shared/components";
+import { API_URL } from "../../config/env";
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
+import { reportError } from "../../utils/errorReporter";
+import { z } from "zod";
 
+const resetSchema = z.object({
+  email: z.string().min(1, "Email is required").email("Please enter a valid email"),
+  otp: z.string().length(6, "OTP must be exactly 6 digits"),
+  newPassword: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string().min(1, "Please confirm your password")
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+});
+
+const RESET_PASSWORD_ERROR_MESSAGE =
+  "Unable to reset password. Please try again or request a new reset link.";
+const RESET_PASSWORD_CONNECTION_MESSAGE =
+  "Unable to reset password right now. Please check your connection and try again.";
 
 const ResetPassword = () => {
+  useDocumentTitle("Reset Password");
   const navigate = useNavigate();
   const location = useLocation();
   const { success: showSuccessToast, error: showErrorToast } = useToast();
 
-  const [form, setForm] = useState({
+  const [formData, setFormData] = useState({
     email: "",
     otp: "",
     newPassword: "",
@@ -23,7 +42,7 @@ const ResetPassword = () => {
     const params = new URLSearchParams(location.search);
     const emailParam = params.get("email");
     if (emailParam) {
-      setForm((prev) => ({ ...prev, email: emailParam }));
+      setFormData((prev) => ({ ...prev, email: emailParam }));
     }
   }, [location]);
 
@@ -37,9 +56,9 @@ const ResetPassword = () => {
     // For OTP, allow only digits and max 6
     if (id === "otp") {
       const sanitized = value.replace(/\D/g, "").slice(0, 6);
-      setForm({ ...form, otp: sanitized });
+      setFormData({ ...formData, otp: sanitized });
     } else {
-      setForm({ ...form, [id]: value });
+      setFormData({ ...formData, [id]: value });
     }
 
     if (errors[id]) {
@@ -48,25 +67,16 @@ const ResetPassword = () => {
   };
 
   const validate = () => {
+    const parsed = resetSchema.safeParse(formData);
     const newErrors = {};
 
-    if (!form.email.trim()) newErrors.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(form.email))
-      newErrors.email = "Please enter a valid email";
-
-    if (!form.otp.trim()) newErrors.otp = "OTP is required";
-    else if (form.otp.length !== 6)
-      newErrors.otp = "OTP must be exactly 6 digits";
-
-    if (!form.newPassword)
-      newErrors.newPassword = "New password is required";
-    else if (form.newPassword.length < 8)
-      newErrors.newPassword = "Password must be at least 8 characters";
-
-    if (!form.confirmPassword)
-      newErrors.confirmPassword = "Please confirm your password";
-    else if (form.newPassword !== form.confirmPassword)
-      newErrors.confirmPassword = "Passwords do not match";
+    if (!parsed.success) {
+      parsed.error.issues.forEach((issue) => {
+        if (!newErrors[issue.path[0]]) {
+          newErrors[issue.path[0]] = issue.message;
+        }
+      });
+    }
 
     return newErrors;
   };
@@ -79,16 +89,15 @@ const ResetPassword = () => {
     if (Object.keys(newErrors).length === 0) {
       setLoading(true);
       try {
-        const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
         const response = await fetch(`${API_URL}/api/auth/reset-password`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            email: form.email,
-            otp: form.otp,
-            newPassword: form.newPassword,
+            email: formData.email,
+            otp: formData.otp,
+            newPassword: formData.newPassword,
           }),
         });
 
@@ -98,13 +107,23 @@ const ResetPassword = () => {
           setSuccess(true);
           showSuccessToast("Password reset successfully!");
         } else {
-          const errorMessage = data.message || "Failed to reset password";
-          showErrorToast(errorMessage);
-          setErrors({ form: errorMessage });
+          const error = new Error("Password reset request failed");
+          reportError(error, {
+            source: "auth",
+            feature: "reset-password",
+            status: response.status,
+          }).catch(() => {});
+          showErrorToast(RESET_PASSWORD_ERROR_MESSAGE);
+          setErrors({ form: RESET_PASSWORD_ERROR_MESSAGE });
         }
       } catch (err) {
-        showErrorToast("Connection error. Please check if the server is running.");
-        console.error("Reset password error:", err);
+        reportError(new Error("Password reset request could not be completed"), {
+          source: "auth",
+          feature: "reset-password",
+          reason: err?.name || "request-failed",
+        }).catch(() => {});
+        showErrorToast(RESET_PASSWORD_CONNECTION_MESSAGE);
+        setErrors({ form: RESET_PASSWORD_CONNECTION_MESSAGE });
       } finally {
         setLoading(false);
       }
@@ -167,7 +186,7 @@ const ResetPassword = () => {
                 type="email"
                 label="Email"
                 placeholder="Enter your registered email"
-                value={form.email}
+                value={formData.email}
                 onChange={handleChange}
                 error={errors.email}
                 disabled={loading}
@@ -178,7 +197,7 @@ const ResetPassword = () => {
                 type="text"
                 label="OTP (6-digit)"
                 placeholder="Enter 6-digit OTP"
-                value={form.otp}
+                value={formData.otp}
                 onChange={handleChange}
                 error={errors.otp}
                 helperText="Check your email for the verification code"
@@ -191,7 +210,7 @@ const ResetPassword = () => {
                 type="password"
                 label="New Password"
                 placeholder="Create a new password"
-                value={form.newPassword}
+                value={formData.newPassword}
                 onChange={handleChange}
                 error={errors.newPassword}
                 helperText="Must be at least 8 characters"
@@ -203,7 +222,7 @@ const ResetPassword = () => {
                 type="password"
                 label="Confirm Password"
                 placeholder="Confirm your new password"
-                value={form.confirmPassword}
+                value={formData.confirmPassword}
                 onChange={handleChange}
                 error={errors.confirmPassword}
                 disabled={loading}

@@ -4,8 +4,30 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="referrer" content="no-referrer" />
+    <meta name="description" content="SkillsSphere AI — Learn in live classrooms, analyze resumes, practice mock interviews, and track career progress in one full-stack AI platform for students, tutors, and recruiters." />
     <title>SkillsSphere AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script>
+      (function() {
+        try {
+          var savedTheme = localStorage.getItem("skillssphere.theme");
+          if (!savedTheme) {
+            // Default to light if nothing is saved
+            savedTheme = "light";
+          }
+          if (savedTheme === "dark") {
+            document.documentElement.classList.add("dark");
+          } else {
+            document.documentElement.classList.add("light");
+          }
+          document.documentElement.dataset.theme = savedTheme;
+        } catch (e) {
+          // Fallback if localStorage is disabled
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -1,16 +1,22 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { Video, Users, ArrowRight, MonitorPlay, Calendar, BookOpen, Clock, Power, ShieldAlert } from "lucide-react";
+import { Video, Users, ArrowRight, MonitorPlay, Calendar, BookOpen, Clock, Power, ShieldAlert, ArrowLeft } from "lucide-react";
 import {
   createClassroomSession,
   getTutorClassroomSessions,
   endClassroomSession,
   getActiveClassroomSessions,
 } from "../services/classroomService";
-import Navbar from "../../../shared/landing/Navbar";
+import Navbar from "../../../shared/components/Navbar";
+import Footer from "../../../shared/components/Footer";
+
+import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
+
+import logger from "../../../utils/logger";
 
 export default function ClassroomsDashboard() {
+  useDocumentTitle("Classrooms Dashboard");
   const { user, token } = useSelector((state) => state.auth);
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState("");
@@ -44,7 +50,7 @@ export default function ClassroomsDashboard() {
         setSessions(res.data);
       }
     } catch (err) {
-      console.error("Failed to load sessions", err);
+      logger.error("Failed to load sessions", err);
       setError("Failed to load your classroom sessions. Please try again.");
     } finally {
       setIsListLoading(false);
@@ -60,7 +66,7 @@ export default function ClassroomsDashboard() {
         setSessions(res.data);
       }
     } catch (err) {
-      console.error("Failed to load active sessions", err);
+      logger.error("Failed to load active sessions", err);
       setError("Failed to load active classrooms. Please try again.");
     } finally {
       setIsListLoading(false);
@@ -87,7 +93,7 @@ export default function ClassroomsDashboard() {
         navigate(`/classrooms/${res.data.roomId}`);
       }
     } catch (err) {
-      console.error("Failed to create room", err);
+      logger.error("Failed to create room", err);
       setError(err.message || "Failed to create live classroom session.");
     } finally {
       setIsLoading(false);
@@ -107,7 +113,7 @@ export default function ClassroomsDashboard() {
         fetchMySessions();
       }
     } catch (err) {
-      console.error("Failed to end session", err);
+      logger.error("Failed to end session", err);
       setError(err.message || "Failed to end the session.");
     }
   };
@@ -131,12 +137,21 @@ export default function ClassroomsDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#020617] text-gray-900 dark:text-white pt-24 pb-16 px-6">
+    <div className="min-h-screen bg-white dark:bg-[#020617] text-gray-900 dark:text-white flex flex-col">
       <Navbar />
-      <div className="max-w-6xl mx-auto">
+      <div className="flex-1 max-w-6xl mx-auto w-full pt-24 pb-16 px-6">
         
         {/* Header section */}
         <div className="text-center mb-12">
+          <div className="mb-6">
+            <Link 
+              to="/dashboard" 
+              className="inline-flex items-center gap-2 text-sm text-blue-500 hover:text-blue-400 transition-colors"
+            >
+              <ArrowLeft size={16} />
+              Back to Dashboard
+            </Link>
+          </div>
           <div className="inline-flex items-center justify-center p-3 bg-indigo-500/10 text-indigo-400 rounded-2xl mb-6 border border-indigo-500/20 shadow-[0_0_20px_rgba(99,102,241,0.15)] animate-[pulse_3s_infinite]">
             <MonitorPlay size={32} />
           </div>
@@ -473,7 +488,7 @@ export default function ClassroomsDashboard() {
                                 />
                               ) : (
                                 <div className="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-[10px] font-bold border border-indigo-500/10">
-                                  {session.host.name?.charAt(0).toUpperCase()}
+                                  {session.host.name?.charAt(0)?.toUpperCase()}
                                 </div>
                               )}
                               <span className="text-xs text-gray-600 dark:text-slate-400">
@@ -507,6 +522,7 @@ export default function ClassroomsDashboard() {
         </div>
 
       </div>
+          <Footer />
     </div>
   );
 }

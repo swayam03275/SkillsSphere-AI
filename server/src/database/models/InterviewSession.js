@@ -162,7 +162,7 @@ const interviewSessionSchema = new mongoose.Schema(
       default: null,
     },
   },
-  { timestamps: true }
+  { timestamps: true, optimisticConcurrency: true }
 );
 
 // Index for fetching user's interview history efficiently

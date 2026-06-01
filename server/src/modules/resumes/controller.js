@@ -2,6 +2,7 @@ import path from "path";
 import fs from "fs";
 import crypto from "crypto";
 import { parseResume } from "../../utils/parseResume.js";
+import logger from "../../utils/logger.js";
 import Resume from "../../database/models/Resume.js";
 import asyncHandler from "../../utils/asyncHandler.js";
 import AppError from "../../utils/AppError.js";
@@ -21,6 +22,7 @@ const defaultDependencies = {
   upsertResume: (userId, payload) => resumeService.upsertResume(userId, payload),
   findCachedAnalysis: (resumeHash, jdHash) => resumeService.findCachedAnalysis(resumeHash, jdHash),
   saveCachedAnalysis: (cacheData) => resumeService.saveCachedAnalysis(cacheData),
+  validateExtractedText: (text) => resumeService.validateExtractedText(text),
 };
 
 
@@ -98,6 +100,11 @@ export const uploadResume = asyncHandler(async (req, res, next) => {
     return next(new AppError("No file uploaded", 400));
   }
 
+  const count = await Resume.countDocuments({ user: req.user._id });
+  if (count >= 3) {
+    return next(new AppError("Maximum limit of 3 resumes reached. Please delete an existing version to upload a new one.", 400));
+  }
+
   // Build signed file URL for the uploaded resume
   const resumePath = `/api/files/resumes/${req.file.filename}`;
   const expiresAt = Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60); // 7 days from now
@@ -114,6 +121,10 @@ export const uploadResume = asyncHandler(async (req, res, next) => {
       mimeType: req.file.mimetype,
     },
   });
+
+  if (req.file?.path) {
+    await fsPromises.unlink(req.file.path).catch(() => {});
+  }
 });
 
 const normalizeJobSkills = (rawSkills) => {
@@ -144,10 +155,17 @@ export const analyzeResume = asyncHandler(async (req, res, next) => {
     return next(new AppError("Resume file is required", 400));
   }
 
+  const count = await Resume.countDocuments({ user: req.user._id });
+  if (count >= 3) {
+    return next(new AppError("Maximum limit of 3 resumes reached. Please delete an existing version to upload a new one.", 400));
+  }
+
   console.time("ResumeAnalysis");
   console.time("ResumeParsing");
   const parsedData = await controllerDependencies.parseResume(file.path);
   console.timeEnd("ResumeParsing");
+
+  const isScannedPdf = controllerDependencies.validateExtractedText(parsedData.resumeText || "");
 
   const jobSkills = normalizeJobSkills(req.body.jobSkills);
   if (jobSkills === null) {
@@ -178,6 +196,7 @@ export const analyzeResume = asyncHandler(async (req, res, next) => {
       mode: safePipeline.mode || "match",
       evaluatorBreakdown,
       aggregatedScore: overallScore,
+      isScannedPdf,
       file: {
         originalName: file.originalname,
         storedName: file.filename,
@@ -228,6 +247,7 @@ export const analyzeResume = asyncHandler(async (req, res, next) => {
       file: savedResume.file,
       evaluatorBreakdown,
       overallScore,
+      isScannedPdf,
     });
   }
 
@@ -267,6 +287,7 @@ export const analyzeResume = asyncHandler(async (req, res, next) => {
     mode: pipelineResult.mode || "match",
     evaluatorBreakdown,
     aggregatedScore: overallScore,
+    isScannedPdf,
     file: {
       originalName: file.originalname,
       storedName: file.filename,
@@ -331,6 +352,7 @@ export const analyzeResume = asyncHandler(async (req, res, next) => {
     file: savedResume.file,
     evaluatorBreakdown,
     overallScore,
+    isScannedPdf,
   });
 });
 
@@ -399,6 +421,116 @@ export const compareVersions = asyncHandler(async (req, res, next) => {
       v2,
       insights
     }
+  });
+});
+
+/**
+ * List all resumes for the current logged-in student.
+ */
+export const listResumes = asyncHandler(async (req, res, next) => {
+  const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+  const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 10));
+  const skip = (page - 1) * limit;
+
+  const [resumes, totalCount] = await Promise.all([
+    Resume.find({ user: req.user._id })
+      .select("-resumeText")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    Resume.countDocuments({ user: req.user._id })
+  ]);
+
+  res.status(200).json({
+    success: true,
+    message: "Resumes listed successfully",
+    totalCount,
+    totalPages: Math.ceil(totalCount / limit),
+    currentPage: page,
+    data: resumes,
+  });
+});
+
+/**
+ * Set a specific resume as active and deactivate all others.
+ */
+export const setActiveResume = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+
+  const resume = await Resume.findOne({ _id: id, user: req.user._id });
+  if (!resume) {
+    return next(new AppError("Resume not found or unauthorized", 404));
+  }
+
+  // Deactivate all others
+  await Resume.updateMany({ user: req.user._id }, { isActive: false });
+
+  // Activate this one
+  resume.isActive = true;
+  await resume.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Active resume updated successfully",
+    data: resume,
+  });
+});
+
+/**
+ * Rename a specific resume.
+ */
+export const renameResume = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const { title } = req.body;
+
+  if (!title || !title.trim()) {
+    return next(new AppError("Title is required", 400));
+  }
+
+  const resume = await Resume.findOneAndUpdate(
+    { _id: id, user: req.user._id },
+    { title: title.trim() },
+    { new: true, runValidators: true }
+  ).select("-resumeText");
+
+  if (!resume) {
+    return next(new AppError("Resume not found or unauthorized", 404));
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Resume renamed successfully",
+    data: resume,
+  });
+});
+
+/**
+ * Delete a specific resume.
+ */
+export const deleteResume = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+
+  const resume = await Resume.findOne({ _id: id, user: req.user._id });
+  if (!resume) {
+    return next(new AppError("Resume not found or unauthorized", 404));
+  }
+
+  const wasActive = resume.isActive;
+  await Resume.deleteOne({ _id: id });
+
+  // If we deleted the active resume, activate the most recent fallback if available
+  if (wasActive) {
+    const nextActive = await Resume.findOne({ user: req.user._id }).sort({ createdAt: -1 });
+    if (nextActive) {
+      nextActive.isActive = true;
+      await nextActive.save();
+    }
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Resume deleted successfully",
   });
 });
 

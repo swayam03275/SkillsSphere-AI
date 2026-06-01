@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import Navbar from "../../../shared/landing/Navbar";
+import Navbar from "../../../shared/components/Navbar";
+import Footer from "../../../shared/components/Footer";
+
 import { getCoverLetterHistory } from "../services/dashboardService";
 import { 
   FileText, 
@@ -12,8 +14,15 @@ import {
 } from "lucide-react";
 import CoverLetterModal from "../../../shared/components/CoverLetterModal";
 import { generateCoverLetter } from "../../resume-analyzer/services/resumeService";
+import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
+import { useToast } from "../../../shared/components/toast/ToastProvider";
+
+
+import logger from "../../../utils/logger";
 
 const CoverLetterHistoryPage = () => {
+  useDocumentTitle("Cover Letter History");
+  const toast = useToast();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -31,7 +40,7 @@ const CoverLetterHistoryPage = () => {
         setError("Failed to load cover letter history.");
       }
     } catch (err) {
-      console.error(err);
+      logger.error(err);
       setError("An error occurred while fetching history.");
     } finally {
       setLoading(false);
@@ -59,7 +68,7 @@ const CoverLetterHistoryPage = () => {
       }
       throw new Error("Invalid response format from server.");
     } catch (err) {
-      alert("Failed to regenerate: " + err.message);
+      toast.error("Failed to regenerate: " + err.message);
       return null;
     }
   };
@@ -71,10 +80,10 @@ const CoverLetterHistoryPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#020817] text-gray-900 dark:text-slate-100 font-sans">
+    <div className="min-h-screen bg-white dark:bg-[#020817] text-gray-900 dark:text-slate-100 font-sans pt-24">
       <Navbar />
 
-      <div className="max-w-5xl mx-auto pt-32 pb-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto pt-8 pb-12 px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8 animate-in slide-in-from-bottom-4 duration-500">
           <Link 
@@ -166,6 +175,7 @@ const CoverLetterHistoryPage = () => {
         initialText={selectedCl ? selectedCl.generatedText : ""}
         onRegenerate={handleRegenerate}
       />
+          <Footer />
     </div>
   );
 };
