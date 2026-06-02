@@ -1,0 +1,395 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Global Zero-Trust Multi-Tenant CORS, WAF & Network Security Matrix",
+  "description": "Defines cryptographic-grade CORS boundaries, dynamic B2B tenant origin validation, Geo-fencing, Apollo GraphQL edge caching, and automated SIEM auto-ban mechanics.",
+  "version": "6.0.0",
+  "type": "object",
+  "global_security_posture": {
+    "enforce_strict_mode": true,
+    "block_null_origin": true,
+    "terminate_preflight_on_fail": true,
+    "options_success_status": 204,
+    "max_age_cache_seconds": 86400,
+    "default_credential_policy": "deny_all",
+    "allow_private_network_access_preflights": false,
+    "vary_header_injection": [
+      "Origin",
+      "Access-Control-Request-Method",
+      "Access-Control-Request-Headers"
+    ]
+  },
+  "geolocation_and_compliance": {
+    "enabled": true,
+    "ofac_sanctions_compliance": {
+      "block_all_traffic": true,
+      "blocked_iso_country_codes": [
+        "CU", "IR", "KP", "SY", "UA-CR", "RU"
+      ],
+      "return_status": 451,
+      "return_message": "Unavailable For Legal Reasons"
+    },
+    "gdpr_data_sovereignty": {
+      "eu_tenant_strict_routing": true,
+      "allowed_eu_processing_origins": [
+        "https://eu.skillssphere-ai.com",
+        "https://app.eu.skillssphere-ai.com"
+      ]
+    }
+  },
+  "environment_profiles": {
+    "production": {
+      "static_origins": [
+        "https://www.skillssphere-ai.com",
+        "https://app.skillssphere-ai.com",
+        "https://admin.skillssphere-ai.com",
+        "https://partners.skillssphere-ai.com",
+        "https://developer.skillssphere-ai.com"
+      ],
+      "dynamic_regex_origins": [
+        "^https:\\/\\/[a-zA-Z0-9-]+\\.tenant\\.skillssphere-ai\\.com$",
+        "^https:\\/\\/[a-zA-Z0-9-]+\\.portal\\.skillssphere-ai\\.com$"
+      ],
+      "allowed_methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+      "allow_credentials": true,
+      "exposed_headers": [
+        "X-Pagination-Total-Count",
+        "X-RateLimit-Limit",
+        "X-RateLimit-Remaining",
+        "X-RateLimit-Reset",
+        "X-Correlation-ID",
+        "X-Request-ID",
+        "Content-Disposition",
+        "ETag"
+      ]
+    },
+    "disaster_recovery_failover": {
+      "static_origins": [
+        "https://dr.skillssphere-ai.com",
+        "https://dr-admin.skillssphere-ai.com"
+      ],
+      "dynamic_regex_origins": [
+        "^https:\\/\\/[a-zA-Z0-9-]+\\.dr-tenant\\.skillssphere-ai\\.com$"
+      ],
+      "allowed_methods": ["GET", "POST", "OPTIONS"],
+      "allow_credentials": true,
+      "exposed_headers": ["X-Correlation-ID", "X-Failover-State"]
+    },
+    "staging": {
+      "static_origins": [
+        "https://staging.skillssphere-ai.com",
+        "https://staging-admin.skillssphere-ai.com"
+      ],
+      "dynamic_regex_origins": [
+        "^https:\\/\\/pr-[0-9]+\\.staging\\.skillssphere-ai\\.com$",
+        "^https:\\/\\/branch-[a-zA-Z0-9-]+\\.staging\\.skillssphere-ai\\.com$"
+      ],
+      "allowed_methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+      "allow_credentials": true,
+      "exposed_headers": ["X-Correlation-ID", "X-Debug-Trace"]
+    },
+    "uat_and_qa": {
+      "static_origins": [
+        "https://uat.skillssphere-ai.com",
+        "https://qa.skillssphere-ai.com"
+      ],
+      "dynamic_regex_origins": [],
+      "allowed_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      "allow_credentials": true,
+      "exposed_headers": ["*"]
+    },
+    "development": {
+      "static_origins": [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:4000",
+        "http://localhost:5173",
+        "http://localhost:8080",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:3000"
+      ],
+      "dynamic_regex_origins": [
+        "^http:\\/\\/192\\.168\\.[0-9]{1,3}\\.[0-9]{1,3}:[0-9]{4}$",
+        "^https:\\/\\/[a-zA-Z0-9-]+\\.ngrok-free\\.app$"
+      ],
+      "allowed_methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+      "allow_credentials": true,
+      "exposed_headers": ["*"]
+    }
+  },
+  "tenant_b2b_overrides": {
+    "enabled": true,
+    "strict_ip_binding_enabled": true,
+    "whitelisted_external_partners": [
+      {
+        "tenant_id": "org_enterprise_alpha_bank",
+        "industry": "finance",
+        "allowed_origins": [
+          "https://hr.enterprise-alpha.com",
+          "https://sso.enterprise-alpha.com"
+        ],
+        "allowed_cidr_blocks": [
+          "198.51.100.0/24",
+          "203.0.113.0/25"
+        ],
+        "restricted_paths": ["/api/v1/interviews/webhooks", "/api/v1/analytics/export"],
+        "credentials_permitted": true,
+        "enforce_mtls": true,
+        "custom_max_age": 3600
+      },
+      {
+        "tenant_id": "org_beta_health_systems",
+        "industry": "healthcare_hipaa",
+        "allowed_origins": [
+          "https://portals.beta-health.net",
+          "https://careers.beta-health.net"
+        ],
+        "allowed_cidr_blocks": [
+          "10.0.0.0/8"
+        ],
+        "restricted_paths": ["*"],
+        "credentials_permitted": false,
+        "enforce_mtls": true,
+        "phi_data_scrubbing": true
+      },
+      {
+        "tenant_id": "org_gamma_tech_corp",
+        "industry": "technology",
+        "allowed_origins": [
+          "https://jobs.gamma-tech.io",
+          "https://internal-tools.gamma-tech.io"
+        ],
+        "allowed_cidr_blocks": ["0.0.0.0/0"],
+        "restricted_paths": ["/api/v2/webhooks/incoming"],
+        "credentials_permitted": true,
+        "enforce_mtls": false
+      },
+      {
+        "tenant_id": "org_delta_logistics",
+        "industry": "supply_chain",
+        "allowed_origins": [
+          "https://driver-portal.delta-logistics.com"
+        ],
+        "allowed_cidr_blocks": [],
+        "restricted_paths": ["/api/v1/users/bulk-upload"],
+        "credentials_permitted": true,
+        "custom_rate_limit_rpm": 500
+      },
+      {
+        "tenant_id": "org_epsilon_retail",
+        "industry": "retail",
+        "allowed_origins": [
+          "https://seasonal-hiring.epsilon-retail.com"
+        ],
+        "allowed_cidr_blocks": [],
+        "restricted_paths": [],
+        "credentials_permitted": true,
+        "seasonal_burst_allowance": true
+      },
+      {
+        "tenant_id": "org_zeta_education",
+        "industry": "education",
+        "allowed_origins": [
+          "https://alumni.zeta-university.edu"
+        ],
+        "allowed_cidr_blocks": [
+          "128.0.0.0/16"
+        ],
+        "restricted_paths": ["/api/v1/billing/*"],
+        "credentials_permitted": true,
+        "enforce_mtls": false
+      },
+      {
+        "tenant_id": "org_eta_government",
+        "industry": "public_sector",
+        "allowed_origins": [
+          "https://careers.state-gov.us"
+        ],
+        "allowed_cidr_blocks": [
+          "192.0.2.0/24"
+        ],
+        "restricted_paths": ["*"],
+        "credentials_permitted": true,
+        "enforce_mtls": true,
+        "fips_140_2_compliant": true
+      },
+      {
+        "tenant_id": "org_theta_ai_research",
+        "industry": "ai_research",
+        "allowed_origins": [
+          "https://datasets.theta-ai.io",
+          "https://models.theta-ai.io"
+        ],
+        "allowed_cidr_blocks": ["0.0.0.0/0"],
+        "restricted_paths": ["/api/v1/system/config"],
+        "credentials_permitted": false,
+        "enforce_mtls": false
+      },
+      {
+        "tenant_id": "org_iota_manufacturing",
+        "industry": "manufacturing",
+        "allowed_origins": [
+          "https://factory-dashboard.iota-mfg.com"
+        ],
+        "allowed_cidr_blocks": [
+          "172.16.0.0/12"
+        ],
+        "restricted_paths": ["/api/v1/candidates/pii"],
+        "credentials_permitted": true,
+        "enforce_mtls": true
+      },
+      {
+        "tenant_id": "org_kappa_cybersecurity",
+        "industry": "security",
+        "allowed_origins": [
+          "https://soc.kappa-cyber.com"
+        ],
+        "allowed_cidr_blocks": [
+          "10.255.255.0/24"
+        ],
+        "restricted_paths": ["*"],
+        "credentials_permitted": true,
+        "enforce_mtls": true,
+        "custom_max_age": 300
+      }
+    ]
+  },
+  "advanced_protocol_cors_profiles": {
+    "websocket_streaming_profile": {
+      "enabled": true,
+      "verify_client_origin": true,
+      "require_wss_in_production": true,
+      "allowed_origins": [
+        "https://app.skillssphere-ai.com",
+        "https://live.skillssphere-ai.com",
+        "https://sockets.skillssphere-ai.com"
+      ],
+      "allowed_ws_protocols": [
+        "graphql-ws",
+        "subscriptions-transport-ws",
+        "skillssphere-v1-json"
+      ],
+      "ping_interval_ms": 25000,
+      "ping_timeout_ms": 60000
+    },
+    "grpc_web_profile": {
+      "enabled": true,
+      "allowed_origins": [
+        "https://internal-dashboard.skillssphere-ai.com"
+      ],
+      "allowed_methods": ["POST", "OPTIONS"],
+      "exposed_headers": [
+        "grpc-status",
+        "grpc-message",
+        "x-envoy-upstream-service-time"
+      ],
+      "allow_credentials": true
+    },
+    "apollo_graphql_federation": {
+      "enabled": true,
+      "subgraph_routing": true,
+      "studio_whitelisting": {
+        "allow_apollo_studio_explorer": true,
+        "studio_origins": [
+          "https://studio.apollographql.com",
+          "https://explorer.apollographql.com"
+        ]
+      },
+      "allow_introspection_for_origins": [
+        "https://admin.skillssphere-ai.com",
+        "https://studio.apollographql.com"
+      ]
+    }
+  },
+  "edge_caching_and_waf": {
+    "cloudflare_enterprise_integration": {
+      "respect_cf_connecting_ip": true,
+      "trust_cf_visitor_header": true,
+      "block_direct_ip_access": true,
+      "enforce_authenticated_origin_pulls": true,
+      "bot_management": {
+        "block_likely_bots_preflight": true,
+        "challenge_verified_bots": false,
+        "score_threshold": 30
+      }
+    },
+    "aws_waf_integration": {
+      "emit_cors_failure_logs_to_kinesis": true,
+      "rate_limit_preflights_per_ip": {
+        "enabled": true,
+        "limit": 500,
+        "window_minutes": 5
+      }
+    }
+  },
+  "header_governance_matrix": {
+    "safelisted_request_headers": [
+      "Accept",
+      "Accept-Language",
+      "Content-Language",
+      "Content-Type",
+      "Authorization",
+      "X-CSRF-Token",
+      "X-Requested-With",
+      "X-Tenant-ID",
+      "X-Correlation-ID",
+      "X-Idempotency-Key",
+      "Sentry-Trace",
+      "Baggage"
+    ],
+    "strictly_forbidden_request_headers": [
+      "X-Forwarded-For",
+      "X-Forwarded-Host",
+      "X-Forwarded-Proto",
+      "X-Original-URL",
+      "X-Rewrite-URL",
+      "Proxy",
+      "True-Client-IP"
+    ],
+    "mime_type_enforcement": {
+      "enforce_content_type_validation": true,
+      "allowed_application_types": [
+        "application/json",
+        "application/graphql",
+        "application/x-www-form-urlencoded",
+        "multipart/form-data",
+        "application/grpc-web+proto",
+        "application/grpc-web-text+proto"
+      ]
+    }
+  },
+  "telemetry_siem_and_incident_response": {
+    "logging_configuration": {
+      "log_blocked_origins": true,
+      "log_unauthorized_headers": true,
+      "log_method_not_allowed": true,
+      "anonymize_ip_in_logs": false
+    },
+    "auto_ban_mechanics": {
+      "enabled": true,
+      "trigger": "exceed_cors_failures",
+      "failure_threshold": 150,
+      "window_seconds": 60,
+      "action": "trigger_cloudflare_ip_ban",
+      "ban_duration_seconds": 86400
+    },
+    "datadog_metrics": {
+      "enabled": true,
+      "prefix": "security.network.cors.",
+      "tags": ["env", "origin", "tenant_id", "status_code", "rejection_reason"]
+    },
+    "pagerduty_escalation": {
+      "trigger_on": [
+        "cors_failure_rate_exceeds_1000_per_minute",
+        "b2b_mtls_handshake_failure_spike",
+        "ofac_sanction_country_access_attempt"
+      ],
+      "routing_key_env_var": "PD_SEC_OPS_ROUTING_KEY",
+      "urgency": "high"
+    },
+    "kafka_audit_stream": {
+      "enabled": true,
+      "topic": "sec.gateway.cors_rejections",
+      "partition_key": "origin_domain"
+    }
+  }
+}

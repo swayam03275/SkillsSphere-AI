@@ -1,0 +1,209 @@
+# =========================================================================================
+# 🛡️ Global Enterprise HTTP Header Ingestion, Validation & Mutation Engine
+# Framework Ref: #1145
+# Version: 4.0.0 (Zero-Trust Edge Perimeter Edition)
+# Core Paradigm: Default-Deny Protocol, Regex Constraint Enforcement, and Header Mutation
+# =========================================================================================
+
+executive_summary: >
+  Permissive CORS configurations inherently trust the client to dictate network ingress headers 
+  via the 'Access-Control-Request-Headers' preflight check. This naive trust model exposes the 
+  API to HTTP Request Smuggling, Cache Poisoning, Polyglot Payloads, and WAF bypass attacks. 
+  This specification enforces a cryptographic "Default-Deny" perimeter. Only explicitly approved 
+  headers are permitted, and every permitted header must mathematically validate against strict 
+  Regex schemas before the network buffer is allocated to the application thread.
+
+# -----------------------------------------------------------------------------------------
+# SECTION 1: INGESTION BOUNDARY LIMITS (Buffer Overflow & Slowloris Protection)
+# -----------------------------------------------------------------------------------------
+buffer_allocation_limits:
+  description: "Prevents memory exhaustion and Slowloris variants by hard-capping header byte sizes."
+  max_total_header_size_bytes: 8192
+  max_header_count: 50
+  max_single_header_name_length: 128
+  max_single_header_value_length: 4096
+  action_on_breach: "Immediate TCP Socket Termination (No HTTP Response generated)"
+
+# -----------------------------------------------------------------------------------------
+# SECTION 2: THE STRICT HEADER WHITELIST & VALIDATION SCHEMAS
+# -----------------------------------------------------------------------------------------
+header_classifications:
+  standard_safelisted_headers:
+    description: "Universally accepted headers required for standard HTTP/1.1 and HTTP/2 operations."
+    allowed_keys:
+      Accept:
+        required: false
+        regex_validation: "^(application\\/json|\\*\\/\\*|text\\/html|text\\/plain)$"
+      Accept-Language:
+        required: false
+        regex_validation: "^[a-zA-Z0-9\\-,;= ]+$"
+      Content-Type:
+        required: true_for_mutations
+        description: "Strict MIME-type validation to prevent Polyglot file/JSON attacks."
+        regex_validation: "^(application\\/json|multipart\\/form-data; boundary=[A-Za-z0-9'()+_,-.\\/:=?]+)$"
+      Origin:
+        required: true_for_cors
+        regex_validation: "^https?:\\/\\/[a-zA-Z0-9.-]+(:[0-9]+)?$"
+      Host:
+        required: true
+      User-Agent:
+        required: false
+        max_length: 512
+
+  authentication_and_zero_trust:
+    description: "Cryptographic headers utilized for session state and Identity & Access Management (IAM)."
+    allowed_keys:
+      Authorization:
+        required: false
+        description: "Bearer tokens and Basic Auth base64 strings."
+        regex_validation: "^(Bearer\\s[A-Za-z0-9\\-_~+/]+=*|Basic\\s[A-Za-z0-9+/=]+)$"
+      X-CSRF-Token:
+        required: true_for_mutations_with_credentials
+        regex_validation: "^[a-zA-Z0-9\\-_]{32,128}$"
+      X-API-Key:
+        required: false
+        description: "Server-to-Server B2B Auth."
+        regex_validation: "^sk_(test|live)_[a-zA-Z0-9]{24,64}$"
+      X-Signature-Ed25519:
+        required: false
+        description: "Asymmetric Webhook payload validation."
+        regex_validation: "^[a-fA-F0-9]{128}$"
+
+  custom_application_telemetry:
+    description: "Headers utilized by distributed tracing, analytics, and tenant routing layers."
+    allowed_keys:
+      X-Tenant-ID:
+        required: false
+        regex_validation: "^org_[a-zA-Z0-9_]{8,32}$"
+      X-Client-Version:
+        required: false
+        regex_validation: "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+      X-Device-Fingerprint:
+        required: false
+        regex_validation: "^[a-fA-F0-9]{64}$"
+
+  w3c_trace_context_and_observability:
+    description: "Standardized OpenTelemetry / B3 Propagation headers for distributed microservice tracing."
+    allowed_keys:
+      traceparent:
+        required: false
+        regex_validation: "^00-[0-9a-f]{32}-[0-9a-f]{16}-[01]{2}$"
+      tracestate:
+        required: false
+        regex_validation: "^[a-zA-Z0-9_\\-@,= ]+$"
+      b3:
+        required: false
+        description: "Zipkin/B3 single header format."
+      Sentry-Trace:
+        required: false
+        regex_validation: "^[0-9a-f]{32}-[0-9a-f]{16}(-[01])?$"
+
+# -----------------------------------------------------------------------------------------
+# SECTION 3: PROTOCOL-SPECIFIC UPGRADE HEADERS
+# -----------------------------------------------------------------------------------------
+advanced_protocol_headers:
+  websocket_upgrade_headers:
+    description: "Headers strictly required and permitted ONLY during HTTP 101 Switching Protocols."
+    allowed_keys:
+      Connection:
+        regex_validation: "(?i)Upgrade"
+      Upgrade:
+        regex_validation: "(?i)websocket"
+      Sec-WebSocket-Key:
+        regex_validation: "^[A-Za-z0-9+/]+={0,2}$"
+      Sec-WebSocket-Version:
+        regex_validation: "^13$"
+      Sec-WebSocket-Protocol:
+        regex_validation: "^(graphql-ws|skillssphere-v1-json)$"
+
+  grpc_web_headers:
+    description: "Headers required for Envoy gRPC-Web translation."
+    allowed_keys:
+      X-Grpc-Web:
+        regex_validation: "^1$"
+      Grpc-Timeout:
+        regex_validation: "^[0-9]+[HmSuMn]$"
+
+# -----------------------------------------------------------------------------------------
+# SECTION 4: STRICTLY FORBIDDEN HEADERS (THE BLACKLIST)
+# -----------------------------------------------------------------------------------------
+strictly_forbidden_headers:
+  description: "Headers that the API gateway MUST strip, reject, or flag if sent from an external public client."
+  blacklisted_keys:
+    - header: "X-Forwarded-For"
+      reason: "Prevents IP spoofing; must be cryptographically set by Cloudflare/ALB only."
+    - header: "X-Forwarded-Host"
+      reason: "Primary vector for Cache Poisoning and Password Reset poisoning."
+    - header: "X-Original-URL"
+      reason: "Routing bypass vector for WAF evasion."
+    - header: "X-Rewrite-URL"
+      reason: "Routing bypass vector for WAF evasion."
+    - header: "Proxy"
+      reason: "httpoxy vulnerability vector (CGI namespace collision)."
+    - header: "True-Client-IP"
+      reason: "Cloudflare specific; external clients cannot dictate this."
+
+# -----------------------------------------------------------------------------------------
+# SECTION 5: EDGE MUTATION ENGINE (WHAT THE GATEWAY ADDS)
+# -----------------------------------------------------------------------------------------
+edge_mutation_pipeline:
+  description: "Headers injected or overwritten by the Gateway BEFORE the request hits the Node.js backend."
+  injected_headers:
+    X-Gateway-Request-ID:
+      source: "Generated UUID v4 at edge"
+    X-Gateway-Ingest-Timestamp:
+      source: "Unix Epoch MS at edge"
+    X-Verified-Connecting-IP:
+      source: "Extracted from CF-Connecting-IP securely"
+    X-Geo-Country-Code:
+      source: "Extracted from CF-IPCountry"
+  
+  stripped_headers:
+    description: "Headers removed entirely to prevent internal state leakage."
+    keys: ["Server", "X-Powered-By"]
+
+# -----------------------------------------------------------------------------------------
+# SECTION 6: CORS PREFLIGHT EXECUTION LIFECYCLE
+# -----------------------------------------------------------------------------------------
+preflight_options_lifecycle:
+  description: "The highly deterministic execution matrix for HTTP OPTIONS requests."
+  
+  step_1_origin_check:
+    action: "Match incoming 'Origin' header against cors-tenancy-matrix.json."
+    on_fail: "Return HTTP 403 Forbidden. Strip CORS response headers."
+  
+  step_2_method_check:
+    action: "Match 'Access-Control-Request-Method' against allowed_methods."
+    on_fail: "Return HTTP 405 Method Not Allowed."
+
+  step_3_header_intersection:
+    action: "Intersect 'Access-Control-Request-Headers' with this YAML whitelist."
+    on_fail: "Return HTTP 403 Forbidden. Log 'ERR_UNAUTHORIZED_HEADER_REQUESTED'."
+
+  step_4_response_caching:
+    action: "Inject 'Access-Control-Max-Age: 86400'."
+    benefit: "Caches the preflight result in the browser for 24 hours, saving 1 HTTP round-trip per API call, significantly boosting frontend performance."
+
+# -----------------------------------------------------------------------------------------
+# SECTION 7: WAF & SIEM INCIDENT RESPONSE PLAYBOOKS
+# -----------------------------------------------------------------------------------------
+incident_response_telemetry:
+  scenario_1_header_smuggling_attempt:
+    trigger: "Client attempts to send 'strictly_forbidden_headers' (e.g., X-Forwarded-Host)."
+    automated_response:
+      - "Drop request immediately (HTTP 403)."
+      - "Emit alert to SIEM (Datadog/Splunk) with tag: `sec.waf.header_smuggling`."
+      - "Increment IP suspicion score by 25 points."
+
+  scenario_2_buffer_exhaustion_attempt:
+    trigger: "Client sends headers exceeding `max_total_header_size_bytes`."
+    automated_response:
+      - "TCP Socket Reset (RST payload)."
+      - "Instruct Cloudflare WAF to issue JS Challenge (CAPTCHA) to the offending IP."
+      - "Emit PagerDuty low-urgency alert if threshold > 1000/min."
+
+  scenario_3_regex_validation_failure:
+    trigger: "Header key is allowed, but value fails regex constraint (e.g., malformed Authorization token)."
+    automated_response:
+      - "Return HTTP 400 Bad Request."
+      - "Log error code `ERR_HEADER_VALIDATION_FAILED` to Kafka Audit stream."
