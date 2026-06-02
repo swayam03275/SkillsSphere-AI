@@ -130,11 +130,11 @@ const InterviewLobby = () => {
             <CameraCheck onStreamReady={setIsMediaReady} />
             
             {/* Focus Area Card */}
-            <div className="group relative rounded-3xl bg-white dark:bg-surface p-6 sm:p-8 border border-border shadow-[0_20px_40px_rgba(0,0,0,0.04)] dark:shadow-none backdrop-blur-xl transition-all duration-300 hover:shadow-[0_20px_50px_rgba(99,102,241,0.1)] dark:hover:border-indigo-500/30">
+            <div className="group relative rounded-3xl bg-white dark:bg-surface p-6 sm:p-8 border border-gray-200 dark:border-slate-800 shadow-[0_20px_40px_rgba(0,0,0,0.04)] dark:shadow-none backdrop-blur-xl transition-all duration-300 hover:shadow-[0_20px_50px_rgba(99,102,241,0.1)] dark:hover:border-indigo-500/30">
               <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               
               <div className="relative z-10">
-                <h3 className="text-xl font-bold flex items-center gap-3 mb-6 text-text-main">
+                <h3 className="text-xl font-bold flex items-center gap-3 mb-6 text-slate-900 dark:text-white">
                   <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/20 text-indigo-500 dark:text-indigo-400">
                     <GraduationCap size={22} />
                   </span>
@@ -143,7 +143,7 @@ const InterviewLobby = () => {
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div className="flex flex-col gap-2">
-                    <label className="text-xs font-bold text-text-muted uppercase tracking-wider">Technical Subject</label>
+                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Technical Subject</label>
                     {loading ? (
                       <div className="h-[42px] bg-gray-100 dark:bg-slate-800 animate-pulse rounded-xl" />
                     ) : (
@@ -156,7 +156,7 @@ const InterviewLobby = () => {
                     )}
                   </div>
                   <div className="flex flex-col gap-2">
-                    <label className="text-xs font-bold text-text-muted uppercase tracking-wider">Difficulty Base</label>
+                    <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Difficulty Base</label>
                     <Select
                       options={DIFFICULTY_LEVELS}
                       value={difficulty}
@@ -187,7 +187,7 @@ const InterviewLobby = () => {
             <div className="relative p-1 rounded-[2rem] bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-emerald-500/20 shadow-[0_0_30px_rgba(99,102,241,0.05)] group mt-auto">
               <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500 opacity-20 group-hover:opacity-40 blur-xl transition-opacity duration-500 rounded-[2rem]" />
               
-              <div className="relative bg-white dark:bg-surface backdrop-blur-2xl rounded-[1.85rem] p-6 sm:p-8 flex flex-col items-center justify-center border border-white/40 dark:border-border">
+              <div className="relative bg-white dark:bg-surface backdrop-blur-2xl rounded-[1.85rem] p-6 sm:p-8 flex flex-col items-center justify-center border border-gray-200 dark:border-border">
                 {!isMediaReady && (
                   <div className="mb-6 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
@@ -218,7 +218,7 @@ const InterviewLobby = () => {
                 </Button>
 
                 <button
-                  className="mt-6 flex items-center gap-2 text-sm font-bold text-text-muted hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors bg-transparent border-none cursor-pointer group/btn"
+                  className="mt-6 flex items-center gap-2 text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors bg-transparent border-none cursor-pointer group/btn"
                   onClick={() => navigate("/mock-interview/history")}
                 >
                   <History size={16} className="group-hover/btn:-rotate-12 transition-transform" /> 
