@@ -159,7 +159,7 @@ const TalentFinderPage = () => {
       } catch (err) {
         console.error("[Workspace Exception] Error retrieving job listings registry:", err);
         logger.error("Failed to load recruiter jobs:", err);
-*      } finally {
+      } finally {
         setJobsLoading(false);
       }
     };

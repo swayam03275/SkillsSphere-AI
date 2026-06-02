@@ -2,7 +2,7 @@ import express from "express";
 import axios from "axios";
 import mongoose from "mongoose";
 import { protect, authorizeRoles } from "../../middleware/authMiddleware.js";
-import asyncHandler from "../../utils/asyncHandler.js";
+import asyncHandler from "../../utils/asyncHandler.js"; // Adjust path if your utils are located elsewhere
 
 const router = express.Router();
 

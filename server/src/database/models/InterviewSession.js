@@ -103,6 +103,11 @@ const interviewSessionSchema = new mongoose.Schema(
       default: "medium",
     },
 
+    persona: {
+      type: String,
+      default: "friendly",
+    },
+
     status: {
       type: String,
       enum: ["in_progress", "completed", "abandoned"],

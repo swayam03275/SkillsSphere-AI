@@ -65,7 +65,7 @@ const selectQuestions = async (topic, difficulty, userId, count = 5) => {
 /**
  * Create a new interview session with pre-selected questions.
  */
-export const createSession = async ({ userId, topic, difficulty }) => {
+export const createSession = async ({ userId, topic, difficulty, persona }) => {
   // Verify the topic exists in our question bank
   const topicExists = await QuestionBank.exists({ topic });
   if (!topicExists) {
@@ -89,6 +89,7 @@ export const createSession = async ({ userId, topic, difficulty }) => {
     userId,
     topic,
     difficulty,
+    persona,
     answers,
     totalQuestions: answers.length,
     currentQuestionIndex: 0,

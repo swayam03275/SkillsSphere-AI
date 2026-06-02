@@ -56,7 +56,7 @@ const InterviewLobby = () => {
     setError(null);
 
     try {
-      const res = await startSession(topic, difficulty);
+      const res = await startSession(topic, difficulty, selectedPersona);
       const sessionId = res.data?.sessionId;
       if (sessionId) {
         navigate(`/mock-interview/${sessionId}`, { replace: true });

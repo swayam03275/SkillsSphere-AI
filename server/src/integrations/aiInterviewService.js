@@ -236,13 +236,7 @@ export const evaluateAnswer = async (
     logger.warn(
       "[aiInterviewService] ⚠️ Python service unavailable, falling back to mock evaluation"
     );
-    return {
-      technical_accuracy: 75,
-      communication_quality: 80,
-      concept_relevance: 70,
-      feedback: "Mock feedback: The AI service is currently unavailable. This is a placeholder evaluation.",
-      is_mock: true
-    };
+    return mockEvaluate(transcript, expectedAnswer, expectedConcepts);
   }
 
   try {
@@ -265,26 +259,14 @@ export const evaluateAnswer = async (
       err.message.includes("timed out")
     ) {
       logger.warn(`[aiInterviewService] ⚠️ AI Service unreachable or timed out: ${err.message}`);
-      return {
-        technical_accuracy: 75,
-        communication_quality: 80,
-        concept_relevance: 70,
-        feedback: "Mock feedback: The AI service is currently unavailable. This is a placeholder evaluation.",
-        is_mock: true
-      };
+      return mockEvaluate(transcript, expectedAnswer, expectedConcepts);
     }
 
     logger.warn(
       `[aiInterviewService] ⚠️ Evaluation failed: ${err.message}`
     );
     logger.warn("[aiInterviewService] Falling back to mock evaluation");
-    return {
-      technical_accuracy: 75,
-      communication_quality: 80,
-      concept_relevance: 70,
-      feedback: "Mock feedback: The AI service is currently unavailable. This is a placeholder evaluation.",
-      is_mock: true
-    };
+    return mockEvaluate(transcript, expectedAnswer, expectedConcepts);
   }
 };
 

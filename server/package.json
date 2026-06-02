@@ -7,7 +7,12 @@
     "dev": "nodemon index.js",
     "start": "node index.js",
     "test": "node --test",
-    "lint": "eslint . --ext js,cjs --report-unused-disable-directives --max-warnings 0"
+    "lint": "eslint . --ext js,cjs --report-unused-disable-directives --max-warnings 0",
+
+    "depcruise": "depcruise src --config .dependency-cruiser.js",
+    "depcruise:validate": "depcruise src --config .dependency-cruiser.js --output-type err-long",
+    "depcruise:graph": "depcruise src --config .dependency-cruiser.js --output-type dot | dot -T svg > dependency-graph.svg",
+    "depcruise:circular": "depcruise src --config .dependency-cruiser.js --output-type err-long --include-only \"^src\" 2>&1 | grep -A3 'no-circular' || echo 'No circular dependencies found'"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -38,6 +43,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "dependency-cruiser": "^16.10.1",
     "eslint": "^8.57.1",
     "nodemon": "^3.1.14",
     "socket.io-client": "^4.8.3"

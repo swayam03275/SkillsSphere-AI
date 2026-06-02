@@ -497,8 +497,8 @@ const ProfilePage = () => {
             </div>
           </aside>
 
-          {/* Right Column — All Sections Visible */}
-          <div className="flex flex-col gap-5">
+          {/* Right Column */}
+          <div className="flex flex-col gap-5 min-w-0">
             
             {/* Edit Profile Header */}
             <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm">
@@ -535,7 +535,29 @@ const ProfilePage = () => {
             {apiError && <p className="text-xs text-red-500 dark:text-red-400 flex items-center gap-1 px-2"><AlertCircle size={12} />{apiError}</p>}
             {saveSuccess && <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1 px-2"><BadgeCheck size={12} /> Profile updated!</p>}
 
+            {/* Tab Navigation */}
+            <div className="flex overflow-x-auto gap-2 p-1.5 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md rounded-xl border border-slate-200 dark:border-white/10 scrollbar-hide">
+              {TABS.map((tab) => {
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${
+                      isActive
+                        ? "bg-white dark:bg-slate-800 text-violet-600 dark:text-violet-400 shadow-sm border border-slate-200 dark:border-white/5"
+                        : "text-slate-600 dark:text-slate-400 hover:bg-white/60 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200"
+                    }`}
+                  >
+                    {tab.icon}
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+
             {/* ═══ Section 1: Basic Information ═══ */}
+            {activeTab === "info" && (
             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm p-6">
               <h3 className="text-xs font-bold uppercase tracking-widest mb-5" style={{ background: 'linear-gradient(135deg,#7C3AED,#059669)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>
                 Basic Information
@@ -589,10 +611,13 @@ const ProfilePage = () => {
                 </div>
               )}
             </div>
+            )}
 
-            <PreferencesSettings token={token} />
+            {activeTab === "settings" && (
+              <PreferencesSettings token={token} />
+            )}
 
-{activeTab === "security" && (
+            {activeTab === "security" && (
               <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm p-6">
                 <h3 className="text-xs font-bold uppercase tracking-widest mb-5" style={{ background: 'linear-gradient(135deg,#7C3AED,#059669)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>
                   Password & Access
@@ -610,71 +635,41 @@ const ProfilePage = () => {
                 )}
               </div>
             )}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm p-6">
-              <h3 className="text-xs font-bold uppercase tracking-widest mb-5" style={{ background: 'linear-gradient(135deg,#7C3AED,#059669)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>
-                Password & Access
-              </h3>
-              {user.provider === "google" ? (
-                <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 text-sm text-blue-700 dark:text-blue-300">
-                  <Info size={16} className="shrink-0 mt-0.5" />
-                  <p>Your account uses Google OAuth. Password management is handled by Google.</p>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  <p className="text-sm text-slate-500 dark:text-slate-400">To change your password, use the forgot password flow.</p>
-                  <Link to="/forgot-password"><Button variant="outline" size="sm" leftIcon={<Lock size={14} />}>Change Password</Button></Link>
-                </div>
-              )}
-            </div>
             {/* ═══ Section 2: Account Details ═══ */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm p-6">
-              <h3 className="text-xs font-bold uppercase tracking-widest mb-5" style={{ background: 'linear-gradient(135deg,#7C3AED,#059669)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>
-                Account Details
-              </h3>
-              <div className="flex flex-col divide-y divide-slate-100 dark:divide-white/5">
-                {[
-                  { icon: <Calendar size={15} />, label: "Member Since", value: formatDate(user.createdAt) },
-                  { icon: <Clock size={15} />, label: "Last Updated", value: user.updatedAt ? `${formatDate(user.updatedAt)} (${timeAgo(user.updatedAt)})` : "—" },
-                  { icon: <Shield size={15} />, label: "Auth Provider", value: user.provider === "google" ? "🔵 Google OAuth" : "🔑 Email & Password" },
-                  { icon: <User size={15} />, label: "User ID", value: <span className="font-mono text-xs text-slate-400 break-all">{user.id || user._id}</span> },
-                ].map((row, i) => (
-                  <div key={i} className="flex items-start gap-3 py-3.5">
-                    <span className="mt-0.5 text-slate-400 dark:text-slate-500 flex-shrink-0">{row.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">{row.label}</p>
-                      <div className="text-sm text-slate-700 dark:text-slate-200">{row.value}</div>
-                    </div>
+            {activeTab === "account" && (
+              <div className="flex flex-col gap-5 min-w-0">
+                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm p-6">
+                  <h3 className="text-xs font-bold uppercase tracking-widest mb-5" style={{ background: 'linear-gradient(135deg,#7C3AED,#059669)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>
+                    Account Details
+                  </h3>
+                  <div className="flex flex-col divide-y divide-slate-100 dark:divide-white/5">
+                    {[
+                      { icon: <Calendar size={15} />, label: "Member Since", value: formatDate(user.createdAt) },
+                      { icon: <Clock size={15} />, label: "Last Updated", value: user.updatedAt ? `${formatDate(user.updatedAt)} (${timeAgo(user.updatedAt)})` : "—" },
+                      { icon: <Shield size={15} />, label: "Auth Provider", value: user.provider === "google" ? "🔵 Google OAuth" : "🔑 Email & Password" },
+                      { icon: <User size={15} />, label: "User ID", value: <span className="font-mono text-xs text-slate-400 break-all">{user.id || user._id}</span> },
+                    ].map((row, i) => (
+                      <div key={i} className="flex items-start gap-3 py-3.5">
+                        <span className="mt-0.5 text-slate-400 dark:text-slate-500 flex-shrink-0">{row.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">{row.label}</p>
+                          <div className="text-sm text-slate-700 dark:text-slate-200">{row.value}</div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </div>
+
+                {/* ═══ Danger Zone ═══ */}
+                <div className="bg-red-50/60 dark:bg-red-950/20 rounded-2xl border border-red-200 dark:border-red-500/20 p-6">
+                  <h3 className="text-xs font-bold text-red-500 uppercase tracking-widest mb-2">Danger Zone</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Permanently delete your account and all associated data. This action cannot be undone.</p>
+                  <Button variant="danger" size="sm" leftIcon={<Trash2 size={13} />} onClick={() => setShowDeleteModal(true)}>
+                    Delete Account
+                  </Button>
+                </div>
               </div>
-            </div>
-
-            {/* ═══ Section 3: Security & Access ═══ */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm p-6">
-              <h3 className="text-xs font-bold uppercase tracking-widest mb-5" style={{ background: 'linear-gradient(135deg,#7C3AED,#059669)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>
-                Security & Access
-              </h3>
-              {user.provider === "google" ? (
-                <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 text-sm text-blue-700 dark:text-blue-300">
-                  <Info size={16} className="shrink-0 mt-0.5" />
-                  <p>Your account uses Google OAuth. Password management is handled by Google.</p>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  <p className="text-sm text-slate-500 dark:text-slate-400">To change your password, use the forgot password flow.</p>
-                  <Link to="/forgot-password"><Button variant="outline" size="sm" leftIcon={<Lock size={14} />}>Change Password</Button></Link>
-                </div>
-              )}
-            </div>
-
-            {/* ═══ Danger Zone ═══ */}
-            <div className="bg-red-50/60 dark:bg-red-950/20 rounded-2xl border border-red-200 dark:border-red-500/20 p-6">
-              <h3 className="text-xs font-bold text-red-500 uppercase tracking-widest mb-2">Danger Zone</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Permanently delete your account and all associated data. This action cannot be undone.</p>
-              <Button variant="danger" size="sm" leftIcon={<Trash2 size={13} />} onClick={() => setShowDeleteModal(true)}>
-                Delete Account
-              </Button>
-            </div>
+            )}
 
           </div> {/* Closes Right Column */}
 

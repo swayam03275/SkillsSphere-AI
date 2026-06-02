@@ -20,7 +20,7 @@ import AppError from "../../utils/AppError.js";
  * @access  Private
  */
 export const startInterview = asyncHandler(async (req, res) => {
-  const { topic, difficulty } = req.body;
+  const { topic, difficulty, persona } = req.body;
 
   if (!topic) {
     throw new AppError("Topic is required to start an interview", 400);
@@ -30,6 +30,7 @@ export const startInterview = asyncHandler(async (req, res) => {
     userId: req.user._id,
     topic,
     difficulty: difficulty || "medium",
+    persona: persona || "friendly",
   });
 
   res.status(201).json({

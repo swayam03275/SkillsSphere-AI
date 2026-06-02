@@ -19,12 +19,13 @@ export const getTopics = async () => {
  * Start a new interview session.
  * @param {string} topic - The interview topic (e.g. 'react', 'nodejs', 'dsa').
  * @param {string} difficulty - Difficulty level ('easy', 'medium', 'hard').
+ * @param {string} persona - Interviewer persona ('friendly', 'faang', 'startup', 'hr').
  */
-export const startSession = async (topic, difficulty) => {
+export const startSession = async (topic, difficulty, persona) => {
   return apiRequest("/api/interviews/start", {
     method: "POST",
     token: getToken(),
-    body: { topic, difficulty },
+    body: { topic, difficulty, persona },
   });
 };
 
