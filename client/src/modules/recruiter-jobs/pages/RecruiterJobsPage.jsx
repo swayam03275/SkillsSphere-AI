@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Plus, Briefcase, Search, ArrowLeft } from "lucide-react";
 import Navbar from "../../../shared/components/Navbar";
 import Footer from "../../../shared/components/Footer";
@@ -162,7 +162,7 @@ const RecruiterJobsPage = () => {
 
   const handleViewRecommendations = (job) => {
     // navigate(`/recruiter/jobs/${job.id}/recommendations`);
-    logger.log("View recommendations", job);
+    navigate(`?insights=${job._id || job.id}`);
   };
 
   const handleViewApplicants = (job) => {
@@ -170,7 +170,11 @@ const RecruiterJobsPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#020617] text-slate-900 dark:text-white flex flex-col">
+    <>
+      {insightsJobId ? (
+        <RecruiterInsightsPage jobId={insightsJobId} />
+      ) : (
+        <div className="min-h-screen bg-slate-50 dark:bg-[#020617] text-slate-900 dark:text-white flex flex-col">
       <Navbar />
 
       <div className="flex-1 w-full mx-auto max-w-5xl flex flex-col gap-6 pt-24 pb-16 px-4 sm:px-6">
@@ -298,6 +302,8 @@ const RecruiterJobsPage = () => {
       </div>
           <Footer />
     </div>
+      )}
+    </>
   );
 };
 

@@ -33,132 +33,6 @@ export const createJob = async (jobData, recruiterId) => {
  * @param {Object} queryParams - Query filters (minSalary, maxSalary, designation, postedWithin)
  * @returns {Promise<Array>} - List of jobs
 
-/**
- * Get ranked candidates for a recruiter job insights page.
- * @param {string} jobId - ID of the job
- * @param {string} recruiterId - ID of the recruiter (for ownership check)
- * @param {Object} filters - Optional ranking filters
- * @returns {Promise<Object>} - Ranked candidates and job details
- */
-export const getRankedCandidatesForJob = async (jobId, recruiterId, filters = {}) => {
-  const job = await JobPosting.findOne({
-    _id: jobId,
-    recruiter: recruiterId,
-  })
-    .populate("recruiter", "name email company companyWebsite")
-    .lean();
-
-  if (!job) {
-    throw new AppError("Job not found", 404);
-  }
-
-  const page = Math.max(1, parseInt(filters.page) || 1);
-  const limit = Math.min(50, Math.max(1, parseInt(filters.limit) || 8));
-  const skip = (page - 1) * limit;
-  const status = typeof filters.status === "string" ? filters.status.trim().toLowerCase() : "all";
-  const search = typeof filters.search === "string" ? filters.search.trim().toLowerCase() : "";
-  const minScore = filters.minScore !== undefined && filters.minScore !== "" ? Number(filters.minScore) : null;
-  const matchCategory = typeof filters.matchCategory === "string" ? filters.matchCategory.trim().toLowerCase() : "all";
-
-  const query = { job: job._id };
-
-  if (status && status !== "all") {
-    query.status = status;
-  }
-
-  if (minScore !== null && !Number.isNaN(minScore)) {
-    query.aiMatchScore = { ...query.aiMatchScore, $gte: minScore };
-  }
-
-  if (matchCategory && matchCategory !== "all") {
-    const categoryMap = {
-      excellent: "Excellent Match",
-      moderate: "Moderate Match",
-      growth: "Growth Potential",
-      weak: "Weak Alignment",
-      "excellent match": "Excellent Match",
-      "moderate match": "Moderate Match",
-      "growth potential": "Growth Potential",
-      "weak alignment": "Weak Alignment",
-    };
-
-    const normalizedCategory = categoryMap[matchCategory] || matchCategory;
-    query.matchCategory = normalizedCategory;
-  }
-
-  const applications = await JobApplication.find(query)
-    .populate("applicant", "name email role profilePic")
-    .populate("resume", "file fileName skills keywords")
-    .lean();
-
-  const filteredApplications = search
-    ? applications.filter((application) => {
-        const searchBlob = [
-          application.applicant?.name,
-          application.applicant?.email,
-          application.coverNote,
-          ...(application.aiRecruiterInsights || []),
-          ...(application.aiWeaknesses || []),
-          ...(application.aiHiringSignals || []),
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
-
-        return searchBlob.includes(search);
-      })
-    : applications;
-
-  const statusPriority = {
-    shortlisted: 0,
-    reviewed: 1,
-    pending: 2,
-    rejected: 3,
-    withdrawn: 4,
-  };
-
-  filteredApplications.sort((a, b) => {
-    const scoreA = a.aiMatchScore ?? -1;
-    const scoreB = b.aiMatchScore ?? -1;
-
-    if (scoreB !== scoreA) {
-      return scoreB - scoreA;
-    }
-
-    const statusA = statusPriority[a.status] ?? 99;
-    const statusB = statusPriority[b.status] ?? 99;
-
-    if (statusA !== statusB) {
-      return statusA - statusB;
-    }
-
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-  });
-
-  const totalCount = filteredApplications.length;
-  const totalPages = Math.ceil(totalCount / limit);
-  const paginatedCandidates = filteredApplications.slice(skip, skip + limit).map((candidate, index) => ({
-    ...candidate,
-    rank: skip + index + 1,
-  }));
-
-  const scoredCandidates = filteredApplications.filter((candidate) => typeof candidate.aiMatchScore === "number");
-  const averageScore = scoredCandidates.length > 0
-    ? Math.round(scoredCandidates.reduce((sum, candidate) => sum + candidate.aiMatchScore, 0) / scoredCandidates.length)
-    : 0;
-
-  return {
-    job,
-    candidates: paginatedCandidates,
-    totalCount,
-    totalPages,
-    currentPage: page,
-    summary: {
-      averageScore,
-      topCandidatesCount: filteredApplications.filter((candidate) => (candidate.aiMatchScore ?? 0) >= 85).length,
-    },
-  };
-};
  */
 export const getAllJobs = async (queryParams = {}) => {
   const { minSalary, maxSalary, designation, postedWithin, page = 1, limit = 10 } = queryParams;
@@ -633,6 +507,133 @@ export const applyToJob = async (jobId, applicantId, options = {}) => {
   });
 
   return application;
+};
+
+/**
+ * Get ranked candidates for a recruiter job insights page.
+ * @param {string} jobId - ID of the job
+ * @param {string} recruiterId - ID of the recruiter (for ownership check)
+ * @param {Object} filters - Optional ranking filters
+ * @returns {Promise<Object>} - Ranked candidates and job details
+ */
+export const getRankedCandidatesForJob = async (jobId, recruiterId, filters = {}) => {
+  const job = await JobPosting.findOne({
+    _id: jobId,
+    recruiter: recruiterId,
+  })
+    .populate("recruiter", "name email company companyWebsite")
+    .lean();
+
+  if (!job) {
+    throw new AppError("Job not found", 404);
+  }
+
+  const page = Math.max(1, parseInt(filters.page) || 1);
+  const limit = Math.min(50, Math.max(1, parseInt(filters.limit) || 8));
+  const skip = (page - 1) * limit;
+  const status = typeof filters.status === "string" ? filters.status.trim().toLowerCase() : "all";
+  const search = typeof filters.search === "string" ? filters.search.trim().toLowerCase() : "";
+  const minScore = filters.minScore !== undefined && filters.minScore !== "" ? Number(filters.minScore) : null;
+  const matchCategory = typeof filters.matchCategory === "string" ? filters.matchCategory.trim().toLowerCase() : "all";
+
+  const query = { job: job._id };
+
+  if (status && status !== "all") {
+    query.status = status;
+  }
+
+  if (minScore !== null && !Number.isNaN(minScore)) {
+    query.aiMatchScore = { ...query.aiMatchScore, $gte: minScore };
+  }
+
+  if (matchCategory && matchCategory !== "all") {
+    const categoryMap = {
+      excellent: "Excellent Match",
+      moderate: "Moderate Match",
+      growth: "Growth Potential",
+      weak: "Weak Alignment",
+      "excellent match": "Excellent Match",
+      "moderate match": "Moderate Match",
+      "growth potential": "Growth Potential",
+      "weak alignment": "Weak Alignment",
+    };
+
+    const normalizedCategory = categoryMap[matchCategory] || matchCategory;
+    query.matchCategory = normalizedCategory;
+  }
+
+  const applications = await JobApplication.find(query)
+    .populate("applicant", "name email role profilePic")
+    .populate("resume", "file fileName skills keywords")
+    .lean();
+
+  const filteredApplications = search
+    ? applications.filter((application) => {
+        const searchBlob = [
+          application.applicant?.name,
+          application.applicant?.email,
+          application.coverNote,
+          ...(application.aiRecruiterInsights || []),
+          ...(application.aiWeaknesses || []),
+          ...(application.aiHiringSignals || []),
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+
+        return searchBlob.includes(search);
+      })
+    : applications;
+
+  const statusPriority = {
+    shortlisted: 0,
+    reviewed: 1,
+    pending: 2,
+    rejected: 3,
+    withdrawn: 4,
+  };
+
+  filteredApplications.sort((a, b) => {
+    const scoreA = a.aiMatchScore ?? -1;
+    const scoreB = b.aiMatchScore ?? -1;
+
+    if (scoreB !== scoreA) {
+      return scoreB - scoreA;
+    }
+
+    const statusA = statusPriority[a.status] ?? 99;
+    const statusB = statusPriority[b.status] ?? 99;
+
+    if (statusA !== statusB) {
+      return statusA - statusB;
+    }
+
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+
+  const totalCount = filteredApplications.length;
+  const totalPages = Math.ceil(totalCount / limit);
+  const paginatedCandidates = filteredApplications.slice(skip, skip + limit).map((candidate, index) => ({
+    ...candidate,
+    rank: skip + index + 1,
+  }));
+
+  const scoredCandidates = filteredApplications.filter((candidate) => typeof candidate.aiMatchScore === "number");
+  const averageScore = scoredCandidates.length > 0
+    ? Math.round(scoredCandidates.reduce((sum, candidate) => sum + candidate.aiMatchScore, 0) / scoredCandidates.length)
+    : 0;
+
+  return {
+    job,
+    candidates: paginatedCandidates,
+    totalCount,
+    totalPages,
+    currentPage: page,
+    summary: {
+      averageScore,
+      topCandidatesCount: filteredApplications.filter((candidate) => (candidate.aiMatchScore ?? 0) >= 85).length,
+    },
+  };
 };
 
 /**
