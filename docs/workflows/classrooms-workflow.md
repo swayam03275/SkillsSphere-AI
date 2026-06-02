@@ -62,8 +62,8 @@ sequenceDiagram
     Note over NewClient, OldClient: 8. P2P Media Connection Established!
 ```
 
-#### Detailed Explanation of Peer Creation:
-When `Client A` receives the list of existing participants, it iterates over them and instantiates a `simple-peer` object for each one with `initiator: true`. 
+#### Detailed Explanation of Peer Creation
+When `Client A` receives the list of existing participants, it iterates over them and instantiates a `simple-peer` object for each one with `initiator: true`.
 
 ```javascript
 // Inside ClassroomRoom.jsx
@@ -116,7 +116,7 @@ const toggleMute = () => {
 ```
 
 ### B. Screen Sharing (Track Replacement)
-To share a screen, the client calls `navigator.mediaDevices.getDisplayMedia()`. 
+To share a screen, the client calls `navigator.mediaDevices.getDisplayMedia()`.
 Crucially, `simple-peer` supports dynamic track replacement via `peer.replaceTrack()`. This allows a user to swap their camera feed for their screen feed without tearing down the WebRTC connection.
 
 ```javascript
@@ -182,6 +182,7 @@ When a user clicks "Leave" or closes the tab:
 1. The WebSocket connection drops. The Node.js server detects the `disconnect` event.
 2. The server removes the socket ID from the internal room mapping and broadcasts a `user-left` payload to remaining participants.
 3. The remaining clients listen for `user-left`:
+
    ```javascript
    s.on("user-left", ({ socketId }) => {
      activeSocketIdsRef.current.delete(socketId);

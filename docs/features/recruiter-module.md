@@ -71,6 +71,7 @@ When a recruiter creates a job, the backend generates an embedding of the job de
 #### Endpoint `/api/recruiter/jobs/batch_1`
 Handles batch operations for job postings.
 **Request Payload:**
+
 ```json
 {
   "batchId": "batch_1",
@@ -83,6 +84,7 @@ Handles batch operations for job postings.
 #### Endpoint `/api/recruiter/jobs/batch_2`
 Handles batch operations for job postings.
 **Request Payload:**
+
 ```json
 {
   "batchId": "batch_2",
@@ -95,6 +97,7 @@ Handles batch operations for job postings.
 #### Endpoint `/api/recruiter/jobs/batch_3`
 Handles batch operations for job postings.
 **Request Payload:**
+
 ```json
 {
   "batchId": "batch_3",
@@ -107,6 +110,7 @@ Handles batch operations for job postings.
 #### Endpoint `/api/recruiter/jobs/batch_4`
 Handles batch operations for job postings.
 **Request Payload:**
+
 ```json
 {
   "batchId": "batch_4",
@@ -119,6 +123,7 @@ Handles batch operations for job postings.
 #### Endpoint `/api/recruiter/jobs/batch_5`
 Handles batch operations for job postings.
 **Request Payload:**
+
 ```json
 {
   "batchId": "batch_5",
@@ -131,6 +136,7 @@ Handles batch operations for job postings.
 #### Endpoint `/api/recruiter/jobs/batch_6`
 Handles batch operations for job postings.
 **Request Payload:**
+
 ```json
 {
   "batchId": "batch_6",
@@ -143,6 +149,7 @@ Handles batch operations for job postings.
 #### Endpoint `/api/recruiter/jobs/batch_7`
 Handles batch operations for job postings.
 **Request Payload:**
+
 ```json
 {
   "batchId": "batch_7",
@@ -155,6 +162,7 @@ Handles batch operations for job postings.
 #### Endpoint `/api/recruiter/jobs/batch_8`
 Handles batch operations for job postings.
 **Request Payload:**
+
 ```json
 {
   "batchId": "batch_8",
@@ -167,6 +175,7 @@ Handles batch operations for job postings.
 #### Endpoint `/api/recruiter/jobs/batch_9`
 Handles batch operations for job postings.
 **Request Payload:**
+
 ```json
 {
   "batchId": "batch_9",
@@ -202,8 +211,7 @@ This is the most complex view. It contains a faceted search sidebar and a main d
 - **Filter 18**: Manages local state for filter criteria 18 (e.g., Years of Experience, Tech Stack).
 - **Filter 19**: Manages local state for filter criteria 19 (e.g., Years of Experience, Tech Stack).
 
-*(End of Recruiter Module Documentation)*
-
+<!-- End of Recruiter Module Documentation -->
 
 ## Extended API Schema & Component Definitions
 
@@ -554,8 +562,6 @@ The following block details edge case handling and strict type checking for inte
   "max_retries": 3
 }
 ```
-
-
 
 ## Global Infrastructure & Security Implementations
 

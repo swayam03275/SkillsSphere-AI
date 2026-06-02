@@ -58,7 +58,7 @@ The session tracks:
 
 ### Step 3: Submission & The AI Evaluation Pipeline
 
-When the student finishes the final question, the frontend array of `{ questionId, answer }` objects is sent via `POST /api/interviews/submit`. 
+When the student finishes the final question, the frontend array of `{ questionId, answer }` objects is sent via `POST /api/interviews/submit`.
 
 This triggers the heavy backend evaluation pipeline.
 
@@ -94,7 +94,7 @@ sequenceDiagram
 The value of the Mock Interview system is in how the data is utilized by educators. Tutors have a specialized set of dashboards to monitor this data.
 
 #### A. The Global Analytics Dashboard
-Located at `client/src/modules/analytics/TutorAnalyticsDashboard.jsx`. 
+Located at `client/src/modules/analytics/TutorAnalyticsDashboard.jsx`.
 This page aggregates data from *all* assigned students. It utilizes the `Recharts` library to visualize:
 - Average mock interview scores over the last 30 days.
 - A treemap of the most frequently identified AI weaknesses across the cohort.

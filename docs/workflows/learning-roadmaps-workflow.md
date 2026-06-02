@@ -6,7 +6,7 @@ This document details the architecture, data flow, and underlying mechanics of t
 
 ## 1. High-Level Architecture Overview
 
-The Roadmaps module serves as the primary long-term tracking mechanism for a student's learning journey. It is primarily driven by the `roadmap` backend service, which interfaces with an LLM to generate structured JSON learning graphs based on open-ended student prompts. 
+The Roadmaps module serves as the primary long-term tracking mechanism for a student's learning journey. It is primarily driven by the `roadmap` backend service, which interfaces with an LLM to generate structured JSON learning graphs based on open-ended student prompts.
 
 Once the AI generates the graph, the roadmap is persisted in the MongoDB database. As the student interacts with the UI, their progression through individual nodes is tracked and synced to their global `LearningProgress` profile. This centralization allows Recruiter modules and Tutor Dashboards to read a single source of truth regarding the student's competence.
 
@@ -23,10 +23,11 @@ The process begins when a student sets a learning goal.
 3. The frontend sends a `POST /api/roadmap/generate` request.
 
 #### The AI Generation Step
-The backend `controller.js` intercepts this request and builds an extensive system prompt for the AI. 
+The backend `controller.js` intercepts this request and builds an extensive system prompt for the AI.
 The LLM is strictly instructed to return a JSON object representing a Directed Acyclic Graph (DAG) of learning nodes. Each node represents a topic, subtopics, recommended resources, and an estimated completion time in hours.
 
 Example of the generated JSON schema structure:
+
 ```json
 {
   "title": "Senior React Developer Path",
@@ -50,6 +51,7 @@ Example of the generated JSON schema structure:
   ]
 }
 ```
+
 The JSON is validated against this schema, and if successful, saved as a new `Roadmap` document linked to the student's `User` ID.
 
 ### Step 2: Progression Tracking & Unlocking

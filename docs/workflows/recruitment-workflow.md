@@ -6,7 +6,7 @@ This document outlines the end-to-end recruitment pipeline within the SkillsSphe
 
 ## 1. High-Level Architecture Overview
 
-The Recruitment module flips the traditional job board model. Rather than posting a job and waiting for applicants to organically discover it, Recruiters are empowered to proactively discover candidates via Semantic Search over the global `Resume` collection. 
+The Recruitment module flips the traditional job board model. Rather than posting a job and waiting for applicants to organically discover it, Recruiters are empowered to proactively discover candidates via Semantic Search over the global `Resume` collection.
 
 When a candidate is invited, they receive a real-time `Socket.io` notification. They can then generate an AI-tailored Cover Letter and apply. Finally, the `recruiterIntelligence` pipeline evaluates the application against the job requirements and assigns a deterministic Match Score, allowing the Recruiter to filter their applicant tracking system instantly.
 
@@ -59,7 +59,7 @@ sequenceDiagram
 ### Step 3: The Application & Cover Letter Generation
 
 1. The student clicks the notification and is routed to the detailed Job View.
-2. **AI Cover Letter Generation**: Before finalizing the application, the student can launch the `CoverLetterModal.jsx`. 
+2. **AI Cover Letter Generation**: Before finalizing the application, the student can launch the `CoverLetterModal.jsx`.
    - The frontend calls `POST /api/cover-letters/generate`.
    - The `coverLetters/service.js` backend service retrieves the specific `JobPosting` text and the student's `Resume` text.
    - An LLM prompt merges these two data sources, instructing the AI to output a highly tailored, professional cover letter highlighting exactly how the student's projects align with the job's required skills.

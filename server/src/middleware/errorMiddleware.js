@@ -139,7 +139,7 @@ const globalErrorHandler = (err, req, res, next) => {
     error.type === "invalid_request_error" ||
     error?.name === "GoogleGenerativeAI" ||
     error?.provider === "google" ||
-    error?.status != null ||
+    (typeof error?.status === 'number') ||
     /gemini|generative ai|google/i.test(String(error?.message || ""))
   ) {
     error = handleAIError(error);

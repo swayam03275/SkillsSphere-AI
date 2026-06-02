@@ -71,6 +71,7 @@ In React 18, `useEffect` runs *twice* in development mode to simulate mounting/u
 - Request 2 (10ms later): Fails. Google rejects the code because it was already used.
 
 To solve this, we implemented a `useRef` guard:
+
 ```jsx
 const hasExchanged = useRef(false);
 
@@ -93,6 +94,7 @@ The backend receives the `code`. It uses the `google-auth-library` to securely e
 - If they exist, we log them in.
 - If they don't exist, we create a new user document. By default, new users are assigned the `student` role.
 - We sign a new JWT using our `JWT_SECRET`. The payload looks like this:
+
 ```json
 {
   "id": "60d5ecb8b392...",
@@ -118,7 +120,7 @@ One of the most complex interactions in the application is how Authentication in
 A major architectural challenge we resolved was a fatal application crash occurring exactly upon a successful login. The error was:
 > `Error: A component suspended while responding to synchronous input. This will cause the UI to be replaced with a loading indicator. To fix, updates that suspend should be wrapped with startTransition.`
 
-### Why it happened:
+### Why it happened
 1. `OAuthCallback.jsx` successfully receives the token.
 2. It calls `navigate("/dashboard")`.
 3. React Router v6 updates its internal state *synchronously*.
@@ -140,10 +142,12 @@ startTransition(() => {
 
 ### The Missing Suspense Boundary (`ChatWidget`)
 A secondary issue occurred because `<ChatWidget />` was also lazy-loaded in `App.jsx`:
+
 ```jsx
 // BEFORE:
 {token && <ChatWidget />}
 ```
+
 When the `token` became truthy after login, React immediately tried to render `ChatWidget`. Since it was lazy-loaded and *outside* the main `<Suspense>` boundary wrapping the `<Routes>`, it suspended and crashed the app.
 
 ```jsx
@@ -154,6 +158,7 @@ When the `token` became truthy after login, React immediately tried to render `C
   </Suspense>
 )}
 ```
+
 By wrapping it in its own `Suspense` boundary with a `null` fallback, the chat widget can silently download in the background without blocking the UI or throwing an exception.
 
 ---
@@ -163,6 +168,7 @@ By wrapping it in its own `Suspense` boundary with a `null` fallback, the chat w
 Not all routes are accessible to all users. We enforce this using the `<ProtectedRoute>` wrapper component.
 
 ### Component Implementation
+
 ```jsx
 import { Navigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -186,6 +192,7 @@ const ProtectedRoute = ({ children, requiredRole }) => {
 ```
 
 ### Usage in `App.jsx`
+
 ```jsx
 <Route
   path="/recruiter/analytics"
@@ -196,6 +203,7 @@ const ProtectedRoute = ({ children, requiredRole }) => {
   }
 />
 ```
+
 This ensures that if a `student` tries to navigate to `/recruiter/analytics`, they are instantly bounced back to `/dashboard` before the module even attempts to load or fetch data.
 
 ---
@@ -206,7 +214,7 @@ This ensures that if a `student` tries to navigate to `/recruiter/analytics`, th
 Currently, the JWT is stored in `localStorage`. While this makes it accessible across tabs and easy to attach to API requests, it does expose the application to Cross-Site Scripting (XSS) attacks.
 
 **Future Mitigation**:
-In future iterations, we will migrate to **HTTP-Only Cookies**. The backend will set a `Set-Cookie` header containing the JWT. 
+In future iterations, we will migrate to **HTTP-Only Cookies**. The backend will set a `Set-Cookie` header containing the JWT.
 - `HttpOnly`: Prevents JavaScript from reading the cookie, neutralizing XSS.
 - `Secure`: Ensures the cookie is only sent over HTTPS.
 - `SameSite=Strict`: Prevents Cross-Site Request Forgery (CSRF).
@@ -215,6 +223,7 @@ In future iterations, we will migrate to **HTTP-Only Cookies**. The backend will
 During the transition from logged-out to logged-in, the Redux state updates, but some child components (like `Navbar.jsx`) might render before the `user` object is completely populated with all fields.
 
 We use **Optional Chaining** to prevent `TypeError: Cannot read properties of undefined`:
+
 ```jsx
 // DANGEROUS: Will crash if user is null or user.name is undefined
 const initial = user.name.charAt(0).toUpperCase();
@@ -222,6 +231,7 @@ const initial = user.name.charAt(0).toUpperCase();
 // SAFE: Will gracefully return undefined and fallback to the generic icon
 const initial = user?.name?.charAt(0)?.toUpperCase() || <UserIcon />;
 ```
+
 This guarantees the UI will never crash due to a malformed user object.
 
 ---
@@ -232,6 +242,7 @@ This guarantees the UI will never crash due to a malformed user object.
 Exchanges a Google OAuth authorization code for a session JWT.
 
 **Request:**
+
 ```json
 {
   "code": "4/0AeaY... (authorization code from Google)"
@@ -239,6 +250,7 @@ Exchanges a Google OAuth authorization code for a session JWT.
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -260,6 +272,7 @@ Validates the current JWT and returns the latest user profile data. Called on ap
 `Authorization: Bearer <token>`
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -296,8 +309,7 @@ If authentication is failing, follow this diagnostic checklist:
    - Check for unsafe object access (e.g., `user.profile.avatar`) without optional chaining (`user?.profile?.avatar`).
 
 ---
-*(End of Authentication Documentation)*
-
+<!-- End of Authentication Documentation -->
 
 ## Extended API Schema & Component Definitions
 
@@ -552,4 +564,3 @@ The following block details edge case handling and strict type checking for inte
   "max_retries": 3
 }
 ```
-

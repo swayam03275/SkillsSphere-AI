@@ -136,7 +136,7 @@ describe("Job Service", () => {
 
   describe("getJobRecommendations", () => {
     it("should return job recommendations successfully and call DB limit(100)", async () => {
-      const mockUser = { _id: "user123" };
+      const mockUser = { _id: new mongoose.Types.ObjectId() };
       const mockResume = {
         _id: "resume123",
         skills: ["React"],
@@ -175,6 +175,7 @@ describe("Job Service", () => {
         ]
       };
       mock.method(matchingService, "evaluateMatches", async () => mockMatchResult);
+      mock.method(matchingService, "getLatestRecommendations", async () => null);
 
       const result = await jobService.getJobRecommendations(mockUser);
 

@@ -18,7 +18,7 @@ const connectDB = async () => {
     logger.log(`Started ephemeral Memory Database at: ${uri}`);
     process.env.MONGO_URI = uri;
     const res = await connectDB();
-    console.log("Memory DB connected.");
+    logger.log("Memory DB connected.");
     // NOTE: If you need to seed interview data in memory mode,
     // call seedInterviewData() from app.js after connectDB() resolves.
     logger.log("Memory DB connected. Auto-seeding mock interview data and job postings...");

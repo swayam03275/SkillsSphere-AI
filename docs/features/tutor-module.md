@@ -50,6 +50,7 @@ The following events are critical for the live classroom experience. All payload
 - **Direction**: Client -> Server
 - **Description**: Handles sub-event 1 for classroom synchronization.
 - **Payload**:
+
 ```json
 {
   "roomId": "uuid-v4",
@@ -64,6 +65,7 @@ The following events are critical for the live classroom experience. All payload
 - **Direction**: Client -> Server
 - **Description**: Handles sub-event 2 for classroom synchronization.
 - **Payload**:
+
 ```json
 {
   "roomId": "uuid-v4",
@@ -78,6 +80,7 @@ The following events are critical for the live classroom experience. All payload
 - **Direction**: Client -> Server
 - **Description**: Handles sub-event 3 for classroom synchronization.
 - **Payload**:
+
 ```json
 {
   "roomId": "uuid-v4",
@@ -92,6 +95,7 @@ The following events are critical for the live classroom experience. All payload
 - **Direction**: Client -> Server
 - **Description**: Handles sub-event 4 for classroom synchronization.
 - **Payload**:
+
 ```json
 {
   "roomId": "uuid-v4",
@@ -106,6 +110,7 @@ The following events are critical for the live classroom experience. All payload
 - **Direction**: Client -> Server
 - **Description**: Handles sub-event 5 for classroom synchronization.
 - **Payload**:
+
 ```json
 {
   "roomId": "uuid-v4",
@@ -120,6 +125,7 @@ The following events are critical for the live classroom experience. All payload
 - **Direction**: Client -> Server
 - **Description**: Handles sub-event 6 for classroom synchronization.
 - **Payload**:
+
 ```json
 {
   "roomId": "uuid-v4",
@@ -134,6 +140,7 @@ The following events are critical for the live classroom experience. All payload
 - **Direction**: Client -> Server
 - **Description**: Handles sub-event 7 for classroom synchronization.
 - **Payload**:
+
 ```json
 {
   "roomId": "uuid-v4",
@@ -148,6 +155,7 @@ The following events are critical for the live classroom experience. All payload
 - **Direction**: Client -> Server
 - **Description**: Handles sub-event 8 for classroom synchronization.
 - **Payload**:
+
 ```json
 {
   "roomId": "uuid-v4",
@@ -162,6 +170,7 @@ The following events are critical for the live classroom experience. All payload
 - **Direction**: Client -> Server
 - **Description**: Handles sub-event 9 for classroom synchronization.
 - **Payload**:
+
 ```json
 {
   "roomId": "uuid-v4",
@@ -176,6 +185,7 @@ The following events are critical for the live classroom experience. All payload
 - **Direction**: Client -> Server
 - **Description**: Handles sub-event 10 for classroom synchronization.
 - **Payload**:
+
 ```json
 {
   "roomId": "uuid-v4",
@@ -190,6 +200,7 @@ The following events are critical for the live classroom experience. All payload
 - **Direction**: Client -> Server
 - **Description**: Handles sub-event 11 for classroom synchronization.
 - **Payload**:
+
 ```json
 {
   "roomId": "uuid-v4",
@@ -204,6 +215,7 @@ The following events are critical for the live classroom experience. All payload
 - **Direction**: Client -> Server
 - **Description**: Handles sub-event 12 for classroom synchronization.
 - **Payload**:
+
 ```json
 {
   "roomId": "uuid-v4",
@@ -218,6 +230,7 @@ The following events are critical for the live classroom experience. All payload
 - **Direction**: Client -> Server
 - **Description**: Handles sub-event 13 for classroom synchronization.
 - **Payload**:
+
 ```json
 {
   "roomId": "uuid-v4",
@@ -232,6 +245,7 @@ The following events are critical for the live classroom experience. All payload
 - **Direction**: Client -> Server
 - **Description**: Handles sub-event 14 for classroom synchronization.
 - **Payload**:
+
 ```json
 {
   "roomId": "uuid-v4",
@@ -246,6 +260,7 @@ The following events are critical for the live classroom experience. All payload
 - **Direction**: Client -> Server
 - **Description**: Handles sub-event 15 for classroom synchronization.
 - **Payload**:
+
 ```json
 {
   "roomId": "uuid-v4",
@@ -260,6 +275,7 @@ The following events are critical for the live classroom experience. All payload
 - **Direction**: Client -> Server
 - **Description**: Handles sub-event 16 for classroom synchronization.
 - **Payload**:
+
 ```json
 {
   "roomId": "uuid-v4",
@@ -274,6 +290,7 @@ The following events are critical for the live classroom experience. All payload
 - **Direction**: Client -> Server
 - **Description**: Handles sub-event 17 for classroom synchronization.
 - **Payload**:
+
 ```json
 {
   "roomId": "uuid-v4",
@@ -288,6 +305,7 @@ The following events are critical for the live classroom experience. All payload
 - **Direction**: Client -> Server
 - **Description**: Handles sub-event 18 for classroom synchronization.
 - **Payload**:
+
 ```json
 {
   "roomId": "uuid-v4",
@@ -302,6 +320,7 @@ The following events are critical for the live classroom experience. All payload
 - **Direction**: Client -> Server
 - **Description**: Handles sub-event 19 for classroom synchronization.
 - **Payload**:
+
 ```json
 {
   "roomId": "uuid-v4",
@@ -319,6 +338,7 @@ The following events are critical for the live classroom experience. All payload
 The tutor slice manages the global state for the tutor dashboard. It is heavily normalized to prevent deep object updates from triggering massive re-renders.
 
 ### State Shape
+
 ```javascript
 const initialState = {
   classrooms: {
@@ -364,6 +384,7 @@ These are the exact JSON schemas for the Tutor REST endpoints.
 ### GET `/api/tutor/resource_1`
 Fetches the detailed resource 1 for the tutor dashboard.
 **Response (200 OK):**
+
 ```json
 {{
   "success": true,
@@ -388,6 +409,7 @@ Fetches the detailed resource 1 for the tutor dashboard.
 ### GET `/api/tutor/resource_2`
 Fetches the detailed resource 2 for the tutor dashboard.
 **Response (200 OK):**
+
 ```json
 {{
   "success": true,
@@ -412,6 +434,7 @@ Fetches the detailed resource 2 for the tutor dashboard.
 ### GET `/api/tutor/resource_3`
 Fetches the detailed resource 3 for the tutor dashboard.
 **Response (200 OK):**
+
 ```json
 {{
   "success": true,
@@ -436,6 +459,7 @@ Fetches the detailed resource 3 for the tutor dashboard.
 ### GET `/api/tutor/resource_4`
 Fetches the detailed resource 4 for the tutor dashboard.
 **Response (200 OK):**
+
 ```json
 {{
   "success": true,
@@ -460,6 +484,7 @@ Fetches the detailed resource 4 for the tutor dashboard.
 ### GET `/api/tutor/resource_5`
 Fetches the detailed resource 5 for the tutor dashboard.
 **Response (200 OK):**
+
 ```json
 {{
   "success": true,
@@ -484,6 +509,7 @@ Fetches the detailed resource 5 for the tutor dashboard.
 ### GET `/api/tutor/resource_6`
 Fetches the detailed resource 6 for the tutor dashboard.
 **Response (200 OK):**
+
 ```json
 {{
   "success": true,
@@ -508,6 +534,7 @@ Fetches the detailed resource 6 for the tutor dashboard.
 ### GET `/api/tutor/resource_7`
 Fetches the detailed resource 7 for the tutor dashboard.
 **Response (200 OK):**
+
 ```json
 {{
   "success": true,
@@ -532,6 +559,7 @@ Fetches the detailed resource 7 for the tutor dashboard.
 ### GET `/api/tutor/resource_8`
 Fetches the detailed resource 8 for the tutor dashboard.
 **Response (200 OK):**
+
 ```json
 {{
   "success": true,
@@ -556,6 +584,7 @@ Fetches the detailed resource 8 for the tutor dashboard.
 ### GET `/api/tutor/resource_9`
 Fetches the detailed resource 9 for the tutor dashboard.
 **Response (200 OK):**
+
 ```json
 {{
   "success": true,
@@ -583,8 +612,7 @@ Fetches the detailed resource 9 for the tutor dashboard.
 
 All tutor routes must be wrapped in `<ProtectedRoute requiredRole="tutor">`. The backend verifies the JWT role field before allowing access to `/api/tutor/*` endpoints.
 
-*(End of Tutor Module Documentation)*
-
+<!-- End of Tutor Module Documentation -->
 
 ## Global Infrastructure & Security Implementations
 

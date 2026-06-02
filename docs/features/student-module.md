@@ -67,6 +67,7 @@ Fetches the high-level metrics displayed on the StatCards.
 - Params: None
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -93,6 +94,7 @@ Fetches the time-series data for the PerformanceTrend chart.
 - Params: `?timeframe=30d` (optional)
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -113,6 +115,7 @@ Fetches the recent activity feed.
 - Params: `?limit=5`
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -174,7 +177,7 @@ sequenceDiagram
 ```
 
 ### B. Real-Time Audio Processing
-To ensure a smooth experience, the application uses the browser's native `MediaRecorder` API. 
+To ensure a smooth experience, the application uses the browser's native `MediaRecorder` API.
 - Audio chunks are collected every 1000ms.
 - We utilize `Blob` arrays to store the audio before converting it to Base64 or sending it as `FormData`.
 - **Edge Case**: If the user denies microphone permissions, the application gracefully degrades by offering a text-input fallback.
@@ -256,8 +259,7 @@ As the platform evolves, the Student Module will see significant upgrades.
 2. **Offline Mode**: Cache roadmap content using Service Workers so students can read material while offline.
 
 ---
-*(End of Document - 278 lines)*
-
+<!-- End of Document - 278 lines -->
 
 ## Extended API Schema & Component Definitions
 
@@ -560,8 +562,6 @@ The following block details edge case handling and strict type checking for inte
   "max_retries": 3
 }
 ```
-
-
 
 ## Global Infrastructure & Security Implementations
 
