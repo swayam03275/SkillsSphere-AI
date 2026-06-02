@@ -15,7 +15,7 @@ import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
 import { useToast } from "../../../shared/components/toast/ToastProvider";
 
 export default function JobMatcherPage() {
-  useDocumentTitle("Job Matcher");
+  useDocumentTitle("Smart Job Matching");
   const { token, user } = useSelector((state) => state.auth);
   const navigate = useNavigate();
   const toast = useToast();

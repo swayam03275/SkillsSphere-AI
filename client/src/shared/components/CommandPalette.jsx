@@ -22,7 +22,7 @@ const CommandPalette = () => {
     actions.push(
       { id: 'resume', name: 'Resume Analyzer', path: '/resume-analyzer', icon: <FileSearch size={18} /> },
       { id: 'jobs', name: 'Job Board', path: '/jobs', icon: <Briefcase size={18} /> },
-      { id: 'match', name: 'Job Matcher', path: '/job-matcher', icon: <Sparkles size={18} /> },
+      { id: 'match', name: 'Smart Job Matching', path: '/job-matcher', icon: <Sparkles size={18} /> },
       { id: 'cover', name: 'Cover Letters', path: '/cover-letters', icon: <FileText size={18} /> },
       { id: 'roadmap', name: 'Career Roadmap', path: '/roadmap', icon: <Rocket size={18} /> }
     );

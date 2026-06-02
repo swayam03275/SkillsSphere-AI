@@ -16,7 +16,7 @@ const DocumentationPage = () => {
       content: "Learn the basics of setting up your profile, uploading your resume, and navigating the main dashboard."
     },
     {
-      title: "AI Job Matcher",
+      title: "Smart Job Matching",
       icon: <Code className="text-blue-500" size={24} />,
       content: "Understand how our recommendation engine analyzes your skills against job descriptions to compute compatibility scores."
     },
