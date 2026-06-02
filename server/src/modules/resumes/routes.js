@@ -46,14 +46,14 @@ const generateSafetyFallbackPayload = (question) => {
 /**
  * @openapi
  * /api/interviews/topics:
- * get:
- * summary: Retrieve available practice tracks and question pools
- * tags: [Mock Interviews]
- * security:
- * - bearerAuth: []
- * responses:
- * 200:
- * description: Successfully compiled topics directory
+ *   get:
+ *     summary: Retrieve available practice tracks and question pools
+ *     tags: [Mock Interviews]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Successfully compiled topics directory
  */
 router.get(
   "/topics",
@@ -79,27 +79,27 @@ router.get(
 /**
  * @openapi
  * /api/interviews/start:
- * post:
- * summary: Instantiate a new adaptive mock interview workspace track
- * tags: [Mock Interviews]
- * security:
- * - bearerAuth: []
- * requestBody:
- * required: true
- * content:
- * application/json:
- * schema:
- * type: object
- * required:
- * - topicId
- * properties:
- * topicId:
- * type: string
- * difficulty:
- * type: string
- * responses:
- * 201:
- * description: Environment initialized and session frames locked
+ *   post:
+ *     summary: Instantiate a new adaptive mock interview workspace track
+ *     tags: [Mock Interviews]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - topicId
+ *             properties:
+ *               topicId:
+ *                 type: string
+ *               difficulty:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Environment initialized and session frames locked
  */
 router.post(
   "/start",
@@ -146,30 +146,35 @@ router.post(
 /**
  * @openapi
  * /api/interviews/{id}/answer:
- * post:
- * summary: Submit a transcribed string response for structural evaluation
- * description: Enforces an isolated connection handler containing a strict timeout barrier against the Python NLP evaluator container.
- * tags: [Mock Interviews]
- * security:
- * - bearerAuth: []
- * parameters:
- * - in: path
- * name: id
- * required: true
- * schema:
- * type: string
- * requestBody:
- * required: true
- * content:
- * application/json:
- * schema:
- * type: object
- * required:
- * - question
- * - answerText
- * responses:
- * 200:
- * description: Evaluation output resolved cleanly (or fallback injected)
+ *   post:
+ *     summary: Submit a transcribed string response for structural evaluation
+ *     description: Enforces an isolated connection handler containing a strict timeout barrier against the Python NLP evaluator container.
+ *     tags: [Mock Interviews]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - question
+ *               - answerText
+ *             properties:
+ *               question:
+ *                 type: string
+ *               answerText:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Evaluation output resolved cleanly (or fallback injected)
  */
 router.post(
   "/:id/answer",
@@ -228,15 +233,21 @@ router.post(
 
 /**
  * @openapi
- * /api/interviews/:id/complete:
- * post:
- * summary: Terminate an open interview window frame and calculate structural statistics
- * tags: [Mock Interviews]
- * security:
- * - bearerAuth: []
- * responses:
- * 200:
- * description: Aggregate records locked down and calculated
+ * /api/interviews/{id}/complete:
+ *   post:
+ *     summary: Terminate an open interview window frame and calculate structural statistics
+ *     tags: [Mock Interviews]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Aggregate records locked down and calculated
  */
 router.post(
   "/:id/complete",
@@ -271,12 +282,12 @@ router.post(
 /**
  * @openapi
  * /api/interviews/ai-status:
- * get:
- * summary: Verify health metrics status of upstream microservices
- * tags: [Mock Interviews]
- * responses:
- * 200:
- * description: Returns communication status data maps
+ *   get:
+ *     summary: Verify health metrics status of upstream microservices
+ *     tags: [Mock Interviews]
+ *     responses:
+ *       200:
+ *         description: Returns communication status data maps
  */
 router.get(
   "/ai-status",

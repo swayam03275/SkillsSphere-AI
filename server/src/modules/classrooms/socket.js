@@ -109,6 +109,11 @@ export function initClassroomSockets(io) {
 
         // Sync the current room state (chat, code, whiteboard)
         const state = getOrCreateRoomState(roomId);
+        if (state.chatHistory.length === 0 && !state.code && state.whiteboard.length === 0) {
+          state.chatHistory = session.chatHistory || [];
+          state.code = session.codeSnapshot || "";
+          state.whiteboard = session.whiteboardSnapshot || [];
+        }
         socket.emit("sync-state", state);
       } catch (error) {
         logger.error("Error joining classroom room:", error);
@@ -152,18 +157,19 @@ export function initClassroomSockets(io) {
               (p) => p.socketId !== socket.id
             );
 
+            // Sync transient in-memory state back to DB archive on disconnect
+            const finalState = getRoomState(roomId);
+            if (finalState) {
+              session.chatHistory = finalState.chatHistory || [];
+              session.codeSnapshot = finalState.code || "";
+              session.whiteboardSnapshot = finalState.whiteboard || [];
+            }
+
             // Automatically teardown/end the classroom session in database if empty
             if (session.participants.length === 0) {
               logger.log(`Classroom ${roomId} empty. Automatically ending session.`);
               session.status = "ended";
               session.endedAt = new Date();
-
-              // Sync transient in-memory state back to DB archive
-              const finalState = getRoomState(roomId);
-              if (finalState) {
-                session.chatHistory = finalState.chatHistory || [];
-                session.codeSnapshot = finalState.code || "";
-              }
 
               clearRoomState(roomId);
               clearRoomLock(roomId);
