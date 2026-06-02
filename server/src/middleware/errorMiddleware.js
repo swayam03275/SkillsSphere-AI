@@ -34,19 +34,96 @@ const handleAIError = (err) => {
   let message = "AI service is currently unavailable. Please try again later.";
   let statusCode = 503;
 
-  if (err.status === 401) {
+  const status = typeof err?.status === "number" ? err.status : undefined;
+  const code = typeof err?.code === "string" ? err.code : undefined;
+  const rawMessage = typeof err?.message === "string" ? err.message : "";
+  const text = rawMessage.toLowerCase();
+
+  // Common HTTP status equivalents (work for Axios/OpenAI-like errors,
+  // and also for Gemini errors that include status).
+  if (status === 401) {
     message = "AI Authentication failed. Please check system configuration.";
-    statusCode = 500;
-  } else if (err.status === 429) {
+    statusCode = 401;
+  } else if (status === 403) {
+    message = "AI access forbidden. Please check permissions/configuration.";
+    statusCode = 403;
+  } else if (status === 429) {
     message = "AI Rate limit exceeded. Please wait a moment.";
     statusCode = 429;
-  } else if (err.code === 'ETIMEDOUT' || err.status === 408) {
-    message = "AI Analysis timed out. Please try a shorter resume or retry.";
+  } else if (status === 408) {
+    message = "AI request timed out. Please retry.";
     statusCode = 408;
+  }
+
+  // Network/transport timeouts
+  if (code === "ETIMEDOUT") {
+    message = "AI request timed out. Please retry.";
+    statusCode = 408;
+  }
+
+  // Gemini / Google Generative AI heuristics (error shapes vary by failure mode)
+  // Try best-effort mapping based on message content.
+  if (text) {
+    if (
+      text.includes("quota") ||
+      text.includes("rate limit") ||
+      text.includes("too many requests") ||
+      text.includes("resource exhausted")
+    ) {
+      message = "AI quota/rate limit exceeded. Please wait a moment and retry.";
+      statusCode = 429;
+    } else if (
+      text.includes("invalid argument") ||
+      text.includes("invalid request") ||
+      text.includes("bad request")
+    ) {
+      message = "AI request was invalid. Please adjust the input and retry.";
+      statusCode = 400;
+    } else if (
+      text.includes("unauthorized") ||
+      text.includes("authentication") ||
+      text.includes("invalid api key")
+    ) {
+      message = "AI Authentication failed. Please check system configuration.";
+      statusCode = 401;
+    } else if (
+      text.includes("permission") ||
+      text.includes("forbidden") ||
+      text.includes("access denied")
+    ) {
+      message = "AI access forbidden. Please check permissions/configuration.";
+      statusCode = 403;
+    } else if (
+      text.includes("deadline") ||
+      text.includes("timeout") ||
+      text.includes("timed out") ||
+      text.includes("temporarily unavailable")
+    ) {
+      message = "AI request timed out. Please retry.";
+      statusCode = 408;
+    } else if (text.includes("not configured") || text.includes("unconfigured")) {
+      message = "AI service is currently unconfigured. Please set GEMINI_API_KEY in .env.";
+      statusCode = 503;
+    }
+  }
+
+  // Fallbacks by error code if present
+  if (!text) {
+    if (code === "400" || code === "INVALID_ARGUMENT") {
+      message = "AI request was invalid. Please adjust the input and retry.";
+      statusCode = 400;
+    } else if (code === "401" || code === "UNAUTHENTICATED") {
+      message = "AI Authentication failed. Please check system configuration.";
+      statusCode = 401;
+    } else if (code === "403" || code === "PERMISSION_DENIED") {
+      message = "AI access forbidden. Please check permissions/configuration.";
+      statusCode = 403;
+    }
   }
 
   return new AppError(message, statusCode);
 };
+
 
 const globalErrorHandler = (err, req, res, next) => {
   let error = Object.assign(err);
@@ -56,10 +133,18 @@ const globalErrorHandler = (err, req, res, next) => {
   if (error.code === 11000) error = handleDuplicateFieldsDB(error);
   if (error.name === "ValidationError") error = handleValidationErrorDB(error);
   
-  // Handle AI/OpenAI Errors
-  if (error.isAxiosError || error.type === 'invalid_request_error') {
+  // Handle AI errors (Axios/OpenAI-like + Gemini/Google Generative AI)
+  if (
+    error.isAxiosError ||
+    error.type === "invalid_request_error" ||
+    error?.name === "GoogleGenerativeAI" ||
+    error?.provider === "google" ||
+    error?.status != null ||
+    /gemini|generative ai|google/i.test(String(error?.message || ""))
+  ) {
     error = handleAIError(error);
   }
+
   
   // Preserve field-level errors from Mongoose if present
   if (err.errors && !error.errors) {

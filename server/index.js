@@ -185,9 +185,10 @@ User message: ${message}`;
     res.json({ reply });
   } catch (error) {
     logger.error("Chat API error:", error);
-    res.status(500).json({ error: "Failed to generate AI response" });
+    next(error);
   }
 });
+
 
 app.use("/api/auth", requireDB, authRoutes);
 app.use("/api/resume", requireDB, resumeRoutes);
