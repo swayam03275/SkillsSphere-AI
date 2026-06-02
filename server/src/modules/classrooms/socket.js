@@ -1,12 +1,16 @@
 import ClassroomSession from "../../database/models/ClassroomSession.js";
-import { executeCode } from "../../utils/codeExecutor.js";
 import { getRoomLock, clearRoomLock } from "../../utils/mutex.js";
-
 import logger from "../../utils/logger.js";
+
+// Socket event sub-handlers
+import registerChatHandler from "./socketHandlers/chatHandler.js";
+import registerWebRTCHandler from "./socketHandlers/webrtcHandler.js";
+import registerWhiteboardHandler from "./socketHandlers/whiteboardHandler.js";
+import registerCodeEditorHandler from "./socketHandlers/codeEditorHandler.js";
 
 const roomStates = new Map();
 
-function getOrCreateRoomState(roomId) {
+export function getOrCreateRoomState(roomId) {
   if (!roomStates.has(roomId)) {
     roomStates.set(roomId, {
       chatHistory: [],
@@ -115,183 +119,11 @@ export function initClassroomSockets(io) {
       }
     });
 
-    // Chat Message
-    socket.on("chat-message", ({ roomId, message }) => {
-      // Validate that the socket is actually joined to this roomId
-      if (!socket.data || socket.data.roomId !== roomId) {
-        socket.emit("unauthorized", {
-          message: "Cross-classroom action detected",
-        });
-        return;
-      }
-
-      const msgObj = {
-        sender: socket.data.user,
-        message,
-        timestamp: new Date().toISOString(),
-      };
-
-      const state = getOrCreateRoomState(roomId);
-      state.chatHistory.push(msgObj);
-      if (state.chatHistory.length > 100) {
-        state.chatHistory.shift();
-      }
-
-      socket.to(roomId).emit("chat-message", msgObj);
-    });
-
-    // Toggle Hand Raise
-    socket.on("toggle-hand-raise", ({ roomId, isRaised }) => {
-      // Validate that the socket is actually joined to this roomId
-      if (!socket.data || socket.data.roomId !== roomId) {
-        socket.emit("unauthorized", {
-          message: "Cross-classroom action detected",
-        });
-        return;
-      }
-
-      // Broadcast hand raise status to others
-      socket.to(roomId).emit("hand-raise-toggled", {
-        socketId: socket.id,
-        isRaised,
-      });
-    });
-
-    // WebRTC Signaling Events
-    socket.on("webrtc-offer", ({ targetSocketId, offer }) => {
-      // Validate that the requesting socket is in a room
-      if (!socket.data || !socket.data.roomId) {
-        socket.emit("unauthorized", { message: "You must join a room first" });
-        return;
-      }
-
-      // Validate that the target socket exists and is in the same room
-      const targetSocket = io.sockets.sockets.get(targetSocketId);
-      if (
-        !targetSocket ||
-        !targetSocket.data ||
-        targetSocket.data.roomId !== socket.data.roomId
-      ) {
-        // Gracefully and silently drop the unauthorized stream injection attempt
-        return;
-      }
-
-      socket.to(targetSocketId).emit("webrtc-offer", {
-        callerSocketId: socket.id,
-        callerUser: socket.data ? socket.data.user : socket.user,
-        offer,
-      });
-    });
-
-    socket.on("webrtc-answer", ({ targetSocketId, answer }) => {
-      // Validate that both sockets exist and are in the same room
-      if (!socket.data || !socket.data.roomId) {
-        socket.emit("unauthorized", { message: "You must join a room first" });
-        return;
-      }
-
-      const targetSocket = io.sockets.sockets.get(targetSocketId);
-      if (
-        !targetSocket ||
-        !targetSocket.data ||
-        targetSocket.data.roomId !== socket.data.roomId
-      ) {
-        // Gracefully and silently drop the unauthorized stream signaling answer
-        return;
-      }
-
-      socket.to(targetSocketId).emit("webrtc-answer", {
-        answererSocketId: socket.id,
-        answer,
-      });
-    });
-
-    // --- Whiteboard & Shared Coding Events ---
-
-    // Draw stroke event
-    socket.on("draw-stroke", ({ roomId, strokeData }) => {
-      if (!socket.data || socket.data.roomId !== roomId) {
-        socket.emit("unauthorized", {
-          message: "Cross-classroom action detected",
-        });
-        return;
-      }
-      const payload = {
-        strokeData,
-        sender: socket.data.user,
-      };
-
-      const state = getOrCreateRoomState(roomId);
-      state.whiteboard.push(payload);
-
-      socket.to(roomId).emit("draw-stroke", payload);
-    });
-
-    // Clear canvas event
-    socket.on("clear-canvas", ({ roomId }) => {
-      if (!socket.data || socket.data.roomId !== roomId) {
-        socket.emit("unauthorized", {
-          message: "Cross-classroom action detected",
-        });
-        return;
-      }
-      const state = getOrCreateRoomState(roomId);
-      state.whiteboard = [];
-      socket.to(roomId).emit("clear-canvas");
-    });
-
-    // Code change event
-    socket.on("code-change", ({ roomId, code }) => {
-      if (!socket.data || socket.data.roomId !== roomId) {
-        socket.emit("unauthorized", {
-          message: "Cross-classroom action detected",
-        });
-        return;
-      }
-      const state = getOrCreateRoomState(roomId);
-      state.code = code;
-      socket.to(roomId).emit("code-change", { code });
-    });
-
-    // Code cursor event
-    socket.on("code-cursor", ({ roomId, cursorPosition }) => {
-      if (!socket.data || socket.data.roomId !== roomId) {
-        socket.emit("unauthorized", {
-          message: "Cross-classroom action detected",
-        });
-        return;
-      }
-      socket.to(roomId).emit("code-cursor", {
-        cursorPosition,
-        senderId: socket.id,
-        senderName: socket.data.user?.name || "Participant",
-      });
-    });
-
-    // Execute code event
-    socket.on("execute-code-request", async ({ roomId, code, language }) => {
-      if (!socket.data || socket.data.roomId !== roomId) {
-        socket.emit("unauthorized", {
-          message: "Cross-classroom action detected",
-        });
-        return;
-      }
-
-      // Broadcast that execution has started
-      io.to(roomId).emit("execution-started", {
-        senderName: socket.data.user?.name || "Participant",
-      });
-
-      // Execute code via API
-      const result = await executeCode(language, code);
-
-      // Broadcast result
-      io.to(roomId).emit("execution-result", {
-        output: result.output,
-        isError: result.isError,
-        senderName: socket.data.user?.name || "Participant",
-      });
-    });
+    // Mount modular event sub-handlers
+    registerChatHandler(io, socket);
+    registerWebRTCHandler(io, socket);
+    registerWhiteboardHandler(io, socket);
+    registerCodeEditorHandler(io, socket);
 
     // Disconnect
     socket.on("disconnect", async () => {
@@ -348,4 +180,3 @@ export function initClassroomSockets(io) {
     });
   });
 }
-
