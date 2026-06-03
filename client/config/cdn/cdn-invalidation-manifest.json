@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Enterprise Global CDN Cache Invalidation Manifest",
+  "description": "Maps application routes to atomic cache tags for high-precision, sub-30s edge invalidation.",
+  "version": "1.0.0",
+  "manifest": {
+    "routes": [
+      {
+        "route_pattern": "/api/v1/candidates/*",
+        "cache_tag": "tag_candidate_data",
+        "ttl_seconds": 3600
+      },
+      {
+        "route_pattern": "/api/v1/interviews/*",
+        "cache_tag": "tag_interview_state",
+        "ttl_seconds": 300
+      },
+      {
+        "route_pattern": "/static/js/main.*.js",
+        "cache_tag": "tag_core_bundles",
+        "ttl_seconds": 31536000
+      },
+      {
+        "route_pattern": "/static/css/styles.*.css",
+        "cache_tag": "tag_core_styles",
+        "ttl_seconds": 31536000
+      },
+      {
+        "route_pattern": "/api/v1/analytics/reports/*",
+        "cache_tag": "tag_analytics_reports",
+        "ttl_seconds": 86400
+      }
+    ],
+    "global_exclusions": [
+      "/api/v1/auth/me",
+      "/api/v1/notifications/stream"
+    ]
+  }
+}
