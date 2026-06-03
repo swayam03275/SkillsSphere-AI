@@ -73,6 +73,16 @@ export default function registerCodeEditorHandler(io, socket) {
       });
       return;
     }
+
+    if (typeof code !== "string") {
+      socket.emit("error", { message: "Code must be a string" });
+      return;
+    }
+    if (code.length > 100000) {
+      socket.emit("error", { message: "Code length exceeds maximum allowed size (100KB)" });
+      return;
+    }
+
     const state = getOrCreateRoomState(roomId);
     state.code = code;
     socket.to(roomId).emit("code-change", { code });
@@ -86,6 +96,12 @@ export default function registerCodeEditorHandler(io, socket) {
       });
       return;
     }
+
+    if (!cursorPosition || (typeof cursorPosition !== "object" && typeof cursorPosition !== "number")) {
+      socket.emit("error", { message: "Invalid cursor position payload" });
+      return;
+    }
+
     socket.to(roomId).emit("code-cursor", {
       cursorPosition,
       senderId: socket.id,
@@ -99,6 +115,21 @@ export default function registerCodeEditorHandler(io, socket) {
       socket.emit("unauthorized", {
         message: "Cross-classroom action detected",
       });
+      return;
+    }
+
+    if (typeof code !== "string" || typeof language !== "string") {
+      socket.emit("error", { message: "Code and language must be strings" });
+      return;
+    }
+
+    if (code.length > 50000) {
+      socket.emit("error", { message: "Code length for execution exceeds 50KB" });
+      return;
+    }
+
+    if (language.length > 50) {
+      socket.emit("error", { message: "Language string is too long" });
       return;
     }
 

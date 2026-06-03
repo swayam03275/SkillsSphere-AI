@@ -217,6 +217,32 @@ export const validateWhiteboardStrokePayload = (strokeData) => {
   return { isValid: true, strokeData };
 };
 
+const optimizeStrokePoints = (points) => {
+  if (!Array.isArray(points) || points.length < 3) return points;
+  const optimized = [points[0]];
+  for (let i = 1; i < points.length - 1; i += 1) {
+    const current = points[i];
+    const last = optimized[optimized.length - 1];
+    if (
+      current &&
+      last &&
+      typeof current.x === "number" &&
+      typeof current.y === "number" &&
+      typeof last.x === "number" &&
+      typeof last.y === "number"
+    ) {
+      const dx = current.x - last.x;
+      const dy = current.y - last.y;
+      const distSq = dx * dx + dy * dy;
+      if (distSq > 0.000025) { // 0.005 squared distance
+        optimized.push(current);
+      }
+    }
+  }
+  optimized.push(points[points.length - 1]);
+  return optimized;
+};
+
 export const canClearWhiteboard = (socket) =>
   CLEAR_CANVAS_ROLES.has(socket.data?.user?.role);
 
@@ -232,20 +258,31 @@ export default function registerWhiteboardHandler(io, socket) {
 
     const validation = validateWhiteboardStrokePayload(strokeData);
     if (!validation.isValid) {
-      emitWhiteboardError(socket, validation.error.errorCode, validation.error.message);
+      emitWhiteboardError(
+        socket,
+        validation.error.errorCode,
+        validation.error.message,
+      );
       return;
     }
 
-    const authorizedRoomId = socket.data.roomId;
+    const validatedStroke = { ...validation.strokeData };
+    if (validatedStroke.points && Array.isArray(validatedStroke.points)) {
+      validatedStroke.points = optimizeStrokePoints(validatedStroke.points);
+    }
+
     const payload = {
-      strokeData: validation.strokeData,
+      strokeData: validatedStroke,
       sender: socket.data.user,
     };
 
-    const state = getOrCreateRoomState(authorizedRoomId);
+    const state = getOrCreateRoomState(roomId);
+    if (state.whiteboard.length >= 2000) {
+      state.whiteboard.shift();
+    }
     state.whiteboard.push(payload);
 
-    socket.to(authorizedRoomId).emit("draw-stroke", payload);
+    socket.to(roomId).emit("draw-stroke", payload);
   });
 
   // Clear canvas event
@@ -266,9 +303,8 @@ export default function registerWhiteboardHandler(io, socket) {
       return;
     }
 
-    const authorizedRoomId = socket.data.roomId;
-    const state = getOrCreateRoomState(authorizedRoomId);
+    const state = getOrCreateRoomState(roomId);
     state.whiteboard = [];
-    socket.to(authorizedRoomId).emit("clear-canvas");
+    socket.to(roomId).emit("clear-canvas");
   });
 }

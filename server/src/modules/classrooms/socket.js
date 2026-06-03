@@ -87,9 +87,35 @@ export function initClassroomSockets(io) {
           `User ${socket.data.user.name} (${socket.id}) joining room ${roomId}`,
         );
 
-        // Update database: remove any existing/stale socket for this user in this room to prevent duplicates
+        // Count active socket connections for this user in this room to prevent spam
+        const roomSockets = io.sockets.adapter.rooms.get(roomId);
+        let userConnectionCount = 0;
+        if (roomSockets) {
+          for (const socketId of roomSockets) {
+            const connectedSocket = io.sockets.sockets.get(socketId);
+            if (
+              connectedSocket &&
+              connectedSocket.data &&
+              connectedSocket.data.user &&
+              connectedSocket.data.user.id === userIdStr &&
+              connectedSocket.id !== socket.id
+            ) {
+              userConnectionCount += 1;
+            }
+          }
+        }
+
+        if (userConnectionCount >= 3) {
+          socket.emit("unauthorized", {
+            message: "Connection limit exceeded (maximum 3 active connections allowed)",
+          });
+          socket.disconnect(true);
+          return;
+        }
+
+        // Update database: remove any existing/stale socket for this exact socket ID to prevent duplicates
         session.participants = (session.participants || []).filter(
-          (p) => p.user.id.toString() !== userIdStr && p.socketId !== socket.id
+          (p) => p.socketId !== socket.id
         );
 
         // Add this new active socket participant
@@ -139,10 +165,13 @@ export function initClassroomSockets(io) {
     registerCodeEditorHandler(io, socket);
 
     // Disconnect
-    socket.on("disconnect", async () => {
-      logger.log(`Socket disconnected: ${socket.id}`);
-      if (socket.data && socket.data.roomId) {
-        const { roomId, user } = socket.data;
+    socket.on("disconnecting", async () => {
+      logger.log(`Socket disconnecting: ${socket.id}`);
+      // Find all rooms this socket joined (excluding its own private room)
+      const joinedRooms = Array.from(socket.rooms).filter((r) => r !== socket.id);
+
+      for (const roomId of joinedRooms) {
+        const user = socket.data?.user || { name: "Participant", role: "student" };
 
         // Broadcast to others in the room first
         socket.to(roomId).emit("user-left", {
@@ -151,9 +180,9 @@ export function initClassroomSockets(io) {
         });
 
         const lock = getRoomLock(roomId);
-        const release = await lock.acquire();
-
+        let release;
         try {
+          release = await lock.acquire();
           const session = await ClassroomSession.findOne({
             roomId,
             status: "active",
@@ -213,9 +242,9 @@ export function initClassroomSockets(io) {
             await session.save();
           }
         } catch (error) {
-          logger.error("Error during socket disconnect cleanup:", error);
+          logger.error(`Error during socket disconnect cleanup for room ${roomId}:`, error);
         } finally {
-          release();
+          if (release) release();
         }
       }
     });
