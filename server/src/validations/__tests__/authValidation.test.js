@@ -103,35 +103,50 @@ describe("auth validation", () => {
       assert.ok(fieldMessages(result, "password").includes("Password must be at least 8 characters"));
     });
 
-    const currentlyAcceptedPasswords = [
-      ["missing uppercase letter", "password1!"],
-      ["missing lowercase letter", "PASSWORD1!"],
-      ["missing number", "Password!"],
-      ["missing special character", "Password1"],
-      ["common weak password", "password"],
-      ["password with spaces", "Pass word1!"],
-      ["very long password", `A1!${"a".repeat(200)}`],
-      ["unicode password", "\u092a\u093e\u0938\u0935\u0930\u094d\u0921123!"],
-      ["SQL-looking string", "' OR '1'='1"],
-      ["XSS-looking string", "<script>alert(1)</script>"],
+    const weakPasswords = [
+      [
+        "missing uppercase letter",
+        "password1!",
+        "Password must contain at least one uppercase letter",
+      ],
+      [
+        "missing lowercase letter",
+        "PASSWORD1!",
+        "Password must contain at least one lowercase letter",
+      ],
+      ["missing number", "Password!", "Password must contain at least one number"],
+      [
+        "missing special character",
+        "Password1",
+        "Password must contain at least one special character",
+      ],
+      [
+        "common weak password",
+        "password",
+        "Password must contain at least one uppercase letter",
+      ],
     ];
 
-    for (const [name, password] of currentlyAcceptedPasswords) {
-      it(`accepts ${name} because current password validation only enforces length`, () => {
+    for (const [name, password, message] of weakPasswords) {
+      it(`rejects a password with ${name}`, () => {
         const result = validateRegisterInput(validRegisterPayload({ password }));
 
-        assert.equal(result.isValid, true);
-        assert.equal(result.data.password, password);
+        assert.equal(result.isValid, false);
+        assert.ok(fieldMessages(result, "password").includes(message));
       });
     }
 
-    it("applies the same minimum length rule to reset passwords", () => {
+    it("applies the same strong password rule to reset passwords", () => {
       const result = validateResetPasswordInput(
-        validResetPasswordPayload({ newPassword: "short" }),
+        validResetPasswordPayload({ newPassword: "Password1" }),
       );
 
       assert.equal(result.isValid, false);
-      assert.ok(fieldMessages(result, "newPassword").length > 0);
+      assert.ok(
+        fieldMessages(result, "newPassword").includes(
+          "Password must contain at least one special character",
+        ),
+      );
     });
   });
 
@@ -145,10 +160,12 @@ describe("auth validation", () => {
 
     const invalidOtps = [
       ["empty OTP", ""],
+      ["non-numeric OTP", "abcdef"],
+      ["alphanumeric OTP", "abc123"],
+      ["malformed OTP with special characters", "!@#$%^"],
+      ["malformed OTP with internal space", "12 456"],
       ["too short OTP", "12345"],
       ["too long OTP", "1234567"],
-      ["SQL injection-like input", "1; DROP TABLE users;"],
-      ["XSS-like input", "<script>alert(1)</script>"],
     ];
 
     for (const [name, otp] of invalidOtps) {
@@ -156,32 +173,15 @@ describe("auth validation", () => {
         const result = validateVerifyEmailInput(validVerifyEmailPayload({ otp }));
 
         assert.equal(result.isValid, false);
-        assert.ok(fieldMessages(result, "otp").length > 0);
+        assert.ok(fieldMessages(result, "otp").includes("OTP must be exactly 6 numeric digits"));
       });
     }
 
-    const currentlyAcceptedOtps = [
-      ["non-numeric OTP", "abcdef"],
-      ["OTP with internal space", "12 456"],
-      ["OTP with special characters", "!@#$%^"],
-      ["six-character SQL-looking input", "admin'"],
-      ["six-character prototype-looking input", "__prot"],
-    ];
-
-    for (const [name, otp] of currentlyAcceptedOtps) {
-      it(`accepts ${name} because current OTP validation only enforces exact length`, () => {
-        const result = validateVerifyEmailInput(validVerifyEmailPayload({ otp }));
-
-        assert.equal(result.isValid, true);
-        assert.equal(result.data.otp, otp);
-      });
-    }
-
-    it("applies the same exact-length OTP rule during password reset", () => {
+    it("applies the same fixed-length numeric OTP rule during password reset", () => {
       const result = validateResetPasswordInput(validResetPasswordPayload({ otp: "1234567" }));
 
       assert.equal(result.isValid, false);
-      assert.ok(fieldMessages(result, "otp").length > 0);
+      assert.ok(fieldMessages(result, "otp").includes("OTP must be exactly 6 numeric digits"));
     });
   });
 
@@ -210,14 +210,19 @@ describe("auth validation", () => {
       });
     }
 
-    for (const payload of suspiciousPayloads) {
-      it(`safely treats suspicious password payload as inert string when it satisfies current length rules: ${payload}`, () => {
+    const weakSuspiciousPasswordPayloads = suspiciousPayloads.filter(
+      (payload) => payload !== "1; DROP TABLE users;",
+    );
+
+    for (const payload of weakSuspiciousPasswordPayloads) {
+      it(`rejects suspicious password payloads that do not satisfy strong password rules: ${payload}`, () => {
         const result = validateLoginInput({
           email: "user@example.com",
           password: payload,
         });
 
-        assert.equal(result.isValid, payload.length >= 8);
+        assert.equal(result.isValid, false);
+        assert.ok(fieldMessages(result, "password").length > 0);
       });
     }
 
