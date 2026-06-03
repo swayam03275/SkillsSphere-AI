@@ -4,6 +4,55 @@ import { useNavigate } from "react-router-dom";
 import { Info, CheckCircle, AlertTriangle, XCircle, Briefcase, Video, FileText, Trash2 } from "lucide-react";
 import { markAsRead, deleteNotificationById } from "../../features/notifications/notificationsSlice";
 
+const decodeActionUrl = (value) => {
+  let decoded = value;
+
+  for (let i = 0; i < 2; i += 1) {
+    try {
+      const nextDecoded = decodeURIComponent(decoded);
+      if (nextDecoded === decoded) break;
+      decoded = nextDecoded;
+    } catch {
+      return null;
+    }
+  }
+
+  return decoded;
+};
+
+export const isSafeNotificationActionUrl = (value) => {
+  if (typeof value !== "string" || value.length === 0 || value !== value.trim()) {
+    return false;
+  }
+
+  if (/[\s\\\u0000-\u001F\u007F]/.test(value)) {
+    return false;
+  }
+
+  const decoded = decodeActionUrl(value);
+  if (!decoded || decoded.length === 0 || decoded !== decoded.trim()) {
+    return false;
+  }
+
+  if (/[\s\\\u0000-\u001F\u007F]/.test(decoded)) {
+    return false;
+  }
+
+  if (/^[A-Za-z][A-Za-z0-9+.-]*:/.test(decoded)) {
+    return false;
+  }
+
+  return decoded.startsWith("/") && !decoded.startsWith("//");
+};
+
+const normalizeNotificationActionUrl = (value) => {
+  if (!isSafeNotificationActionUrl(value)) {
+    return null;
+  }
+
+  return decodeActionUrl(value);
+};
+
 const formatTimestamp = (dateString) => {
   if (!dateString) return "";
   const now = new Date();
@@ -83,6 +132,13 @@ const NotificationItem = ({ notification, onCloseDropdown }) => {
   const { _id, title, message, type, isRead, createdAt, metadata } = notification;
 
   const config = getNotificationConfig(type);
+  const safeActionUrl = normalizeNotificationActionUrl(metadata?.actionUrl);
+
+  const handleActionNavigation = () => {
+    if (!safeActionUrl) return;
+    onCloseDropdown();
+    navigate(safeActionUrl);
+  };
 
   const handleItemClick = (e) => {
     // If clicking a link/action or the delete button, prevent marking read from interrupting
@@ -93,13 +149,8 @@ const NotificationItem = ({ notification, onCloseDropdown }) => {
     }
 
     // Optionally handle navigation if actionUrl is present
-    if (metadata?.actionUrl) {
-      onCloseDropdown();
-      if (metadata.actionUrl.startsWith("/")) {
-        navigate(metadata.actionUrl);
-      } else {
-        window.location.href = metadata.actionUrl;
-      }
+    if (safeActionUrl) {
+      handleActionNavigation();
     }
   };
 
@@ -139,18 +190,13 @@ const NotificationItem = ({ notification, onCloseDropdown }) => {
         </p>
 
         {/* Action Button/Link if actionUrl exists */}
-        {metadata?.actionUrl && (
+        {safeActionUrl && (
           <div className="mt-2.5">
             <span
               className="action-btn inline-flex items-center text-[11px] font-bold text-[var(--primary)] hover:underline"
               onClick={(e) => {
                 e.stopPropagation();
-                onCloseDropdown();
-                if (metadata.actionUrl.startsWith("/")) {
-                  navigate(metadata.actionUrl);
-                } else {
-                  window.location.href = metadata.actionUrl;
-                }
+                handleActionNavigation();
               }}
             >
               View Details &rarr;
