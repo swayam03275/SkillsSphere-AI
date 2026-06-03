@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OpenTelemetry Tail-Based Sampling Matrix",
+  "description": "Defines the heuristic engine for retaining critical diagnostic telemetry based on service latency, error status, and customer impact tiers.",
+  "version": "1.0.0",
+  "sampling_pipeline": {
+    "evaluation_window_seconds": 30,
+    "max_buffer_size_mb": 512,
+    "strategies": [
+      {
+        "name": "error_filter",
+        "type": "status_code_filter",
+        "match": { "status_code": ">=500" },
+        "action": "keep_all"
+      },
+      {
+        "name": "latency_outlier_filter",
+        "type": "duration_filter",
+        "match": { "duration_ms": ">500" },
+        "action": "keep_all"
+      },
+      {
+        "name": "tenant_criticality_filter",
+        "type": "attribute_match",
+        "match": { "tenant_id": "org_enterprise_alpha" },
+        "action": "keep_all"
+      },
+      {
+        "name": "probabilistic_sampler",
+        "type": "probabilistic",
+        "rate": 0.05,
+        "action": "keep_random"
+      }
+    ],
+    "telemetry": {
+      "emit_dropped_trace_count": true,
+      "emit_sampled_trace_count": true,
+      "exporter_timeout_ms": 2000
+    }
+  }
+}
