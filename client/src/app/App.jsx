@@ -11,7 +11,7 @@ const BlogPage = lazy(() => import("../modules/landing/pages/BlogPage"));
 const CareersPage = lazy(() => import("../modules/landing/pages/CareersPage"));
 const ApiStatusPage = lazy(() => import("../modules/landing/pages/ApiStatusPage"));
 const DashboardPage = lazy(() => import("../modules/dashboard/DashboardPage"));
-const CoverLetterHistoryPage = lazy(() => import("../modules/dashboard/pages/CoverLetterHistoryPage"));
+const ResumeAnalyzerHistoryPage = lazy(() => import("../modules/dashboard/pages/ResumeAnalyzerHistoryPage"));
 const ResumeAnalyzerPage = lazy(() => import("../modules/resume-analyzer/pages/ResumeAnalyzerPage"));
 const JobMatcherPage = lazy(() => import("../modules/job-matcher/pages/JobMatcherPage"));
 const ComponentDemo = lazy(() => import("../modules/auth/components/ComponentDemo"));
@@ -118,13 +118,13 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/cover-letters"
+        <Route 
+          path="/resume-history" 
           element={
             <ProtectedRoute requiredRole="student">
-              <CoverLetterHistoryPage />
+              <ResumeAnalyzerHistoryPage />
             </ProtectedRoute>
-          }
+          } 
         />
         <Route
           path="/dashboard"

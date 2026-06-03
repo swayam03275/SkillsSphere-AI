@@ -125,13 +125,20 @@ const TutorInterviewConsole = () => {
   if (!session || !session.userId || !session.answers) return <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-900"><Navbar /><div className="flex-1 pt-24 text-center">Session data is incomplete or missing.</div><Footer /></div>;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
+    <div className="min-h-screen bg-gray-50/50 dark:bg-[#09090b] text-gray-900 dark:text-text-main font-sans pt-20 flex flex-col overflow-hidden relative">
       <Navbar />
-      <div className="flex-1 px-6 pb-6 pt-24 max-w-5xl mx-auto w-full space-y-6">
+
+      {/* Background glowing elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-blue-400/20 dark:bg-blue-900/20 blur-[120px] mix-blend-normal" />
+        <div className="absolute top-[20%] -right-[10%] w-[40%] h-[40%] rounded-full bg-purple-400/20 dark:bg-purple-900/20 blur-[120px] mix-blend-normal" />
+      </div>
+
+      <main className="container mx-auto px-4 max-w-6xl z-10 flex-grow py-8 relative space-y-6">
         
         <div className="flex items-center justify-between">
           <div>
-            <Link to="/tutor/interviews" className="flex items-center gap-2 text-indigo-600 mb-2 hover:text-indigo-500 transition-colors">
+            <Link to="/tutor/interviews" className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/50 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 text-sm font-medium text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white transition-all backdrop-blur-md shadow-sm mb-4">
               <ArrowLeft size={16} /> Back to Interviews
             </Link>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Interview Player Console</h1>
@@ -148,7 +155,7 @@ const TutorInterviewConsole = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-1 space-y-6">
-            <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+            <div className="bg-white dark:bg-slate-900/50 p-6 rounded-3xl border border-gray-200 dark:border-white/10 shadow-sm">
               <h2 className="text-lg font-bold mb-4 border-b pb-2 dark:border-slate-700">Overall Grading</h2>
               
               <div className="mb-4">
@@ -189,7 +196,7 @@ const TutorInterviewConsole = () => {
             <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200">Answer Transcripts & Scoring</h2>
             
             {session.answers.map((ans, idx) => (
-              <div key={idx} className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+              <div key={idx} className="bg-white dark:bg-slate-900/50 p-6 rounded-3xl border border-gray-200 dark:border-white/10 shadow-sm">
                 <div className="flex items-start justify-between mb-4">
                   <h3 className="font-bold text-lg">Q{idx + 1}: {ans.questionText}</h3>
                   {ans.audioPath && (
@@ -260,7 +267,7 @@ const TutorInterviewConsole = () => {
             ))}
           </div>
         </div>
-      </div>
+      </main>
           <Footer />
     </div>
   );

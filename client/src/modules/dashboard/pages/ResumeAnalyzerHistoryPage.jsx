@@ -20,8 +20,8 @@ import { useToast } from "../../../shared/components/toast/ToastProvider";
 
 import logger from "../../../utils/logger";
 
-const CoverLetterHistoryPage = () => {
-  useDocumentTitle("Cover Letter History");
+const ResumeAnalyzerHistoryPage = () => {
+  useDocumentTitle("Resume Analyzer History");
   const toast = useToast();
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -80,24 +80,30 @@ const CoverLetterHistoryPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#020817] text-gray-900 dark:text-slate-100 font-sans pt-24">
+    <div className="min-h-screen bg-gray-50/50 dark:bg-[#09090b] text-gray-900 dark:text-text-main font-sans pt-20 flex flex-col overflow-hidden relative">
       <Navbar />
 
-      <div className="max-w-5xl mx-auto pt-8 pb-12 px-4 sm:px-6 lg:px-8">
+      {/* Background glowing elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-blue-400/20 dark:bg-blue-900/20 blur-[120px] mix-blend-normal" />
+        <div className="absolute top-[20%] -right-[10%] w-[40%] h-[40%] rounded-full bg-purple-400/20 dark:bg-purple-900/20 blur-[120px] mix-blend-normal" />
+      </div>
+
+      <main className="container mx-auto px-4 max-w-5xl z-10 flex-grow py-8 relative">
         {/* Header */}
         <div className="mb-8 animate-in slide-in-from-bottom-4 duration-500">
           <Link 
             to="/dashboard" 
-            className="inline-flex items-center gap-2 text-sm text-blue-500 hover:text-blue-400 mb-4 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/50 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 text-sm font-medium text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white transition-all backdrop-blur-md shadow-sm mb-8"
           >
             <ArrowLeft size={16} />
             Back to Dashboard
           </Link>
-          <h1 className="text-3xl sm:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-500 dark:from-white dark:to-slate-400">
-            Cover Letter History
+          <h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight">
+            Resume Analyzer <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-teal-400 bg-clip-text text-transparent">History</span>
           </h1>
-          <p className="mt-2 text-gray-500 dark:text-slate-400">
-            View, manage, and reuse your previously generated AI cover letters.
+          <p className="mt-2 text-gray-600 dark:text-slate-400 text-lg">
+            View, manage, and reuse your previously generated AI cover letters and resume analyses.
           </p>
         </div>
 
@@ -167,7 +173,7 @@ const CoverLetterHistoryPage = () => {
             ))}
           </div>
         )}
-      </div>
+      </main>
 
       <CoverLetterModal 
         isOpen={isModalOpen}
@@ -175,9 +181,9 @@ const CoverLetterHistoryPage = () => {
         initialText={selectedCl ? selectedCl.generatedText : ""}
         onRegenerate={handleRegenerate}
       />
-          <Footer />
+      <Footer />
     </div>
   );
 };
 
-export default CoverLetterHistoryPage;
+export default ResumeAnalyzerHistoryPage;
