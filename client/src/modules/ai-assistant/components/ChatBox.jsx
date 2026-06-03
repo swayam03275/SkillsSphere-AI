@@ -2,7 +2,10 @@ import { useState, useRef, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { X, Send, Sparkles } from "lucide-react";
 import MessageBubble from "./MessageBubble";
-import { API_URL } from "../../../config/env";
+import { apiRequest } from "../../../services/apiClient";
+
+const TOKEN_KEY = "skillssphere.auth.token";
+const getToken = () => localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
 
 import logger from "../../../utils/logger";
 
@@ -28,19 +31,11 @@ const ChatBox = ({ onClose }) => {
 
   const sendMessageToBackend = async (history) => {
     try {
-      const headers = { "Content-Type": "application/json" };
-      if (token) headers["Authorization"] = `Bearer ${token}`;
-
-      const res = await fetch(`${API_URL}/api/chat`, {
+      const data = await apiRequest("/api/chat", {
         method: "POST",
-        headers,
-        body: JSON.stringify({ messages: history }),
+        body: { message },
+        token: getToken(),
       });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || data.message || "Failed to generate response");
-      }
       return data.reply;
     } catch (error) {
       logger.error(error);
