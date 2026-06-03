@@ -5,8 +5,10 @@ import {
   getUnreadCount,
   createNotification,
   getNotification,
+  isSafeNotificationActionUrl,
   markAsRead,
   markAllAsRead,
+  sanitizeNotificationMetadata,
   deleteNotificationById,
   deleteAllNotificationsForUser,
 } from "../controller.js";
@@ -54,6 +56,38 @@ describe("Notification Controller", () => {
         res.json.mock.calls[0].arguments[0].data,
         mockNotifications,
       );
+    });
+
+    it("sanitizes unsafe actionUrl metadata before returning notifications", async () => {
+      const mockNotifications = [
+        {
+          _id: "n1",
+          title: "Unsafe",
+          metadata: {
+            actionUrl: "https://evil.com",
+            relatedModel: "JobPosting",
+          },
+        },
+        {
+          _id: "n2",
+          title: "Safe",
+          metadata: {
+            actionUrl: "/dashboard",
+          },
+        },
+      ];
+      mock.method(Notification, "find", () => ({
+        sort: () => ({ skip: () => ({ limit: () => ({ populate: () => mockNotifications }) }) }),
+      }));
+      mock.method(Notification, "countDocuments", () => 2);
+
+      getNotifications(req, res, next);
+      await flush();
+
+      const data = res.json.mock.calls[0].arguments[0].data;
+      assert.equal("actionUrl" in data[0].metadata, false);
+      assert.equal(data[0].metadata.relatedModel, "JobPosting");
+      assert.equal(data[1].metadata.actionUrl, "/dashboard");
     });
   });
 
@@ -169,6 +203,121 @@ describe("Notification Controller", () => {
       assert.ok(next.mock.calls[0].arguments[0] instanceof AppError);
       assert.equal(next.mock.calls[0].arguments[0].statusCode, 400);
       assert.ok(next.mock.calls[0].arguments[0].errors.type);
+    });
+
+    it("preserves safe internal actionUrl metadata when creating notifications", async () => {
+      req.body = {
+        ...validBody(),
+        userId: req.user._id,
+        metadata: {
+          actionUrl: "/jobs/123",
+          relatedModel: "JobPosting",
+        },
+      };
+      let persistedData;
+
+      mock.method(Notification, "create", (data) => {
+        persistedData = data;
+        return {
+          ...data,
+          _id: "n1",
+          populate: () => ({ ...data, _id: "n1" }),
+        };
+      });
+
+      createNotification(req, res, next);
+      await flush();
+
+      assert.equal(persistedData.metadata.actionUrl, "/jobs/123");
+      assert.equal(
+        res.json.mock.calls[0].arguments[0].data.metadata.actionUrl,
+        "/jobs/123",
+      );
+    });
+
+    it("sanitizes malicious external actionUrl metadata before persistence", async () => {
+      req.body = {
+        ...validBody(),
+        userId: req.user._id,
+        metadata: {
+          actionUrl: "https://evil.com",
+          relatedModel: "JobPosting",
+        },
+      };
+      let persistedData;
+
+      mock.method(Notification, "create", (data) => {
+        persistedData = data;
+        return {
+          ...data,
+          _id: "n1",
+          populate: () => ({ ...data, _id: "n1" }),
+        };
+      });
+
+      createNotification(req, res, next);
+      await flush();
+
+      assert.equal("actionUrl" in persistedData.metadata, false);
+      assert.equal(
+        "actionUrl" in res.json.mock.calls[0].arguments[0].data.metadata,
+        false,
+      );
+      assert.equal(persistedData.metadata.relatedModel, "JobPosting");
+    });
+
+    it("sanitizes encoded malicious actionUrl metadata before persistence", async () => {
+      req.body = {
+        ...validBody(),
+        userId: req.user._id,
+        metadata: {
+          actionUrl: "%2F%2Fevil.com",
+          relatedId: null,
+        },
+      };
+      let persistedData;
+
+      mock.method(Notification, "create", (data) => {
+        persistedData = data;
+        return {
+          ...data,
+          _id: "n1",
+          populate: () => ({ ...data, _id: "n1" }),
+        };
+      });
+
+      createNotification(req, res, next);
+      await flush();
+
+      assert.equal("actionUrl" in persistedData.metadata, false);
+      assert.equal(persistedData.metadata.relatedId, null);
+    });
+  });
+
+  describe("notification actionUrl safety", () => {
+    it("accepts safe internal notification paths", () => {
+      for (const actionUrl of ["/dashboard", "/profile", "/jobs/123"]) {
+        assert.equal(isSafeNotificationActionUrl(actionUrl), true);
+        assert.equal(sanitizeNotificationMetadata({ actionUrl }).actionUrl, actionUrl);
+      }
+    });
+
+    it("rejects unsafe notification action URLs", () => {
+      const unsafeActionUrls = [
+        "https://evil.com",
+        "http://evil.com",
+        "//evil.com",
+        "javascript:alert(1)",
+        "%2F%2Fevil.com",
+        "https%3A%2F%2Fevil.com",
+        "%",
+        "/\\evil.com",
+      ];
+
+      for (const actionUrl of unsafeActionUrls) {
+        assert.equal(isSafeNotificationActionUrl(actionUrl), false);
+        assert.equal("actionUrl" in sanitizeNotificationMetadata({ actionUrl }), false);
+      }
     });
   });
 
