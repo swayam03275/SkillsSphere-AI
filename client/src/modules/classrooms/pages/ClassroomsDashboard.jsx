@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { MonitorPlay, ShieldAlert, ArrowLeft } from "lucide-react";
+import { MonitorPlay, ShieldAlert, ArrowLeft, Users, Monitor } from "lucide-react";
 import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
 
 // Hooks
@@ -27,31 +27,45 @@ export default function ClassroomsDashboard() {
   return (
     <div className="min-h-screen bg-white dark:bg-[#020617] text-gray-900 dark:text-white flex flex-col">
       <Navbar />
-      <div className="flex-1 max-w-6xl mx-auto w-full pt-24 pb-16 px-6">
+      <div className="flex-1 max-w-6xl mx-auto w-full pt-24 pb-16 px-6 relative">
         
+        {/* Floating Icons Background */}
+        <div className="absolute top-32 left-[0%] hidden lg:flex items-center justify-center w-16 h-16 bg-white dark:bg-surface rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.08)] dark:shadow-white/5 opacity-80 pointer-events-none z-0 hover:opacity-100 transition-opacity">
+          <Users size={28} className="text-purple-500" />
+        </div>
+        <div className="absolute top-44 right-[0%] hidden lg:flex items-center justify-center w-16 h-16 bg-white dark:bg-surface rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.08)] dark:shadow-white/5 opacity-80 pointer-events-none z-0 hover:opacity-100 transition-opacity">
+          <Monitor size={28} className="text-emerald-500" />
+        </div>
+
         {/* Header section */}
-        <div className="text-center mb-12">
+        <div className="w-full mx-auto relative z-10">
           <div className="mb-6">
             <Link 
               to="/dashboard" 
-              className="inline-flex items-center gap-2 text-sm text-blue-500 hover:text-blue-400 transition-colors"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
             >
               <ArrowLeft size={16} />
               Back to Dashboard
             </Link>
           </div>
-          <div className="inline-flex items-center justify-center p-3 bg-indigo-500/10 text-indigo-400 rounded-2xl mb-6 border border-indigo-500/20 shadow-[0_0_20px_rgba(99,102,241,0.15)] animate-[pulse_3s_infinite]">
-            <MonitorPlay size={32} />
+          
+          <div className="mb-12 text-center max-w-3xl mx-auto relative pt-4">
+            <div className="relative flex flex-col items-center">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-bold tracking-wider uppercase mb-6 border border-blue-100 dark:border-blue-800/50">
+                <MonitorPlay size={14} /> COLLABORATIVE LEARNING
+              </div>
+            </div>
+
+            <h1 className="text-5xl md:text-6xl font-black mb-6 tracking-tight leading-tight">
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-500 to-emerald-400">Live</span> Classrooms
+            </h1>
+            <p className="text-lg text-gray-600 dark:text-slate-400 font-medium">
+              {isTutor 
+                ? "Host live interactive lessons, chat with peers, and share your screen in real-time."
+                : "Enter unique session IDs provided by your tutor to join active learning rooms."
+              }
+            </p>
           </div>
-          <h1 className="text-4xl md:text-5xl font-extrabold mb-4 bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-            Live Interactive Classrooms
-          </h1>
-          <p className="text-gray-600 dark:text-slate-400 text-lg max-w-2xl mx-auto">
-            {isTutor 
-              ? "Host live interactive lessons, chat with peers, and share your screen in real-time."
-              : "Enter unique session IDs provided by your tutor to join active learning rooms."
-            }
-          </p>
         </div>
 
         {dashboard.error && (
@@ -61,7 +75,7 @@ export default function ClassroomsDashboard() {
           </div>
         )}
 
-        <div className="grid lg:grid-cols-5 gap-8 items-start">
+        <div className="grid lg:grid-cols-5 gap-8 items-stretch">
           
           {/* Form Side - Span 2 */}
           <div className="lg:col-span-2 space-y-6">

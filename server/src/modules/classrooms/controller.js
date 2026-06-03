@@ -1,4 +1,5 @@
 import asyncHandler from "../../utils/asyncHandler.js";
+import { getIO } from "../../utils/socketIO.js";
 import * as classroomService from "./service.js";
 
 /**
@@ -58,6 +59,12 @@ export const getClassroomSessionByRoomId = asyncHandler(async (req, res, next) =
 export const endClassroomSession = asyncHandler(async (req, res, next) => {
   const { roomId } = req.params;
   const session = await classroomService.endSession(roomId, req.user._id);
+
+  // Broadcast to all clients in the room that the session has ended
+  const io = getIO();
+  if (io) {
+    io.to(roomId).emit("session-ended", { roomId });
+  }
 
   res.status(200).json({
     success: true,

@@ -9,6 +9,7 @@ import registerWhiteboardHandler from "./socketHandlers/whiteboardHandler.js";
 import registerCodeEditorHandler from "./socketHandlers/codeEditorHandler.js";
 
 const roomStates = new Map();
+const teardownTimeouts = new Map();
 
 export function getOrCreateRoomState(roomId) {
   if (!roomStates.has(roomId)) {
@@ -74,6 +75,13 @@ export function initClassroomSockets(io) {
             role: currentUser.role,
           },
         };
+
+        // Clear any pending teardown timeouts since someone joined
+        if (teardownTimeouts.has(roomId)) {
+          clearTimeout(teardownTimeouts.get(roomId));
+          teardownTimeouts.delete(roomId);
+          logger.log(`Teardown aborted for room ${roomId}, a user joined.`);
+        }
 
         logger.log(
           `User ${socket.data.user.name} (${socket.id}) joining room ${roomId}`,
@@ -167,12 +175,39 @@ export function initClassroomSockets(io) {
 
             // Automatically teardown/end the classroom session in database if empty
             if (session.participants.length === 0) {
-              logger.log(`Classroom ${roomId} empty. Automatically ending session.`);
-              session.status = "ended";
-              session.endedAt = new Date();
-
-              clearRoomState(roomId);
-              clearRoomLock(roomId);
+              logger.log(`Classroom ${roomId} empty. Initiating 30-second teardown countdown...`);
+              
+              if (!teardownTimeouts.has(roomId)) {
+                const timeoutId = setTimeout(async () => {
+                  try {
+                    const tearLock = getRoomLock(roomId);
+                    const tearRelease = await tearLock.acquire();
+                    
+                    try {
+                      const finalSessionCheck = await ClassroomSession.findOne({
+                        roomId,
+                        status: "active",
+                      });
+                      
+                      if (finalSessionCheck && finalSessionCheck.participants.length === 0) {
+                        logger.log(`Classroom ${roomId} teardown timer completed. Automatically ending session.`);
+                        finalSessionCheck.status = "ended";
+                        finalSessionCheck.endedAt = new Date();
+                        await finalSessionCheck.save();
+                        clearRoomState(roomId);
+                        clearRoomLock(roomId);
+                      }
+                    } finally {
+                      tearRelease();
+                      teardownTimeouts.delete(roomId);
+                    }
+                  } catch (err) {
+                    logger.error("Error during teardown execution:", err);
+                  }
+                }, 30000); // 30 second grace period
+                
+                teardownTimeouts.set(roomId, timeoutId);
+              }
             }
 
             await session.save();
