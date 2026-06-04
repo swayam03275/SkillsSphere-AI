@@ -147,14 +147,44 @@ app.use((req, res, next) => {
 // Apply global rate limiting to all /api routes
 app.use("/api", globalLimiter);
 
-await connectDB();
-await connectRedis();
+// Safe startup: MongoDB/Redis may be temporarily unavailable.
+// Keep server running in degraded mode instead of crashing the process.
+let didConnectRedis = false;
+try {
+  await connectDB();
+} catch (err) {
+  logger.error(
+    "MongoDB startup error (degraded mode):",
+    err instanceof Error ? err.message : err,
+  );
+}
+
+try {
+  await connectRedis();
+  didConnectRedis = true;
+} catch (err) {
+  logger.error(
+    "Redis startup error (degraded mode):",
+    err instanceof Error ? err.message : err,
+  );
+}
+
+// Expose a simple readiness signal for /health without relying on redisClient internals.
+globalThis.__REDIS_READY__ = didConnectRedis;
+
 logEvaluatorConfig();
+
+
 
 // Initialize Gemini AI client logic moved to src/modules/ai-assistant/controller.js
 
 app.get("/health", (req, res) => {
-  res.json({ status: "OK", db: isConnected ? "connected" : "disconnected" });
+  res.json({
+    status: "OK",
+    db: isConnected ? "connected" : "disconnected",
+    redis: globalThis.__REDIS_READY__ ? "connected" : "disconnected",
+
+  });
 });
 
 // app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
