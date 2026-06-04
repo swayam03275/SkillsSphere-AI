@@ -37,14 +37,19 @@ export const DEFAULT_OAUTH_REDIRECT_PATH = "/auth/callback";
 const decodeRedirectPath = (value) => {
   let decoded = value;
 
-  for (let i = 0; i < 2; i += 1) {
+  // Decode repeatedly until the string stabilises (i.e. no more encoded
+  // characters remain). A fixed-iteration loop (e.g. 2 rounds) would leave
+  // triple-encoded payloads like %25252e%25252e%25252f partially decoded,
+  // allowing them to bypass the safety checks below.
+  while (true) {
+    let next;
     try {
-      const nextDecoded = decodeURIComponent(decoded);
-      if (nextDecoded === decoded) break;
-      decoded = nextDecoded;
+      next = decodeURIComponent(decoded);
     } catch {
       return null;
     }
+    if (next === decoded) break;
+    decoded = next;
   }
 
   return decoded;
