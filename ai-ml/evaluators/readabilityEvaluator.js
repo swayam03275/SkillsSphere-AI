@@ -25,6 +25,23 @@ export default function readabilityEvaluator({ resumeText = "" }) {
     return "bullet";
   }
 
+  function extractBulletContext(sentence, resumeText) {
+    const idx = resumeText.indexOf(sentence);
+    if (idx === -1) return null;
+    const before = resumeText.slice(Math.max(0, idx - 100), idx);
+    const sectionMatch = before.match(
+      /(experience|education|projects|skills|summary|achievements|certifications)[^\n]*/i
+    );
+    return sectionMatch ? sectionMatch[0].trim() : null;
+  }
+
+  function scoreWeakBulletSeverity(cleanedSentence) {
+    const lower = cleanedSentence.toLowerCase();
+    if (/\bresponsible for\b|\bworked on\b|\btasks included\b/i.test(lower)) return "high";
+    if (/\bhelped\b|\bassisted\b|\bsupported\b|\bparticipated\b/i.test(lower)) return "medium";
+    return "low";
+  }
+
   const sentences = resumeText
     .split(/[.!?\n]/)
     .map(s => s.trim())
@@ -55,10 +72,14 @@ export default function readabilityEvaluator({ resumeText = "" }) {
     } else {
       const category = getSentenceCategory(cleanedSentence);
       if (category === "bullet") {
+        const severity = scoreWeakBulletSeverity(cleanedSentence);
+        const section = extractBulletContext(sentence, resumeText);
         weakBullets.push({
           original: sentence,
           cleaned: cleanedSentence,
           reason: "No action verb in first 4 words",
+          severity,
+          section: section ?? "unknown",
         });
       }
     }
@@ -76,21 +97,30 @@ export default function readabilityEvaluator({ resumeText = "" }) {
 
   const suggestions = [];
 
+  const highSeverity = weakBullets.filter(b => b.severity === "high");
+  const mediumSeverity = weakBullets.filter(b => b.severity === "medium");
+
   if (passiveVoiceCount > 2) {
     suggestions.push(
       `${passiveVoiceCount} passive voice instances detected. Rewrite with active verbs (e.g., 'Led', 'Built', 'Drove').`
     );
   }
 
-  if (verbDensity < MIN_VERB_DENSITY) {
+  if (highSeverity.length > 0) {
     suggestions.push(
-      `Verb density is ${Math.round(verbDensity * 100)}% — below 50%. Strengthen bullets using: ${relevantVerbs.slice(0, 3).join(", ")}.`
+      `${highSeverity.length} high-severity weak bullets detected (e.g., 'Responsible for...').`
     );
   }
 
-  if (weakBullets.length > 3) {
+  if (mediumSeverity.length > 0) {
     suggestions.push(
-      `${weakBullets.length} bullets lack action verbs. Example: "${weakBullets[0]?.cleaned?.slice(0, 40)}..."`
+      `${mediumSeverity.length} medium-severity weak bullets (e.g., 'Helped...', 'Assisted...'). Replace with ownership verbs.`
+    );
+  }
+
+  if (verbDensity < MIN_VERB_DENSITY) {
+    suggestions.push(
+      `Verb density is ${Math.round(verbDensity * 100)}% — below 50%. Strengthen bullets using: ${relevantVerbs.slice(0, 3).join(", ")}.`
     );
   }
 
@@ -115,8 +145,16 @@ export default function readabilityEvaluator({ resumeText = "" }) {
       powerVerbCount,
       passiveVoiceCount,
       verbDensity: parseFloat(verbDensity.toFixed(2)),
-      weakBullets: weakBullets.slice(0, 5),
+      weakBullets: weakBullets.slice(0, 5).map(b => ({
+        original: b.original,
+        cleaned: b.cleaned,
+        severity: b.severity,
+        section: b.section,
+        reason: b.reason,
+      })),
       weakBulletCount: weakBullets.length,
+      highSeverityCount: highSeverity.length,
+      mediumSeverityCount: mediumSeverity.length,
       suggestions,
       relevantVerbs,
     },
