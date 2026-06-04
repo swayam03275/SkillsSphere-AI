@@ -35,6 +35,7 @@ export const createSession = async (hostId, { title, subject, maxParticipants })
 export const getTutorSessions = async (hostId) => {
   return await ClassroomSession.find({ host: hostId })
     .sort({ createdAt: -1 })
+    .limit(50)
     .lean();
 };
 
@@ -102,6 +103,7 @@ export const getActiveSessions = async () => {
   return await ClassroomSession.find({ status: "active" })
     .populate("host", "name profilePic role")
     .sort({ createdAt: -1 })
+    .limit(20)
     .lean();
 };
 
