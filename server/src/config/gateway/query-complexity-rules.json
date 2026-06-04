@@ -1,0 +1,252 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Global Enterprise API Gateway: Semantic Security, AST Complexity & Edge Caching Matrix",
+  "description": "Defines cryptographic-grade AST parsing limits, algorithmic cost-weighting schemas, injection mitigation, and distributed edge-caching policies to neutralize Layer 7 DoS attacks.",
+  "version": "5.0.0",
+  "type": "object",
+  "global_security_constraints": {
+    "ast_parsing": {
+      "max_query_depth": 5,
+      "max_query_length_bytes": 10240,
+      "max_aliases_per_request": 10,
+      "max_directives_per_request": 5,
+      "enforce_single_operation": true,
+      "block_unnamed_operations": true,
+      "introspection_query_policy": {
+        "enabled_in_production": false,
+        "allow_list_ips": [
+          "10.0.0.0/8", 
+          "127.0.0.1",
+          "192.168.1.50/32"
+        ],
+        "cost_penalty": 500
+      }
+    },
+    "batching_defenses": {
+      "allow_query_batching": false,
+      "max_batched_queries": 1,
+      "reject_on_batch_detection": true
+    },
+    "advanced_threat_protection": {
+      "block_sql_injection_patterns": true,
+      "block_xss_mutation_patterns": true,
+      "regex_filters": {
+        "sqli": "(?i)(UNION\\s+ALL\\s+SELECT|DROP\\s+TABLE|OR\\s+1=1|EXEC(\\s|\\+)+(s|x)p_)",
+        "xss": "(?i)(<script>|javascript:|onerror=|onload=|<iframe\\s+src=)"
+      },
+      "max_variables_per_request": 20,
+      "max_variable_payload_size_bytes": 4096
+    }
+  },
+  "algorithmic_cost_weighting": {
+    "operation_type_base_costs": {
+      "Query": 1,
+      "Mutation": 10,
+      "Subscription": 50
+    },
+    "default_scalars": {
+      "String": 1,
+      "Int": 1,
+      "Float": 1,
+      "Boolean": 1,
+      "ID": 1,
+      "DateTime": 2,
+      "JSON": 5,
+      "EncryptedBlob": 15
+    },
+    "domain_specific_weights": {
+      "auth_domain": {
+        "User": 5,
+        "Session": 2,
+        "OAuthProfile": 10,
+        "RoleAssignments": 5,
+        "MFAToken": 15
+      },
+      "candidate_domain": {
+        "CandidateProfile": 10,
+        "ResumeDocument": 15,
+        "SkillMatrix": 20,
+        "BackgroundCheck": 50,
+        "PortfolioArtifacts": 25
+      },
+      "interview_domain": {
+        "ActiveInterview": 15,
+        "AIModelEvaluation": 50,
+        "LiveTranscriptSegment": 5,
+        "CodingChallengeState": 25,
+        "AudioVideoBuffer": 100,
+        "AntiCheatSnapshot": 75
+      },
+      "billing_domain": {
+        "Invoice": 20,
+        "SubscriptionPlan": 10,
+        "PaymentMethod": 30,
+        "LedgerEntry": 5
+      },
+      "analytics_domain": {
+        "SystemDashboard": 200,
+        "AggregatedMetrics": 150,
+        "TenantUsageReport": 300,
+        "MachineLearningInsights": 500
+      }
+    },
+    "dynamic_multipliers": {
+      "pagination_arguments": {
+        "first": { "multiplier": 1.2, "max_allowed_value": 100 },
+        "last": { "multiplier": 1.2, "max_allowed_value": 100 },
+        "limit": { "multiplier": 1.0, "max_allowed_value": 50 },
+        "offset": { "multiplier": 1.1, "max_allowed_value": 10000 }
+      },
+      "search_and_filter": {
+        "exact_match": 2,
+        "regex_search": 10,
+        "fuzzy_match": 15,
+        "full_text_search": 25,
+        "deep_relational_filter": 50,
+        "vector_embedding_search": 150
+      }
+    }
+  },
+  "budget_and_execution_limits": {
+    "unauthenticated_tier": {
+      "max_complexity_points_per_request": 50,
+      "max_depth": 2,
+      "timeout_ms": 1000,
+      "token_bucket_refill_rate_per_sec": 10,
+      "token_bucket_capacity": 100
+    },
+    "standard_tenant_tier": {
+      "max_complexity_points_per_request": 500,
+      "max_depth": 5,
+      "timeout_ms": 3000,
+      "token_bucket_refill_rate_per_sec": 50,
+      "token_bucket_capacity": 1000
+    },
+    "enterprise_tenant_tier": {
+      "max_complexity_points_per_request": 2000,
+      "max_depth": 7,
+      "timeout_ms": 8000,
+      "token_bucket_refill_rate_per_sec": 200,
+      "token_bucket_capacity": 5000
+    },
+    "internal_microservice_tier": {
+      "max_complexity_points_per_request": 10000,
+      "max_depth": 10,
+      "timeout_ms": 30000,
+      "token_bucket_refill_rate_per_sec": 1000,
+      "token_bucket_capacity": 50000
+    }
+  },
+  "tenant_quota_management": {
+    "enforce_monthly_hard_caps": true,
+    "quota_calculation_strategy": "complexity_points_consumed",
+    "notification_thresholds_percent": [50, 75, 90, 95, 99],
+    "action_on_quota_exhaustion": "downgrade_to_read_only_with_429"
+  },
+  "semantic_edge_caching": {
+    "enabled": true,
+    "strategy": "ast_signature_hashing",
+    "hash_algorithm": "sha256",
+    "normalization_rules": {
+      "strip_whitespace": true,
+      "sort_arguments": true,
+      "sort_fields": true
+    },
+    "ttl_profiles": {
+      "static_metadata": 86400,
+      "aggregated_reports": 3600,
+      "user_profiles": 300,
+      "realtime_feeds": 0
+    },
+    "bypass_headers": [
+      "x-cache-bypass",
+      "authorization"
+    ]
+  },
+  "field_level_authorization_matrix": {
+    "enabled": true,
+    "strict_mode": true,
+    "roles": {
+      "anonymous": {
+        "allowed_root_queries": ["publicJobs", "systemStatus"],
+        "denied_fields": ["email", "phoneNumber", "billingAddress"]
+      },
+      "candidate": {
+        "allowed_root_queries": ["myProfile", "myInterviews", "activeJobs"],
+        "denied_fields": ["interviewerNotes", "internalRating", "backgroundCheckId"]
+      },
+      "recruiter": {
+        "allowed_root_queries": ["*"],
+        "denied_fields": ["systemLogs", "tenantBillingConfig", "adminRoles"]
+      },
+      "system_admin": {
+        "allowed_root_queries": ["*"],
+        "denied_fields": []
+      }
+    }
+  },
+  "error_obfuscation_matrix": {
+    "depth_exceeded": {
+      "http_status": 400,
+      "public_error_code": "ERR_QUERY_TOO_DEEP",
+      "public_message": "The requested data structure exceeds the maximum allowed nesting depth. Please flatten your request.",
+      "include_current_depth_in_response": false
+    },
+    "complexity_exceeded": {
+      "http_status": 429,
+      "public_error_code": "ERR_QUERY_TOO_COMPLEX",
+      "public_message": "The computational cost of this query exceeds your tier limit. Please reduce the number of requested fields or pagination limits.",
+      "include_calculated_cost_in_response": true
+    },
+    "malformed_ast": {
+      "http_status": 400,
+      "public_error_code": "ERR_MALFORMED_QUERY",
+      "public_message": "The request payload could not be parsed by the AST engine.",
+      "include_syntax_error_in_response": false
+    },
+    "injection_detected": {
+      "http_status": 403,
+      "public_error_code": "ERR_MALICIOUS_PAYLOAD",
+      "public_message": "The request was rejected by the active Web Application Firewall due to forbidden character sequences.",
+      "include_matched_regex_in_response": false
+    },
+    "unauthorized_field_access": {
+      "http_status": 403,
+      "public_error_code": "ERR_FORBIDDEN_FIELD",
+      "public_message": "Your current Role-Based Access Control (RBAC) level does not permit reading one or more requested fields.",
+      "include_field_name_in_response": false
+    }
+  },
+  "telemetry_distributed_tracing": {
+    "metrics_collection": {
+      "emit_query_costs": true,
+      "log_queries_exceeding_percent_of_budget": 80,
+      "anonymize_ip_in_logs": true
+    },
+    "tracing_engine": {
+      "provider": "opentelemetry",
+      "export_format": "otlp_grpc",
+      "sampling_rate": 0.1,
+      "force_sample_on_errors": true
+    },
+    "auto_ban_mechanics": {
+      "trigger": "exceed_complexity_5_times_in_1_minute",
+      "action": "ip_block_at_cloudflare_edge",
+      "duration_seconds": 3600
+    },
+    "alerting_payloads": {
+      "datadog": {
+        "event_title": "🚨 API Gateway: High Complexity / Injection Attack Blocked",
+        "tags": ["security", "gateway", "dos_attempt", "waf"]
+      },
+      "slack_webhook": {
+        "channel": "#sec-ops-critical",
+        "mention_roles": ["@on-call-security"]
+      },
+      "kafka_event_stream": {
+        "topic": "sec.gateway.blocked_requests",
+        "partition_key": "tenant_id"
+      }
+    }
+  }
+}

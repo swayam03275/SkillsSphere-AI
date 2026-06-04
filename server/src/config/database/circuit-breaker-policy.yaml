@@ -1,0 +1,240 @@
+# =========================================================================================
+# 🛡️ Global Enterprise Database Circuit Breaker & Chaos Engineering Specification
+# Framework Ref: #1144
+# Version: 5.0.0 (Global Multi-Region Mesh Edition)
+# Core Paradigm: Resilient State Machine, Envoy Proxy Integration, and Kafka DLQ Fallbacks
+# =========================================================================================
+
+executive_summary: >
+  In global distributed systems, continuous retries against a failing database cluster do not 
+  just cause local application crashes; they trigger cascading "Thundering Herd" failures across 
+  entire microservice ecosystems. This specification defines a deterministic, multi-tier Circuit 
+  Breaker state machine integrated with Envoy Service Mesh. It autonomously intercepts traffic, 
+  evaluates heuristic error velocity, and routes traffic to caching layers or Kafka Dead Letter 
+  Queues (DLQs) during outages, ensuring zero data loss and 99.999% API uptime even during total 
+  database failure.
+
+core_resiliency_tenets:
+  tenet_1: "Fail Fast, Recover Slowly: Reject traffic instantly when limits are breached; test recovery cautiously."
+  tenet_2: "Zero Data Loss: All rejected mutations MUST be serialized to a Kafka DLQ for eventual consistency."
+  tenet_3: "Graceful Degradation: Never return a blank screen. Serve stale Redis data if the DB is unreachable."
+
+# -----------------------------------------------------------------------------------------
+# SECTION 1: COMPREHENSIVE FAILURE TAXONOMY
+# -----------------------------------------------------------------------------------------
+failure_taxonomy:
+  description: "Strict isolation of infrastructure failures (trip-eligible) vs. application logic errors (ignored)."
+  
+  trip_eligible_network_errors:
+    - code: "ECONNREFUSED"
+      description: "Target database port is closed or machine is offline."
+      severity: "CRITICAL"
+    - code: "ETIMEDOUT"
+      description: "TCP handshake failed; network partition suspected."
+      severity: "CRITICAL"
+    - code: "EHOSTUNREACH"
+      description: "Routing failure to the database subnet."
+      severity: "CRITICAL"
+      
+  trip_eligible_database_engine_errors:
+    - code: "ER_CON_COUNT_ERROR"
+      description: "Postgres/MySQL max_connections reached; socket depletion."
+      severity: "HIGH"
+    - code: "ER_LOCK_DEADLOCK"
+      description: "Transaction engine deadlock detected."
+      severity: "MEDIUM"
+    - code: "OUT_OF_MEMORY"
+      description: "OOM Killer invoked on the database host."
+      severity: "CRITICAL"
+      
+  trip_eligible_proxy_errors:
+    - code: "PGBOUNCER_POOL_EXHAUSTED"
+      description: "PgBouncer connection queue is full."
+      severity: "HIGH"
+    - code: "ENVOY_UPSTREAM_RESET"
+      description: "Service mesh dropped the connection to the DB pod."
+      severity: "HIGH"
+
+  ignored_application_errors:
+    - code: "ER_DUP_ENTRY"
+      description: "Unique Constraint Violation (Developer Error)"
+    - code: "ER_BAD_FIELD_ERROR"
+      description: "Syntax/Column Error (Developer Error)"
+    - code: "ER_NO_SUCH_TABLE"
+      description: "Missing Relation (Deployment Error)"
+    - code: "ER_DATA_TOO_LONG"
+      description: "Payload exceeds column size (Validation Error)"
+
+# -----------------------------------------------------------------------------------------
+# SECTION 2: THE 5-TIER STATE MACHINE CONFIGURATION
+# -----------------------------------------------------------------------------------------
+state_machine_configuration:
+  state_1_closed:
+    description: "Normal operational state. Queries flow directly to the database connection pool."
+    monitoring_window_seconds: 10
+    failure_thresholds:
+      consecutive_failures: 5
+      error_rate_percentage: 50
+      minimum_throughput_required: 20
+    action_on_breach: "Transition state to OPEN. Trigger PagerDuty P1 Alert."
+    telemetry_emission: "Normal (10s intervals)"
+
+  state_2_degraded:
+    description: "Pre-trip warning state. Latency is spiking but hard errors have not breached thresholds."
+    trigger: "p99 query latency > 2000ms for 3 consecutive rolling windows."
+    automated_actions:
+      - "Disable all non-essential background batch jobs."
+      - "Shed 20% of low-priority analytical read traffic."
+      - "Scale up Read-Replica auto-scaling groups."
+    action_on_recovery: "Transition back to CLOSED if p99 latency normalizes < 500ms."
+
+  state_3_open:
+    description: "Database is deemed UNHEALTHY. All inbound queries are instantly rejected (Fail-Fast)."
+    cooldown_duration_seconds: 30
+    immediate_response: "Throw Fast-Fail Exception (HTTP 503 Service Unavailable / HTTP 202 Accepted via DLQ)"
+    action_on_cooldown_expiry: "Transition state to HALF-OPEN."
+    failover_routing:
+      read_requests:
+        action: "Route to Redis Replica Cache"
+        data_freshness: "STALE_ACCEPTABLE"
+      write_requests:
+        action: "Route to Kafka Dead-Letter-Queue"
+        topic: "db.outage.mutation.backlog"
+
+  state_4_half_open:
+    description: "Canary testing phase. The system cautiously probes the database to verify recovery."
+    canary_concurrency_limit: 2
+    success_threshold: 3
+    canary_payload: "SELECT 1; AND simple primary-key lookups."
+    action_on_canary_success: "Transition state back to CLOSED. Log Recovery Event."
+    action_on_canary_failure: "Transition state back to OPEN. Multiply Cooldown Duration by 1.5 (Exponential Backoff)."
+
+  state_5_isolated:
+    description: "Manual override state for scheduled maintenance or catastrophic security breaches."
+    trigger: "Invoked manually via DevSecOps API or CI/CD pipeline."
+    behavior: "Ignores all health checks. Breaker remains forced OPEN until manually reset."
+
+# -----------------------------------------------------------------------------------------
+# SECTION 3: KAFKA DLQ & EVENTUAL CONSISTENCY RESYNC PROTOCOL
+# -----------------------------------------------------------------------------------------
+dlq_resync_architecture:
+  description: "Ensures zero data loss during an OPEN circuit state by queuing mutations."
+  
+  dlq_ingestion_rules:
+    target_cluster: "kafka-prod-cluster-1"
+    topic_partitioning: "Partition by tenant_id to guarantee ordered replay"
+    payload_schema:
+      - "transaction_id (UUID v4)"
+      - "timestamp_utc (ISO-8601)"
+      - "http_method (POST/PUT/DELETE)"
+      - "target_table (String)"
+      - "mutation_payload (JSON Blob)"
+      - "user_context (JWT Subject)"
+
+  dlq_replay_worker:
+    trigger: "Activates 30 seconds after Circuit Breaker returns to CLOSED state."
+    replay_speed: "Adaptive. Starts at 10 msgs/sec, scales to 500 msgs/sec if DB CPU < 60%."
+    conflict_resolution: "Last-Writer-Wins based on timestamp_utc."
+    poison_pill_handling: "If a DLQ message fails 3 times during replay, move to manual_intervention_queue."
+
+# -----------------------------------------------------------------------------------------
+# SECTION 4: GRACEFUL DEGRADATION PLAYBOOKS
+# -----------------------------------------------------------------------------------------
+graceful_degradation_playbooks:
+  scenario_1_read_replica_pool_exhaustion:
+    trigger: "Read-Replica connections hit 100% utilization."
+    automated_mitigation:
+      - "Circuit breaker trips for Replica-Read pool only."
+      - "Primary Writer pool remains CLOSED to protect data integrity."
+      - "Application falls back to serving cached Dashboard aggregations from Redis."
+      - "UI displays 'Data may be delayed' banner to end-users."
+    recovery_metric: "Replica pool utilization drops below 70%."
+
+  scenario_2_primary_writer_timeout:
+    trigger: "Primary node stops acknowledging COMMIT commands within 5 seconds."
+    automated_mitigation:
+      - "Circuit breaker trips for Writer pool."
+      - "Application enters 'Read-Only Mode'."
+      - "All POST/PUT/DELETE synchronous requests return HTTP 503 Retry-After."
+      - "Asynchronous mutations (Analytics, Logs) are diverted to Kafka."
+      - "GET requests continue to serve from Replicas."
+    recovery_metric: "Primary node responds to 5 consecutive health pings."
+
+  scenario_3_cross_region_split_brain:
+    trigger: "us-east-1 and eu-central-1 lose synchronization link."
+    automated_mitigation:
+      - "Quorum manager detects partition."
+      - "eu-central-1 is fenced off and marked ISOLATED."
+      - "All global traffic is routed to us-east-1 via Route53 DNS flip."
+      - "eu-central-1 enters read-only mode to prevent conflicting writes."
+
+# -----------------------------------------------------------------------------------------
+# SECTION 5: ENVOY SERVICE MESH & ISTIO INTEGRATION
+# -----------------------------------------------------------------------------------------
+service_mesh_configuration:
+  envoy_outlier_detection:
+    consecutive_5xx: 5
+    interval: "10s"
+    base_ejection_time: "30s"
+    max_ejection_percent: 50
+    enforcing_consecutive_5xx: 100
+  
+  istio_virtual_service_routing:
+    retries:
+      attempts: 3
+      perTryTimeout: "2s"
+      retryOn: "connect-failure,refused-stream,503"
+    fault_injection_testing:
+      abort:
+        httpStatus: 503
+        percentage:
+          value: 0.1
+
+# -----------------------------------------------------------------------------------------
+# SECTION 6: CHAOS ENGINEERING & AUTOMATED RESILIENCE TESTING
+# -----------------------------------------------------------------------------------------
+chaos_engineering_and_testing_hooks:
+  description: "Required endpoints and headers to simulate catastrophic outages during CI/CD."
+  
+  fault_injection_headers:
+    - header: "X-Chaos-Simulate-DB-Timeout"
+      value: "true"
+      effect: "Forces artificial 10s delay on queries at the driver level."
+    - header: "X-Chaos-Simulate-DB-Disconnect"
+      value: "true"
+      effect: "Forces immediate ECONNRESET socket termination."
+    - header: "X-Chaos-Simulate-OOM"
+      value: "true"
+      effect: "Forces the database connection pool to report 0 available sockets."
+
+  validation_assertions_for_ci_cd:
+    test_1: "Assert that injecting 5 consecutive Timeouts successfully transitions Breaker to OPEN."
+    test_2: "Assert that HTTP endpoints correctly return 503 in < 5ms when Breaker is OPEN."
+    test_3: "Assert that a POST request made while OPEN is successfully serialized to the Kafka DLQ."
+    test_4: "Assert that the DLQ worker successfully replays the mutation when the Breaker CLOSES."
+
+# -----------------------------------------------------------------------------------------
+# SECTION 7: OBSERVABILITY & ESCALATION MATRIX
+# -----------------------------------------------------------------------------------------
+observability_matrix:
+  datadog_metrics_to_emit:
+    - "circuit_breaker.state.transitions (Counter)"
+    - "circuit_breaker.rejected_requests (Counter)"
+    - "circuit_breaker.kafka_dlq_ingest_rate (Gauge)"
+    - "circuit_breaker.canary_success_rate (Gauge)"
+
+  pagerduty_escalation_paths:
+    level_1_warning:
+      trigger: "Circuit Breaker enters DEGRADED state."
+      notifies: "Slack #db-ops-alerts"
+      action_required: "Monitor auto-scaling."
+    
+    level_2_critical:
+      trigger: "Circuit Breaker enters OPEN state for Replica Pool."
+      notifies: "Primary On-Call Engineer (Phone Call)"
+      action_required: "Investigate replica replication lag / CPU limits."
+
+    level_3_catastrophic:
+      trigger: "Circuit Breaker enters OPEN state for Primary Writer Pool."
+      notifies: "Entire Database Engineering Team + CTO"
+      action_required: "Initiate Disaster Recovery Protocol / Manual Failover."

@@ -1,0 +1,286 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Global Enterprise Database Mesh: Pooling, Sharding, QoS, and Resilience Matrix",
+  "description": "Defines multi-region active-active topology, connection proxying, QoS workload management, distributed transactions, and Zero-Trust DB security.",
+  "version": "4.0.0",
+  "type": "object",
+  "cluster_topology": {
+    "strategy": "multi_region_sharded_with_read_replicas",
+    "global_routing": {
+      "latency_based_routing": true,
+      "default_region": "us-east-1",
+      "failover_regions": ["us-west-2", "eu-central-1"]
+    },
+    "sharding_architecture": {
+      "enabled": true,
+      "sharding_key": "tenant_id",
+      "algorithm": "consistent_hashing",
+      "total_logical_shards": 1024,
+      "physical_nodes": 8
+    },
+    "nodes": {
+      "primary_writer_cluster": {
+        "role": "active_active_master",
+        "max_connections": 100,
+        "min_idle": 20,
+        "weight": 100,
+        "failover_priority": 1,
+        "sync_replication": true
+      },
+      "read_replicas": [
+        {
+          "role": "replica_us_east_1a",
+          "max_connections": 200,
+          "min_idle": 50,
+          "weight": 70,
+          "region": "us-east-1a",
+          "auto_scaling": {
+            "enabled": true,
+            "target_cpu_utilization": 70,
+            "max_scale_out_nodes": 5
+          }
+        },
+        {
+          "role": "replica_us_east_1b",
+          "max_connections": 200,
+          "min_idle": 50,
+          "weight": 30,
+          "region": "us-east-1b",
+          "auto_scaling": {
+            "enabled": true,
+            "target_cpu_utilization": 70,
+            "max_scale_out_nodes": 5
+          }
+        },
+        {
+          "role": "cross_region_replica_eu",
+          "max_connections": 100,
+          "min_idle": 10,
+          "weight": 100,
+          "region": "eu-central-1",
+          "replication_lag_tolerance_ms": 2000
+        }
+      ],
+      "analytics_warehouse": {
+        "role": "olap_read_only",
+        "max_connections": 25,
+        "min_idle": 5,
+        "weight": 100,
+        "dedicated_for_reports": true,
+        "columnar_engine_enabled": true
+      }
+    }
+  },
+  "connection_proxy_layer": {
+    "engine": "pgbouncer_or_proxysql",
+    "pooling_mode": "transaction",
+    "pool_size_per_user": 50,
+    "reserve_pool_size": 10,
+    "reserve_pool_timeout_ms": 3000,
+    "server_reset_query": "DISCARD ALL",
+    "server_idle_timeout_seconds": 60,
+    "server_lifetime_seconds": 3600,
+    "dns_max_ttl_seconds": 15
+  },
+  "connection_lifecycle": {
+    "acquisition": {
+      "timeout_ms": 2500,
+      "retry_strategy": {
+        "type": "exponential_backoff_with_decorrelation",
+        "max_retries": 5,
+        "base_delay_ms": 50,
+        "max_delay_ms": 2000,
+        "jitter": true
+      }
+    },
+    "idle_management": {
+      "idle_timeout_ms": 10000,
+      "max_lifetime_ms": 1800000,
+      "reap_interval_ms": 5000,
+      "evict_on_network_change": true
+    },
+    "health_validation": {
+      "query": "SELECT 1",
+      "test_on_borrow": true,
+      "test_on_return": false,
+      "test_while_idle": true,
+      "validation_timeout_ms": 250,
+      "fast_fail_validation": true
+    },
+    "leak_detection": {
+      "enabled": true,
+      "leak_threshold_ms": 60000,
+      "action_on_leak": "force_close_and_log_stack_trace"
+    }
+  },
+  "workload_management_and_qos": {
+    "enabled": true,
+    "admission_control": {
+      "reject_new_queries_at_cpu_percent": 90,
+      "reject_new_queries_at_memory_percent": 85
+    },
+    "priority_queues": {
+      "tier_1_critical": {
+        "workload_type": ["auth", "payments", "live_interview_state"],
+        "guaranteed_connection_percent": 40,
+        "queue_timeout_ms": 5000
+      },
+      "tier_2_standard": {
+        "workload_type": ["user_dashboards", "job_searches", "profiles"],
+        "guaranteed_connection_percent": 40,
+        "queue_timeout_ms": 2000
+      },
+      "tier_3_background": {
+        "workload_type": ["batch_jobs", "analytics_sync", "email_dispatch"],
+        "guaranteed_connection_percent": 10,
+        "queue_timeout_ms": 10000,
+        "preemptible": true
+      }
+    }
+  },
+  "statement_and_query_limits": {
+    "oltp_operations": {
+      "default_statement_timeout_ms": 3000,
+      "max_rows_returned": 500,
+      "enforce_where_clause_on_update_delete": true,
+      "prevent_cross_shard_joins": true
+    },
+    "olap_operations": {
+      "default_statement_timeout_ms": 300000,
+      "max_rows_returned": 500000,
+      "allow_full_table_scans": true,
+      "work_mem_limit_mb": 1024
+    },
+    "deadlock_prevention": {
+      "lock_timeout_ms": 1500,
+      "deadlock_detect_interval_ms": 500,
+      "aggressive_deadlock_resolution": true
+    }
+  },
+  "transaction_management": {
+    "default_isolation_level": "READ COMMITTED",
+    "distributed_transactions": {
+      "strategy": "saga_pattern",
+      "two_phase_commit_allowed": false,
+      "saga_coordinator_timeout_ms": 10000
+    },
+    "critical_paths": {
+      "billing_and_payments": {
+        "isolation_level": "SERIALIZABLE",
+        "read_only": false,
+        "retry_on_serialization_failure": true
+      },
+      "audit_logging": {
+        "isolation_level": "READ UNCOMMITTED",
+        "read_only": false,
+        "async_commit": true
+      },
+      "dashboard_aggregation": {
+        "isolation_level": "REPEATABLE READ",
+        "read_only": true,
+        "deferrable": true
+      }
+    }
+  },
+  "network_and_security": {
+    "ssl_enforcement": {
+      "require_ssl": true,
+      "reject_unauthorized": true,
+      "min_tls_version": "TLSv1.3",
+      "cipher_suites": [
+        "TLS_AES_256_GCM_SHA384",
+        "TLS_CHACHA20_POLY1305_SHA256"
+      ],
+      "certificate_rotation": {
+        "auto_reload_certs": true,
+        "cert_path": "/etc/ssl/certs/db-client.crt"
+      }
+    },
+    "secret_management": {
+      "engine": "hashicorp_vault",
+      "dynamic_credentials": true,
+      "ttl_minutes": 60,
+      "renew_threshold_percent": 80
+    },
+    "row_level_security": {
+      "enabled": true,
+      "inject_tenant_context_variable": true,
+      "context_variable_name": "app.current_tenant_id"
+    }
+  },
+  "change_data_capture_cdc": {
+    "enabled": true,
+    "engine": "debezium",
+    "replication_slot_name": "skillssphere_cdc_slot",
+    "publication_name": "events_publication",
+    "tables_to_capture": [
+      "users",
+      "interviews",
+      "payments",
+      "classroom_rosters"
+    ],
+    "message_format": "avro_with_schema_registry",
+    "pii_redaction": {
+      "enabled": true,
+      "hash_columns": ["password_hash", "social_security_number", "credit_card_bin"]
+    }
+  },
+  "advanced_routing_rules": {
+    "tenant_isolation": {
+      "enabled": true,
+      "strategy": "schema_per_tenant",
+      "enforce_tenant_id_in_context": true,
+      "tenant_shard_mapping_cache_ttl_ms": 60000
+    },
+    "eventual_consistency_tolerance": {
+      "allow_stale_reads_ms": 500,
+      "fallback_to_primary_on_replica_lag": true,
+      "max_acceptable_lag_bytes": 10485760
+    }
+  },
+  "chaos_engineering_and_resilience": {
+    "fault_injection": {
+      "enabled_in_production": false,
+      "simulate_network_partition_probability": 0.001,
+      "simulate_packet_loss_probability": 0.005,
+      "simulate_slow_queries_ms": 5000,
+      "drop_connections_randomly": true
+    },
+    "split_brain_mitigation": {
+      "quorum_strategy": "majority_node_consensus",
+      "fencing_token_enforcement": true
+    }
+  },
+  "telemetry_and_instrumentation": {
+    "connection_metrics": {
+      "emit_active_connections": true,
+      "emit_idle_connections": true,
+      "emit_waiting_requests": true,
+      "emit_pool_exhaustion_events": true,
+      "emit_connection_acquisition_time_p99": true
+    },
+    "query_profiling": {
+      "log_slow_queries": true,
+      "slow_query_threshold_ms": 1000,
+      "obfuscate_query_parameters": true,
+      "capture_explain_plans": true,
+      "auto_kill_rogue_queries": true
+    },
+    "distributed_tracing": {
+      "enabled": true,
+      "engine": "opentelemetry",
+      "inject_trace_context_into_sql_comments": true,
+      "sampling_rate": 1.0
+    },
+    "alerting": {
+      "datadog_prefix": "db.mesh.cluster.",
+      "pagerduty_triggers": [
+        "pool_exhaustion_duration_exceeds_5s",
+        "replica_replication_lag_exceeds_2s",
+        "primary_writer_failover_initiated",
+        "vault_dynamic_credential_renewal_failed",
+        "cdc_replication_slot_growing_dangerously"
+      ]
+    }
+  }
+}

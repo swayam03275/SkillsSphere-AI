@@ -163,13 +163,19 @@ export default function Whiteboard({ socket, roomId, userRole, initialStrokes })
 
     const resizeCanvas = () => {
       const parent = canvas.parentElement;
+      if (!parent || parent.clientWidth === 0) return;
       canvas.width = parent.clientWidth;
-      canvas.height = parent.clientHeight || 500;
+      canvas.height = parent.clientHeight;
       redrawCanvas(rawEvents);
     };
 
-    resizeCanvas();
-    window.addEventListener("resize", resizeCanvas);
+    const resizeObserver = new ResizeObserver(() => {
+      resizeCanvas();
+    });
+
+    if (canvas.parentElement) {
+      resizeObserver.observe(canvas.parentElement);
+    }
 
     // Socket Event listeners
     if (socket) {
@@ -220,7 +226,7 @@ export default function Whiteboard({ socket, roomId, userRole, initialStrokes })
     }
 
     return () => {
-      window.removeEventListener("resize", resizeCanvas);
+      resizeObserver.disconnect();
       if (socket) {
         socket.off("sync-state");
         socket.off("draw-stroke");
@@ -486,7 +492,7 @@ export default function Whiteboard({ socket, roomId, userRole, initialStrokes })
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-[#0b0f19] rounded-2xl overflow-hidden border border-slate-800 relative h-full">
+    <div className="w-full h-full flex flex-col bg-[#0b0f19] rounded-2xl overflow-hidden border border-slate-800 relative shadow-2xl">
       
       {/* Absolute Toolbar overlay */}
       <div className="absolute top-4 left-4 right-4 bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-xl p-3 flex flex-wrap items-center justify-between z-10 gap-3">
@@ -625,18 +631,20 @@ export default function Whiteboard({ socket, roomId, userRole, initialStrokes })
         />
       )}
 
-      {/* HTML5 Canvas */}
-      <canvas
-        ref={canvasRef}
-        className="flex-1 bg-slate-950 cursor-crosshair h-full"
-        onMouseDown={startDrawing}
-        onMouseMove={draw}
-        onMouseUp={stopDrawing}
-        onMouseLeave={stopDrawing}
-        onTouchStart={startDrawing}
-        onTouchMove={draw}
-        onTouchEnd={stopDrawing}
-      />
+      {/* HTML5 Canvas wrapper to ensure accurate flex box sizing */}
+      <div className="flex-1 w-full relative min-h-0">
+        <canvas
+          ref={canvasRef}
+          className="absolute inset-0 w-full h-full bg-slate-950 cursor-crosshair"
+          onMouseDown={startDrawing}
+          onMouseMove={draw}
+          onMouseUp={stopDrawing}
+          onMouseLeave={stopDrawing}
+          onTouchStart={startDrawing}
+          onTouchMove={draw}
+          onTouchEnd={stopDrawing}
+        />
+      </div>
     </div>
   );
 }

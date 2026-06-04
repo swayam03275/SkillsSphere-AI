@@ -28,6 +28,12 @@ const jobApplicationSchema = new mongoose.Schema(
       default: "pending",
     },
 
+    studentStatus: {
+      type: String,
+      enum: ["pending", "reviewed", "shortlisted", "rejected", "withdrawn", null],
+      default: null,
+    },
+
     resumeLink: {
       type: String,
       trim: true,

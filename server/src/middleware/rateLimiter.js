@@ -1,47 +1,54 @@
 import rateLimit from "express-rate-limit";
 
-/**
- * Custom Key Generator that combines IP address and Email
- * This prevents attackers from bypassing the IP limit by spoofing X-Forwarded-For
- * when launching credential stuffing or OTP bombing attacks on a single account.
- */
-const emailKeyGenerator = (req, res) => {
-  const ip = req.ip || req.connection?.remoteAddress || 'unknown-ip';
+const unifiedKeyGenerator = (req) => {
+  if (req.user?._id) {
+    return `user_${req.user._id.toString()}`;
+  }
   const email = req.body?.email?.trim()?.toLowerCase();
-  
-  // express-rate-limit throws ERR_ERL_KEY_GEN_IPV6 if trust proxy is false and we return an ip.
-  // By returning a prefix, we bypass this validation and solve the spoofing issue simultaneously.
-  return email ? `user_${email}` : `ip_${ip}`;
+  if (email) {
+    return `email_${email}`;
+  }
+  const ip = req.ip || req.connection?.remoteAddress || 'unknown-ip';
+  return `ip_${ip}`;
 };
 
-/**
- * Custom Rate Limiter for Authentication routes
- * Prevents brute-force attacks and OTP/Email bombing
- */
+const commonValidateConfig = {
+  xForwardedForHeader: false,
+  trustProxy: false,
+  default: true,
+  ip: false,
+  keyGeneratorIpFallback: false
+};
+
+const getRole = (req) => {
+  return req.user?.role || req.user?.get?.("role") || null;
+};
+
 export const authRateLimiter = rateLimit({
-  windowMs: parseInt(process.env.AUTH_LIMIT_WINDOW) || 15 * 60 * 1000, // Default 15 minutes
-  max: parseInt(process.env.AUTH_LIMIT_MAX) || 5, // Default 5 attempts per window
+  windowMs: parseInt(process.env.AUTH_LIMIT_WINDOW) || 15 * 60 * 1000,
+  max: parseInt(process.env.AUTH_LIMIT_MAX) || 10,
   message: {
     success: false,
     message: "Too many authentication attempts. Please try again after 15 minutes.",
     error: "RATE_LIMIT_EXCEEDED"
   },
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  keyGenerator: emailKeyGenerator,
-  validate: { xForwardedForHeader: false, trustProxy: false, default: true, ip: false, keyGeneratorIpFallback: false },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: unifiedKeyGenerator,
+  validate: commonValidateConfig,
   handler: (req, res, next, options) => {
     res.status(429).json(options.message);
   }
 });
 
-/**
- * Rate Limiter for Job Creation
- * Prevents spamming of the job database by malicious or compromised accounts
- */
 export const jobCreationLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour window
-  max: parseInt(process.env.JOB_CREATION_LIMIT_MAX) || 15, // Default 15 jobs per hour
+  windowMs: 60 * 60 * 1000,
+  max: (req) => {
+    const role = getRole(req);
+    if (role === "admin") return 100;
+    if (role === "recruiter") return parseInt(process.env.JOB_CREATION_LIMIT_MAX) || 30;
+    return 2;
+  },
   message: {
     success: false,
     message: "You have reached the maximum number of job postings allowed per hour. Please try again later.",
@@ -49,18 +56,16 @@ export const jobCreationLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: unifiedKeyGenerator,
+  validate: commonValidateConfig,
   handler: (req, res, next, options) => {
     res.status(429).json(options.message);
   }
 });
 
-/**
- * Rate Limiter for OTP Verification
- * Prevents distributed brute-force attacks on OTP codes
- */
 export const otpRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 OTP attempts per IP per window
+  windowMs: 15 * 60 * 1000,
+  max: 5,
   message: {
     success: false,
     message: "Too many OTP attempts, please try again after 15 minutes",
@@ -68,20 +73,22 @@ export const otpRateLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: emailKeyGenerator,
-  validate: { xForwardedForHeader: false, trustProxy: false, default: true, ip: false, keyGeneratorIpFallback: false },
+  keyGenerator: unifiedKeyGenerator,
+  validate: commonValidateConfig,
   handler: (req, res, next, options) => {
     res.status(429).json(options.message);
   }
 });
 
-/**
- * Rate Limiter for Resume Uploads and Analysis
- * Prevents API quota abuse and CPU starvation from excessive file processing
- */
 export const resumeAnalysisLimiter = rateLimit({
-  windowMs: parseInt(process.env.RESUME_LIMIT_WINDOW) || 60 * 60 * 1000, // Default 1 hour
-  max: parseInt(process.env.RESUME_LIMIT_MAX) || 10, // Default 10 resume analyses per window
+  windowMs: parseInt(process.env.RESUME_LIMIT_WINDOW) || 60 * 60 * 1000,
+  max: (req) => {
+    const role = getRole(req);
+    if (role === "admin") return 100;
+    if (role === "recruiter") return 50;
+    if (role === "student") return parseInt(process.env.RESUME_LIMIT_MAX) || 10;
+    return 5;
+  },
   message: {
     success: false,
     message: "Too many resume analysis attempts. Please try again later.",
@@ -89,37 +96,47 @@ export const resumeAnalysisLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: unifiedKeyGenerator,
+  validate: commonValidateConfig,
   handler: (req, res, next, options) => {
     res.status(429).json(options.message);
   }
 });
 
-/**
- * Global Rate Limiter
- * Generous limit for all /api endpoints to prevent basic DoS
- */
 export const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: parseInt(process.env.GLOBAL_LIMIT_MAX) || 300, 
+  windowMs: 15 * 60 * 1000,
+  max: (req) => {
+    const role = getRole(req);
+    if (role === "admin") return 5000;
+    if (role === "recruiter") return 1000;
+    if (role === "tutor") return 800;
+    if (role === "student") return 400;
+    return parseInt(process.env.GLOBAL_LIMIT_MAX) || 150;
+  },
   message: {
     success: false,
-    message: "Too many requests from this IP, please try again after 15 minutes.",
+    message: "Too many requests, please try again after 15 minutes.",
     error: "RATE_LIMIT_EXCEEDED"
   },
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: unifiedKeyGenerator,
+  validate: commonValidateConfig,
   handler: (req, res, next, options) => {
     res.status(429).json(options.message);
   }
 });
 
-/**
- * AI Action Rate Limiter
- * Stricter limit for computationally expensive endpoints like Interviews and Cover Letters
- */
 export const aiActionLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: parseInt(process.env.AI_LIMIT_MAX) || 20, 
+  windowMs: 60 * 60 * 1000,
+  max: (req) => {
+    const role = getRole(req);
+    if (role === "admin") return 200;
+    if (role === "recruiter") return 60;
+    if (role === "tutor") return 60;
+    if (role === "student") return parseInt(process.env.AI_LIMIT_MAX) || 20;
+    return 5;
+  },
   message: {
     success: false,
     message: "You have exceeded the maximum number of AI actions. Please try again after 1 hour.",
@@ -127,6 +144,8 @@ export const aiActionLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: unifiedKeyGenerator,
+  validate: commonValidateConfig,
   handler: (req, res, next, options) => {
     res.status(429).json(options.message);
   }

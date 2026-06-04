@@ -46,7 +46,7 @@ export const evaluateMatches = async (user, resume, preFilteredJobs = null) => {
   });
 
   rankedJobs.sort((a, b) => b.overlapCount - a.overlapCount);
-  openJobs = rankedJobs.slice(0, 20).map(item => item.job);
+  openJobs = rankedJobs.slice(0, 10).map(item => item.job);
 
   // 3. Evaluate each pre-filtered job using the AI/ML pipeline in batches
   console.time(`Matching evaluation for ${openJobs.length} jobs`);
@@ -84,24 +84,17 @@ export const evaluateMatches = async (user, resume, preFilteredJobs = null) => {
   // If a candidate matches poorly (< 60%), generate alerts for Tutors and Recruiters
   const io = getIO();
   
-  const session = await mongoose.startSession();
-session.startTransaction();
+  try {
+    const tutor = await User.findOne({ role: "tutor" }).sort({ createdAt: 1 });
 
-try {
-  // Find tutor inside transaction with consistent sort
-  const tutor = await User.findOne({ role: "tutor" })
-    .sort({ createdAt: 1 })
-    .session(session);
-
-  const notificationsToEmit = [];
-  const notificationDocs = [];
+    const notificationsToEmit = [];
+    const notificationDocs = [];
 
     for (const rec of recommendations) {
       if (rec.score > 0 && rec.score < 60) {
         const jobFull = openJobs.find(j => j._id.toString() === rec.job.toString());
         
         if (jobFull) {
-          // 1. Notify Recruiter (if known)
           if (jobFull.recruiter) {
             notificationDocs.push({
               userId: jobFull.recruiter,
@@ -112,8 +105,6 @@ try {
             });
           }
 
-          // 2. Notify a Tutor to intervene
-          // In a real system, find the specifically assigned tutor. Here we find any available tutor.
           if (tutor) {
             notificationDocs.push({
               userId: tutor._id,
@@ -128,7 +119,7 @@ try {
     }
 
     if (notificationDocs.length > 0) {
-      const createdNotifs = await Notification.insertMany(notificationDocs, { session });
+      const createdNotifs = await Notification.insertMany(notificationDocs);
       createdNotifs.forEach(notif => {
         notificationsToEmit.push({ room: `user_${notif.userId}`, notif });
       });
@@ -139,10 +130,8 @@ try {
       user: user._id,
       resume: resume._id,
       recommendations,
-    }], { session });
+    }]);
     const matchResult = matchResultDocs[0];
-
-    await session.commitTransaction();
 
     // Now safe to emit socket events
     if (io) {
@@ -153,11 +142,8 @@ try {
 
     return matchResult;
   } catch (error) {
-    await session.abortTransaction();
-    logger.error("Transaction aborted in evaluateMatches:", error);
+    logger.error("Error in evaluateMatches:", error);
     throw error;
-  } finally {
-    session.endSession();
   }
 };
 

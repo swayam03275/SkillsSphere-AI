@@ -92,6 +92,8 @@ export const registerUserAndIssueToken = async ({ name, email, password, role })
       name: user.get('name'),
       email: user.get('email'),
       isVerified: skipVerification,
+      isOnboarded: user.isOnboarded,
+      profilePic: user.profilePic,
     },
   };
 };
@@ -123,7 +125,7 @@ export const verifyUserEmail = async (email, otp) => {
   user.otpAttempts = 0;
   await user.save();
 
-  return { success: true, message: "Email verified successfully" };
+  return { user };
 };
 
 // 🔑 Forgot password
@@ -251,12 +253,14 @@ export const loginUser = async (email, password) => {
       id: user._id.toString(),
       name: user.get('name'),
       email: user.get('email'),
-      role: user.role
+      role: user.role,
+      isOnboarded: user.isOnboarded,
+      profilePic: user.profilePic,
     }
   };
 };
 
-export const findOrCreateGoogleUser = async ({ email, name, picture, role = "student" }) => {
+export const findOrCreateGoogleUser = async ({ email, name, picture, role = "student", action = "signup" }) => {
   const existing = await User.findOne({ email });
 
   if (existing) {
@@ -264,6 +268,10 @@ export const findOrCreateGoogleUser = async ({ email, name, picture, role = "stu
       throw new AppError(LOCAL_EMAIL_REGISTERED_MESSAGE, 409);
     }
     return existing;
+  }
+
+  if (action === "login") {
+    throw new AppError("No account found with this Google email. Please sign up first.", 404);
   }
 
   return User.create({
@@ -293,6 +301,8 @@ export const exchangeAuthCodeForToken = async (code) => {
       name: user.get('name'),
       email: user.get('email'),
       role: user.role,
+      isOnboarded: user.isOnboarded,
+      profilePic: user.profilePic,
     },
   };
 };

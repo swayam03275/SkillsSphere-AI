@@ -14,6 +14,7 @@ import {
   deleteJob as deleteJobService,
   getSkillTrends as getSkillTrendsService,
   updateApplicationStatus as updateApplicationStatusService,
+  updateStudentApplicationStatusService,
 } from "./service.js";
 import AppError from "../../utils/AppError.js";
 import asyncHandler from "../../utils/asyncHandler.js";
@@ -246,7 +247,8 @@ export const getJobs = asyncHandler(async (req, res) => {
  * @access  Private (Students only)
  */
 export const getRecommendations = asyncHandler(async (req, res) => {
-  const recommendations = await getJobRecommendations(req.user);
+  const { sortBy, limit } = req.query;
+  const recommendations = await getJobRecommendations(req.user, { sortBy, limit });
   res.status(200).json(recommendations);
 });
 
@@ -476,6 +478,31 @@ export const updateApplicationStatus = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     message: `Application status updated to ${status}`,
+    application,
+  });
+});
+
+/**
+ * @desc    Update the student's personal CRM status for a job application
+ * @route   PATCH /api/jobs/applications/:id/student-status
+ * @access  Private (Students only)
+ */
+export const updateStudentApplicationStatus = asyncHandler(async (req, res) => {
+  const { studentStatus } = req.body;
+
+  if (studentStatus === undefined) {
+    throw new AppError("studentStatus is required", 400);
+  }
+
+  const application = await updateStudentApplicationStatusService(
+    req.params.id,
+    req.user._id,
+    studentStatus
+  );
+
+  res.status(200).json({
+    success: true,
+    message: `Student tracking status updated`,
     application,
   });
 });

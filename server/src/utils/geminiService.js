@@ -74,3 +74,61 @@ export const generateCoverLetter = async (prompt) => {
     };
   }
 };
+
+/**
+ * Generates a detailed learning roadmap using the Gemini API.
+ * 
+ * @param {string} targetRole - The user's target job role.
+ * @param {Array} topics - The initial topics/gaps identified from resume analysis.
+ * @returns {Promise<{success: boolean, data?: Array, error?: string}>}
+ */
+export const generateDetailedRoadmap = async (targetRole, topics) => {
+  try {
+    const aiClient = initializeGemini();
+    const model = aiClient.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      generationConfig: {
+        responseMimeType: "application/json",
+      }
+    });
+
+    const topicsList = topics.map(t => typeof t === "string" ? t : t.text).join(", ");
+
+    const prompt = `
+You are an expert career coach and technical mentor. Create a highly structured, step-by-step learning roadmap for a user whose target role is "${targetRole}".
+They have identified the following skill gaps from their resume analysis: ${topicsList}.
+
+Based on these gaps, generate a comprehensive roadmap containing 5 to 10 actionable milestones.
+For each milestone, you must determine if it is a "learning" task (e.g., studying a concept) or a "contribution" task (e.g., building a project, contributing to open source).
+Also, provide 2 to 3 high-quality study resources (videos, articles, or documentation) to help the user achieve that milestone.
+
+Return the result STRICTLY as a JSON array of objects, matching this exact schema for each object:
+{
+  "topicName": "String (A clear, concise milestone title)",
+  "type": "String ('learning' or 'contribution')",
+  "resources": [
+    {
+      "title": "String (Title of the resource)",
+      "url": "String (A generic but relevant URL, e.g., 'https://developer.mozilla.org/...' or 'https://www.youtube.com/results?search_query=...')",
+      "type": "String ('video', 'article', or 'documentation')"
+    }
+  ]
+}
+`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    if (!text) {
+      return { success: false, error: "Empty response from Gemini." };
+    }
+
+    const parsedData = JSON.parse(text);
+    return { success: true, data: parsedData };
+
+  } catch (error) {
+    logger.error("Gemini API Error (Roadmap):", error.message || error);
+    return { success: false, error: "Failed to generate detailed roadmap." };
+  }
+};

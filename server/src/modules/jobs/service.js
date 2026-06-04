@@ -203,30 +203,106 @@ export const getSkillTrends = async () => {
  * @returns {Promise<void>}
  */
 export const deleteJob = async (id, recruiterId) => {
-  const job = await JobPosting.findById(id);
+  const client = mongoose.connection?.client;
+  const topologyType = client?.topology?.description?.type;
+  const useTransaction = topologyType && (
+    topologyType.includes("ReplicaSet") ||
+    topologyType === "Sharded" ||
+    (client?.topology?.description?.servers && client.topology.description.servers.size > 1)
+  );
 
-  if (!job) {
-    throw new AppError("Job not found", 404);
+  if (useTransaction) {
+    const dbSession = await mongoose.startSession();
+    dbSession.startTransaction();
+
+    try {
+      const job = await JobPosting.findById(id).session(dbSession);
+
+      if (!job) {
+        throw new AppError("Job not found", 404);
+      }
+
+      // Check if the recruiter owns this job
+      if (job.recruiter.toString() !== recruiterId.toString()) {
+        throw new AppError("You do not have permission to delete this job", 403);
+      }
+
+      // Delete all associated applications
+      await JobApplication.deleteMany({ job: id }).session(dbSession);
+      
+      await JobPosting.findByIdAndDelete(id).session(dbSession);
+
+      await dbSession.commitTransaction();
+    } catch (error) {
+      await dbSession.abortTransaction();
+      logger.error("Transaction aborted in deleteJob:", error);
+      throw error;
+    } finally {
+      dbSession.endSession();
+    }
+  } else {
+    const job = await JobPosting.findById(id);
+
+    if (!job) {
+      throw new AppError("Job not found", 404);
+    }
+
+    // Check if the recruiter owns this job
+    if (job.recruiter.toString() !== recruiterId.toString()) {
+      throw new AppError("You do not have permission to delete this job", 403);
+    }
+
+    // Delete all associated applications
+    await JobApplication.deleteMany({ job: id });
+    
+    await JobPosting.findByIdAndDelete(id);
   }
+};
 
-  // Check if the recruiter owns this job
-  if (job.recruiter.toString() !== recruiterId.toString()) {
-    throw new AppError("You do not have permission to delete this job", 403);
+
+/**
+ * Helper to sort and limit recommendations in memory.
+ * @param {Array} jobs - List of recommendations with job details and matchScore
+ * @param {string} sortBy - Sort strategy ("score", "salary", "date")
+ * @param {number} limit - Number of items to return
+ * @returns {Array} Sorted and limited recommendations
+ */
+const sortAndLimitRecommendations = (jobs, sortBy, limit) => {
+  const sortedJobs = [...jobs];
+  if (sortBy === "salary") {
+    sortedJobs.sort((a, b) => {
+      const salaryA = a.salary?.max ?? 0;
+      const salaryB = b.salary?.max ?? 0;
+      return salaryB - salaryA;
+    });
+  } else if (sortBy === "date") {
+    sortedJobs.sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return dateB - dateA;
+    });
+  } else {
+    // Default/score: Sort by matchScore descending (highest first)
+    sortedJobs.sort((a, b) => {
+      const scoreA = a.matchScore ?? 0;
+      const scoreB = b.matchScore ?? 0;
+      return scoreB - scoreA;
+    });
   }
-
-  // Delete all associated applications
-  await JobApplication.deleteMany({ job: id });
-  
-  await JobPosting.findByIdAndDelete(id);
+  return sortedJobs.slice(0, limit);
 };
 
 /**
  * Get personalized job recommendations for a student based on their resume.
  * 
  * @param {Object} user - The authenticated user object
+ * @param {Object} options - Query options (sortBy, limit)
  * @returns {Promise<Object>} Recommendations and status message
  */
-export const getJobRecommendations = async (user) => {
+export const getJobRecommendations = async (user, options = {}) => {
+  const { sortBy = "score", limit = 20 } = options;
+  const parsedLimit = Math.min(50, Math.max(1, parseInt(limit) || 20));
+
   // 1. Get the latest parsed resume for the user
   const resume = await resumeService.getLatestResume(user._id, true);
 
@@ -237,6 +313,35 @@ export const getJobRecommendations = async (user) => {
       jobs: [],
       hasResume: false
     };
+  }
+
+  // 1.5. Check if we already have a valid MatchResult for this exact resume
+  const latestMatch = await matchingService.getLatestRecommendations(user._id);
+  
+  if (latestMatch && latestMatch.resume.toString() === resume._id.toString()) {
+    // If the match was generated less than 24 hours ago, use it directly
+    const ageInHours = (new Date() - new Date(latestMatch.createdAt)) / (1000 * 60 * 60);
+    if (ageInHours < 24) {
+      const jobsWithDetails = latestMatch.recommendations.map(rec => {
+        const jobDoc = rec.job; // populated
+        if (!jobDoc) return null;
+        return {
+          ...jobDoc,
+          matchScore: rec.score,
+          matchBreakdown: rec.breakdown,
+          relevanceInsights: rec.skillMatch?.feedback?.[0] || "Good match based on your background."
+        };
+      }).filter(Boolean);
+      
+      const sortedAndLimitedJobs = sortAndLimitRecommendations(jobsWithDetails, sortBy, parsedLimit);
+      
+      return {
+        success: true,
+        message: "Personalized matches found by SkillSphere AI",
+        jobs: sortedAndLimitedJobs,
+        hasResume: true
+      };
+    }
   }
 
   // 2. Optimization: Pre-filter jobs to reduce load on the heavy AI engine
@@ -268,8 +373,24 @@ export const getJobRecommendations = async (user) => {
     ];
   }
 
+  // Configure MongoDB sorting
+  let dbSort = {};
+  if (sortBy === "salary") {
+    dbSort = { "salary.max": -1 };
+  } else if (sortBy === "date") {
+    dbSort = { createdAt: -1 };
+  }
+
   // Fetch only the relevant subset of jobs (limit to 100 at DB level)
-  const openJobs = await JobPosting.find(query).limit(100);
+  let openJobs = await JobPosting.find(query).sort(dbSort).limit(100);
+
+  // Fallback: If no jobs strictly match the skills/keywords, just fetch the latest 10 open jobs
+  // This ensures the AI always has something to evaluate and recommend
+  if (openJobs.length === 0) {
+    openJobs = await JobPosting.find({ status: "open" })
+      .sort(sortBy === "salary" ? { "salary.max": -1 } : { createdAt: -1 })
+      .limit(10);
+  }
 
   // 3. Perform matching and save result using matching service (ranks to top 20 and runs AI evaluation)
   const matchResult = await matchingService.evaluateMatches(user, resume, openJobs);
@@ -298,10 +419,12 @@ export const getJobRecommendations = async (user) => {
     };
   });
 
+  const sortedAndLimitedJobs = sortAndLimitRecommendations(jobsWithDetails, sortBy, parsedLimit);
+
   return {
     success: true,
     message: "Personalized matches found by SkillSphere AI",
-    jobs: jobsWithDetails,
+    jobs: sortedAndLimitedJobs,
     hasResume: true
   };
 };
@@ -1162,6 +1285,34 @@ export const updateApplicationStatus = async (applicationId, recruiterId, { stat
     const roomName = `user_${application.applicant}`;
     io.to(roomName).emit("new-notification", notification);
   }
+
+  return application;
+};
+
+/**
+ * Update the student's personal CRM status for a job application
+ * @param {string} applicationId - ID of the job application
+ * @param {string} applicantId - ID of the student
+ * @param {string} studentStatus - The new status
+ * @returns {Promise<Object>} - Updated application
+ */
+export const updateStudentApplicationStatusService = async (applicationId, applicantId, studentStatus) => {
+  const application = await JobApplication.findOne({
+    _id: applicationId,
+    applicant: applicantId,
+  });
+
+  if (!application) {
+    throw new AppError("Application not found", 404);
+  }
+
+  // Prevent moving withdrawn or rejected applications
+  if (["withdrawn", "rejected"].includes(application.status)) {
+    throw new AppError("Cannot change CRM status for finalized applications", 400);
+  }
+
+  application.studentStatus = studentStatus;
+  await application.save();
 
   return application;
 };

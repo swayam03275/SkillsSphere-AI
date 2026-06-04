@@ -157,10 +157,16 @@ const InterviewSession = () => {
     : 0;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#020617] flex flex-col font-sans transition-colors duration-300 pt-24">
+    <div className="min-h-screen bg-gray-50/50 dark:bg-[#09090b] text-gray-900 dark:text-text-main font-sans pt-20 flex flex-col overflow-hidden relative">
       <Navbar />
 
-      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 mt-24 sm:mt-28 flex flex-col lg:flex-row gap-8 items-start">
+      {/* Background glowing elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-blue-400/20 dark:bg-blue-900/20 blur-[120px] mix-blend-normal" />
+        <div className="absolute top-[20%] -right-[10%] w-[40%] h-[40%] rounded-full bg-purple-400/20 dark:bg-purple-900/20 blur-[120px] mix-blend-normal" />
+      </div>
+
+      <main className="container mx-auto px-4 max-w-6xl z-10 flex-grow py-8 relative flex flex-col lg:flex-row gap-8 items-start">
         
         {/* LEFT COLUMN: Telemetry & Status */}
         <div className="w-full lg:w-1/3 flex flex-col gap-6">
@@ -171,7 +177,7 @@ const InterviewSession = () => {
                   navigate("/dashboard");
                 }
               }}
-              className="inline-flex items-center gap-2 text-sm text-red-500 hover:text-red-400 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 hover:bg-red-100 dark:hover:bg-red-500/20 text-sm font-medium text-red-600 dark:text-red-400 transition-all backdrop-blur-md shadow-sm"
             >
               <AlertCircle size={16} />
               Exit Session
@@ -179,20 +185,20 @@ const InterviewSession = () => {
           </div>
           
           {/* Status Card */}
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-sm border border-slate-200 dark:border-white/10 flex flex-col gap-6">
-            <div className="flex items-center gap-4 border-b border-slate-100 dark:border-white/5 pb-5">
+          <div className="bg-white dark:bg-slate-900/50 rounded-3xl p-6 shadow-sm border border-gray-200 dark:border-white/10 flex flex-col gap-6">
+            <div className="flex items-center gap-4 border-b border-gray-200 dark:border-white/10 pb-5">
               <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center border border-blue-100 dark:border-blue-500/20">
                 <Activity className="text-blue-600 dark:text-blue-400" size={28} />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white capitalize">{session?.topic}</h3>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white capitalize">{state.session?.topic}</h3>
                 <div className="flex gap-2 mt-1">
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 inline-block uppercase tracking-wider">
-                    {session?.difficulty}
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-gray-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 inline-block uppercase tracking-wider">
+                    {state.session?.difficulty}
                   </span>
-                  {session?.persona && (
+                  {state.session?.persona && (
                     <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 inline-block uppercase tracking-wider">
-                      {session.persona}
+                      {state.session.persona}
                     </span>
                   )}
                 </div>
@@ -204,51 +210,51 @@ const InterviewSession = () => {
                 <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">Session Time</span>
                 <div className="flex items-center gap-2 font-mono text-lg font-bold text-slate-900 dark:text-white">
                   <Clock size={16} className="text-slate-400" />
-                  {formatTime(elapsedTime)}
+                  {state.formatTime(state.elapsedTime)}
                 </div>
               </div>
               
               <div className="flex justify-between items-center">
                 <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">Connection</span>
                 <div className="flex items-center gap-2">
-                  {socketStatus === "connected" ? <Wifi size={16} className="text-emerald-500" /> : <WifiOff size={16} className="text-red-500" />}
-                  <span className={`text-sm font-bold capitalize ${socketStatus === "connected" ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
-                    {socketStatus}
+                  {socketState.socketStatus === "connected" ? <Wifi size={16} className="text-emerald-500" /> : <WifiOff size={16} className="text-red-500" />}
+                  <span className={`text-sm font-bold capitalize ${socketState.socketStatus === "connected" ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+                    {socketState.socketStatus}
                   </span>
                 </div>
               </div>
-              {recoveryMessage && (
+              {state.recoveryMessage && (
                 <div className="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 p-2 rounded-lg flex items-center gap-2" role="status">
-                  <RefreshCw size={14} className={socketStatus === "connected" ? "" : "animate-spin"} /> {recoveryMessage}
+                  <RefreshCw size={14} className={socketState.socketStatus === "connected" ? "" : "animate-spin"} /> {state.recoveryMessage}
                 </div>
               )}
-              {requestStatus && (
+              {state.requestStatus && (
                 <div className="text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/10 p-2 rounded-lg flex items-center gap-2" role="status">
-                  <Loader2 size={14} className="animate-spin" /> {requestStatus}
+                  <Loader2 size={14} className="animate-spin" /> {state.requestStatus}
                 </div>
               )}
-              {mediaWarning && (
+              {audioState.mediaWarning && (
                 <div className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 p-2 rounded-lg flex items-center gap-2" role="alert">
-                  <MicOff size={14} /> {mediaWarning}
+                  <MicOff size={14} /> {audioState.mediaWarning}
                 </div>
               )}
-              {uploadStatus !== "idle" && (
-                <div className="text-xs text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-white/5 p-2 rounded-lg">
-                  Audio status: <span className="font-bold capitalize">{uploadStatus}</span>
+              {state.uploadStatus !== "idle" && (
+                <div className="text-xs text-slate-500 dark:text-slate-400 bg-gray-50 dark:bg-white/5 p-2 rounded-lg">
+                  Audio status: <span className="font-bold capitalize">{state.uploadStatus}</span>
                 </div>
               )}
             </div>
           </div>
 
           {/* Progress Card */}
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-sm border border-slate-200 dark:border-white/10 flex flex-col gap-4">
+          <div className="bg-white dark:bg-slate-900/50 rounded-3xl p-6 shadow-sm border border-gray-200 dark:border-white/10 flex flex-col gap-4">
             <div className="flex justify-between items-end mb-2">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">Interview Progress</h3>
               <span className="text-sm font-bold text-blue-600 dark:text-blue-400 font-mono">
-                {currentIndex + 1} / {totalQuestions}
+                {state.currentIndex + 1} / {totalQuestions}
               </span>
             </div>
-            <div className="h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
+            <div className="h-2.5 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
               <div
                 className="h-full bg-blue-600 dark:bg-blue-500 rounded-full transition-all duration-500"
                 style={{ width: `${progressPercent}%` }}
@@ -264,7 +270,7 @@ const InterviewSession = () => {
         <div className="flex-1 w-full flex flex-col gap-6">
           
           {/* Question Card */}
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 sm:p-10 shadow-sm border border-slate-200 dark:border-white/10 flex flex-col">
+          <div className="bg-white dark:bg-slate-900/60 rounded-3xl p-8 sm:p-10 shadow-[0_20px_40px_rgba(0,0,0,0.04)] dark:shadow-none border border-gray-200 dark:border-slate-800 flex flex-col">
             <div className="inline-flex self-start items-center gap-2 px-3 py-1 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold tracking-wide uppercase mb-6">
               Question {state.currentIndex + 1}
             </div>
@@ -282,17 +288,17 @@ const InterviewSession = () => {
           {/* Score Flash */}
           {state.showScores && state.lastScores && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-[fadeInUp_0.4s_ease-out]">
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-3xl p-6 flex flex-col items-center text-center shadow-sm hover:border-blue-500/30 transition-colors">
+              <div className="bg-white dark:bg-slate-900/60 border border-gray-200 dark:border-slate-800 rounded-3xl p-6 flex flex-col items-center text-center shadow-[0_10px_20px_rgba(0,0,0,0.02)] dark:shadow-none hover:border-blue-500/30 transition-colors">
                 <Brain size={24} className="text-blue-500 mb-3" />
                 <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Technical</span>
                 <strong className="text-3xl font-black text-slate-900 dark:text-white">{state.lastScores.technical}%</strong>
               </div>
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-3xl p-6 flex flex-col items-center text-center shadow-sm hover:border-emerald-500/30 transition-colors">
+              <div className="bg-white dark:bg-slate-900/60 border border-gray-200 dark:border-slate-800 rounded-3xl p-6 flex flex-col items-center text-center shadow-[0_10px_20px_rgba(0,0,0,0.02)] dark:shadow-none hover:border-emerald-500/30 transition-colors">
                 <MessageSquare size={24} className="text-emerald-500 mb-3" />
                 <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Communication</span>
                 <strong className="text-3xl font-black text-slate-900 dark:text-white">{state.lastScores.communication}%</strong>
               </div>
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-3xl p-6 flex flex-col items-center text-center shadow-sm hover:border-amber-500/30 transition-colors">
+              <div className="bg-white dark:bg-slate-900/60 border border-gray-200 dark:border-slate-800 rounded-3xl p-6 flex flex-col items-center text-center shadow-[0_10px_20px_rgba(0,0,0,0.02)] dark:shadow-none hover:border-amber-500/30 transition-colors">
                 <Target size={24} className="text-amber-500 mb-3" />
                 <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Relevance</span>
                 <strong className="text-3xl font-black text-slate-900 dark:text-white">{state.lastScores.relevance}%</strong>
@@ -361,7 +367,7 @@ const InterviewSession = () => {
           )}
 
           {state.showScores && !state.isLastQuestion && (
-            <div className="mt-4 p-4 flex items-center justify-center gap-3 text-slate-500 dark:text-slate-400 font-medium">
+            <div className="mt-4 p-4 flex items-center justify-center gap-3 text-text-muted font-medium">
               <Loader2 className="animate-spin text-blue-500" size={18} />
               Loading next question...
             </div>

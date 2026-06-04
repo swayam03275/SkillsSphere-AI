@@ -162,8 +162,8 @@ const JobViewerCard = ({
       id={`job-card-${job._id || job.id}`}
       className={`group w-full max-w-full transition-all duration-300 border backdrop-blur-md rounded-2xl overflow-hidden ${
         isExpanded
-          ? "bg-slate-900/80 border-blue-500/30 shadow-[0_0_30px_rgba(59,130,246,0.15)]"
-          : "bg-slate-900/40 border-white/5 hover:border-white/10 hover:bg-slate-900/60"
+          ? "bg-white dark:bg-slate-900/80 border-blue-500/30 shadow-[0_0_30px_rgba(59,130,246,0.15)]"
+          : "bg-white dark:bg-slate-900/40 border-gray-200 dark:border-white/5 hover:border-blue-300 dark:hover:border-white/10 shadow-sm"
       } ${className}`}
     >
       {/* ── Collapsed Header ── */}
@@ -182,15 +182,15 @@ const JobViewerCard = ({
       >
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-5">
           {/* Company Logo Placeholder */}
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/5 bg-gradient-to-br from-blue-500/20 to-purple-500/20 transition-transform duration-300 group-hover:scale-105 sm:h-14 sm:w-14 md:group-hover:scale-110">
-            <Briefcase size={28} className="text-blue-400 max-sm:h-6 max-sm:w-6" />
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-blue-100 dark:border-white/5 bg-blue-50 dark:bg-blue-500/20 transition-transform duration-300 group-hover:scale-105 sm:h-14 sm:w-14 md:group-hover:scale-110">
+            <Briefcase size={28} className="text-blue-600 dark:text-blue-400 max-sm:h-6 max-sm:w-6" />
           </div>
 
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <div className="mb-1 flex min-w-0 flex-wrap items-start gap-2">
-                  <h3 className="min-w-0 break-words text-lg font-bold leading-snug text-white transition-colors group-hover:text-blue-400 sm:text-xl md:truncate">
+                  <h3 className="min-w-0 break-words text-lg font-bold leading-snug text-gray-900 dark:text-white transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400 sm:text-xl md:truncate">
                     {title}
                   </h3>
                   {/* Status badge — visible for recruiters, or when status is not "open" */}
@@ -213,13 +213,13 @@ const JobViewerCard = ({
                     </span>
                   )}
                 </div>
-                <p className="mt-0.5 min-w-0 break-words text-sm font-medium text-slate-400 sm:text-base md:truncate">
+                <p className="mt-0.5 min-w-0 break-words text-sm font-medium text-gray-500 dark:text-slate-400 sm:text-base md:truncate">
                   {companyWebsite ? (
                     <a
                       href={companyWebsite}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex max-w-full items-center gap-1.5 break-words text-blue-400 hover:text-blue-300 hover:underline"
+                      className="inline-flex max-w-full items-center gap-1.5 break-words text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <span className="min-w-0 break-words md:truncate">{companyName}</span>
@@ -230,23 +230,23 @@ const JobViewerCard = ({
                   )}
                 </p>
               </div>
-              <div className="mt-1 shrink-0 text-slate-500 transition-colors group-hover:text-blue-400">
-                {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+              <div className="mt-1 shrink-0 text-blue-500 transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                <ChevronDown size={20} className={`transform transition-transform ${isExpanded ? "rotate-180" : "-rotate-90"}`} />
               </div>
             </div>
 
             {/* Meta strip */}
-            <div className="mt-4 flex min-w-0 flex-col gap-2 text-sm text-slate-400 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-2">
+            <div className="mt-4 flex min-w-0 flex-col gap-2 text-sm text-gray-500 dark:text-slate-400 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-2">
               <div className="flex min-w-0 items-start gap-1.5 sm:items-center">
-                <MapPin size={16} className="text-slate-500 shrink-0" />
+                <MapPin size={16} className="text-gray-400 dark:text-slate-500 shrink-0" />
                 <span className="min-w-0 break-words sm:truncate">{formatLocation(location)}</span>
               </div>
               <div className="flex min-w-0 items-start gap-1.5 sm:items-center">
-                <IndianRupee size={16} className="text-slate-500 shrink-0" />
+                <IndianRupee size={16} className="text-gray-400 dark:text-slate-500 shrink-0" />
                 <span className="min-w-0 break-words">{formatSalary(salary)}</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <Clock size={16} className="text-slate-500 shrink-0" />
+                <Clock size={16} className="text-gray-400 dark:text-slate-500 shrink-0" />
                 <span>{getTimeAgo(createdAt)}</span>
               </div>
               {location?.remote && (
@@ -263,19 +263,19 @@ const JobViewerCard = ({
       {/* ── Expanded Detail Panel ── */}
       <div
         className={`transition-all duration-500 ease-in-out overflow-hidden ${
-          isExpanded ? "max-h-[2000px] border-t border-white/5" : "max-h-0"
+          isExpanded ? "max-h-[2000px] border-t border-gray-200 dark:border-white/5" : "max-h-0"
         }`}
       >
-        <div className="bg-slate-950/30 p-4 sm:p-6 md:p-8">
+        <div className="bg-gray-50 dark:bg-slate-950/30 p-4 sm:p-6 md:p-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left — Description, Skills, Requirements, Responsibilities */}
             <div className="lg:col-span-2 space-y-6">
               {/* Description */}
               <div>
-                <h4 className="text-sm font-semibold text-blue-400 uppercase tracking-wider mb-3">
+                <h4 className="text-sm font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-3">
                   About the Role
                 </h4>
-                <p className="break-words text-sm leading-relaxed text-slate-300 whitespace-pre-line sm:text-base">
+                <p className="break-words text-sm leading-relaxed text-gray-700 dark:text-slate-300 whitespace-pre-line sm:text-base">
                   {description || "No detailed description provided for this position."}
                 </p>
               </div>
@@ -283,14 +283,14 @@ const JobViewerCard = ({
               {/* Skills */}
               {skills && skills.length > 0 && (
                 <div>
-                  <h4 className="text-sm font-semibold text-blue-400 uppercase tracking-wider mb-3">
+                  <h4 className="text-sm font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-3">
                     Required Skills
                   </h4>
                   <div className="flex flex-wrap gap-2">
                     {skills.map((skill, idx) => (
                       <span
                         key={idx}
-                        className="inline-flex max-w-full items-center rounded-full border border-blue-500/25 bg-blue-500/15 px-3 py-1 text-xs font-medium text-blue-300 break-words"
+                        className="inline-flex max-w-full items-center rounded-full border border-blue-200 dark:border-blue-500/25 bg-blue-50 dark:bg-blue-500/15 px-3 py-1 text-xs font-medium text-blue-700 dark:text-blue-300 break-words"
                       >
                         {skill}
                       </span>
@@ -302,13 +302,13 @@ const JobViewerCard = ({
               {/* Requirements */}
               {requirements && requirements.length > 0 && (
                 <div>
-                  <h4 className="text-sm font-semibold text-blue-400 uppercase tracking-wider mb-3">
+                  <h4 className="text-sm font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-3">
                     Requirements
                   </h4>
                   <ul className="space-y-2">
                     {requirements.map((req, idx) => (
-                      <li key={idx} className="flex items-start gap-3 text-slate-300">
-                        <CheckCircle2 size={16} className="text-green-400 mt-1 shrink-0" />
+                      <li key={idx} className="flex items-start gap-3 text-gray-700 dark:text-slate-300">
+                        <CheckCircle2 size={16} className="text-green-500 dark:text-green-400 mt-1 shrink-0" />
                         <span className="min-w-0 break-words">{req}</span>
                       </li>
                     ))}
@@ -319,12 +319,12 @@ const JobViewerCard = ({
               {/* Responsibilities */}
               {responsibilities && responsibilities.length > 0 && (
                 <div>
-                  <h4 className="text-sm font-semibold text-blue-400 uppercase tracking-wider mb-3">
+                  <h4 className="text-sm font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-3">
                     Responsibilities
                   </h4>
                   <ul className="space-y-2">
                     {responsibilities.map((item, idx) => (
-                      <li key={idx} className="flex items-start gap-2 text-sm text-slate-300">
+                      <li key={idx} className="flex items-start gap-2 text-sm text-gray-700 dark:text-slate-300">
                         <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
                         <span className="min-w-0 break-words">{item}</span>
                       </li>
@@ -336,14 +336,14 @@ const JobViewerCard = ({
               {/* Keywords */}
               {keywords && keywords.length > 0 && (
                 <div>
-                  <h4 className="text-sm font-semibold text-blue-400 uppercase tracking-wider mb-3">
+                  <h4 className="text-sm font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-3">
                     Keywords
                   </h4>
                   <div className="flex flex-wrap gap-2">
                     {keywords.map((kw, idx) => (
                       <span
                         key={idx}
-                        className="inline-flex max-w-full items-center rounded-full border border-slate-600/40 bg-slate-700/60 px-2.5 py-0.5 text-xs font-medium text-slate-300 break-words"
+                        className="inline-flex max-w-full items-center rounded-full border border-gray-200 dark:border-slate-600/40 bg-gray-100 dark:bg-slate-700/60 px-2.5 py-0.5 text-xs font-medium text-gray-700 dark:text-slate-300 break-words"
                       >
                         {kw}
                       </span>
@@ -355,48 +355,48 @@ const JobViewerCard = ({
 
             {/* Right — Quick Details + Actions */}
             <div className="lg:col-span-1 space-y-6">
-              <div className="rounded-2xl border border-white/5 bg-slate-800/40 p-4 sm:p-6">
-                <h4 className="text-sm font-semibold text-slate-200 mb-4">
+              <div className="rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-slate-800/40 p-4 sm:p-6 shadow-sm dark:shadow-none">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-slate-200 mb-4">
                   Quick Details
                 </h4>
                 <div className="space-y-4">
                   <div className="flex flex-col gap-1 text-sm sm:flex-row sm:justify-between sm:gap-4">
-                    <span className="shrink-0 text-slate-500">Location</span>
-                    <span className="min-w-0 break-words font-medium text-slate-200 sm:max-w-[60%] sm:text-right">
+                    <span className="shrink-0 text-gray-500 dark:text-slate-500">Location</span>
+                    <span className="min-w-0 break-words font-medium text-gray-900 dark:text-slate-200 sm:max-w-[60%] sm:text-right">
                       {formatLocation(location)}
                     </span>
                   </div>
                   <div className="flex flex-col gap-1 text-sm sm:flex-row sm:justify-between sm:gap-4">
-                    <span className="shrink-0 text-slate-500">Salary</span>
-                    <span className="min-w-0 break-words font-medium text-slate-200 sm:text-right">{formatSalary(salary)}</span>
+                    <span className="shrink-0 text-gray-500 dark:text-slate-500">Salary</span>
+                    <span className="min-w-0 break-words font-medium text-gray-900 dark:text-slate-200 sm:text-right">{formatSalary(salary)}</span>
                   </div>
                   {experienceRequired != null && (
                     <div className="flex flex-col gap-1 text-sm sm:flex-row sm:justify-between sm:gap-4">
-                      <span className="shrink-0 text-slate-500">Experience</span>
-                      <span className="font-medium text-slate-200 sm:text-right">
+                      <span className="shrink-0 text-gray-500 dark:text-slate-500">Experience</span>
+                      <span className="font-medium text-gray-900 dark:text-slate-200 sm:text-right">
                         {experienceRequired} yr{experienceRequired !== 1 ? "s" : ""}
                       </span>
                     </div>
                   )}
                   {jobLevel && (
                     <div className="flex flex-col gap-1 text-sm sm:flex-row sm:justify-between sm:gap-4">
-                      <span className="shrink-0 text-slate-500">Level</span>
-                      <span className="min-w-0 break-words font-medium text-slate-200 sm:text-right">{jobLevel}</span>
+                      <span className="shrink-0 text-gray-500 dark:text-slate-500">Level</span>
+                      <span className="min-w-0 break-words font-medium text-gray-900 dark:text-slate-200 sm:text-right">{jobLevel}</span>
                     </div>
                   )}
                   <div className="flex flex-col gap-1 text-sm sm:flex-row sm:justify-between sm:gap-4">
-                    <span className="shrink-0 text-slate-500">Job Type</span>
-                    <span className="min-w-0 break-words font-medium text-slate-200 sm:text-right">{type || "Full-time"}</span>
+                    <span className="shrink-0 text-gray-500 dark:text-slate-500">Job Type</span>
+                    <span className="min-w-0 break-words font-medium text-gray-900 dark:text-slate-200 sm:text-right">{type || "Full-time"}</span>
                   </div>
                   {openings != null && (
                     <div className="flex flex-col gap-1 text-sm sm:flex-row sm:justify-between sm:gap-4">
-                      <span className="shrink-0 text-slate-500">Openings</span>
-                      <span className="font-medium text-slate-200 sm:text-right">{openings} Position{openings !== 1 ? "s" : ""}</span>
+                      <span className="shrink-0 text-gray-500 dark:text-slate-500">Openings</span>
+                      <span className="font-medium text-gray-900 dark:text-slate-200 sm:text-right">{openings} Position{openings !== 1 ? "s" : ""}</span>
                     </div>
                   )}
                   <div className="flex flex-col gap-1 text-sm sm:flex-row sm:justify-between sm:gap-4">
-                    <span className="shrink-0 text-slate-500">Posted</span>
-                    <span className="font-medium text-slate-200 sm:text-right">{formatDate(createdAt)}</span>
+                    <span className="shrink-0 text-gray-500 dark:text-slate-500">Posted</span>
+                    <span className="font-medium text-gray-900 dark:text-slate-200 sm:text-right">{formatDate(createdAt)}</span>
                   </div>
                 </div>
 

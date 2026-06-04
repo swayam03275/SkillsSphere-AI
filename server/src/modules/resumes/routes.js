@@ -18,6 +18,7 @@ import { generateCoverLetterForResume } from "./coverLetter.controller.js";
 import { resumeAnalysisLimiter, aiActionLimiter } from "../../middleware/rateLimiter.js";
 
 import { protect, authorizeRoles } from "../../middleware/authMiddleware.js";
+import asyncHandler from "../../utils/asyncHandler.js";
 
 const router = express.Router();
 

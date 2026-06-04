@@ -1,0 +1,145 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Enterprise Disk I/O, Log Rotation, and Archival Matrix",
+  "description": "Defines strict file size boundaries, compression lifecycles, memory buffering, cold-storage offloading, and disk health circuit breakers.",
+  "version": "2.0.0",
+  "type": "object",
+  "global_rotation_parameters": {
+    "trigger_strategy": "hybrid_size_time_memory",
+    "hard_size_limit_bytes": 10485760,
+    "soft_size_limit_bytes": 9437184,
+    "time_interval_fallback": "24h",
+    "force_rotation_on_startup": false,
+    "memory_watermark_limit_mb": 512,
+    "compression": {
+      "primary_algorithm": "gzip",
+      "fallback_algorithm": "brotli",
+      "level": 9,
+      "defer_to_background_thread": true,
+      "delay_compression_ms": 5000,
+      "chunk_size_kb": 128
+    },
+    "file_naming": {
+      "convention": "%DATE%-%APP_NAME%-%ENV%-%NODE_ID%-%INDEX%.log",
+      "date_format": "YYYY-MM-DD-HH",
+      "timezone": "UTC"
+    }
+  },
+  "stream_profiles": {
+    "system_errors": {
+      "target_directory": "/var/logs/app/error/",
+      "max_historic_files": 30,
+      "alert_on_rotation_anomaly": true,
+      "sync_write_mode": false,
+      "buffer_size_kb": 64,
+      "flush_interval_ms": 1000
+    },
+    "traffic_access": {
+      "target_directory": "/var/logs/app/access/",
+      "max_historic_files": 14,
+      "alert_on_rotation_anomaly": false,
+      "sync_write_mode": false,
+      "buffer_size_kb": 256,
+      "flush_interval_ms": 5000
+    },
+    "security_audit": {
+      "target_directory": "/var/logs/app/audit/",
+      "max_historic_files": 90,
+      "immutable_flag": true,
+      "sync_write_mode": true,
+      "cryptographic_checksums": true,
+      "offload_to_cold_storage_days": 7
+    },
+    "database_queries": {
+      "target_directory": "/var/logs/app/db/",
+      "max_historic_files": 7,
+      "alert_on_rotation_anomaly": false,
+      "sync_write_mode": false,
+      "buffer_size_kb": 512,
+      "drop_on_high_load": true
+    },
+    "background_workers": {
+      "target_directory": "/var/logs/app/workers/",
+      "max_historic_files": 14,
+      "sync_write_mode": false,
+      "buffer_size_kb": 128
+    }
+  },
+  "remote_storage_and_archival": {
+    "enabled": true,
+    "provider": "aws_s3",
+    "bucket_name": "arn:aws:s3:::enterprise-log-archive-prod",
+    "region": "us-east-1",
+    "upload_strategy": "batch_nightly",
+    "batch_window_utc": "03:00-04:00",
+    "lifecycle_policies": {
+      "transition_to_glacier_days": 30,
+      "permanent_deletion_days": 365
+    },
+    "encryption_at_rest": {
+      "enabled": true,
+      "kms_key_id": "alias/log-archive-key"
+    }
+  },
+  "formatting_engine": {
+    "output_type": "json_lines",
+    "enforce_strict_schema": true,
+    "required_metadata_fields": [
+      "timestamp_iso8601",
+      "log_level",
+      "correlation_id",
+      "process_pid",
+      "host_environment",
+      "git_commit_hash",
+      "tenant_id"
+    ],
+    "redaction_rules": {
+      "mask_pii": true,
+      "obfuscate_credit_cards": true,
+      "strip_auth_tokens": true,
+      "custom_regex_patterns": [
+        "(?i)(password|secret|key|token)[\\s\"':=]+([\\w\\-]+)",
+        "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b"
+      ],
+      "redaction_replacement_string": "[SECURE_REDACTED]"
+    }
+  },
+  "telemetry_and_alerting": {
+    "enabled": true,
+    "health_check_interval_seconds": 60,
+    "integrations": {
+      "pagerduty": {
+        "enabled": true,
+        "routing_key_env_var": "PD_LOGGING_ROUTING_KEY",
+        "trigger_on": ["circuit_breaker_active", "rotation_failure", "audit_log_tampering"]
+      },
+      "slack": {
+        "enabled": true,
+        "webhook_url_env_var": "SLACK_OPS_WEBHOOK",
+        "channel": "#ops-alerts-critical",
+        "trigger_on": ["circuit_breaker_warning"]
+      },
+      "datadog": {
+        "enabled": true,
+        "emit_metrics": true,
+        "metric_prefix": "app.logging.infrastructure."
+      }
+    }
+  },
+  "disk_health_circuit_breaker": {
+    "enabled": true,
+    "evaluation_interval_ms": 10000,
+    "emergency_halt_threshold_percent": 95,
+    "warning_threshold_percent": 85,
+    "recovery_threshold_percent": 75,
+    "action_on_critical": {
+      "drop_non_essential_logs": true,
+      "force_immediate_rotation": true,
+      "block_incoming_http_requests": false,
+      "trigger_memory_garbage_collection": true
+    },
+    "fail_safe_directories": [
+      "/tmp/emergency_app_logs/"
+    ]
+  }
+}

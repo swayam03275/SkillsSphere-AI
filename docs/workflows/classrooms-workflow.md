@@ -1,233 +1,382 @@
 # Live Interactive Classrooms Workflow
 
-This document provides a highly comprehensive, exhaustive technical breakdown of the Live Classroom workflow within the SkillsSphere-AI platform. It details exactly how WebRTC peer-to-peer connections are established, how UI states (like hand raising and screen sharing) are synchronized across clients, the security measures in place, and the exact files responsible for this functionality.
+## 1. Executive Summary & Domain Scope
+
+The **Live Interactive Classrooms** module is the cornerstone of real-time collaborative learning within the SkillsSphere-AI platform. It is engineered to seamlessly bridge the gap between traditional video conferencing and highly specialized technical education tools. By converging low-latency peer-to-peer (P2P) WebRTC media streaming, synchronized WebSockets for state management, and deeply integrated collaborative workspaces, the module provides a comprehensive digital classroom environment.
+
+### Core Problem Addressed
+Traditional remote learning often suffers from tool fragmentation—students and tutors must juggle separate applications for video calls, whiteboarding, and code execution. This context switching breaks focus and degrades the educational experience. The Classrooms module eliminates this friction by unifying these discrete tools into a single, highly performant, browser-native interface that requires no third-party installations.
+
+### Target User Personas
+- **Tutors (Hosts)**: Require authoritative control over the session, the ability to monitor student engagement, and seamless tools to explain complex architectural or code-level concepts in real-time.
+- **Students (Participants)**: Require a distraction-free, highly responsive environment where they can consume multimedia streams, interact via chat or hand-raising, and collaboratively edit code or diagrams without noticeable latency.
+
+### High-Level Capability Matrix
+**What the Module Does:**
+- Establishes true P2P WebRTC mesh networks for audio/video/screen streaming, bypassing centralized media servers to reduce infrastructural costs and latency.
+- Provides a real-time synchronized HTML5 canvas for collaborative whiteboarding.
+- Integrates a real-time synchronized Code Editor (supporting Operational Transforms or full-document sync) for pair programming.
+- Enforces strict Role-Based Access Control (RBAC) and host-level teardown safeguards.
+- Implements native Picture-in-Picture (PiP) support for persistent media visibility across different workspaces.
+
+**What the Module Deliberately Avoids:**
+- **Centralized Media Routing (SFU/MCU)**: To maintain a zero-cost infrastructure footprint for media, all video/audio streams are routed strictly P2P. This enforces a soft cap on room sizes (optimally 5-8 participants) before client-side CPU/bandwidth bottlenecks occur.
+- **Persistent Media Storage**: The platform does not record or persist video/audio streams. All media data is inherently ephemeral.
 
 ---
 
-## 1. High-Level Architecture Overview
+## 2. Comprehensive Architecture & Sequence Diagrams
 
-The Classroom feature is designed to support real-time, low-latency communication between Tutors and Students. To achieve this without incurring massive server bandwidth costs, it relies on a hybrid architectural model:
+The architecture relies on a hybrid model:
+1. **Signaling (Centralized State)**: Socket.io handles the exchange of SDP (Session Description Protocol) offers, answers, and ICE candidates.
+2. **Media Delivery (Decentralized Mesh)**: `simple-peer` handles the actual transmission of UDP media packets directly between clients.
 
-1. **Signaling (Centralized State Management)**: Handled by **Socket.io** over standard WebSockets. The Node.js backend acts as a signaling server. It does not touch media data. Instead, it securely passes WebRTC offers, answers, and ICE candidates between clients. It also acts as the authoritative source of truth for non-media data (e.g., chat logs, hand raises, and active participant lists).
-2. **Media Delivery (Decentralized Mesh)**: Handled by **WebRTC** (using the `simple-peer` wrapper) for true peer-to-peer delivery of audio, video, and screen sharing streams. This means media goes directly from Student A to Student B, bypassing the server entirely.
-
----
-
-## 2. End-to-End Workflow & Sequence
-
-### Step 1: Room Creation & Initialization
-
-1. A **Tutor** navigates to the Classrooms Dashboard (`client/src/modules/classrooms/pages/ClassroomsDashboard.jsx`).
-2. They initiate the "Create Classroom" action.
-3. The frontend generates a unique `roomId` (typically a UUID or a short phonetic string) or requests one from the backend API.
-4. The Tutor is navigated to `/classrooms/:roomId`, becoming the "Host" of the session.
-5. Students receive the URL and navigate to the same route.
-
-### Step 2: Joining the Room & WebRTC Signaling
-
-When any user (Tutor or Student) lands on the `ClassroomRoom.jsx` component, a complex handshake occurs.
+### End-to-End User Flow
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant NewClient as New Participant (Client A)
-    participant IO as Socket.IO Server
-    participant OldClient as Existing Participant (Client B)
+    actor Tutor as Tutor (Host)
+    participant UI as React Client (ClassroomRoom.jsx)
+    participant IO as Node.js Socket.IO Server
+    actor Student as Student (Peer)
     
-    Note over NewClient: 1. Request Media Permissions
-    NewClient->>NewClient: navigator.mediaDevices.getUserMedia({video: true, audio: true})
+    Tutor->>UI: Navigates to Classrooms Dashboard
+    UI->>UI: Requests local media permissions (getUserMedia)
+    Tutor->>UI: Clicks "Create Classroom"
+    UI->>IO: emit("create-room", { tutorId, metadata })
+    IO-->>UI: Returns unique Room ID
+    UI->>UI: Transitions to /classrooms/:roomId (Host Mode)
     
-    Note over NewClient, IO: 2. Join the Logical Room
-    NewClient->>IO: emit("join-room", { roomId, user })
-    IO->>IO: Add Client A to room Map, broadcast to others
+    Student->>UI: Navigates to /classrooms/:roomId
+    UI->>UI: Requests local media permissions
+    UI->>IO: emit("join-room", { roomId, studentToken })
     
-    Note over IO, NewClient: 3. Server provides existing peers
-    IO-->>NewClient: emit("room-participants", [Client B, ...])
-    IO-->>OldClient: emit("user-joined", { socketId: Client A, user: Client A info })
+    Note over IO: Server validates token, enforces room capacity
     
-    Note over NewClient: 4. Client A acts as WebRTC INITIATOR
-    NewClient->>NewClient: createPeer(Client B, initiator: true)
+    IO-->>UI: emit("room-participants", [Tutor])
+    IO-->>Tutor: emit("user-joined", { studentData })
     
-    Note over NewClient, OldClient: 5. Exchange WebRTC Offer
-    NewClient->>IO: emit("webrtc-offer", { target: Client B, offer: SDP })
-    IO-->>OldClient: emit("webrtc-offer", { caller: Client A, offer: SDP })
+    Note over UI: Student acts as WebRTC INITIATOR
+    UI->>UI: simple-peer: createPeer(initiator: true)
     
-    Note over OldClient: 6. Client B acts as WebRTC RECEIVER
-    OldClient->>OldClient: addPeer(offer: SDP, initiator: false)
+    UI->>IO: emit("webrtc-offer", { target: Tutor, SDP })
+    IO-->>Tutor: emit("webrtc-offer", { caller: Student, SDP })
     
-    Note over OldClient, NewClient: 7. Exchange WebRTC Answer
-    OldClient->>IO: emit("webrtc-answer", { target: Client A, answer: SDP })
-    IO-->>NewClient: emit("webrtc-answer", { answer: SDP })
+    Note over Tutor: Tutor acts as WebRTC RECEIVER
+    Tutor->>Tutor: simple-peer: addPeer(SDP, initiator: false)
     
-    Note over NewClient, OldClient: 8. P2P Media Connection Established!
+    Tutor->>IO: emit("webrtc-answer", { target: Student, SDP })
+    IO-->>UI: emit("webrtc-answer", { SDP })
+    
+    Note over UI, Tutor: P2P Media Mesh Established
 ```
 
-#### Detailed Explanation of Peer Creation:
-When `Client A` receives the list of existing participants, it iterates over them and instantiates a `simple-peer` object for each one with `initiator: true`. 
+### Component Hierarchy & Service Boundaries
 
-```javascript
-// Inside ClassroomRoom.jsx
-function createPeer(userToSignal, callerId, stream, callerUser) {
-  const peer = new Peer({
-    initiator: true,
-    trickle: false, // We use simplified full-SDP signaling for stability
-    stream,
-  });
+```mermaid
+graph TD
+    subgraph Frontend [React Client Layer]
+        CR[ClassroomRoom.jsx] --> VG[VideoGrid/VideoTile.jsx]
+        CR --> WB[Whiteboard.jsx]
+        CR --> CE[SharedCodeEditor.jsx]
+        CR --> CC[ChatControls.jsx]
+        CR --> HC[HostControls.jsx]
+    end
 
-  peer.on("signal", signal => {
-    socketRef.current.emit("webrtc-offer", {
-      targetSocketId: userToSignal,
-      callerSocketId: callerId,
-      callerUser,
-      offer: signal
-    });
-  });
+    subgraph Signaling [Socket.IO Server Layer]
+        SM[SocketManager] --> RH[RoomHandler]
+        SM --> WH[WebRTCHandler]
+        SM --> WHB[WorkspaceHandler]
+    end
 
-  peer.on("stream", incomingStream => {
-    // Attach stream to React state for VideoTile rendering
-    setPeers(prev => prev.map(p => {
-      if (p.peerId === userToSignal) return { ...p, stream: incomingStream };
-      return p;
-    }));
-  });
+    subgraph WebRTC [P2P Data Layer]
+        SP[simple-peer Instance]
+    end
 
-  return peer;
-}
+    CR -- "SDP / ICE / Chat / Sync" <--> Signaling
+    VG -- "Media Tracks (Video/Audio)" <--> SP
+    SP -- "UDP Streams" <--> SP
 ```
 
 ---
 
-## 3. Media & Workspace Controls
+## 3. Detailed Data Models & Schemas
 
-### A. Mute / Hide Video (Soft Toggles)
-In WebRTC, stopping a track entirely requires renegotiating the entire SDP offer/answer cycle. To avoid this latency and complexity, the platform uses "Soft Toggles". The client simply disables the track locally, which immediately transmits black frames (for video) or silence (for audio) to all peers without dropping the connection.
+Although the media streams are ephemeral, the underlying room metadata, participant configurations, and security tokens require strict schema validation both in-memory and within the database.
+
+### MongoDB Schemas
+
+**Classroom Session Model (`src/database/models/ClassroomSession.js`)**
+Tracks the lifecycle and metadata of a room, primarily for analytics and billing/usage tracking.
 
 ```javascript
-// ClassroomRoom.jsx toggleMute snippet
-const toggleMute = () => {
-  if (localStream) {
-    const audioTrack = localStream.getAudioTracks()[0];
-    if (audioTrack) {
-      audioTrack.enabled = !audioTrack.enabled; // Mutes mic instantly across all peers
-      setIsMuted(!audioTrack.enabled);
-    }
-  }
-};
+const mongoose = require('mongoose');
+
+const classroomSessionSchema = new mongoose.Schema({
+  roomId: { 
+    type: String, 
+    required: true, 
+    unique: true,
+    index: true 
+  },
+  hostId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User', 
+    required: true,
+    index: true
+  },
+  title: { 
+    type: String, 
+    default: 'Live Session' 
+  },
+  status: { 
+    type: String, 
+    enum: ['active', 'ended', 'aborted'], 
+    default: 'active' 
+  },
+  participants: [{
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    joinedAt: { type: Date, default: Date.now },
+    leftAt: { type: Date }
+  }],
+  settings: {
+    maxParticipants: { type: Number, default: 10 },
+    allowScreenShare: { type: Boolean, default: true },
+    requireApproval: { type: Boolean, default: false }
+  },
+  startedAt: { type: Date, default: Date.now },
+  endedAt: { type: Date }
+}, { 
+  timestamps: true 
+});
+
+// Compound index for querying active sessions by host
+classroomSessionSchema.index({ hostId: 1, status: 1 });
+
+module.exports = mongoose.model('ClassroomSession', classroomSessionSchema);
 ```
 
-### B. Screen Sharing (Track Replacement)
-To share a screen, the client calls `navigator.mediaDevices.getDisplayMedia()`. 
-Crucially, `simple-peer` supports dynamic track replacement via `peer.replaceTrack()`. This allows a user to swap their camera feed for their screen feed without tearing down the WebRTC connection.
+### In-Memory State Maps (Node.js)
+
+To achieve extreme low-latency signaling, the Socket.io server maintains in-memory maps. Relying on Redis or MongoDB for high-frequency coordinate syncing (e.g., Whiteboard strokes) would introduce unacceptable latency.
 
 ```javascript
-const toggleScreenShare = async () => {
-  if (!isScreenSharing) {
-    try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-      screenStreamRef.current = stream;
-      
-      const screenTrack = stream.getVideoTracks()[0];
-      const cameraTrack = localStreamRef.current?.getVideoTracks()[0];
-      
-      // Replace the camera track with the screen track for ALL connected peers
-      if (cameraTrack) {
-        peersRef.current.forEach(p => {
-          p.peer.replaceTrack(cameraTrack, screenTrack, localStreamRef.current);
-        });
+// src/modules/classrooms/socketStore.js
+
+/**
+ * Mapping of RoomID -> RoomState
+ * {
+ *   "room-uuid": {
+ *     hostSocketId: "socket-xyz",
+ *     participants: Map<SocketId, UserContext>,
+ *     activeWorkspace: "video" | "whiteboard" | "editor",
+ *     whiteboardState: Array<StrokeData>,
+ *     editorState: String
+ *   }
+ * }
+ */
+const activeRooms = new Map();
+
+/**
+ * Mapping of SocketID -> UserContext
+ * Used for fast reverse lookups during disconnects.
+ * {
+ *   "socket-xyz": {
+ *     userId: "mongo-uuid",
+ *     roomId: "room-uuid",
+ *     role: "tutor" | "student",
+ *     isMuted: boolean,
+ *     isHandRaised: boolean
+ *   }
+ * }
+ */
+const socketToUser = new Map();
+```
+
+---
+
+## 4. API Endpoints & State Management
+
+### REST Endpoints
+While WebSockets handle real-time sync, standard HTTP endpoints handle the initialization and historical tracking of rooms.
+
+| Method | Endpoint | Auth Level | Purpose | Request Payload | Response |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `POST` | `/api/classrooms/init` | Tutor Only | Creates a new session DB record and reserves a roomId. | `{ title: "React Hooks Deep Dive", settings: {...} }` | `{ roomId: "...", token: "JWT" }` |
+| `GET` | `/api/classrooms/active` | Auth | Retrieves a list of active rooms available to the student. | `None` | `[{ roomId, title, hostName, participantCount }]` |
+| `POST` | `/api/classrooms/:roomId/end` | Tutor Only | Force-terminates a session, kicking all users. | `None` | `{ success: true }` |
+| `GET` | `/api/classrooms/history` | Auth | Retrieves past attended/hosted sessions for the dashboard. | `?page=1&limit=10` | `{ sessions: [...], pagination: {...} }` |
+
+### Redux State Management
+
+The frontend heavily utilizes Redux Toolkit to manage the ephemeral state of the room, preventing prop-drilling across the complex workspace grid.
+
+```javascript
+// client/src/features/classroom/classroomSlice.js
+
+const initialState = {
+  roomId: null,
+  connectionStatus: 'disconnected', // 'connecting' | 'connected' | 'error'
+  participants: [], // Array of { id, name, role, isMuted, isHandRaised, streamId }
+  activeWorkspace: 'video', // 'video' | 'whiteboard' | 'editor'
+  layoutConfig: {
+    sidebarOpen: true,
+    pipActive: false
+  },
+  chatMessages: [],
+  error: null
+};
+
+export const classroomSlice = createSlice({
+  name: 'classroom',
+  initialState,
+  reducers: {
+    setRoomId: (state, action) => { state.roomId = action.payload; },
+    addParticipant: (state, action) => { state.participants.push(action.payload); },
+    removeParticipant: (state, action) => { 
+      state.participants = state.participants.filter(p => p.id !== action.payload); 
+    },
+    updateParticipantState: (state, action) => {
+      const index = state.participants.findIndex(p => p.id === action.payload.id);
+      if (index !== -1) {
+        state.participants[index] = { ...state.participants[index], ...action.payload.changes };
       }
-      setIsScreenSharing(true);
-    } catch (err) {
-      logger.error("Failed to share screen", err);
-    }
-  } else {
-    // ... logic to revert back to cameraTrack
+    },
+    setWorkspace: (state, action) => { state.activeWorkspace = action.payload; },
+    addChatMessage: (state, action) => { state.chatMessages.push(action.payload); },
+    resetClassroomState: () => initialState
   }
-};
-```
-
-### C. Real-time Features & Sockets
-- **Hand Raising**: A non-critical UI state. The client emits `toggle-hand-raise` with `{ roomId, isRaised: true }`. The backend broadcasts `hand-raise-toggled` to the room. The React state updates, rendering a yellow hand icon on the user's video tile.
-- **Chat**: A basic broadcast model. The client emits `chat-message`. The server broadcasts it. It is stored entirely in React state (`chatMessages`) and is intentionally ephemeral (lost upon refresh) to mimic standard video conferencing behavior.
-
----
-
-## 4. Collaborative Workspaces
-
-The classroom features a dynamic layout system allowing users to switch between three primary workspaces. The active workspace is purely a local UI state (`activeWorkspace`), meaning a Tutor can be looking at the code editor while a Student is looking at the Whiteboard.
-
-### Workspace 1: Video Grid
-The default view. Uses CSS Grid (`grid-cols-1 md:grid-cols-2 lg:grid-cols-3`) to evenly distribute `VideoTile` components.
-
-### Workspace 2: Collaborative Whiteboard
-Rendered via `Whiteboard.jsx`. It utilizes an HTML5 `<canvas>`.
-- **Syncing**: Captures `onMouseDown`, `onMouseMove`, and `onMouseUp` events.
-- **Broadcasting**: Emits raw coordinate data `[x, y]` and color/brush size over Socket.io.
-- **Rendering**: Remote peers listen for `draw-line` events and programmatically draw on their local canvas.
-
-### Workspace 3: Shared Code Editor
-Rendered via `SharedCodeEditor.jsx`. Typically utilizes a library like Monaco Editor or CodeMirror.
-- **Syncing**: Captures `onChange` events.
-- **Broadcasting**: Emits the entire document string or operational transforms (OT) over Socket.io.
-- **Rendering**: Updates the local editor state.
-
-*(Note: When in Whiteboard or Code mode, the video grid minimizes to a horizontal scrolling ribbon at the top of the screen to maximize workspace real estate).*
-
----
-
-## 5. Disconnection & Cleanup
-
-Graceful teardown is critical to prevent memory leaks and zombie video tiles.
-
-When a user clicks "Leave" or closes the tab:
-1. The WebSocket connection drops. The Node.js server detects the `disconnect` event.
-2. The server removes the socket ID from the internal room mapping and broadcasts a `user-left` payload to remaining participants.
-3. The remaining clients listen for `user-left`:
-   ```javascript
-   s.on("user-left", ({ socketId }) => {
-     activeSocketIdsRef.current.delete(socketId);
-     const item = peersRef.current.find(p => p.peerId === socketId);
-     if (item) {
-       item.peer.destroy(); // Safely close the WebRTC connection
-     }
-     // Remove from React state to unmount the VideoTile
-     setPeers(prev => prev.filter(p => p.peerId !== socketId));
-   });
-   ```
-
----
-
-## 6. Key Files & Components Reference
-
-| File Path | Responsibility |
-| :--- | :--- |
-| `client/src/modules/classrooms/pages/ClassroomRoom.jsx` | The monolithic orchestrator. Manages the Socket connection, WebRTC peer arrays, `getUserMedia` streams, and the UI layout (Video / Chat / Participants). |
-| `client/src/modules/classrooms/components/VideoTile.jsx` | Renders a single HTML `<video>` element. It intercepts the React `ref` and manually attaches the WebRTC `MediaStream` object to the `video.srcObject` property. |
-| `client/src/modules/classrooms/components/Whiteboard.jsx` | The real-time drawing canvas component. |
-| `client/src/modules/classrooms/components/SharedCodeEditor.jsx` | The collaborative code environment. |
-| `server/src/modules/classrooms/socket.js` | The backend signaling server. Maintains an in-memory `Map` of active rooms and participants. Manages the broadcasting of WebRTC offers/answers without storing media. |
-
----
-
-## 7. Security & Limitations
-
-### WebRTC Injection Prevention
-Because WebRTC offers are routed through a central Socket.io server, a malicious user could attempt to send an offer to a room they are not a part of. The frontend actively prevents this:
-
-```javascript
-s.on("webrtc-offer", (payload) => {
-  // Security check: Verify that the caller is a registered participant in this room
-  if (!activeSocketIdsRef.current.has(payload.callerSocketId)) {
-    logger.warn(`Silently dropped unauthorized WebRTC stream injection from socket: ${payload.callerSocketId}`);
-    return;
-  }
-  // Proceed with addPeer...
 });
 ```
 
-### Scalability (The Mesh Network Limitation)
-This application utilizes a **Full Mesh Network** topology. Every peer connects to every other peer.
-- 2 participants = 1 connection.
-- 5 participants = 10 connections.
-- 10 participants = 45 connections.
+---
 
-Because the client must encode and upload their video stream separately for *each* connection, bandwidth and CPU usage scale exponentially. The recommended maximum room size for this architecture is **5-8 participants**. For larger classrooms, the backend would need to be re-architected to use an **SFU (Selective Forwarding Unit)** like mediasoup or Janus, where the client sends one stream to the server, and the server multiplexes it to the other clients.
+## 5. Security, Edge Cases & Error Handling
+
+### WebRTC Stream Injection Prevention
+A critical security vector in signaling servers is "Stream Injection," where a malicious client emits a `webrtc-offer` to a target socket ID in a room they haven't joined. The backend strict validation middleware blocks this:
+
+```javascript
+// Server-side socket listener
+socket.on("webrtc-offer", (payload) => {
+  const callerContext = socketToUser.get(socket.id);
+  const targetContext = socketToUser.get(payload.targetSocketId);
+  
+  // Strict Validation: Ensure both users exist and belong to the EXACT same room
+  if (!callerContext || !targetContext || callerContext.roomId !== targetContext.roomId) {
+    console.warn(`[SECURITY] Blocked cross-room stream injection attempt from ${socket.id}`);
+    return;
+  }
+  
+  io.to(payload.targetSocketId).emit("webrtc-offer", {
+    callerSocketId: socket.id,
+    offer: payload.offer
+  });
+});
+```
+
+### Rate Limiting the Whiteboard
+A user could easily crash other clients by firing a script that draws 10,000 lines per second on the whiteboard. To mitigate this, the client implements `lodash/throttle` on `mousemove` events (typically 16ms to match 60fps), and the server enforces a socket-level rate limit.
+
+### Handling Unexpected Disconnects (Zombie Connections)
+If a user closes their laptop lid, the TCP connection drops without firing a clean `disconnect` event immediately. The server relies on WebSocket ping/pong heartbeats. Once the timeout threshold is breached, the server forcibly executes the `cleanupZombieSocket` routine, which updates the room state and broadcasts `user-left` to the remaining peers, ensuring the UI accurately reflects reality and WebRTC instances are garbage collected.
+
+### Host Teardown Safeguards
+When the Tutor clicks "End Session", the client fires `/api/classrooms/:roomId/end`. The backend updates the DB status to 'ended', and the signaling server emits a `session-terminated` event. All clients are programmed to immediately execute `peer.destroy()` on all active connections, stop their local media tracks (`track.stop()`), and redirect to the dashboard, ensuring no orphan media streams continue running in the background.
+
+---
+
+## 6. Component-Level Implementation Specs
+
+### `ClassroomRoom.jsx` (The Orchestrator)
+This monolithic component is the brain of the module. It handles the `useEffect` that initializes the Socket.IO connection and orchestrates the WebRTC handshake.
+
+- **Dependencies**: Uses `useRef` extensively to hold the mutable `socket` instance, the `peers` array, and the `localStream` without triggering unnecessary React re-renders.
+- **Optimization**: The list of peers is mapped to a state array to trigger rendering of `VideoTile` components. It utilizes `useCallback` for functions like `toggleMute` and `toggleScreenShare` to maintain stable references passed down to the control bar.
+
+```javascript
+// Core setup effect in ClassroomRoom.jsx
+useEffect(() => {
+  let isMounted = true;
+  
+  const initMediaAndSockets = async () => {
+    try {
+      // 1. Get Local Media
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      if (!isMounted) return;
+      localStreamRef.current = stream;
+      
+      // 2. Connect Socket
+      socketRef.current = io(process.env.VITE_API_URL, { auth: { token } });
+      
+      // 3. Register listeners
+      socketRef.current.on("room-participants", handleExistingParticipants);
+      socketRef.current.on("user-joined", handleNewUser);
+      socketRef.current.on("webrtc-offer", handleReceiveOffer);
+      socketRef.current.on("webrtc-answer", handleReceiveAnswer);
+      
+      // 4. Join Room
+      socketRef.current.emit("join-room", { roomId, user: currentUser });
+      
+    } catch (err) {
+      handleMediaError(err);
+    }
+  };
+  
+  initMediaAndSockets();
+  
+  return () => {
+    isMounted = false;
+    // CRITICAL CLEANUP
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(t => t.stop());
+    }
+    peersRef.current.forEach(p => p.peer.destroy());
+    socketRef.current?.disconnect();
+  };
+}, [roomId]);
+```
+
+### `VideoTile.jsx` (Media Rendering)
+React cannot natively bind a raw `MediaStream` object to a video tag's `src` attribute. This component elegantly bridges the React and DOM worlds using a ref.
+
+```javascript
+const VideoTile = ({ stream, isLocal, userName, isMuted }) => {
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    // The exact moment the stream is available, attach it to the raw DOM node
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [stream]);
+
+  return (
+    <div className="relative rounded-xl overflow-hidden bg-gray-900 aspect-video shadow-lg">
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted={isLocal} // NEVER play local audio back to avoid deafening feedback loops
+        className="w-full h-full object-cover"
+      />
+      
+      {/* Overlay UI */}
+      <div className="absolute bottom-3 left-3 bg-black/60 px-3 py-1 rounded-full backdrop-blur-md flex items-center gap-2">
+        <span className="text-white text-xs font-semibold">{userName} {isLocal && "(You)"}</span>
+        {isMuted && <MicOff size={14} className="text-red-400" />}
+      </div>
+    </div>
+  );
+};
+```
+
+### `Whiteboard.jsx` (Synchronized Canvas)
+This component leverages a native HTML5 `<canvas>`. Redundant paddings have been removed via CSS (`w-full h-full inset-0`) to absolutely maximize the drawing space.
+- It uses a `useLayoutEffect` to size the canvas perfectly to its parent container.
+- When `onMouseMove` fires while drawing, it emits the `[x0, y0, x1, y1]` coordinate vector.
+- The receiving clients plot these exact coordinates using `ctx.lineTo()` and `ctx.stroke()`.
+
+### `SharedCodeEditor.jsx`
+Implements dynamic layout shifting. When active, it forces the `VideoGrid` into a horizontal ribbon at the top of the viewport. It utilizes a controlled component pattern where the `value` is synced via Redux, and changes are debounced before emitting via sockets to prevent race conditions during rapid typing.

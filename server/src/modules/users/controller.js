@@ -185,6 +185,44 @@ export const updatePreferences = asyncHandler(async (req, res, next) => {
 });
 
 /**
+ * @desc    Onboard user (set name, role, and isOnboarded flag)
+ * @route   PUT /api/users/onboard
+ * @access  Private
+ */
+export const onboardUser = asyncHandler(async (req, res, next) => {
+  const { name, role } = req.body;
+
+  if (!name || name.trim().length < 2) {
+    return next(new AppError("Please provide a valid name (at least 2 characters)", 400));
+  }
+
+  const allowedRoles = ["student", "tutor", "recruiter"];
+  if (!role || !allowedRoles.includes(role)) {
+    return next(new AppError("Please select a valid role", 400));
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(
+    req.user._id,
+    { 
+      name: name.trim(),
+      role: role,
+      isOnboarded: true 
+    },
+    { new: true, runValidators: true }
+  ).select("-password -__v");
+
+  if (!updatedUser) {
+    return next(new AppError("User not found", 404));
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Onboarding completed successfully",
+    user: updatedUser,
+  });
+});
+
+/**
  * @desc    Update user profile details
  * @route   PUT /api/users/me
  * @access  Private

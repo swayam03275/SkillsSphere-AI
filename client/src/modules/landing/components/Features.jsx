@@ -184,7 +184,7 @@ const Features = () => {
     {
       key: "classroom",
       icon: <Video className="text-[var(--primary)]" size={32} />,
-      title: "Live Interactive Classrooms",
+      title: "Live Classrooms",
       description:
         "Run real-time sessions with video, chat, and collaboration so learners can practice while tutors guide them.",
       metric: "Live",

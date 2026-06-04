@@ -283,17 +283,33 @@ const authSlice = createSlice({
       })
       .addCase(registerUser.fulfilled, (state, action) => {
         const email = action.payload.pendingVerificationEmail;
+        const isVerified = action.payload.user?.isVerified;
+        
+        if (isVerified && action.payload.token) {
+          // Auto-verify mode (console EMAIL_SERVICE_MODE)
+          const { token, user } = action.payload;
+          persistAuth({ token, user }, true);
+          clearPendingEmail();
+          
+          state.loading = false;
+          state.error = null;
+          state.user = user;
+          state.token = token;
+          state.isAuthenticated = true;
+          state.pendingUser = null;
+          state.pendingVerificationEmail = "";
+        } else {
+          clearStoredAuth();
+          persistPendingEmail(email);
 
-        clearStoredAuth();
-        persistPendingEmail(email);
-
-        state.loading = false;
-        state.error = null;
-        state.user = null;
-        state.token = null;
-        state.isAuthenticated = false;
-        state.pendingUser = action.payload.user || null;
-        state.pendingVerificationEmail = email;
+          state.loading = false;
+          state.error = null;
+          state.user = null;
+          state.token = null;
+          state.isAuthenticated = false;
+          state.pendingUser = action.payload.user || null;
+          state.pendingVerificationEmail = email;
+        }
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.loading = false;
@@ -325,7 +341,16 @@ const authSlice = createSlice({
         state.verificationLoading = true;
         state.error = null;
       })
-      .addCase(verifyEmail.fulfilled, (state) => {
+      .addCase(verifyEmail.fulfilled, (state, action) => {
+        // Backend now returns { success, message, token, user }
+        if (action.payload.token && action.payload.user) {
+          const { token, user } = action.payload;
+          persistAuth({ token, user }, true);
+          state.token = token;
+          state.user = user;
+          state.isAuthenticated = true;
+        }
+
         clearPendingEmail();
         state.verificationLoading = false;
         state.error = null;

@@ -1,0 +1,122 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Enterprise Webhook HMAC Gateway Blueprint",
+  "description": "Defines the strict cryptographic parameters, multi-tenant network constraints, circuit-breaker limits, and audit policies for inbound webhook ingestion.",
+  "version": "2.1.0",
+  "type": "object",
+  "engine_configuration": {
+    "primary_algorithm": "sha256",
+    "fallback_algorithms": ["sha512"],
+    "encoding": "hex",
+    "secret_management": {
+      "strategy": "environment_variable",
+      "global_key_reference": "WEBHOOK_SIGNING_SECRET",
+      "rotation_grace_period_hours": 24,
+      "allow_unencrypted_secrets_in_memory": false
+    }
+  },
+  "middleware_rules": {
+    "replay_defense": {
+      "enabled": true,
+      "max_timestamp_variance_seconds": 300,
+      "enforce_strict_monotonic_clock": true,
+      "timestamp_headers": [
+        "x-webhook-timestamp",
+        "t",
+        "stripe-signature-timestamp"
+      ]
+    },
+    "signature_extraction": {
+      "headers": [
+        "x-webhook-signature",
+        "v1",
+        "stripe-signature"
+      ],
+      "allow_multiple_signatures": true,
+      "delimiter": ","
+    },
+    "payload_constraints": {
+      "require_raw_body": true,
+      "max_payload_size_bytes": 5242880,
+      "reject_chunked_encoding": true
+    }
+  },
+  "network_security": {
+    "ip_whitelisting": {
+      "enabled": true,
+      "allowed_cidr_blocks": [
+        "10.0.0.0/8",
+        "192.168.1.0/24",
+        "api.trusted-provider.com/32"
+      ],
+      "block_tor_exit_nodes": true
+    },
+    "rate_limiting": {
+      "strategy": "token_bucket",
+      "max_requests_per_minute": 600,
+      "burst_capacity": 50,
+      "penalize_failed_signatures": true,
+      "penalty_lockout_seconds": 900
+    }
+  },
+  "circuit_breaker": {
+    "enabled": true,
+    "failure_threshold_percentage": 50,
+    "minimum_throughput_eval": 100,
+    "evaluation_window_seconds": 60,
+    "cooldown_reset_seconds": 300,
+    "fail_state_action": "reject_all_with_503"
+  },
+  "protected_routes": [
+    {
+      "path": "/api/integrations/webhooks/payments/*",
+      "methods": ["POST"],
+      "strict_mode": true,
+      "tenant_isolation": true
+    },
+    {
+      "path": "/api/integrations/webhooks/crm/*",
+      "methods": ["POST", "PUT"],
+      "strict_mode": true,
+      "tenant_isolation": false
+    }
+  ],
+  "audit_and_telemetry": {
+    "log_level": "warn",
+    "redaction_rules": {
+      "mask_raw_payloads": true,
+      "mask_signatures": true
+    },
+    "metrics_hooks": {
+      "datadog_event_trigger": true,
+      "prometheus_counter_name": "webhook_auth_failures_total"
+    }
+  },
+  "response_standards": {
+    "missing_header": { 
+      "status": 401, 
+      "code": "AUTH_MISSING_SIGNATURE",
+      "public_message": "Missing required cryptographic signature headers."
+    },
+    "invalid_signature": { 
+      "status": 403, 
+      "code": "AUTH_INVALID_SIGNATURE",
+      "public_message": "Payload integrity verification failed."
+    },
+    "stale_timestamp": { 
+      "status": 403, 
+      "code": "AUTH_REPLAY_DETECTED",
+      "public_message": "Request timestamp falls outside the acceptable temporal variance window."
+    },
+    "payload_too_large": { 
+      "status": 413, 
+      "code": "PAYLOAD_EXCEEDS_MEMORY_LIMIT",
+      "public_message": "Inbound buffer size exceeds configured limits."
+    },
+    "rate_limit_exceeded": {
+      "status": 429,
+      "code": "AUTH_RATE_LIMIT_EXCEEDED",
+      "public_message": "Too many requests. Please respect the Retry-After header."
+    }
+  }
+}

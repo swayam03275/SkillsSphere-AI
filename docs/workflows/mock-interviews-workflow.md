@@ -1,157 +1,323 @@
-# AI Mock Interviews & Tutor Analytics Workflow
+# Mock Interview Engine Workflow
 
-This document provides a highly detailed, exhaustive technical breakdown of the Mock Interview pipeline. It traces the flow of data from the student's initial persona configuration, through the real-time Speech-to-Text response capture, into the backend AI evaluation engine (`runPipeline`), and finally explores how this data is surfaced on the Tutor Dashboard for human review.
+## 1. Executive Summary & Domain Scope
+
+The **AI Mock Interview Engine** is a heavily integrated, multi-service module within the SkillsSphere-AI ecosystem. It is designed to autonomously simulate technical, behavioral, and architectural interviews by combining an interactive React frontend with a specialized Python FastAPI microservice dedicated to Natural Language Processing (NLP) and Speech-to-Text (STT) tasks.
+
+### Core Problem Addressed
+Candidates often lack realistic environments to practice high-stress verbal technical communication. Traditional mock interviews require a human peer, which is expensive and difficult to schedule. This module solves this by using AI to dynamically generate domain-specific questions, transcribe spoken audio using Whisper models, and evaluate the candidate's answers based on technical accuracy, semantic similarity to an optimal answer, and communication clarity.
+
+### Target User Personas
+- **Students (Candidates)**: Require a low-latency, stress-inducing (via timers and camera feeds) mock environment to practice technical articulation before actual interviews.
+- **Tutors/Mentors**: Can review the historical paginated scorecards of their students to identify recurring weaknesses in specific domains (e.g., React hooks, Node.js streams).
+
+### High-Level Capability Matrix
+**What the Module Does:**
+- **Dynamic Question Generation**: Randomly selects questions from a predefined domain bank without repeating questions across sequential sessions.
+- **Multimodal Input**: Captures both typed text and spoken audio (using `MediaRecorder` APIs), converting speech to text via the Python STT microservice.
+- **Multi-Dimensional Evaluation**: Evaluates answers across three axes: Technical Accuracy (Semantic similarity via HuggingFace Sentence Transformers), Concept Coverage (spaCy noun-chunking), and Communication Clarity (Readability scoring).
+- **Graceful Fallbacks (Fail-Soft Mode)**: If the Python AI service goes offline, the Node.js backend automatically intercepts the timeout and generates mock heuristic scores, ensuring the user is never stuck in a loading state.
+
+**What the Module Deliberately Avoids:**
+- **Fully Generative Questions**: To prevent AI hallucinations or overly generic questions ("What is programming?"), the base questions and their "ideal answers" are pre-seeded in the database by domain experts. The AI is used exclusively for *evaluation* of the user's answer, not for *generating* the base question itself.
+- **Real-time Video Processing**: To save bandwidth, the camera feed in the lobby is strictly a local mirror (using `getUserMedia`). No video data is uploaded to the server; only audio blobs are transmitted.
 
 ---
 
-## 1. High-Level Architecture Overview
+## 2. Comprehensive Architecture & Sequence Diagrams
 
-The Mock Interview system is designed to simulate a real-world technical interview environment. It relies on a decoupled architecture:
+The Interview Engine spans three distinct environments: the React Client, the Node.js API Gateway, and the Python FastAPI Microservice.
 
-1. **Frontend Capture**: A React-based interface (`InterviewSession.jsx`) that handles state management for the active question, records the duration of the interview, and interfaces with the browser's native `SpeechRecognition` API to capture audio answers as text transcripts.
-2. **Backend AI Engine**: A Node.js service (`interviews/service.js`) that receives the raw transcript array upon completion. It orchestrates a heavy data-processing pipeline that compares the student's answers against semantically loaded `QuestionBank` data using a multi-variable weighted scoring formula.
-3. **Analytics Aggregation**: A centralized MongoDB schema (`LearningProgress`) that aggregates these AI scores over time, allowing Tutors to visualize trends via `Recharts` and drill down into specific weaknesses.
-
----
-
-## 2. End-to-End Workflow & Sequence
-
-### Step 1: Pre-Interview Lobby & Configuration
-
-1. The student navigates to the Mock Interview module (`client/src/modules/mock-interview/pages/InterviewLobby.jsx`).
-2. The UI presents a configuration form where the student selects a target role or topic (e.g., "Frontend Developer", "Data Structures").
-3. The frontend makes a `GET /api/interviews/questions?topic={topic}` request.
-4. The backend queries the `QuestionBank` collection, returning a randomized, tailored subset of questions (typically 5-10) to prevent memorization of a static test.
-
-### Step 2: The Active Interview Session
-
-Once the student clicks "Start", they are routed to `InterviewSession.jsx`. The UI enters a focused, full-screen mode.
-
-#### Speech-to-Text Integration
-To mimic a real interview, the student is encouraged to speak their answers. This is handled natively in the browser without sending raw audio blobs to the server, heavily reducing bandwidth and latency.
-
-```javascript
-// Speech-to-Text Initialization Snippet
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-const recognition = new SpeechRecognition();
-recognition.continuous = true;
-recognition.interimResults = true;
-
-recognition.onresult = (event) => {
-  let finalTranscript = '';
-  for (let i = event.resultIndex; i < event.results.length; ++i) {
-    if (event.results[i].isFinal) {
-      finalTranscript += event.results[i][0].transcript;
-    }
-  }
-  // Append to current answer state
-  setCurrentAnswer(prev => prev + ' ' + finalTranscript);
-};
-```
-
-*Fallback*: If the student's browser does not support the API, or they lack a microphone, a standard text area is provided.
-
-The session tracks:
-- Time spent per question.
-- The exact transcript of the answer.
-- The question's reference ID.
-
-### Step 3: Submission & The AI Evaluation Pipeline
-
-When the student finishes the final question, the frontend array of `{ questionId, answer }` objects is sent via `POST /api/interviews/submit`. 
-
-This triggers the heavy backend evaluation pipeline.
+### End-to-End User Flow
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant FE as React Frontend
-    participant Route as Interview Controller
-    participant Service as Interview Service
-    participant AI as Evaluator (runPipeline)
-    participant DB as MongoDB (LearningProgress)
-
-    FE->>Route: POST /api/interviews/submit (Answers Array)
-    Route->>Service: processInterviewSubmission(userId, answers)
+    actor User as Candidate
+    participant UI as React Client (InterviewSession.jsx)
+    participant Node as Node.js Backend (Gateway)
+    participant DB as MongoDB
+    participant Py as Python FastAPI (Interview AI)
     
-    loop For Each Answer
-        Service->>DB: Fetch Question metadata (expected skills/keywords)
-        Service->>AI: runPipeline(question, answer, schema)
-        Note over AI: 1. Extract Keywords<br/>2. Semantic Similarity Score<br/>3. Identify specific Weaknesses
-        AI-->>Service: Return Breakdown Object { score: 85, feedback: "..." }
+    User->>UI: Selects Topic (e.g., "React") & Difficulty
+    UI->>Node: POST /api/interviews/start { topic, difficulty, persona }
+    
+    Note over Node, DB: Session Initialization
+    Node->>DB: Fetch 5 random non-repeating questions for Topic
+    Node->>DB: Create InterviewSession record
+    Node-->>UI: Return Session ID + 5 Questions
+    
+    loop For each Question (1 to 5)
+        UI->>UI: Start 120s Countdown Timer
+        User->>UI: Records Audio via MediaRecorder API
+        UI->>UI: Convert Blob to Base64
+        UI->>Node: POST /api/interviews/:id/answer { questionId, audioBase64 }
+        
+        Note over Node, Py: STT & NLP Evaluation Pipeline
+        Node->>Py: POST /api/evaluate { answerText, idealAnswer, expectedConcepts }
+        
+        alt Python Service Online
+            Py->>Py: NLP Semantic Similarity (Sentence Transformers)
+            Py->>Py: Concept Extraction (spaCy)
+            Py-->>Node: Return Detailed Scorecard
+        else Python Service Timeout (Fail-Soft)
+            Node->>Node: Fallback to Heuristic Mock Scoring
+        end
+        
+        Node->>DB: Append Answer & Score to Session.questions array
+        Node-->>UI: Return Interim Scorecard for this Question
+        UI->>UI: Render live feedback, increment question index
     end
     
-    Note over Service: Calculate Aggregate Session Score
-    Service->>DB: $push: { mockInterviews: sessionResult }
-    Service->>DB: $addToSet: { weaknesses: identifiedWeaknesses }
-    
-    DB-->>Route: DB Update Success
-    Route-->>FE: Return full AI Feedback & Scorecard
+    UI->>Node: POST /api/interviews/:id/complete
+    Node->>DB: Compute Aggregated Score, Update Status to 'completed'
+    Node-->>UI: Return Final Results
+    UI->>UI: Redirect to /mock-interview/results/:id
 ```
 
-### Step 4: Tutor Analytics & Review
+### Component Hierarchy & Microservice Boundaries
 
-The value of the Mock Interview system is in how the data is utilized by educators. Tutors have a specialized set of dashboards to monitor this data.
+```mermaid
+graph TD
+    subgraph Frontend [React Client Layer]
+        Lobby[InterviewLobby.jsx] --> Session[InterviewSession.jsx]
+        Session --> Recorder[AudioRecorder.jsx]
+        Session --> Timer[CountdownTimer.jsx]
+        Session --> Results[InterviewResults.jsx]
+        Results --> Hist[InterviewHistory.jsx]
+    end
 
-#### A. The Global Analytics Dashboard
-Located at `client/src/modules/analytics/TutorAnalyticsDashboard.jsx`. 
-This page aggregates data from *all* assigned students. It utilizes the `Recharts` library to visualize:
-- Average mock interview scores over the last 30 days.
-- A treemap of the most frequently identified AI weaknesses across the cohort.
+    subgraph Backend [Node.js Gateway Layer]
+        IC[InterviewController.js] --> IS[InterviewService.js]
+        IS --> AI[aiInterviewService.js]
+        IS --> DB[(MongoDB)]
+    end
 
-#### B. The Tutor Interview Console
-Located at `client/src/modules/mock-interview/pages/TutorInterviewConsole.jsx`.
-Tutors can drill down into a specific student's profile and open a specific interview session. The UI presents:
-- The overall AI score out of 100.
-- A side-by-side view of the Question, the Expected Answer, and the Student's Raw Transcript.
-- The AI's isolated feedback on *why* a certain score was given.
+    subgraph AI Service [Python FastAPI Layer]
+        Main[main.py] --> Audio[transcription.py]
+        Main --> Eval[evaluation.py]
+        Eval --> NLP[semantic_service.py]
+        Eval --> STT[whisper_service.py]
+    end
 
-This allows the Tutor to audit the AI. If the AI graded the student too harshly because of a Speech-to-Text transcription error, the Tutor can manually override the score.
+    Lobby -- "GET /api/interviews/topics" --> IC
+    Session -- "POST /api/interviews/:id/answer" --> IC
+    AI -- "HTTP POST (Timeout 15s)" --> Main
+```
 
 ---
 
-## 3. The `runPipeline` Evaluation Engine
+## 3. Detailed Data Models & Schemas
 
-The `runPipeline` function is the core of the AI grading system. It does not rely purely on LLM "vibes" but uses a strict, deterministic weighted formula.
+The engine relies on two highly structured Mongoose models to track the seed questions and the dynamic user sessions.
 
-### The Scoring Formula
-The final score for a single answer is a blended average:
-- **Keyword Match (20%)**: The system checks the transcript against an array of required technical terms. For example, if the question is about React state, the terms `useState` and `immutable` might be required.
-- **Experience Match (20%)**: Checks if the answer includes practical context (e.g., "In my last project, I used...").
-- **Semantic Skill Match (60%)**: Uses LLM-based evaluations to understand the context and correctness of the answer. This prevents students from artificially inflating their score by simply listing keywords randomly ("keyword stuffing").
+### MongoDB Schemas
+
+**Question Bank Model (`src/database/models/QuestionBank.js`)**
+Stores the expert-curated questions used to evaluate candidates.
 
 ```javascript
-// Backend Evaluator Snippet
-export const runPipeline = async (question, answerText) => {
-  const keywordScore = calculateKeywordDensity(answerText, question.requiredKeywords);
-  const semanticScore = await invokeLLMEvaluator(question.prompt, answerText);
+const mongoose = require('mongoose');
+
+const questionBankSchema = new mongoose.Schema({
+  topic: { 
+    type: String, 
+    required: true, 
+    index: true,
+    enum: ['React', 'Node.js', 'System Design', 'JavaScript', 'Data Structures']
+  },
+  difficulty: { 
+    type: String, 
+    enum: ['Beginner', 'Intermediate', 'Advanced'], 
+    required: true 
+  },
+  question: { 
+    type: String, 
+    required: true 
+  },
+  idealAnswer: { 
+    type: String, 
+    required: true 
+  },
+  keyConcepts: [{ 
+    type: String 
+  }], // Extracted by spaCy during DB seeding
+  metadata: {
+    estimatedTimeSeconds: { type: Number, default: 120 },
+    category: { type: String } // e.g., 'Hooks', 'Streams', 'Trees'
+  }
+}, { timestamps: true });
+
+// Compound index for extremely fast randomized selection queries
+questionBankSchema.index({ topic: 1, difficulty: 1 });
+
+module.exports = mongoose.model('QuestionBank', questionBankSchema);
+```
+
+**Interview Session Model (`src/database/models/InterviewSession.js`)**
+Tracks the stateful progression of a user's 5-question interview.
+
+```javascript
+const mongoose = require('mongoose');
+
+const answerSchema = new mongoose.Schema({
+  questionId: { type: mongoose.Schema.Types.ObjectId, ref: 'QuestionBank', required: true },
+  questionText: { type: String, required: true },
+  userAnswer: { type: String, required: true },
+  timeSpentSeconds: { type: Number, required: true },
+  isAudio: { type: Boolean, default: false },
   
-  const finalScore = (keywordScore * 0.2) + (semanticScore * 0.8);
-  
-  return {
-    score: finalScore,
-    weaknesses: identifyGaps(answerText, question.expectedConcepts)
-  };
-};
+  // Evaluation block populated by Python AI Service
+  evaluation: {
+    score: { type: Number, min: 0, max: 100 },
+    feedback: { type: String },
+    technicalAccuracy: { type: Number, min: 0, max: 100 }, // Sentence-Transformer Cosine Similarity
+    communicationClarity: { type: Number, min: 0, max: 100 }, // Flesch-Kincaid / Grammar check
+    coveredConcepts: [{ type: String }],
+    missingConcepts: [{ type: String }]
+  },
+  submittedAt: { type: Date, default: Date.now }
+});
+
+const interviewSessionSchema = new mongoose.Schema({
+  userId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User', 
+    required: true,
+    index: true
+  },
+  topic: { type: String, required: true },
+  difficulty: { type: String, required: true },
+  persona: { type: String, enum: ['Strict', 'Friendly', 'Technical'], default: 'Friendly' },
+  status: { 
+    type: String, 
+    enum: ['initialized', 'in-progress', 'completed', 'abandoned'], 
+    default: 'initialized' 
+  },
+  questions: [answerSchema], // Embedded sub-documents for fast read/write
+  finalScore: { type: Number },
+  overallFeedback: { type: String },
+  startedAt: { type: Date, default: Date.now },
+  completedAt: { type: Date }
+}, { timestamps: true });
+
+// Index for paginated history fetching
+interviewSessionSchema.index({ userId: 1, status: 1, createdAt: -1 });
+
+module.exports = mongoose.model('InterviewSession', interviewSessionSchema);
 ```
 
 ---
 
-## 4. Key Files & Components Reference
+## 4. API Endpoints & State Management
 
-| File Path | Responsibility |
-| :--- | :--- |
-| `client/src/modules/mock-interview/pages/InterviewSession.jsx` | Handles the UI for the active interview. Integrates with the browser's Web Speech API for voice capture and manages the session timer. |
-| `client/src/modules/mock-interview/pages/TutorInterviewConsole.jsx` | The review portal for Tutors to audit AI-graded interviews, view transcripts, and assess weaknesses. |
-| `client/src/modules/analytics/TutorAnalyticsDashboard.jsx` | The high-level Recharts dashboard aggregating all `LearningProgress` data. |
-| `server/src/modules/interviews/controller.js` | The Express route handler that receives the submitted transcript and routes it to the AI service. |
-| `server/src/modules/interviews/service.js` | Orchestrates the `runPipeline` evaluation loop, calculates averages, and persists the resulting scores to the database. |
-| `server/src/database/models/LearningProgress.js` | The central schema tying a `User` (student) to their historical interview scores, roadmaps, and identified weaknesses. |
+### REST Endpoints (Node.js Gateway)
+
+| Method | Endpoint | Auth Level | Purpose | Payload | Response |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/api/interviews/topics` | Auth | Retrieves available topics and total question counts. | `None` | `[{ topic: "React", count: 45 }]` |
+| `POST` | `/api/interviews/start` | Auth | Starts a session, selects 5 random questions. | `{ topic: "React", difficulty: "Intermediate" }` | `{ sessionId: "...", questions: [...] }` |
+| `POST` | `/api/interviews/:id/answer` | Auth | Submits a single answer for AI evaluation. | `{ questionId, text, timeSpent }` | `{ evaluation: { score, feedback, ... } }` |
+| `POST` | `/api/interviews/:id/complete` | Auth | Aggregates the 5 sub-scores into a final result. | `None` | `{ finalScore: 88, status: "completed" }` |
+| `GET` | `/api/interviews/:id/results` | Auth | Retrieves the full historical scorecard. | `None` | `{ session: {...} }` |
+
+### Python Microservice Endpoints (Internal Only)
+These endpoints are intentionally not exposed to the public internet. The Node.js gateway securely forwards traffic to them over the internal docker network or VPC.
+
+| Method | Endpoint | Payload | Action |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/evaluate` | `{ answer, ideal, concepts }` | Computes semantic similarity (SentenceTransformers) and extracts NLP concepts (spaCy). |
+| `POST` | `/api/transcribe`| `{ audio_base64 }` | Converts Base64 audio back to bytes and runs Faster-Whisper to transcribe speech to text. |
+
+### React State Management (Custom Hook)
+To prevent massive Redux bloat for ephemeral interview data, the frontend manages session state using a specialized custom hook `useInterviewState.js` coupled with standard React context.
+
+```javascript
+// client/src/modules/mock-interview/hooks/useInterviewState.js
+export function useInterviewState(sessionId) {
+  const [session, setSession] = useState(null);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(120);
+
+  const submitAnswer = async (answerText) => {
+    setIsSubmitting(true);
+    try {
+      const q = session.questions[currentQuestionIndex];
+      const res = await interviewService.submitAnswer(sessionId, q._id, answerText, 120 - timeRemaining);
+      
+      // Mutate local session state optimistically
+      const updatedQuestions = [...session.questions];
+      updatedQuestions[currentQuestionIndex] = { ...q, evaluation: res.evaluation };
+      setSession({ ...session, questions: updatedQuestions });
+      
+      // Move to next question or complete
+      if (currentQuestionIndex < session.questions.length - 1) {
+        setCurrentQuestionIndex(prev => prev + 1);
+        setTimeRemaining(120); // Reset timer
+      } else {
+        await completeInterview();
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return { session, currentQuestionIndex, isSubmitting, timeRemaining, submitAnswer };
+}
+```
 
 ---
 
-## 5. Error Handling & Edge Cases
+## 5. Security, Edge Cases & Error Handling
 
-- **No Microphone Access**: If the student denies microphone permissions, the UI gracefully falls back to a multi-line text area, allowing them to type their answers.
-- **Lost Connection**: If the browser refreshes mid-interview, current state is lost unless cached in `localStorage`. The current implementation requires the student to complete the session in one sitting.
-- **Empty Transcripts**: If the student submits a completely empty transcript for a question, the backend pipeline short-circuits the LLM call to save costs, immediately returning a score of `0` for that question.
+### Fail-Soft Resilience Design
+The Python AI microservice (running heavy ML models) is the most likely component to experience cold-start delays or OOM (Out of Memory) crashes under load. The Node.js gateway employs a strict **Fail-Soft Architecture**.
+
+```javascript
+// server/src/integrations/aiInterviewService.js
+
+const evaluateAnswer = async (userAnswer, idealAnswer, keyConcepts) => {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // Strict 10s timeout
+    
+    const response = await axios.post(PYTHON_SERVICE_URL, payload, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    return response.data;
+  } catch (error) {
+    logger.error("Python AI Service failed. Falling back to heuristic mock scoring.");
+    return generateMockHeuristicScore(userAnswer, idealAnswer, keyConcepts);
+  }
+};
+```
+If the Python service times out, the `generateMockHeuristicScore` function kicks in. It performs a rapid, regex-based keyword density check in Node.js to provide an approximate score (e.g., 75%) and generic feedback, ensuring the student's interview is never interrupted by a server 500 error.
+
+### Audio Blob Validation & Security
+Audio uploads are notoriously difficult to secure against SSRF or buffer overflow attacks.
+1. The frontend strictly forces the `MediaRecorder` to output standard `audio/webm` or `audio/mp4` blobs depending on browser support.
+2. The blob is converted to a Base64 string for JSON transmission.
+3. The Node.js backend validates the Base64 string length (rejecting anything larger than 10MB) before forwarding it to the Python service.
+4. The Python service uses `python-magic` to inspect the byte headers of the decoded string to ensure it is actually an audio file before passing it to the Whisper model.
+
+---
+
+## 6. Component-Level Implementation Specs
+
+### `InterviewLobby.jsx` (Hardware Permissions & Setup)
+This component's primary technical challenge is aggressively requesting and verifying hardware permissions (Camera & Mic) before allowing the user to click "Start".
+
+- **Dependencies**: Uses `navigator.mediaDevices.getUserMedia`.
+- **Implementation Detail**: It implements a visual volume meter by piping the microphone `MediaStream` into an `AudioContext` and an `AnalyserNode`, extracting frequency data on a `requestAnimationFrame` loop to render a bouncing green bar, confirming mic health.
+
+### `CountdownTimer.jsx` (Precision Timekeeping)
+Standard `setInterval` loops in React drift wildly when tabs are backgrounded, meaning a 120-second timer could actually take 150 seconds.
+- **Optimization**: The timer component records `Date.now()` on mount. The `useEffect` interval subtracts the current `Date.now()` from the baseline to calculate true elapsed time, remaining completely immune to browser tab throttling.
+
+### `InterviewResults.jsx` (Data Visualization)
+Once the session completes, this component fetches the final scorecard.
+- **Rendering**: It utilizes SVG manipulation to render a circular progress ring for the `finalScore`.
+- **Interactivity**: It maps over the `questions` array, rendering an Accordion component for each. Expanding the accordion reveals the user's exact answer alongside the AI's feedback, extracted `coveredConcepts` (green badges), and `missingConcepts` (red badges).
+
+### `InterviewHistory.jsx` (Dashboard Hub)
+A standardized, paginated dashboard view. It strictly inherits the "Gold Standard" UI aesthetics, applying multi-color gradients to the page title and correctly positioning the "Back to Dashboard" button. It fetches `/api/interviews/history` with `page=1&limit=10` to prevent payload bloat for heavy users.

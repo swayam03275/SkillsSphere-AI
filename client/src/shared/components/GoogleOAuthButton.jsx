@@ -9,12 +9,12 @@ import { API_URL } from "../../config/env";
  * @param {object} props
  * @param {string} [props.label] - Button text (default: "Continue with Google")
  */
-const GoogleOAuthButton = ({ label = "Continue with Google", role }) => {
+const GoogleOAuthButton = ({ label = "Continue with Google", role, action = "signup" }) => {
   const handleClick = () => {
     const redirect = encodeURIComponent(
       `${window.location.origin}/auth/callback`,
     );
-    let url = `${API_URL}/api/auth/google?redirect=${redirect}`;
+    let url = `${API_URL}/api/auth/google?redirect=${redirect}&action=${action}`;
     if (role) {
       url += `&role=${encodeURIComponent(role)}`;
     }

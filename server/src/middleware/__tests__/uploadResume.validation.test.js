@@ -40,14 +40,14 @@ const runFileFilter = (file) =>
   });
 
 describe("fileFilter", () => {
-  it("accepts allowed extensions even when the mimetype is incorrect", async () => {
+  it("rejects allowed extensions when the mimetype is incorrect", async () => {
     const result = await runFileFilter({
       originalname: "resume.docx",
       mimetype: "application/octet-stream",
     });
 
-    assert.equal(result.error, null);
-    assert.equal(result.accepted, true);
+    assert.equal(result.accepted, false);
+    assert.equal(result.error?.code, "INVALID_FILE_TYPE");
   });
 
   it("rejects files with unsupported extensions", async () => {
@@ -76,7 +76,7 @@ describe("validateAndPersistResumeFile middleware", () => {
 
     const result = await runMiddleware(validateAndPersistResumeFile, req);
 
-    assert.equal(result.statusCode, 400);
+    assert.equal(result.statusCode, 415);
     assert.equal(result.body.success, false);
     assert.match(result.body.message, /not a valid PDF/i);
     assert.equal(req.file, undefined);

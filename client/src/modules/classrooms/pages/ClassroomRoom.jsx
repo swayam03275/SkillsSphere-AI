@@ -11,6 +11,8 @@ import {
   Users,
   Video,
   VideoOff,
+  ArrowLeft,
+  Copy,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
@@ -20,6 +22,7 @@ import { io } from "socket.io-client";
 import SharedCodeEditor from "../components/SharedCodeEditor";
 import VideoTile from "../components/VideoTile";
 import Whiteboard from "../components/Whiteboard";
+import { endClassroomSession } from "../services/classroomService";
 
 import { SOCKET_URL } from "../../../config/env";
 import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
@@ -81,29 +84,37 @@ export default function ClassroomRoom() {
           user: { id: user._id, name: user.name || user.email },
         });
 
+        // Listen for graceful session termination
+        s.on("session-ended", () => {
+          toast.error("The host has ended this live classroom session.");
+          navigate("/classrooms");
+        });
+
         // When we get the current participants list, we act as the "caller" and initiate peer connections
         s.on("room-participants", (participants) => {
           const peersArr = [];
           participants.forEach((p) => {
-            activeSocketIdsRef.current.add(p.socketId);
-            const peer = createPeer(p.socketId, s.id, stream, user);
-            peersRef.current.push({
-              peerId: p.socketId,
-              peer,
-              user: p.user,
-              isHandRaised: false,
-              isMuted: false,
-            });
-            peersArr.push({
-              peerId: p.socketId,
-              peer,
-              user: p.user,
-              stream: null, // Will be populated on peer 'stream' event
-              isHandRaised: false,
-              isMuted: false,
-              isVideoOff: false,
-              isScreenShare: false,
-            });
+            if (p.socketId !== s.id) {
+              activeSocketIdsRef.current.add(p.socketId);
+              const peer = createPeer(p.socketId, s.id, stream, user);
+              peersRef.current.push({
+                peerId: p.socketId,
+                peer,
+                user: p.user,
+                isHandRaised: false,
+                isMuted: false,
+              });
+              peersArr.push({
+                peerId: p.socketId,
+                peer,
+                user: p.user,
+                stream: null,
+                isHandRaised: false,
+                isMuted: false,
+                isVideoOff: false,
+                isScreenShare: false,
+              });
+            }
           });
           setPeers(peersArr);
         });
@@ -119,7 +130,20 @@ export default function ClassroomRoom() {
         s.on("user-joined", (payload) => {
           logger.debug("User joined", payload);
           activeSocketIdsRef.current.add(payload.socketId);
-          // We don't initiate here. We wait for their offer.
+          
+          // Immediately add them to members list so they show up, even before WebRTC connects
+          const newPeerObj = {
+            peerId: payload.socketId,
+            peer: null,
+            user: payload.user,
+            stream: null,
+            isHandRaised: false,
+            isMuted: false,
+            isVideoOff: false,
+            isScreenShare: false,
+          };
+          peersRef.current.push(newPeerObj);
+          setPeers((prev) => [...prev, newPeerObj]);
         });
 
         // Receiving an offer
@@ -139,19 +163,25 @@ export default function ClassroomRoom() {
             s,
           );
 
-          const newPeerObj = {
-            peerId: payload.callerSocketId,
-            peer,
-            user: payload.callerUser,
-            stream: null,
-            isHandRaised: false,
-            isMuted: false,
-            isVideoOff: false,
-            isScreenShare: false,
-          };
-
-          peersRef.current.push(newPeerObj);
-          setPeers((prev) => [...prev, newPeerObj]);
+          // Update existing placeholder or push new if missing
+          const existingIdx = peersRef.current.findIndex(p => p.peerId === payload.callerSocketId);
+          if (existingIdx >= 0) {
+            peersRef.current[existingIdx].peer = peer;
+            setPeers([...peersRef.current]);
+          } else {
+            const newPeerObj = {
+              peerId: payload.callerSocketId,
+              peer,
+              user: payload.callerUser,
+              stream: null,
+              isHandRaised: false,
+              isMuted: false,
+              isVideoOff: false,
+              isScreenShare: false,
+            };
+            peersRef.current.push(newPeerObj);
+            setPeers((prev) => [...prev, newPeerObj]);
+          }
         });
 
         // Receiving an answer
@@ -432,23 +462,72 @@ export default function ClassroomRoom() {
     setChatInput("");
   };
 
-  const handleLeave = () => {
-    navigate("/classrooms");
+  const handleLeave = async () => {
+    if (user?.role === "tutor") {
+      const choice = window.confirm("Tutors: Click OK to END the session for everyone, or Cancel to just Leave.");
+      if (choice) {
+        try {
+          await endClassroomSession(roomId, token);
+          toast.success("Session ended successfully.");
+          navigate("/classrooms");
+        } catch (err) {
+          logger.error("Failed to end session", err);
+          toast.error("Failed to end session.");
+        }
+      } else {
+        navigate("/classrooms");
+      }
+    } else {
+      if (window.confirm("Are you sure you want to leave the classroom?")) {
+        navigate("/classrooms");
+      }
+    }
+  };
+
+  const copyRoomId = () => {
+    navigator.clipboard.writeText(roomId);
+    toast.success("Room ID copied to clipboard!");
   };
 
   return (
-    <div className="h-screen bg-white dark:bg-[#020617] text-gray-900 dark:text-white flex flex-col pt-16">
+    <div className="h-screen bg-white dark:bg-[#0B0F19] text-slate-900 dark:text-white flex flex-col font-sans">
+      {/* Top Header */}
+      <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md z-20">
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={() => navigate("/classrooms")}
+            className="flex items-center space-x-2 text-sm font-bold text-slate-500 hover:text-indigo-600 transition-colors"
+          >
+            <ArrowLeft size={16} />
+            <span>Back to Dashboard</span>
+          </button>
+        </div>
+        <div className="flex items-center space-x-3">
+          <div className="flex items-center bg-gray-100 dark:bg-slate-800 rounded-lg px-3 py-1.5 border border-gray-200 dark:border-slate-700">
+            <span className="text-xs font-semibold text-slate-500 uppercase mr-2">Room ID:</span>
+            <span className="text-sm font-bold text-slate-900 dark:text-white font-mono">{roomId}</span>
+          </div>
+          <button
+            onClick={copyRoomId}
+            className="p-2 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors shadow-sm"
+            title="Copy Room ID"
+          >
+            <Copy size={16} />
+          </button>
+        </div>
+      </div>
+
       <div className="flex-1 flex overflow-hidden">
         {/* Main Video Area */}
-        <div className="flex-1 p-4 flex flex-col min-h-0">
+        <div className="flex-1 p-6 flex flex-col min-h-0 gap-4">
           {/* Workspace Switcher Bar */}
-          <div className="flex items-center space-x-2 mb-4 bg-gray-100 dark:bg-slate-900/60 p-1 border border-gray-200 dark:border-slate-800 rounded-xl max-w-fit">
+          <div className="flex items-center space-x-1 mb-2 bg-white dark:bg-slate-900/60 p-1 border border-gray-200 dark:border-slate-800 rounded-xl max-w-fit shadow-sm backdrop-blur-md">
             <button
               onClick={() => setActiveWorkspace("video")}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center space-x-2 px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${
                 activeWorkspace === "video"
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/10"
-                  : "text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
+                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/50"
               }`}
             >
               <Video size={14} />
@@ -456,10 +535,10 @@ export default function ClassroomRoom() {
             </button>
             <button
               onClick={() => setActiveWorkspace("whiteboard")}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center space-x-2 px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${
                 activeWorkspace === "whiteboard"
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/10"
-                  : "text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
+                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/50"
               }`}
             >
               <Palette size={14} />
@@ -467,10 +546,10 @@ export default function ClassroomRoom() {
             </button>
             <button
               onClick={() => setActiveWorkspace("code")}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center space-x-2 px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${
                 activeWorkspace === "code"
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/10"
-                  : "text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
+                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/50"
               }`}
             >
               <Code2 size={14} />
@@ -508,7 +587,7 @@ export default function ClassroomRoom() {
             )}
 
             {/* Main workspace container */}
-            <div className="flex-1 bg-gray-50 dark:bg-slate-900 rounded-2xl overflow-y-auto p-4 border border-gray-200 dark:border-slate-800 flex flex-col min-h-0">
+            <div className={`flex-1 overflow-hidden flex flex-col min-h-0 ${activeWorkspace === "video" ? "bg-gray-50/50 dark:bg-slate-900/40 rounded-[2rem] p-6 border border-gray-200 dark:border-slate-800/60 shadow-inner" : ""}`}>
               {activeWorkspace === "video" && (
                 /* Grid Layout for Videos */
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -557,57 +636,60 @@ export default function ClassroomRoom() {
           </div>
 
           {/* Controls Bar */}
-          <div className="mt-4 bg-white/90 dark:bg-slate-800/80 backdrop-blur-md border border-gray-200 dark:border-slate-700/50 rounded-2xl p-4 flex items-center justify-center space-x-4">
+          <div className="mt-2 mx-auto bg-white/90 dark:bg-slate-900/80 backdrop-blur-xl border border-gray-200 dark:border-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.08)] dark:shadow-none rounded-full px-6 py-4 flex items-center justify-center space-x-4">
             <button
               onClick={toggleMute}
-              className={`p-4 rounded-xl transition-all ${isMuted ? "bg-red-500/20 text-red-400 hover:bg-red-500/30" : "bg-gray-200 hover:bg-gray-300 dark:bg-slate-700 dark:hover:bg-slate-600"}`}
+              className={`p-4 rounded-full transition-all hover:scale-105 ${isMuted ? "bg-red-500/20 text-red-500 hover:bg-red-500/30" : "bg-gray-100 text-slate-700 hover:bg-gray-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"}`}
             >
-              {isMuted ? <MicOff size={24} /> : <Mic size={24} />}
+              {isMuted ? <MicOff size={22} /> : <Mic size={22} />}
             </button>
             <button
               onClick={toggleVideo}
-              className={`p-4 rounded-xl transition-all ${isVideoOff ? "bg-red-500/20 text-red-400 hover:bg-red-500/30" : "bg-gray-200 hover:bg-gray-300 dark:bg-slate-700 dark:hover:bg-slate-600"}`}
+              className={`p-4 rounded-full transition-all hover:scale-105 ${isVideoOff ? "bg-red-500/20 text-red-500 hover:bg-red-500/30" : "bg-gray-100 text-slate-700 hover:bg-gray-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"}`}
             >
-              {isVideoOff ? <VideoOff size={24} /> : <Video size={24} />}
+              {isVideoOff ? <VideoOff size={22} /> : <Video size={22} />}
             </button>
             <button
               onClick={toggleHandRaise}
-              className={`p-4 rounded-xl transition-all ${isHandRaised ? "bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30" : "bg-gray-200 hover:bg-gray-300 dark:bg-slate-700 dark:hover:bg-slate-600"}`}
+              className={`p-4 rounded-full transition-all hover:scale-105 ${isHandRaised ? "bg-amber-500/20 text-amber-500 hover:bg-amber-500/30" : "bg-gray-100 text-slate-700 hover:bg-gray-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"}`}
             >
-              <Hand size={24} />
+              <Hand size={22} />
             </button>
             <button
               onClick={toggleScreenShare}
-              className={`p-4 rounded-xl transition-all ${isScreenSharing ? "bg-blue-500/20 text-blue-400 hover:bg-blue-500/30" : "bg-gray-200 hover:bg-gray-300 dark:bg-slate-700 dark:hover:bg-slate-600"}`}
+              className={`p-4 rounded-full transition-all hover:scale-105 ${isScreenSharing ? "bg-indigo-500/20 text-indigo-500 hover:bg-indigo-500/30" : "bg-gray-100 text-slate-700 hover:bg-gray-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"}`}
             >
-              <MonitorUp size={24} />
+              <MonitorUp size={22} />
             </button>
+            <div className="w-px h-8 bg-gray-200 dark:bg-slate-700 mx-2"></div>
             <button
               onClick={handleLeave}
-              className="p-4 rounded-xl bg-red-600 hover:bg-red-700 transition-all text-white px-8 font-semibold flex items-center space-x-2"
+              className="p-4 rounded-full bg-red-600 hover:bg-red-700 transition-all text-white px-8 font-bold flex items-center space-x-2 shadow-lg shadow-red-600/20 hover:-translate-y-0.5"
             >
               <PhoneOff size={20} />
-              <span>Leave</span>
+              <span>{user?.role === "tutor" ? "End / Leave" : "Leave Session"}</span>
             </button>
           </div>
         </div>
 
         {/* Sidebar */}
-        <div className="w-80 border-l border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900/50 flex flex-col">
-          <div className="flex border-b border-gray-200 dark:border-slate-800">
+        <div className="w-[340px] border-l border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 flex flex-col z-10 shadow-[-10px_0_30px_rgba(0,0,0,0.02)]">
+          <div className="flex border-b border-gray-200 dark:border-slate-800 px-4 pt-4">
             <button
-              className={`flex-1 py-4 text-sm font-medium flex items-center justify-center space-x-2 transition-colors ${activeTab === "chat" ? "border-b-2 border-indigo-500 text-indigo-400" : "text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"}`}
+              className={`flex-1 pb-4 text-sm font-bold flex items-center justify-center space-x-2 transition-colors relative ${activeTab === "chat" ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"}`}
               onClick={() => setActiveTab("chat")}
             >
               <MessageSquare size={16} />
-              <span>Chat</span>
+              <span>Chat Room</span>
+              {activeTab === "chat" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-t-full"></div>}
             </button>
             <button
-              className={`flex-1 py-4 text-sm font-medium flex items-center justify-center space-x-2 transition-colors ${activeTab === "participants" ? "border-b-2 border-indigo-500 text-indigo-400" : "text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"}`}
+              className={`flex-1 pb-4 text-sm font-bold flex items-center justify-center space-x-2 transition-colors relative ${activeTab === "participants" ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"}`}
               onClick={() => setActiveTab("participants")}
             >
               <Users size={16} />
-              <span>Participants ({peers.length + 1})</span>
+              <span>Members ({peers.length + 1})</span>
+              {activeTab === "participants" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-t-full"></div>}
             </button>
           </div>
 
@@ -623,71 +705,71 @@ export default function ClassroomRoom() {
                   {chatMessages.map((msg, i) => (
                     <div
                       key={i}
-                      className="bg-white dark:bg-slate-800 rounded-lg p-3"
+                      className="bg-gray-50 dark:bg-slate-800/80 rounded-2xl p-4 border border-gray-100 dark:border-slate-700/50"
                     >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-semibold text-sm text-indigo-400">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-bold text-sm text-indigo-600 dark:text-indigo-400">
                           {msg.sender.name}
                         </span>
-                        <span className="text-xs text-gray-500 dark:text-slate-500">
+                        <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                           {new Date(msg.timestamp).toLocaleTimeString([], {
                             hour: "2-digit",
                             minute: "2-digit",
                           })}
                         </span>
                       </div>
-                      <p className="text-gray-700 dark:text-slate-300 text-sm">
+                      <p className="text-slate-700 dark:text-slate-200 text-sm leading-relaxed">
                         {msg.message}
                       </p>
                     </div>
                   ))}
                 </div>
-                <form onSubmit={handleSendMessage} className="relative mt-auto">
+                <form onSubmit={handleSendMessage} className="relative mt-auto pt-4 border-t border-gray-100 dark:border-slate-800/80">
                   <input
                     type="text"
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
                     placeholder="Type a message..."
-                    className="w-full bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-xl pl-4 pr-12 py-3 text-sm focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl pl-4 pr-14 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-shadow text-slate-900 dark:text-white placeholder:text-slate-400"
                   />
                   <button
                     type="submit"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-indigo-400 hover:text-indigo-300 transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 mt-2 w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 transition-colors shadow-sm"
                   >
-                    <Send size={18} />
+                    <Send size={14} className="-ml-0.5" />
                   </button>
                 </form>
               </>
             ) : (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700">
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800/80 rounded-2xl border border-gray-200 dark:border-slate-700">
                   <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center font-semibold text-sm">
+                    <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center font-bold text-sm text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30">
                       {user?.name?.charAt(0) || "U"}
                     </div>
-                    <span className="font-medium text-sm">
-                      {user?.name || user?.email} (You)
+                    <span className="font-bold text-sm text-slate-900 dark:text-white">
+                      {user?.name || user?.email} <span className="text-slate-400 font-medium">(You)</span>
                     </span>
                   </div>
                   {isHandRaised && (
-                    <Hand size={16} className="text-yellow-400" />
+                    <Hand size={18} className="text-amber-500" />
                   )}
                 </div>
                 {peers.map((peerObj, i) => (
                   <div
                     key={i}
-                    className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700"
+                    className="flex items-center justify-between p-4 bg-white dark:bg-slate-900/60 rounded-2xl border border-gray-100 dark:border-slate-800"
                   >
                     <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center font-semibold text-sm">
+                      <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-sm text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                         {peerObj.user?.name?.charAt(0) || "U"}
                       </div>
-                      <span className="font-medium text-sm">
+                      <span className="font-bold text-sm text-slate-900 dark:text-white">
                         {peerObj.user?.name}
                       </span>
                     </div>
                     {peerObj.isHandRaised && (
-                      <Hand size={16} className="text-yellow-400" />
+                      <Hand size={18} className="text-amber-500" />
                     )}
                   </div>
                 ))}

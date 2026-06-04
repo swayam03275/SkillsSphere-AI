@@ -6,6 +6,7 @@ import Input from "../../shared/components/Input";
 import Button from "../../shared/components/Button";
 import { useToast } from "../../shared/components";
 import Navbar from "../../shared/components/Navbar";
+import Footer from "../../shared/components/Footer";
 import { API_URL } from "../../config/env";
 import { z } from "zod";
 import { useDocumentTitle } from "../../hooks/useDocumentTitle";
@@ -86,14 +87,16 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center bg-slate-50 dark:bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] overflow-hidden relative px-3 py-6 box-border">
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] overflow-hidden relative">
       <Navbar />
-      <div className="relative z-10 w-full max-w-[380px]">
-        {/* Background glow */}
-        <div className="hidden sm:block absolute w-[520px] h-[520px] bg-blue-400/45 dark:bg-blue-500/40 rounded-full blur-[140px] dark:blur-[120px] -top-[150px] -left-[150px] -z-10 animate-pulse"></div>
-        <div className="hidden sm:block absolute w-[420px] h-[420px] bg-purple-400/45 dark:bg-purple-500/40 rounded-full blur-[140px] dark:blur-[120px] -bottom-[120px] -right-[120px] -z-10 animate-pulse"></div>
+      
+      <main className="flex-grow flex flex-col justify-center items-center px-3 py-16 sm:py-24 min-h-screen relative z-10">
+        <div className="w-full max-w-[380px] relative">
+          {/* Background glow */}
+          <div className="hidden sm:block absolute w-[520px] h-[520px] bg-blue-400/45 dark:bg-blue-500/40 rounded-full blur-[140px] dark:blur-[120px] -top-[150px] -left-[150px] -z-10 animate-pulse"></div>
+          <div className="hidden sm:block absolute w-[420px] h-[420px] bg-purple-400/45 dark:bg-purple-500/40 rounded-full blur-[140px] dark:blur-[120px] -bottom-[120px] -right-[120px] -z-10 animate-pulse"></div>
 
-        <form
+          <form
           className="p-4 sm:p-[30px] rounded-[20px] backdrop-blur-[20px] bg-white/95 dark:bg-slate-900/70 border border-slate-200 dark:border-white/10 shadow-[0_20px_60px_rgba(15,23,42,0.14)] dark:shadow-[0_0_40px_rgba(0,0,0,0.6)] animate-[fadeIn_0.8s_ease] w-full"
           onSubmit={handleSubmit}
           noValidate
@@ -176,7 +179,7 @@ const Login = () => {
                   sessionStorage.setItem('oauth_redirect', location.state.from.pathname);
                 }
                 const redirect = encodeURIComponent(`${window.location.origin}/auth/callback`);
-                window.location.href = `${API_URL}/api/auth/google?redirect=${redirect}`;
+                window.location.href = `${API_URL}/api/auth/google?redirect=${redirect}&action=login`;
               }}
               className="w-full flex items-center justify-center gap-3 px-4 py-2.5 
                           bg-white hover:bg-slate-50 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 rounded-xl
@@ -202,7 +205,10 @@ const Login = () => {
             Sign up
           </Link>
         </p>
-      </div>
+        </div>
+      </main>
+
+      <Footer />
     </div>
   );
 };

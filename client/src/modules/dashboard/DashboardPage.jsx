@@ -39,9 +39,9 @@ const getSidebarItems = (role) => {
   // Default to student
   return [
     { label: "Resume Analyzer", icon: FileText, to: "/resume-analyzer" },
-    { label: "Find Matches", icon: Target, to: "/job-matcher" },
-    { label: "Applied Jobs", icon: Briefcase, to: "/my-applications" },
-    { label: "Mock Interviews", icon: Video, to: "/mock-interview" },
+    { label: "Smart Job Matching", icon: Target, to: "/job-matcher" },
+    { label: "My Applications", icon: Briefcase, to: "/my-applications" },
+    { label: "Mock Interview", icon: Video, to: "/mock-interview" },
     { label: "Live Classrooms", icon: Video, to: "/classrooms" },
   ];
 };

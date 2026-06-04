@@ -19,6 +19,7 @@ import {
   deleteJobPosting,
   getSkillTrends,
   updateApplicationStatus,
+  updateStudentApplicationStatus,
 } from "./controller.js";
 
 const router = express.Router();
@@ -115,5 +116,6 @@ router.patch("/:id/withdraw", authorizeRoles("student"), withdrawJobApplication)
 router.get("/:id/applications", authorizeRoles("recruiter"), getApplications);
 router.get("/:id/applications/export", authorizeRoles("recruiter"), exportApplicationsToCSV);
 router.patch("/applications/:id/status", authorizeRoles("recruiter"), updateApplicationStatus);
+router.patch("/applications/:id/student-status", authorizeRoles("student"), updateStudentApplicationStatus);
 
 export default router;

@@ -32,6 +32,60 @@ import {
   isGoogleOAuthConfigured,
 } from "../../config/googleOAuth.js";
 
+export const DEFAULT_OAUTH_REDIRECT_PATH = "/auth/callback";
+
+const decodeRedirectPath = (value) => {
+  let decoded = value;
+
+  for (let i = 0; i < 2; i += 1) {
+    try {
+      const nextDecoded = decodeURIComponent(decoded);
+      if (nextDecoded === decoded) break;
+      decoded = nextDecoded;
+    } catch {
+      return null;
+    }
+  }
+
+  return decoded;
+};
+
+export const isSafeRedirectPath = (value) => {
+  if (typeof value !== "string" || value.length === 0 || value !== value.trim()) {
+    return false;
+  }
+
+  if (/[\s\\\u0000-\u001F\u007F]/.test(value)) {
+    return false;
+  }
+
+  const decoded = decodeRedirectPath(value);
+  if (!decoded || decoded.length === 0 || decoded !== decoded.trim()) {
+    return false;
+  }
+
+  if (/[\s\\\u0000-\u001F\u007F]/.test(decoded)) {
+    return false;
+  }
+
+  if (/^[A-Za-z][A-Za-z0-9+.-]*:/.test(decoded)) {
+    return false;
+  }
+
+  return decoded.startsWith("/") && !decoded.startsWith("//");
+};
+
+export const normalizeOAuthRedirectPath = (
+  value,
+  fallbackPath = DEFAULT_OAUTH_REDIRECT_PATH,
+) => {
+  if (!isSafeRedirectPath(value)) {
+    return fallbackPath;
+  }
+
+  return decodeRedirectPath(value);
+};
+
 // 📝 Register User
 export const register = asyncHandler(async (req, res, next) => {
   const validation = validateRegisterInput(req.body);
@@ -59,11 +113,36 @@ export const verifyEmail = asyncHandler(async (req, res, next) => {
     return next(new AppError("Invalid verification data", 400));
   }
 
-  const result = await verifyUserEmail(
+  const { user } = await verifyUserEmail(
     validation.data.email,
     validation.data.otp,
   );
-  return res.status(200).json(result);
+
+  const token = jwt.sign(
+    {
+      userId: user._id.toString(),
+      role: user.role,
+      jti: crypto.randomUUID(),
+    },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+    },
+  );
+
+  return res.status(200).json({
+    success: true,
+    message: "Email verified successfully",
+    token,
+    user: {
+      id: user._id.toString(),
+      name: user.get("name"),
+      email: user.get("email"),
+      role: user.role,
+      isOnboarded: user.isOnboarded,
+      profilePic: user.profilePic,
+    },
+  });
 });
 
 // 🔑 Forgot Password
@@ -159,6 +238,8 @@ export const googleLogin = asyncHandler(async (req, res, next) => {
       name: user.get('name'),
       email: user.get('email'),
       role: user.role,
+      isOnboarded: user.isOnboarded,
+      profilePic: user.profilePic,
     },
   });
 });
@@ -168,9 +249,11 @@ export const googleOAuthCallback = asyncHandler(async (req, res, next) => {
   const { code, state } = req.query;
   const frontendRedirectBase =
     process.env.FRONTEND_URL || "http://localhost:5174";
-  const fallbackCallbackUrl = `${frontendRedirectBase}/auth/callback`;
+  const frontendRedirectOrigin = new URL(frontendRedirectBase).origin;
+  const fallbackCallbackUrl = `${frontendRedirectOrigin}${DEFAULT_OAUTH_REDIRECT_PATH}`;
   let callbackUrl = fallbackCallbackUrl;
   let requestedRole = "student";
+  let requestedAction = "signup"; // Default to signup
 
   if (typeof state === "string" && state.length > 0) {
     try {
@@ -189,16 +272,13 @@ export const googleOAuthCallback = asyncHandler(async (req, res, next) => {
       if (stateObj.role) {
         requestedRole = stateObj.role;
       }
-
-      const decodedUrl = new URL(stateObj.redirect);
-      const fallbackOrigin = new URL(frontendRedirectBase).origin;
-      const isAllowedLocalhost =
-        decodedUrl.hostname === "localhost" ||
-        decodedUrl.hostname === "127.0.0.1";
-
-      if (decodedUrl.origin === fallbackOrigin || isAllowedLocalhost) {
-        callbackUrl = decodedUrl.toString();
+      
+      if (stateObj.action) {
+        requestedAction = stateObj.action;
       }
+
+      const redirectPath = normalizeOAuthRedirectPath(stateObj.redirect);
+      callbackUrl = `${frontendRedirectOrigin}${redirectPath}`;
     } catch {
       callbackUrl = fallbackCallbackUrl;
     }
@@ -247,7 +327,11 @@ export const googleOAuthCallback = asyncHandler(async (req, res, next) => {
 
   let user;
   try {
-    user = await findOrCreateGoogleUser({ ...googleUser, role: requestedRole });
+    user = await findOrCreateGoogleUser({ 
+      ...googleUser, 
+      role: requestedRole,
+      action: requestedAction 
+    });
   } catch (error) {
     const message =
       error instanceof AppError

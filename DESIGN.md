@@ -36,6 +36,7 @@ We use a modern, dual-font system loaded via Google Fonts.
 Do not use default Tailwind colors (e.g., `bg-blue-500`) unless explicitly required. Use our semantic variables.
 
 #### Backgrounds & Surfaces
+
 | Class Name | Hex Code | Usage |
 | :--- | :--- | :--- |
 | `bg-dark-bg` | `#0B0F19` | The overarching, deep blue/black background color of the application. |
@@ -44,20 +45,23 @@ Do not use default Tailwind colors (e.g., `bg-blue-500`) unless explicitly requi
 | `bg-surface-soft` | `rgba(19, 27, 44, 0.5)` | Used for glassmorphic backdrops (requires `backdrop-blur-md`). |
 
 #### Typography Colors
+
 | Class Name | Hex Code | Usage |
 | :--- | :--- | :--- |
 | `text-main` | `#F3F4F6` | Primary high-contrast text color (almost white). |
-| `text-muted`| `#9CA3AF` | Secondary, lower-contrast text for hints, timestamps, and descriptions. |
-| `text-disabled`| `#6B7280` | Used for disabled states to indicate non-interactivity. |
+| `text-muted` | `#9CA3AF` | Secondary, lower-contrast text for hints, timestamps, and descriptions. |
+| `text-disabled` | `#6B7280` | Used for disabled states to indicate non-interactivity. |
 
 #### Brand Accents
+
 | Class Name | Hex Code | Usage |
 | :--- | :--- | :--- |
 | `text-brand-500` | `#6366f1` | The primary brand indigo color. Used for active tabs and icons. |
 | `bg-primary` | `#4F46E5` | The core action color (primary buttons, active states). |
-| `bg-primary-hover`| `#4338CA` | The hover state for primary actions. |
+| `bg-primary-hover` | `#4338CA` | The hover state for primary actions. |
 
 #### Semantic Feedback (The AI Palette)
+
 | Class Name | Theme | Usage |
 | :--- | :--- | :--- |
 | `text-emerald-400` | Success | High AI scores, "Excellent Match", successful completion. |
@@ -77,7 +81,7 @@ Do not use default Tailwind colors (e.g., `bg-blue-500`) unless explicitly requi
 ### A. The Application Shell
 All authenticated pages are wrapped in a standard application shell. This shell dictates the spacing, navigation, and footer boundaries.
 
-- **Navbar Height**: The navigation bar is `h-20` (80px) on desktop and `h-16` (64px) on mobile. 
+- **Navbar Height**: The navigation bar is `h-20` (80px) on desktop and `h-16` (64px) on mobile.
 - **Top Padding**: To prevent content from slipping under the fixed Navbar, all page wrappers MUST include `pt-20` (desktop) and `pt-16` (mobile) or use a layout component that handles this margin automatically.
 - **Global Footer**: A unified `Footer.jsx` component is injected at the bottom of the shell. Page content must use `min-h-[calc(100vh-8.5rem)]` or similar viewport calculations to ensure the footer is pushed to the bottom of the screen on short pages.
 
@@ -442,7 +446,6 @@ const Modal = ({ isOpen, onClose, title, children }) => {
 
 Adhering to this design system ensures that SkillsSphere-AI maintains its premium, cutting-edge aesthetic across all modules, regardless of which developer works on the feature. Code consistency, visual hierarchy, and performant CSS animations are the core pillars of our frontend philosophy.
 
-
 ## Extended API Schema & Component Definitions
 
 ### Schema Extension Block 0
@@ -552,8 +555,6 @@ The following block details edge case handling and strict type checking for inte
   "max_retries": 3
 }
 ```
-
-
 
 ## Global UI Infrastructure & Layout Strategy
 

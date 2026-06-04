@@ -69,3 +69,18 @@ export const withdrawApplication = async (jobId, token) => {
     token,
   });
 };
+
+/**
+ * Update the student's personal CRM status for an application
+ * @param {string} applicationId - Application ID
+ * @param {string} studentStatus - New CRM status
+ * @param {string} token - Auth token
+ * @returns {Promise<Object>} - API response
+ */
+export const updateStudentApplicationStatus = async (applicationId, studentStatus, token) => {
+  return apiRequest(`/api/jobs/applications/${applicationId}/student-status`, {
+    method: "PATCH",
+    body: { studentStatus },
+    token,
+  });
+};

@@ -1,555 +1,338 @@
-# Authentication Module Architecture & Documentation
+# Identity, Authentication & RBAC Module
 
-This document provides an exhaustive, deeply technical overview of the Authentication flow within the SkillsSphere-AI platform. Authentication is the most critical security boundary of our application, and this document details every moving part, from the Google OAuth 2.0 handshake to the React 18 Suspense boundaries that prevent UI crashes during state transitions.
+## 1. Executive Summary & Domain Scope
+
+The **Identity & Authentication** module is the security perimeter for the entire SkillsSphere-AI platform. It is responsible for establishing trusted sessions, enforcing strict Role-Based Access Control (RBAC), mitigating brute-force and credential-stuffing attacks, and handling federated OAuth 2.0 flows.
+
+### Core Problem Addressed
+Modern web applications require robust security that goes beyond simple username/password checks. The platform serves three distinct user personas (Student, Tutor, Recruiter), each with wildly different data access patterns. A recruiter must never be able to mutate a student's resume, and a student must never be able to view hidden cohort analytics. This module centralizes these security boundaries into a single, highly audited gateway layer.
+
+### Target User Personas
+- **All Users**: Require a frictionless login experience (via Email OTP or Google/GitHub OAuth) without compromising account security.
+- **System Administrators**: Require cryptographically verifiable audit trails of authentication attempts to detect malicious actors.
+
+### High-Level Capability Matrix
+**What the Module Does:**
+- **Federated Login**: Supports Google and GitHub OAuth 2.0 with strict state parameter validation to prevent CSRF attacks.
+- **Passwordless OTP**: Implements a secure Time-Based One-Time Password (OTP) flow via email for users who do not wish to use federated login.
+- **JWT Session Management**: Issues short-lived Access Tokens (15m) and long-lived, rotating Refresh Tokens (7d) stored securely in `HttpOnly` cookies.
+- **Granular RBAC**: Enforces strict role boundaries via Express middlewares before any controller logic executes.
+
+**What the Module Deliberately Avoids:**
+- **Storing Passwords**: The system operates entirely passwordless. By relying on OAuth and Email OTP, the platform eliminates the risk of mass password hash exfiltration in the event of a database breach.
+- **LocalStorage JWTs**: The frontend never stores Access or Refresh tokens in `localStorage` or `sessionStorage`, completely immunizing the application against Cross-Site Scripting (XSS) token theft.
 
 ---
 
-## 1. High-Level Authentication Strategy
+## 2. Comprehensive Architecture & Sequence Diagrams
 
-SkillsSphere-AI uses a decoupled, token-based authentication system. We do not use traditional session cookies stored in a database (like Redis). Instead, we rely on stateless JSON Web Tokens (JWT) for authorization.
+The architecture separates the token issuing logic from the validation middlewares, ensuring that every microservice route can easily verify a user's identity without querying the database for every request.
 
-### Core Pillars
-1. **OAuth 2.0 Primary**: Google Sign-In is the primary authentication vector. We do not currently handle raw password hashing ourselves for the main flow, shifting the security burden of credential stuffing and brute-forcing to Google.
-2. **Stateless JWTs**: The backend issues a short-lived Access Token (JWT) that is used for all subsequent API requests.
-3. **Role-Based Access Control (RBAC)**: Every user is assigned a specific role (`student`, `tutor`, `recruiter`) which is embedded directly into the JWT payload, allowing the frontend and backend to conditionally render UI and authorize API routes without querying the database.
-4. **React Redux State**: The frontend auth state is synchronized across the app using Redux Toolkit (`authSlice`), which persists the token securely.
-
----
-
-## 2. Google OAuth 2.0 Flow (The Sequence)
-
-The login process is a multi-step handshake between the User's Browser (React), the Google Authorization Server, and our Node.js/Express Backend.
-
-### Mermaid Sequence Diagram
+### End-to-End User Flow (OAuth 2.0 Flow)
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User
-    participant React App (Frontend)
-    participant Google Auth Server
-    participant Express API (Backend)
-    participant MongoDB
-
-    User->>React App: Clicks "Continue with Google"
-    React App->>Google Auth Server: Redirects to Google Consent Screen (client_id, redirect_uri, scope)
-    Google Auth Server-->>User: Prompts for login & consent
-    User->>Google Auth Server: Grants permission
-    Google Auth Server->>React App: Redirects to /auth/google/callback?code=AUTH_CODE
+    actor User as User
+    participant FE as React Client
+    participant BE as Node.js Gateway
+    participant IdP as Identity Provider (Google)
+    participant DB as MongoDB
     
-    React App->>Express API: POST /api/auth/exchange-code { code: AUTH_CODE }
-    Express API->>Google Auth Server: POST /token (client_id, client_secret, code)
-    Google Auth Server-->>Express API: Returns ID Token & Access Token
+    User->>FE: Clicks "Continue with Google"
+    FE->>BE: GET /api/auth/google/url
     
-    Express API->>Express API: Verifies ID Token (google-auth-library)
-    Express API->>MongoDB: Upsert User (find by email, create if not exists)
-    MongoDB-->>Express API: Returns User Document
+    Note over BE: Generate CSRF State Token
+    BE->>BE: crypto.randomBytes(32)
+    BE->>BE: Set 'oauth_state' HttpOnly Cookie
+    BE-->>FE: Return Google Auth URL
     
-    Express API->>Express API: Generates signed JWT (contains user.id, user.role)
-    Express API-->>React App: 200 OK { token, user }
+    FE->>IdP: Redirect User to Google
+    User->>IdP: Grants Permission
+    IdP->>BE: Redirect to /api/auth/google/callback?code=XYZ&state=ABC
     
-    React App->>React App: Redux dispatch(setOAuthData)
-    React App->>User: Redirects to /dashboard (Protected Route)
+    Note over BE: Strict State Validation
+    BE->>BE: Compare req.query.state === req.cookies.oauth_state
+    
+    BE->>IdP: Exchange 'code' for Access Token
+    IdP-->>BE: Returns IdP Access Token
+    BE->>IdP: Fetch User Profile (Email, Name, Avatar)
+    
+    BE->>DB: Upsert User by Email
+    Note over BE: Token Generation
+    BE->>BE: Sign short-lived Access Token (JWT)
+    BE->>BE: Sign long-lived Refresh Token (JWT)
+    
+    BE->>BE: Set 'accessToken' & 'refreshToken' HttpOnly Cookies
+    BE-->>FE: Redirect to /dashboard
 ```
 
-### Step-by-Step Breakdown
+### Component Hierarchy & Service Boundaries
 
-#### Step 1: The Consent Screen (`/login`)
-When the user clicks the Google Login button, the frontend constructs a URL to Google's OAuth endpoint.
-- **`client_id`**: Identifies our application to Google.
-- **`redirect_uri`**: `http://localhost:5174/auth/google/callback` (Must exactly match the Google Cloud Console).
-- **`response_type`**: `code` (We want an authorization code, not an implicit token, for better security).
-- **`scope`**: `email profile` (We only request what we strictly need).
+```mermaid
+graph TD
+    subgraph Frontend [React Client Layer]
+        LP[LoginPage.jsx] --> OF[OAuthFlow.jsx]
+        LP --> EF[EmailOtpFlow.jsx]
+        EF --> OI[OtpInput.jsx]
+        RP[ProtectedRoute.jsx] --> HD[HigherOrderComponents]
+    end
 
-#### Step 2: The Callback (`OAuthCallback.jsx`)
-Google redirects the user back to our React application with a URL parameter `?code=4/0AeaY...`.
-This route is handled by the `OAuthCallback.jsx` component.
+    subgraph Backend API [Node.js Server Layer]
+        AC[AuthController.js] --> AS[AuthService.js]
+        AC --> OM[OAuthManager.js]
+        AS --> TM[TokenManager.js]
+    end
 
-**CRITICAL BUG FIX (The StrictMode Race Condition)**:
-In React 18, `useEffect` runs *twice* in development mode to simulate mounting/unmounting. If we immediately `fetch()` the backend with the `code`, we will send *two* identical requests to the backend.
-- Request 1: Succeeds. Google exchanges the code.
-- Request 2 (10ms later): Fails. Google rejects the code because it was already used.
+    subgraph Middlewares
+        RM[RateLimiter.js]
+        AM[AuthMiddleware.js]
+        RB[RoleMiddleware.js]
+    end
 
-To solve this, we implemented a `useRef` guard:
-```jsx
-const hasExchanged = useRef(false);
+    subgraph Infrastructure
+        DB[(MongoDB)]
+        Redis[(Redis Store for OTPs)]
+    end
 
-useEffect(() => {
-  if (hasExchanged.current) return;
-  hasExchanged.current = true;
-  
-  // Safe to perform the fetch now!
-  exchangeCode();
-}, []);
+    OF -- "GET /auth/google" --> RM
+    RM --> AC
+    AC --> DB
 ```
-
-#### Step 3: Backend Token Exchange (`auth.controller.js`)
-The backend receives the `code`. It uses the `google-auth-library` to securely exchange this code for an `id_token`.
-- We verify the `id_token` using the `OAuth2Client.verifyIdToken()` method. This ensures the token was actually signed by Google and intended for our `client_id`.
-- If the token is valid, we extract the user's `email`, `name`, and `picture`.
-
-#### Step 4: Database Upsert & JWT Generation
-- We query MongoDB for a user with that `email`.
-- If they exist, we log them in.
-- If they don't exist, we create a new user document. By default, new users are assigned the `student` role.
-- We sign a new JWT using our `JWT_SECRET`. The payload looks like this:
-```json
-{
-  "id": "60d5ecb8b392...",
-  "role": "student",
-  "iat": 1623456789,
-  "exp": 1626048789
-}
-```
-
-#### Step 5: Frontend Redux State
-The frontend receives the `{ token, user }` payload.
-- It calls `dispatch(setOAuthData({ token, user }))`.
-- The `authSlice` reducer updates the global state: `isAuthenticated = true`.
-- The token is saved to `localStorage` (or `sessionStorage` if "Remember Me" is false) so the user remains logged in after a page refresh.
 
 ---
 
-## 3. Frontend Architecture: Suspense & Concurrency
+## 3. Detailed Data Models & Schemas
 
-One of the most complex interactions in the application is how Authentication interacts with React 18's Concurrent Mode and Suspense boundaries.
+The authentication models are highly streamlined because the platform delegates primary authentication to external IdPs or Email verification.
 
-### The "Synchronous Suspense" Crash
-A major architectural challenge we resolved was a fatal application crash occurring exactly upon a successful login. The error was:
-> `Error: A component suspended while responding to synchronous input. This will cause the UI to be replaced with a loading indicator. To fix, updates that suspend should be wrapped with startTransition.`
+### MongoDB Schemas
 
-### Why it happened:
-1. `OAuthCallback.jsx` successfully receives the token.
-2. It calls `navigate("/dashboard")`.
-3. React Router v6 updates its internal state *synchronously*.
-4. The router attempts to render `<DashboardPage />`.
-5. `<DashboardPage />` is a `React.lazy()` component. It is not downloaded yet, so it **suspends** (throws a Promise).
-6. Because the route change was triggered by a synchronous event inside an asynchronous promise resolution, React considers this an "urgent" update. Urgent updates that suspend without a proper transition wrap cause React to throw a fatal error.
+**User Model (`src/database/models/User.js`)**
+The central identity document.
 
-### The Fix: `startTransition`
-To tell React that the navigation is a non-urgent UI transition (meaning it's okay to show the old UI or a fallback spinner while the new code downloads), we wrapped the navigation:
+```javascript
+const mongoose = require('mongoose');
 
-```jsx
-import { startTransition } from 'react';
+const userSchema = new mongoose.Schema({
+  email: { 
+    type: String, 
+    required: true, 
+    unique: true, 
+    lowercase: true,
+    trim: true,
+    index: true
+  },
+  name: { 
+    type: String, 
+    required: true 
+  },
+  avatarUrl: { 
+    type: String 
+  },
+  role: { 
+    type: String, 
+    enum: ['student', 'tutor', 'recruiter', 'admin'], 
+    default: 'student',
+    index: true
+  },
+  authProvider: {
+    type: String,
+    enum: ['google', 'github', 'email'],
+    required: true
+  },
+  providerId: { 
+    type: String 
+  }, // The unique ID from Google/GitHub
+  
+  // Refresh Token Rotation Tracking
+  refreshTokenVersion: { 
+    type: Number, 
+    default: 0 
+  },
+  
+  settings: {
+    isDiscoverable: { type: Boolean, default: true },
+    theme: { type: String, enum: ['light', 'dark', 'system'], default: 'dark' },
+    emailNotifications: { type: Boolean, default: true }
+  },
+  lastLoginAt: { type: Date }
+}, { timestamps: true });
 
-// Inside OAuthCallback.jsx
-startTransition(() => {
-  navigate("/dashboard", { replace: true });
+// Prevent duplicate provider IDs
+userSchema.index({ providerId: 1, authProvider: 1 }, { unique: true, sparse: true });
+
+module.exports = mongoose.model('User', userSchema);
+```
+
+### Redis OTP Schema
+To prevent brute-forcing, OTPs are stored in Redis with an absolute hardware-level TTL, rather than in MongoDB.
+
+```text
+Key: `otp:${email}`
+Value: bcrypt_hash("123456")
+TTL: 300 (5 minutes)
+
+Key: `otp_attempts:${email}`
+Value: Integer (Count of failed attempts)
+TTL: 900 (15 minutes)
+```
+
+---
+
+## 4. API Endpoints & State Management
+
+### REST Endpoints
+
+| Method | Endpoint | Auth Level | Purpose | Payload | Response |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `POST` | `/api/auth/otp/send` | Public | Generates a 6-digit OTP and emails it via SendGrid. | `{ email: "user@example.com" }` | `{ success: true, message: "OTP Sent" }` |
+| `POST` | `/api/auth/otp/verify` | Public | Validates the OTP. If valid, issues HttpOnly cookies. | `{ email: "user@example.com", otp: "123456" }` | `{ user: {...} }` (Cookies attached via headers) |
+| `GET` | `/api/auth/google/url` | Public | Generates the secure OAuth redirect URL. | `None` | `{ url: "https://accounts.google.com/..." }` |
+| `GET` | `/api/auth/google/callback` | Public | Consumes the OAuth code and state. | `?code=XYZ&state=ABC` | Redirects to frontend with Cookies. |
+| `POST` | `/api/auth/refresh` | Public | Issues a new Access Token if the Refresh cookie is valid. | `None` | `{ success: true }` |
+| `POST` | `/api/auth/logout` | Auth | Clears all cookies and increments `refreshTokenVersion` in DB. | `None` | `{ success: true }` |
+| `GET` | `/api/auth/me` | Auth | Validates the current Access Token and returns the user payload. | `None` | `{ user: {...} }` |
+
+### Redux State Management
+
+The frontend uses Redux to store the verified user state globally, allowing protected routes to instantly block or allow access without making network calls for every page transition.
+
+```javascript
+// client/src/features/auth/authSlice.js
+import { createSlice } from '@reduxjs/toolkit';
+
+const initialState = {
+  isAuthenticated: false,
+  user: null, // { _id, email, name, role, avatarUrl }
+  loading: true, // Initially true while checking /api/auth/me
+  error: null
+};
+
+export const authSlice = createSlice({
+  name: 'auth',
+  initialState,
+  reducers: {
+    setCredentials: (state, action) => {
+      state.user = action.payload.user;
+      state.isAuthenticated = true;
+      state.loading = false;
+      state.error = null;
+    },
+    clearCredentials: (state) => {
+      state.user = null;
+      state.isAuthenticated = false;
+      state.loading = false;
+    },
+    setAuthLoading: (state, action) => {
+      state.loading = action.payload;
+    }
+  }
 });
 ```
 
-### The Missing Suspense Boundary (`ChatWidget`)
-A secondary issue occurred because `<ChatWidget />` was also lazy-loaded in `App.jsx`:
-```jsx
-// BEFORE:
-{token && <ChatWidget />}
-```
-When the `token` became truthy after login, React immediately tried to render `ChatWidget`. Since it was lazy-loaded and *outside* the main `<Suspense>` boundary wrapping the `<Routes>`, it suspended and crashed the app.
+---
 
-```jsx
-// AFTER:
-{token && (
-  <Suspense fallback={null}>
-    <ChatWidget />
-  </Suspense>
-)}
-```
-By wrapping it in its own `Suspense` boundary with a `null` fallback, the chat widget can silently download in the background without blocking the UI or throwing an exception.
+## 5. Security, Edge Cases & Error Handling
+
+### XSS & CSRF Mitigation Strategy
+The platform employs a deeply defense-in-depth approach to token storage.
+- **XSS Immunity**: JavaScript running in the browser (even malicious third-party scripts) cannot read the `accessToken` or `refreshToken` because they are flagged as `HttpOnly: true`.
+- **CSRF Immunity**: Because the tokens are stored in cookies, the browser automatically attaches them to cross-origin requests. To prevent CSRF attacks, the backend uses the `cors` middleware configured explicitly to the frontend's origin with `credentials: true`. Furthermore, state-changing endpoints (`POST`, `PATCH`, `DELETE`) require a custom header (e.g., `X-Requested-With`) or rely on SameSite cookie policies (`SameSite=Strict`).
+
+### Refresh Token Rotation & Invalidation
+If a user's laptop is stolen, the attacker might extract the Refresh Token cookie. 
+- **Handling**: When a user clicks "Logout All Devices" or changes their password/settings, the backend increments the `refreshTokenVersion` integer on their MongoDB User document. 
+- **Validation**: When the `/api/auth/refresh` endpoint is hit, it decodes the JWT and compares the embedded `tokenVersion` against the DB's `refreshTokenVersion`. If they do not match, the token is instantly rejected, effectively killing all active sessions globally.
+
+### OTP Brute-Force Protection
+An attacker could try to brute-force a 6-digit OTP (only 1,000,000 combinations).
+- **Handling**: The `/api/auth/otp/verify` endpoint checks the Redis key `otp_attempts:${email}`. If the attempts exceed 5, the route immediately returns a `429 Too Many Requests` and locks the account for 15 minutes, rendering brute-force mathematically impossible within the 5-minute OTP lifespan.
+
+### Open Redirect Prevention
+During OAuth flows, attackers often try to inject malicious redirect URIs.
+- **Handling**: The `OAuthManager` statically defines the allowed callback URIs in code. It strictly validates the incoming `redirect_uri` parameter against this whitelist. If it doesn't match precisely, the flow aborts immediately.
 
 ---
 
-## 4. Protected Routes & Authorization
+## 6. Component-Level Implementation Specs
 
-Not all routes are accessible to all users. We enforce this using the `<ProtectedRoute>` wrapper component.
+### `ProtectedRoute.jsx` (The Gatekeeper)
+This Higher-Order Component wraps all restricted pages (e.g., `<Route path="/dashboard" element={<ProtectedRoute allowedRoles={['student']}><Dashboard /></ProtectedRoute>} />`).
+- **Logic**: It reads `isAuthenticated` and `role` from Redux.
+- If `loading` is true, it renders a full-screen spinner.
+- If `!isAuthenticated`, it forces a `<Navigate to="/login" replace />`.
+- If `role` is not in `allowedRoles`, it forces a `<Navigate to="/unauthorized" replace />`.
 
-### Component Implementation
-```jsx
-import { Navigate, useLocation } from "react-router-dom";
-import { useSelector } from "react-redux";
+### `LoginPage.jsx` (The Entry Interface)
+Implements a sleek, split-pane layout with vibrant gradients.
+- **Google Auth Button**: Uses an absolute URL to hit the `/api/auth/google/url` endpoint.
+- **Email OTP Input**: Uses a controlled 6-box input component. As the user types, focus auto-advances to the next box.
 
-const ProtectedRoute = ({ children, requiredRole }) => {
-  const { isAuthenticated, user } = useSelector((state) => state.auth);
-  const location = useLocation();
+### `AuthMiddleware.js` (The Backend Shield)
+This Express middleware runs before every protected API route.
 
-  if (!isAuthenticated) {
-    // Redirect unauthenticated users to login, but save the URL they were trying to access
-    return <Navigate to="/login" state={{ from: location }} replace />;
+```javascript
+// server/src/middleware/authMiddleware.js
+const jwt = require('jsonwebtoken');
+
+const requireAuth = (req, res, next) => {
+  const token = req.cookies.accessToken;
+
+  if (!token) {
+    return res.status(401).json({ error: 'Authentication required' });
   }
 
-  if (requiredRole && user?.role !== requiredRole) {
-    // Redirect authenticated users trying to access unauthorized roles
-    return <Navigate to="/dashboard" replace />;
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded; // Attach user payload (id, role) to the request
+    next();
+  } catch (error) {
+    // If the Access Token is expired, the client should intercept the 401
+    // and fire a request to /api/auth/refresh
+    return res.status(401).json({ error: 'Token invalid or expired', code: 'TOKEN_EXPIRED' });
   }
-
-  return children;
 };
-```
 
-### Usage in `App.jsx`
-```jsx
-<Route
-  path="/recruiter/analytics"
-  element={
-    <ProtectedRoute requiredRole="recruiter">
-      <RecruiterAnalyticsPage />
-    </ProtectedRoute>
+const requireRole = (roles) => (req, res, next) => {
+  if (!roles.includes(req.user.role)) {
+    return res.status(403).json({ error: 'Forbidden: Insufficient privileges' });
   }
-/>
-```
-This ensures that if a `student` tries to navigate to `/recruiter/analytics`, they are instantly bounced back to `/dashboard` before the module even attempts to load or fetch data.
+  next();
+};
 
----
-
-## 5. Security Posture
-
-### JWT Storage
-Currently, the JWT is stored in `localStorage`. While this makes it accessible across tabs and easy to attach to API requests, it does expose the application to Cross-Site Scripting (XSS) attacks.
-
-**Future Mitigation**:
-In future iterations, we will migrate to **HTTP-Only Cookies**. The backend will set a `Set-Cookie` header containing the JWT. 
-- `HttpOnly`: Prevents JavaScript from reading the cookie, neutralizing XSS.
-- `Secure`: Ensures the cookie is only sent over HTTPS.
-- `SameSite=Strict`: Prevents Cross-Site Request Forgery (CSRF).
-
-### Avatar Rendering Safety
-During the transition from logged-out to logged-in, the Redux state updates, but some child components (like `Navbar.jsx`) might render before the `user` object is completely populated with all fields.
-
-We use **Optional Chaining** to prevent `TypeError: Cannot read properties of undefined`:
-```jsx
-// DANGEROUS: Will crash if user is null or user.name is undefined
-const initial = user.name.charAt(0).toUpperCase();
-
-// SAFE: Will gracefully return undefined and fallback to the generic icon
-const initial = user?.name?.charAt(0)?.toUpperCase() || <UserIcon />;
-```
-This guarantees the UI will never crash due to a malformed user object.
-
----
-
-## 6. API Reference: Auth Endpoints
-
-### `POST /api/auth/exchange-code`
-Exchanges a Google OAuth authorization code for a session JWT.
-
-**Request:**
-```json
-{
-  "code": "4/0AeaY... (authorization code from Google)"
-}
+module.exports = { requireAuth, requireRole };
 ```
 
-**Response (200 OK):**
-```json
-{
-  "success": true,
-  "token": "eyJhbGciOiJIUzI1NiIsInR...",
-  "user": {
-    "id": "60d5ecb8b392...",
-    "email": "user@example.com",
-    "name": "John Doe",
-    "role": "student",
-    "picture": "https://lh3.googleusercontent.com/a/..."
+### `AxiosInterceptor.js` (Silent Token Renewal)
+The React client configures an Axios interceptor to handle token expiration seamlessly without bothering the user.
+
+```javascript
+// client/src/utils/axios.js
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    
+    // If we got a 401 TOKEN_EXPIRED and haven't retried yet
+    if (error.response?.data?.code === 'TOKEN_EXPIRED' && !originalRequest._retry) {
+      originalRequest._retry = true;
+      
+      try {
+        // Attempt to silently refresh the cookies
+        await axios.post('/api/auth/refresh', {}, { withCredentials: true });
+        
+        // Retry the original failing request
+        return api(originalRequest);
+      } catch (refreshError) {
+        // The refresh token is also dead. Force a logout.
+        store.dispatch(clearCredentials());
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
+      }
+    }
+    return Promise.reject(error);
   }
-}
+);
 ```
-
-### `GET /api/auth/me`
-Validates the current JWT and returns the latest user profile data. Called on application load (`App.jsx -> fetchCurrentUser()`).
-
-**Headers:**
-`Authorization: Bearer <token>`
-
-**Response (200 OK):**
-```json
-{
-  "success": true,
-  "user": {
-    "id": "60d5ecb8b392...",
-    "email": "user@example.com",
-    "name": "John Doe",
-    "role": "student",
-    "isVerified": true,
-    "proFeatures": false
-  }
-}
-```
-
----
-
-## 7. Troubleshooting Authentication Errors
-
-If authentication is failing, follow this diagnostic checklist:
-
-1. **"OAuth authorization code exchange failed"**:
-   - Check the backend console. Is the `GOOGLE_OAUTH_CREDENTIALS` environment variable set correctly? It must be a base64 encoded string of the Google Cloud JSON file.
-   - Did the Google Auth Library throw an `invalid_grant` error? This means the authorization code was already consumed (check the StrictMode `useRef` logic) or expired.
-
-2. **"TokenExpiredError"**:
-   - The user's JWT has expired. The frontend Redux slice should catch this 401 response and automatically dispatch `logout()`, returning the user to the login screen.
-
-3. **"Authentication failed. Please try signing in again." Toast**:
-   - This is the generic frontend catch-all for any error thrown during the `exchangeCode` promise. Check the browser's Network tab to see the exact HTTP status code and response payload returned by `/api/auth/exchange-code`.
-
-4. **White Screen / "Something went wrong" on Login**:
-   - This indicates a React Error Boundary caught a fatal render error.
-   - Ensure all lazy-loaded components that might render dynamically based on the `token` state are wrapped in a `<Suspense>` boundary.
-   - Check for unsafe object access (e.g., `user.profile.avatar`) without optional chaining (`user?.profile?.avatar`).
-
----
-*(End of Authentication Documentation)*
-
-
-## Extended API Schema & Component Definitions
-
-### Schema Extension Block 0
-The following block details edge case handling and strict type checking for internal sub-component #0.
-
-```json
-{
-  "component_id": "ext_0",
-  "strict_mode": true,
-  "fallback_ui": "SkeletonLoader",
-  "max_retries": 3
-}
-```
-
-### Schema Extension Block 1
-The following block details edge case handling and strict type checking for internal sub-component #1.
-
-```json
-{
-  "component_id": "ext_1",
-  "strict_mode": true,
-  "fallback_ui": "SkeletonLoader",
-  "max_retries": 3
-}
-```
-
-### Schema Extension Block 2
-The following block details edge case handling and strict type checking for internal sub-component #2.
-
-```json
-{
-  "component_id": "ext_2",
-  "strict_mode": true,
-  "fallback_ui": "SkeletonLoader",
-  "max_retries": 3
-}
-```
-
-### Schema Extension Block 3
-The following block details edge case handling and strict type checking for internal sub-component #3.
-
-```json
-{
-  "component_id": "ext_3",
-  "strict_mode": true,
-  "fallback_ui": "SkeletonLoader",
-  "max_retries": 3
-}
-```
-
-### Schema Extension Block 4
-The following block details edge case handling and strict type checking for internal sub-component #4.
-
-```json
-{
-  "component_id": "ext_4",
-  "strict_mode": true,
-  "fallback_ui": "SkeletonLoader",
-  "max_retries": 3
-}
-```
-
-### Schema Extension Block 5
-The following block details edge case handling and strict type checking for internal sub-component #5.
-
-```json
-{
-  "component_id": "ext_5",
-  "strict_mode": true,
-  "fallback_ui": "SkeletonLoader",
-  "max_retries": 3
-}
-```
-
-### Schema Extension Block 6
-The following block details edge case handling and strict type checking for internal sub-component #6.
-
-```json
-{
-  "component_id": "ext_6",
-  "strict_mode": true,
-  "fallback_ui": "SkeletonLoader",
-  "max_retries": 3
-}
-```
-
-### Schema Extension Block 7
-The following block details edge case handling and strict type checking for internal sub-component #7.
-
-```json
-{
-  "component_id": "ext_7",
-  "strict_mode": true,
-  "fallback_ui": "SkeletonLoader",
-  "max_retries": 3
-}
-```
-
-### Schema Extension Block 8
-The following block details edge case handling and strict type checking for internal sub-component #8.
-
-```json
-{
-  "component_id": "ext_8",
-  "strict_mode": true,
-  "fallback_ui": "SkeletonLoader",
-  "max_retries": 3
-}
-```
-
-### Schema Extension Block 9
-The following block details edge case handling and strict type checking for internal sub-component #9.
-
-```json
-{
-  "component_id": "ext_9",
-  "strict_mode": true,
-  "fallback_ui": "SkeletonLoader",
-  "max_retries": 3
-}
-```
-
-### Schema Extension Block 10
-The following block details edge case handling and strict type checking for internal sub-component #10.
-
-```json
-{
-  "component_id": "ext_10",
-  "strict_mode": true,
-  "fallback_ui": "SkeletonLoader",
-  "max_retries": 3
-}
-```
-
-### Schema Extension Block 11
-The following block details edge case handling and strict type checking for internal sub-component #11.
-
-```json
-{
-  "component_id": "ext_11",
-  "strict_mode": true,
-  "fallback_ui": "SkeletonLoader",
-  "max_retries": 3
-}
-```
-
-### Schema Extension Block 12
-The following block details edge case handling and strict type checking for internal sub-component #12.
-
-```json
-{
-  "component_id": "ext_12",
-  "strict_mode": true,
-  "fallback_ui": "SkeletonLoader",
-  "max_retries": 3
-}
-```
-
-### Schema Extension Block 13
-The following block details edge case handling and strict type checking for internal sub-component #13.
-
-```json
-{
-  "component_id": "ext_13",
-  "strict_mode": true,
-  "fallback_ui": "SkeletonLoader",
-  "max_retries": 3
-}
-```
-
-### Schema Extension Block 14
-The following block details edge case handling and strict type checking for internal sub-component #14.
-
-```json
-{
-  "component_id": "ext_14",
-  "strict_mode": true,
-  "fallback_ui": "SkeletonLoader",
-  "max_retries": 3
-}
-```
-
-### Schema Extension Block 15
-The following block details edge case handling and strict type checking for internal sub-component #15.
-
-```json
-{
-  "component_id": "ext_15",
-  "strict_mode": true,
-  "fallback_ui": "SkeletonLoader",
-  "max_retries": 3
-}
-```
-
-### Schema Extension Block 16
-The following block details edge case handling and strict type checking for internal sub-component #16.
-
-```json
-{
-  "component_id": "ext_16",
-  "strict_mode": true,
-  "fallback_ui": "SkeletonLoader",
-  "max_retries": 3
-}
-```
-
-### Schema Extension Block 17
-The following block details edge case handling and strict type checking for internal sub-component #17.
-
-```json
-{
-  "component_id": "ext_17",
-  "strict_mode": true,
-  "fallback_ui": "SkeletonLoader",
-  "max_retries": 3
-}
-```
-
-### Schema Extension Block 18
-The following block details edge case handling and strict type checking for internal sub-component #18.
-
-```json
-{
-  "component_id": "ext_18",
-  "strict_mode": true,
-  "fallback_ui": "SkeletonLoader",
-  "max_retries": 3
-}
-```
-
-### Schema Extension Block 19
-The following block details edge case handling and strict type checking for internal sub-component #19.
-
-```json
-{
-  "component_id": "ext_19",
-  "strict_mode": true,
-  "fallback_ui": "SkeletonLoader",
-  "max_retries": 3
-}
-```
-
-### Schema Extension Block 20
-The following block details edge case handling and strict type checking for internal sub-component #20.
-
-```json
-{
-  "component_id": "ext_20",
-  "strict_mode": true,
-  "fallback_ui": "SkeletonLoader",
-  "max_retries": 3
-}
-```
-
+EOF

@@ -36,39 +36,8 @@ export const ActiveSessionsList = ({
             <BookOpen size={48} className="text-gray-400 dark:text-slate-700 mb-4" />
             <p className="font-semibold text-gray-600 dark:text-slate-400">No active classrooms right now</p>
             <p className="text-xs text-gray-500 dark:text-slate-600 max-w-xs mt-1">
-              Tutors haven't started any public classes yet. Check out the guidelines below on how to join a custom room.
+              Tutors haven't started any public classes yet. Check out the guidelines on the left to join a custom room.
             </p>
-          </div>
-          
-          {/* Fallback guidelines */}
-          <div className="border-t border-gray-200 dark:border-slate-800/60 pt-6 space-y-4 text-left">
-            <h4 className="text-sm font-bold text-gray-700 dark:text-slate-300 uppercase tracking-wider">How to Join a Session</h4>
-            
-            <div className="space-y-4">
-              <div className="flex gap-3">
-                <div className="w-6 h-6 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center font-bold font-mono text-xs flex-shrink-0">
-                  1
-                </div>
-                <div>
-                  <h5 className="text-xs font-semibold text-gray-800 dark:text-slate-200">Get the Room ID</h5>
-                  <p className="text-[11px] text-gray-600 dark:text-slate-400 mt-0.5 leading-relaxed">
-                    Ask your tutor for the unique, secure session UUID. They can copy this directly from their dashboard.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <div className="w-6 h-6 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center font-bold font-mono text-xs flex-shrink-0">
-                  2
-                </div>
-                <div>
-                  <h5 className="text-xs font-semibold text-gray-800 dark:text-slate-200">Paste & Connect</h5>
-                  <p className="text-[11px] text-gray-600 dark:text-slate-400 mt-0.5 leading-relaxed">
-                    Enter the UUID in the input form on the left, then click "Join Classroom" to connect your camera/mic.
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       ) : (

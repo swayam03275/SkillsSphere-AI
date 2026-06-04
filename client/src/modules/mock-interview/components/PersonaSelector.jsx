@@ -45,18 +45,18 @@ const PERSONAS = [
 
 const PersonaSelector = ({ selectedPersona, onSelect }) => {
   return (
-    <div className="group relative rounded-3xl bg-white/70 dark:bg-slate-900/60 p-6 sm:p-8 border border-white/20 dark:border-slate-800 shadow-[0_20px_40px_rgba(0,0,0,0.08)] dark:shadow-[0_20px_40px_rgba(0,0,0,0.4)] backdrop-blur-xl transition-all duration-300 hover:shadow-[0_20px_50px_rgba(168,85,247,0.1)] hover:border-purple-500/30">
+    <div className="group relative rounded-3xl bg-white/70 dark:bg-slate-900/60 p-6 sm:p-8 border border-gray-200 dark:border-slate-800 shadow-[0_20px_40px_rgba(0,0,0,0.04)] dark:shadow-none backdrop-blur-xl transition-all duration-300 hover:shadow-[0_20px_50px_rgba(168,85,247,0.1)] hover:border-purple-500/30">
       <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-fuchsia-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
       
       <div className="relative z-10">
-        <h3 className="text-xl font-bold flex items-center gap-3 mb-6 text-slate-800 dark:text-slate-100">
+        <h3 className="text-xl font-bold flex items-center gap-3 mb-6 text-slate-900 dark:text-slate-100">
           <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-purple-500/10 text-purple-500 dark:bg-purple-500/20 dark:text-purple-400">
             <UserCheck size={22} />
           </span>
           Interviewer Persona
         </h3>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3">
           {PERSONAS.map((persona) => {
             const isSelected = selectedPersona === persona.id;
             return (
@@ -65,8 +65,8 @@ const PersonaSelector = ({ selectedPersona, onSelect }) => {
                 onClick={() => onSelect(persona.id)}
                 className={`relative flex items-start gap-4 p-4 rounded-2xl cursor-pointer transition-all duration-300 border ${
                   isSelected 
-                    ? `bg-white dark:bg-slate-800 ${persona.borderActive} scale-[1.02]`
-                    : "bg-white/50 dark:bg-slate-900/50 border-white/40 dark:border-slate-700/50 hover:bg-white hover:dark:bg-slate-800 hover:scale-[1.01]"
+                    ? `bg-white dark:bg-slate-800/80 ${persona.borderActive} scale-[1.02]`
+                    : "bg-white/50 dark:bg-slate-900/50 border-gray-200 dark:border-slate-700/50 hover:bg-white hover:dark:bg-slate-800/50 hover:scale-[1.01]"
                 }`}
               >
                 {/* Active Indicator Glow */}
@@ -79,10 +79,10 @@ const PersonaSelector = ({ selectedPersona, onSelect }) => {
                 </div>
                 
                 <div className="flex-1">
-                  <h4 className={`font-bold text-sm mb-1 transition-colors ${isSelected ? "text-slate-900 dark:text-white" : "text-slate-700 dark:text-slate-300"}`}>
+                  <h4 className={`font-bold text-sm mb-1 transition-colors ${isSelected ? "text-slate-900 dark:text-white" : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"}`}>
                     {persona.name}
                   </h4>
-                  <p className={`text-[11px] leading-snug transition-colors ${isSelected ? "text-slate-600 dark:text-slate-400 font-medium" : "text-slate-500 dark:text-slate-500"}`}>
+                  <p className={`text-[11px] leading-snug transition-colors ${isSelected ? "text-slate-700 dark:text-slate-300 font-medium" : "text-slate-500 dark:text-slate-400"}`}>
                     {persona.description}
                   </p>
                 </div>

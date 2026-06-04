@@ -13,7 +13,7 @@ import {
  * Custom hook for managing notifications
  * Provides access to notifications state and dispatch functions
  */
-export const useNotifications = ({ page = 1, limit = 10, filter = "all" } = {}) => {
+export const useNotifications = ({ page = 1, limit = 10, filter = "all", type } = {}) => {
   const dispatch = useDispatch();
   const { items, unreadCount, loading, error, pagination, socketStatus } = useSelector(
     (state) => state.notifications,
@@ -26,9 +26,9 @@ export const useNotifications = ({ page = 1, limit = 10, filter = "all" } = {}) 
 
   // Fetch notifications on component mount
   useEffect(() => {
-    dispatch(getNotifications({ page, limit, isRead }));
+    dispatch(getNotifications({ page, limit, isRead, type }));
     dispatch(getUnreadCount());
-  }, [dispatch, page, limit, isRead]);
+  }, [dispatch, page, limit, isRead, type]);
 
   // Mark single notification as read
   const handleMarkAsRead = useCallback(
@@ -60,9 +60,9 @@ export const useNotifications = ({ page = 1, limit = 10, filter = "all" } = {}) 
   const handleLoadMore = useCallback(() => {
     const nextPage = pagination.page + 1;
     if (nextPage <= pagination.pages) {
-      dispatch(getNotifications({ page: nextPage, limit, isRead }));
+      dispatch(getNotifications({ page: nextPage, limit, isRead, type }));
     }
-  }, [dispatch, pagination, limit, isRead]);
+  }, [dispatch, pagination, limit, isRead, type]);
 
   return {
     notifications: items,

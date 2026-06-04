@@ -16,6 +16,24 @@ import AppError from "../../utils/AppError.js";
 export const searchTalent = asyncHandler(async (req, res, next) => {
   const { q, skills, graduationYear, minAtsScore, page = 1, limit = 10, specialization } = req.query;
 
+  const pageNum = parseInt(page, 10);
+  const limitNum = parseInt(limit, 10);
+  if (Number.isNaN(pageNum) || pageNum <= 0 || Number.isNaN(limitNum) || limitNum <= 0 || limitNum > 100) {
+    return next(new AppError("Invalid page or limit parameter. Page must be > 0 and limit must be between 1 and 100.", 400));
+  }
+
+  if (minAtsScore !== undefined) {
+    const scoreNum = Number(minAtsScore);
+    if (Number.isNaN(scoreNum) || scoreNum < 0 || scoreNum > 100) {
+      return next(new AppError("minAtsScore must be a number between 0 and 100.", 400));
+    }
+  }
+
+  const validSpecializations = ["frontend", "backend", "fullstack", "devops", "aiml", "database"];
+  if (specialization && !validSpecializations.includes(specialization.toLowerCase())) {
+    return next(new AppError(`Invalid specialization. Allowed values are: ${validSpecializations.join(", ")}`, 400));
+  }
+
   const matchObj = { isActive: true };
 
   // 1. Text Search Query
@@ -23,15 +41,47 @@ export const searchTalent = asyncHandler(async (req, res, next) => {
     matchObj.$text = { $search: q.trim() };
   }
 
-  // 2. Technical Skills Filter
+  // 2. Technical Skills Filter (with Synonym Expansion & Safe Regex Escaping)
+  const SKILL_SYNONYMS = {
+    "react": ["react", "react.js", "reactjs"],
+    "react.js": ["react", "react.js", "reactjs"],
+    "reactjs": ["react", "react.js", "reactjs"],
+    "node": ["node", "node.js", "nodejs"],
+    "node.js": ["node", "node.js", "nodejs"],
+    "nodejs": ["node", "node.js", "nodejs"],
+    "go": ["go", "golang"],
+    "golang": ["go", "golang"],
+    "c++": ["c++", "cpp"],
+    "cpp": ["c++", "cpp"],
+    "dotnet": [".net", "dotnet", "c#"],
+    ".net": [".net", "dotnet", "c#"],
+    "postgres": ["postgres", "postgresql"],
+    "postgresql": ["postgres", "postgresql"],
+    "js": ["javascript", "js"],
+    "javascript": ["javascript", "js"],
+    "ts": ["typescript", "ts"],
+    "typescript": ["typescript", "ts"]
+  };
+
+  const getSkillExpansion = (skillName) => {
+    const norm = skillName.toLowerCase().trim();
+    return SKILL_SYNONYMS[norm] || [norm];
+  };
+
   if (skills) {
     const skillsArray = Array.isArray(skills)
       ? skills
       : skills.split(",").map(s => s.trim()).filter(Boolean);
-    if (skillsArray.length > 0) {
-      matchObj.skills = {
-        $all: skillsArray.map(skill => new RegExp(`^${skill.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, "i"))
-      };
+    const safeSkillsArray = skillsArray.filter(
+      skill => typeof skill === "string" && /^[a-zA-Z0-9\s#+\.\-\/]{1,50}$/.test(skill)
+    );
+    if (safeSkillsArray.length > 0) {
+      const andConditions = safeSkillsArray.map(skill => {
+        const synonyms = getSkillExpansion(skill);
+        const regexes = synonyms.map(syn => new RegExp(`^${syn.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, "i"));
+        return { skills: { $in: regexes } };
+      });
+      matchObj.$and = andConditions;
     }
   }
 
@@ -53,11 +103,35 @@ export const searchTalent = asyncHandler(async (req, res, next) => {
     }
   }
 
-  // 4. Graduation Year Filter
+  // 4. Graduation Year Filter (Supporting Ranges and Exact Matches Safely)
   if (graduationYear) {
-    matchObj.education = {
-      $regex: new RegExp(`\\b${graduationYear}\\b`, "i")
-    };
+    const rangeMatch = graduationYear.trim().match(/^(\d{4})-(\d{4})$/);
+    const singleMatch = graduationYear.trim().match(/^(\d{4})$/);
+
+    if (rangeMatch) {
+      const startYear = parseInt(rangeMatch[1], 10);
+      const endYear = parseInt(rangeMatch[2], 10);
+      const years = [];
+      const lower = Math.min(startYear, endYear);
+      const upper = Math.max(startYear, endYear);
+      
+      // Limit range to maximum 20 years to prevent regex expression flooding
+      if (upper - lower <= 20) {
+        for (let y = lower; y <= upper; y += 1) {
+          years.push(y.toString());
+        }
+        if (years.length > 0) {
+          const regexStr = years.map(y => `\\b${y}\\b`).join("|");
+          matchObj.education = {
+            $regex: new RegExp(regexStr, "i")
+          };
+        }
+      }
+    } else if (singleMatch) {
+      matchObj.education = {
+        $regex: new RegExp(`\\b${singleMatch[1]}\\b`, "i")
+      };
+    }
   }
 
   // 5. Min ATS Score Filter
@@ -65,8 +139,6 @@ export const searchTalent = asyncHandler(async (req, res, next) => {
     matchObj.aggregatedScore = { $gte: Number(minAtsScore) };
   }
 
-  const pageNum = Math.max(1, parseInt(page, 10) || 1);
-  const limitNum = Math.max(1, parseInt(limit, 10) || 10);
   const skipNum = (pageNum - 1) * limitNum;
 
   // 6. Build Aggregation Pipeline
@@ -146,6 +218,11 @@ export const matchCandidate = asyncHandler(async (req, res, next) => {
 
   if (!candidateId || !jobId) {
     return next(new AppError("Candidate ID and Job ID are required", 400));
+  }
+
+  const objectIdRegex = /^[a-fA-F0-9]{24}$/;
+  if (!objectIdRegex.test(candidateId) || !objectIdRegex.test(jobId)) {
+    return next(new AppError("Invalid Candidate ID or Job ID format", 400));
   }
 
   const job = await JobPosting.findById(jobId);
@@ -327,6 +404,11 @@ export const inviteCandidate = asyncHandler(async (req, res, next) => {
 
   if (!candidateId || !jobId) {
     return next(new AppError("Candidate ID and Job ID are required", 400));
+  }
+
+  const objectIdRegex = /^[a-fA-F0-9]{24}$/;
+  if (!objectIdRegex.test(candidateId) || !objectIdRegex.test(jobId)) {
+    return next(new AppError("Invalid Candidate ID or Job ID format", 400));
   }
 
   const job = await JobPosting.findById(jobId);

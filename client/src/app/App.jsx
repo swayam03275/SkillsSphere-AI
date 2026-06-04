@@ -11,7 +11,7 @@ const BlogPage = lazy(() => import("../modules/landing/pages/BlogPage"));
 const CareersPage = lazy(() => import("../modules/landing/pages/CareersPage"));
 const ApiStatusPage = lazy(() => import("../modules/landing/pages/ApiStatusPage"));
 const DashboardPage = lazy(() => import("../modules/dashboard/DashboardPage"));
-const CoverLetterHistoryPage = lazy(() => import("../modules/dashboard/pages/CoverLetterHistoryPage"));
+const ResumeAnalyzerHistoryPage = lazy(() => import("../modules/dashboard/pages/ResumeAnalyzerHistoryPage"));
 const ResumeAnalyzerPage = lazy(() => import("../modules/resume-analyzer/pages/ResumeAnalyzerPage"));
 const JobMatcherPage = lazy(() => import("../modules/job-matcher/pages/JobMatcherPage"));
 const ComponentDemo = lazy(() => import("../modules/auth/components/ComponentDemo"));
@@ -21,6 +21,7 @@ const OAuthCallback = lazy(() => import("../modules/auth/OAuthCallback"));
 const ResetPassword = lazy(() => import("../modules/auth/ResetPassword"));
 const ForgotPassword = lazy(() => import("../modules/auth/ForgotPassword"));
 const VerifyEmail = lazy(() => import("../modules/auth/VerifyEmail"));
+const OnboardingPage = lazy(() => import("../modules/auth/OnboardingPage"));
 const ProfilePage = lazy(() => import("../modules/profile/ProfilePage"));
 const RecruiterJobsPage = lazy(() => import("../modules/recruiter-jobs/pages/RecruiterJobsPage"));
 const RecruiterAnalyticsPage = lazy(() => import("../modules/recruiter-jobs/pages/RecruiterAnalyticsPage"));
@@ -118,13 +119,13 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/cover-letters"
+        <Route 
+          path="/resume-history" 
           element={
             <ProtectedRoute requiredRole="student">
-              <CoverLetterHistoryPage />
+              <ResumeAnalyzerHistoryPage />
             </ProtectedRoute>
-          }
+          } 
         />
         <Route
           path="/dashboard"
@@ -149,6 +150,14 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route 
+          path="/onboarding" 
+          element={
+            <ProtectedRoute>
+              <OnboardingPage />
+            </ProtectedRoute>
+          } 
+        />
         <Route
           path="/recruiter/jobs"
           element={

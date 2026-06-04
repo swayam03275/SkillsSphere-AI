@@ -44,6 +44,8 @@ SkillSphere AI aims to simplify the path from learning to hiring by giving users
    - Missing keyword identification
    - **Industry Benchmarking Mode** — Analyzes your resume against market standards even without a specific Job Description (BM badge).
    - Live PDF document preview
+   - **Unified History Hub** — Tabbed navigation to review both past Resume Analyses and generated Cover Letters with complete pagination.
+   - **Advanced ATS Evaluators** — Built-in Readability Domain Scoring and Formatting Content Scoring engines for enhanced accuracy.
 
 3. **Resume vs Job Description Matcher**
    ML-assisted comparison between candidate profile and role requirements.
@@ -70,7 +72,7 @@ SkillSphere AI aims to simplify the path from learning to hiring by giving users
    - Automatic sync with latest Resume Analysis feedback
 
 6. **Skill Tracking Dashboard**
-   Performance insights and "Next Learning Milestone" guidance to help students track growth.
+   Performance insights and "Next Learning Milestone" guidance to help students track growth. Features a standardized, "Gold Standard" aesthetic layout using vibrant multi-color gradients and meticulously aligned responsive grids.
 
 7. **AI Cover Letter Intelligence System**
    AI-powered career application workflow extending the Resume Intelligence Engine.
@@ -83,11 +85,12 @@ SkillSphere AI aims to simplify the path from learning to hiring by giving users
    - Persistent cover letter history dashboard for reusing generated content
 
 8. **Secure Authentication & Email Verification**
-   OTP-based registration and password recovery system.
+   OTP-based registration and password recovery system with hardened security constraints.
    - 6-digit email OTP verification
    - Secure Password Reset (Forgot Password) flow
-   - Protection against user enumeration
-   - OTP attempt limiting for security
+   - Protection against user enumeration and open redirects
+   - Hardened OAuth state validation and strict OTP attempt limiting
+   - API endpoints secured against unauthorized access
 
 9. **AI Talent Finder & Candidate Direct Search**
    Advanced talent discovery search engine for recruiters. (Route: `/recruiter/talent-finder`)
@@ -96,6 +99,10 @@ SkillSphere AI aims to simplify the path from learning to hiring by giving users
    - Dynamic AI pipeline evaluation to compute a match scorecard against any of the recruiter's active jobs
    - One-click recruiter invitation triggers that deliver real-time Socket.IO notifications to candidate dashboards
 
+10. **Enterprise-Grade Infrastructure & Classrooms**
+   - **Live Classrooms**: Interactive environments featuring native Picture-in-Picture (PiP), synchronized whiteboard/code editors, real-time member sync, and host production teardown safeguards.
+   - **Performance Architecture**: Implements Database Connection Pooling, Redis Cache Eviction policies, and Gateway Query Complexity limits for high availability.
+   - **Security Enhancements**: Features a robust webhook signing framework, secure socket hardening, and comprehensive log rotation profiles.
 ---
 
 ## Target Users

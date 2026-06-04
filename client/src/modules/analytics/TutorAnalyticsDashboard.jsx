@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Treemap } from "recharts";
-import { TrendingUp, Users, AlertCircle, ArrowLeft } from "lucide-react";
+import { TrendingUp, Users, AlertCircle, ArrowLeft, Sparkles } from "lucide-react";
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { apiRequest } from "../../services/apiClient.js";
@@ -100,16 +100,36 @@ const TutorAnalyticsDashboard = () => {
         <div className="max-w-7xl mx-auto space-y-8">
         
         {/* Header Section */}
-        <div>
-          <Link 
-            to="/dashboard" 
-            className="inline-flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-500 mb-4 transition-colors"
-          >
-            <ArrowLeft size={16} />
-            Back to Dashboard
-          </Link>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Tutor Analytics Dashboard</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-2">Class-wide skill gaps and candidate proficiencies.</p>
+        <div className="text-center space-y-4 mb-10 relative">
+          {/* Back to Dashboard Link (Left aligned) */}
+          <div className="py-6 flex justify-start">
+            <Link 
+              to="/dashboard" 
+              className="inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+            >
+              <ArrowLeft size={16} />
+              Back to Dashboard
+            </Link>
+          </div>
+
+          <div className="hidden md:flex absolute top-16 left-4 xl:left-8 w-14 h-14 bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 rounded-2xl items-center justify-center shadow-sm transform -rotate-3 hover:rotate-0 transition-transform">
+             <Users className="w-6 h-6 text-purple-600" />
+          </div>
+          <div className="hidden md:flex absolute top-20 right-4 xl:right-8 w-14 h-14 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-2xl items-center justify-center shadow-sm transform rotate-3 hover:rotate-0 transition-transform">
+             <TrendingUp className="w-6 h-6 text-emerald-600" />
+          </div>
+
+          <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 shadow-sm text-[11px] font-bold text-purple-600 dark:text-purple-400 mx-auto tracking-wide uppercase">
+            <Sparkles size={12} className="text-purple-500" /> PERFORMANCE METRICS
+          </div>
+          
+          <h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight">
+            <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-teal-400 bg-clip-text text-transparent">Tutor Analytics</span> Dashboard
+          </h1>
+          
+          <p className="text-gray-500 dark:text-gray-400 text-[15px] max-w-2xl mx-auto font-medium">
+            Class-wide skill gaps and candidate proficiencies.
+          </p>
         </div>
 
         {/* Top KPIs */}

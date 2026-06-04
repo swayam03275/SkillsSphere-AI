@@ -14,12 +14,14 @@ import {
 } from "../../middleware/rateLimiter.js";
 import {
   exchangeOAuthCode,
+  DEFAULT_OAUTH_REDIRECT_PATH,
   forgotPassword,
   getMe,
   googleLogin,
   googleOAuthCallback,
   login,
   logout,
+  normalizeOAuthRedirectPath,
   register,
   resendOTP,
   resetPassword,
@@ -45,29 +47,21 @@ router.get("/me", protect, getMe);
 
 // Initiate Google OAuth
 router.get("/google", (req, res) => {
-  const envFrontendOrigin = getFrontendUrl();
-  const refererHeader = req.get("referer");
-  let inferredFrontendOrigin = envFrontendOrigin;
-
-  if (refererHeader) {
-    try {
-      inferredFrontendOrigin = new URL(refererHeader).origin;
-    } catch {
-      inferredFrontendOrigin = envFrontendOrigin;
-    }
-  }
-
-  const fallbackCallback = `${inferredFrontendOrigin}/auth/callback`;
+  const frontendOrigin = new URL(getFrontendUrl()).origin;
   const requestedRedirect = req.query.redirect;
   const role = req.query.role;
-  const redirectTarget =
+  const redirectPath =
     typeof requestedRedirect === "string" && requestedRedirect.length > 0
-      ? requestedRedirect
-      : fallbackCallback;
+      ? normalizeOAuthRedirectPath(requestedRedirect)
+      : DEFAULT_OAUTH_REDIRECT_PATH;
+  const redirectTarget = `${frontendOrigin}${redirectPath}`;
 
-  const stateObj = { redirect: redirectTarget };
+  const stateObj = { redirect: redirectPath };
   if (role) {
     stateObj.role = role;
+  }
+  if (req.query.action) {
+    stateObj.action = req.query.action;
   }
 
   const state = encodeURIComponent(

@@ -144,6 +144,12 @@ export const useInterviewState = (sessionId, isObserver) => {
     }
   }, [session, isObserver, persistBackup]);
 
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
   // Load session from API or localStorage rehydration
   useEffect(() => {
     if (!sessionId) return;
@@ -351,5 +357,6 @@ export const useInterviewState = (sessionId, isObserver) => {
     handleEvaluationResult,
     failedAction,
     setFailedAction,
+    formatTime,
   };
 };
