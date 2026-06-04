@@ -203,22 +203,62 @@ export const getSkillTrends = async () => {
  * @returns {Promise<void>}
  */
 export const deleteJob = async (id, recruiterId) => {
-  const job = await JobPosting.findById(id);
+  const client = mongoose.connection?.client;
+  const topologyType = client?.topology?.description?.type;
+  const useTransaction = topologyType && (
+    topologyType.includes("ReplicaSet") ||
+    topologyType === "Sharded" ||
+    (client?.topology?.description?.servers && client.topology.description.servers.size > 1)
+  );
 
-  if (!job) {
-    throw new AppError("Job not found", 404);
+  if (useTransaction) {
+    const dbSession = await mongoose.startSession();
+    dbSession.startTransaction();
+
+    try {
+      const job = await JobPosting.findById(id).session(dbSession);
+
+      if (!job) {
+        throw new AppError("Job not found", 404);
+      }
+
+      // Check if the recruiter owns this job
+      if (job.recruiter.toString() !== recruiterId.toString()) {
+        throw new AppError("You do not have permission to delete this job", 403);
+      }
+
+      // Delete all associated applications
+      await JobApplication.deleteMany({ job: id }).session(dbSession);
+      
+      await JobPosting.findByIdAndDelete(id).session(dbSession);
+
+      await dbSession.commitTransaction();
+    } catch (error) {
+      await dbSession.abortTransaction();
+      logger.error("Transaction aborted in deleteJob:", error);
+      throw error;
+    } finally {
+      dbSession.endSession();
+    }
+  } else {
+    const job = await JobPosting.findById(id);
+
+    if (!job) {
+      throw new AppError("Job not found", 404);
+    }
+
+    // Check if the recruiter owns this job
+    if (job.recruiter.toString() !== recruiterId.toString()) {
+      throw new AppError("You do not have permission to delete this job", 403);
+    }
+
+    // Delete all associated applications
+    await JobApplication.deleteMany({ job: id });
+    
+    await JobPosting.findByIdAndDelete(id);
   }
-
-  // Check if the recruiter owns this job
-  if (job.recruiter.toString() !== recruiterId.toString()) {
-    throw new AppError("You do not have permission to delete this job", 403);
-  }
-
-  // Delete all associated applications
-  await JobApplication.deleteMany({ job: id });
-  
-  await JobPosting.findByIdAndDelete(id);
 };
+
 
 /**
  * Get personalized job recommendations for a student based on their resume.
