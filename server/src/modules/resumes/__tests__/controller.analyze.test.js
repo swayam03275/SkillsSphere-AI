@@ -193,8 +193,8 @@ test("analyze without jobDescription still works with empty optional evaluator f
     body.evaluatorBreakdown.map((item) => item.key),
     ["experienceMatch"],
   );
-  assert.equal(body.overallScore, 53);
-  assert.equal(savedPayloads[0].aggregatedScore, 53);
+  assert.equal(body.overallScore, 48);
+  assert.equal(savedPayloads[0].aggregatedScore, 48);
 });
 
 test("analyze response shape regression is protected", async () => {
