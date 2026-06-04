@@ -1,7 +1,7 @@
 import React from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
-import { LogOut, Menu, User, FileText, Target, Briefcase, Video, BadgeCheck, Sparkles } from "lucide-react";
+import { LogOut, Menu, User, Users, FileText, Target, Briefcase, Video, BadgeCheck, Sparkles } from "lucide-react";
 
 import { logout } from "../../features/auth/authSlice";
 import Button from "../../shared/components/Button";
@@ -25,8 +25,8 @@ const getSidebarItems = (role) => {
     return [
       { label: "Analytics", icon: Target, to: "/tutor/analytics" },
       { label: "Student's Roadmap", icon: FileText, to: "/tutor/roadmaps" },
-      { label: "Interviews", icon: Video, to: "/tutor/interviews" },
-      { label: "Classrooms", icon: Video, to: "/classrooms" },
+      { label: "Student's Interview", icon: Video, to: "/tutor/interviews" },
+      { label: "Classrooms", icon: Users, to: "/tutor/classrooms" },
     ];
   }
   if (role === "recruiter") {

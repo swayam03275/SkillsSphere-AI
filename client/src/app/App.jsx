@@ -303,7 +303,7 @@ function App() {
           }
         />
 
-        {/* Tutor Interview Console */}
+        {/* Student's Interview */}
         <Route
           path="/tutor/interviews"
           element={

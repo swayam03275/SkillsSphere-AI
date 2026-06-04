@@ -43,18 +43,10 @@ const TutorInterviewsList = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50/50 dark:bg-[#09090b] text-gray-900 dark:text-text-main font-sans pt-20 flex flex-col overflow-hidden relative">
+    <main className="min-h-screen transition-colors duration-300 relative bg-gradient-to-br from-[#f0eeff] via-[#f7f9fc] to-[#edfdf5] dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 dark:bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] text-gray-900 dark:text-slate-100 flex flex-col pt-24">
       <Navbar />
-
-      <main className="flex-grow flex flex-col items-center justify-start px-4 sm:px-6 lg:px-8 pb-12 animate-fade-in relative overflow-hidden w-full">
-        {/* Background glow effects */}
-        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-          <div className="absolute -top-[10%] -left-[5%] w-[40%] h-[40%] rounded-full bg-blue-100/40 dark:bg-blue-900/10 blur-[120px]" />
-          <div className="absolute top-[20%] -right-[5%] w-[35%] h-[35%] rounded-full bg-purple-100/40 dark:bg-purple-900/10 blur-[100px]" />
-          <div className="absolute top-[5%] right-[20%] w-[35%] h-[35%] rounded-full bg-teal-50/40 dark:bg-teal-900/10 blur-[100px]" />
-        </div>
-
-        <div className="w-full max-w-[1200px] relative z-10 flex flex-col gap-6">
+      <div className="container mx-auto px-4 pb-12 flex-1 relative">
+        <div className="w-full max-w-[1200px] mx-auto relative z-10 flex flex-col gap-6">
           
           {/* Back to Dashboard Link */}
           <div className="py-6">
@@ -69,19 +61,19 @@ const TutorInterviewsList = () => {
 
           {/* Hero Section */}
           <div className="text-center space-y-4 mb-10 relative">
-            <div className="hidden md:flex absolute top-4 left-4 xl:left-8 w-14 h-14 bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 rounded-2xl items-center justify-center shadow-sm transform -rotate-3 hover:rotate-0 transition-transform">
-               <Video className="w-6 h-6 text-purple-600" />
+            <div className="hidden md:flex absolute top-4 left-4 xl:left-8 w-14 h-14 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 rounded-2xl items-center justify-center shadow-sm transform -rotate-3 hover:rotate-0 transition-transform">
+               <Video className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
             </div>
             <div className="hidden md:flex absolute top-8 right-4 xl:right-8 w-14 h-14 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-2xl items-center justify-center shadow-sm transform rotate-3 hover:rotate-0 transition-transform">
-               <Users className="w-6 h-6 text-emerald-600" />
+               <Users className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
             </div>
 
-            <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 shadow-sm text-[11px] font-bold text-purple-600 dark:text-purple-400 mx-auto tracking-wide uppercase">
-              <Sparkles size={12} className="text-purple-500" /> MANAGE INTERVIEWS
+            <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 shadow-sm text-[11px] font-bold text-indigo-600 dark:text-indigo-400 mx-auto tracking-wide uppercase">
+              <Sparkles size={12} className="text-indigo-500" /> TUTOR HUB
             </div>
             
             <h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight">
-              <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-teal-400 bg-clip-text text-transparent">Student</span> Mock Interviews
+              <span className="bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-500 bg-clip-text text-transparent">Student's</span> Interview
             </h1>
             
             <p className="text-gray-500 dark:text-gray-400 text-[15px] max-w-2xl mx-auto font-medium">
@@ -89,11 +81,11 @@ const TutorInterviewsList = () => {
             </p>
           </div>
 
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] dark:shadow-none overflow-hidden">
           {sessions.length === 0 ? (
-            <div className="p-10 text-center text-slate-500">
-              <Video className="mx-auto mb-4 opacity-50" size={48} />
-              <p>No completed student interviews found.</p>
+            <div className="py-24 px-10 flex flex-col items-center justify-center min-h-[400px] text-center text-slate-500">
+              <Video className="mb-4 opacity-50" size={48} />
+              <p className="text-lg font-medium">No completed student interviews found.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -157,10 +149,10 @@ const TutorInterviewsList = () => {
             </div>
           )}
         </div>
-        </div>
-      </main>
+      </div>
+      </div>
       <Footer />
-    </div>
+    </main>
   );
 };
 
