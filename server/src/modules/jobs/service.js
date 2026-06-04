@@ -228,9 +228,23 @@ export const deleteJob = async (id, recruiterId) => {
       }
 
       // Delete all associated applications
-      await JobApplication.deleteMany({ job: id }).session(dbSession);
-      
-      await JobPosting.findByIdAndDelete(id).session(dbSession);
+      const applications = await JobApplication.find({ job: id }).select("applicant");
+await JobApplication.deleteMany({ job: id });
+await JobPosting.findByIdAndDelete(id);
+
+const io = getIO();
+for (const app of applications) {
+  await Notification.create({
+    userId: app.applicant,
+    type: "application",
+    title: "Job Posting Removed",
+    message: `A job you applied to has been removed by the recruiter.`,
+    metadata: { jobId: id }
+  });
+  if (io) {
+    io.to(`user_${app.applicant}`).emit("new-notification", {});
+  }
+}
 
       await dbSession.commitTransaction();
     } catch (error) {
@@ -242,24 +256,30 @@ export const deleteJob = async (id, recruiterId) => {
     }
   } else {
     const job = await JobPosting.findById(id);
-
     if (!job) {
       throw new AppError("Job not found", 404);
     }
-
-    // Check if the recruiter owns this job
     if (job.recruiter.toString() !== recruiterId.toString()) {
       throw new AppError("You do not have permission to delete this job", 403);
     }
-
-    // Delete all associated applications
+    const applications = await JobApplication.find({ job: id }).select("applicant");
     await JobApplication.deleteMany({ job: id });
-    
     await JobPosting.findByIdAndDelete(id);
+
+    const io = getIO();
+    for (const app of applications) {
+      await Notification.create({
+        userId: app.applicant,
+        type: "application",
+        title: "Job Posting Removed",
+        message: `A job you applied to has been removed by the recruiter.`,
+        metadata: { jobId: id }
+      });
+      if (io) {
+        io.to(`user_${app.applicant}`).emit("new-notification", {});
+      }
+    }
   }
-};
-
-
 /**
  * Helper to sort and limit recommendations in memory.
  * @param {Array} jobs - List of recommendations with job details and matchScore
