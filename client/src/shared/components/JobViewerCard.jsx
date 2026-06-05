@@ -163,7 +163,7 @@ const JobViewerCard = ({
       className={`group w-full max-w-full transition-all duration-300 border backdrop-blur-md rounded-2xl overflow-hidden ${
         isExpanded
           ? "bg-white dark:bg-slate-900/80 border-blue-500/30 shadow-[0_0_30px_rgba(59,130,246,0.15)]"
-          : "bg-white/80 dark:bg-slate-900/40 border-gray-200 dark:border-white/5 hover:border-blue-300 dark:hover:border-white/10 hover:bg-white dark:hover:bg-slate-900/60 shadow-sm"
+          : "bg-white dark:bg-slate-900/40 border-gray-200 dark:border-white/5 hover:border-blue-300 dark:hover:border-white/10 shadow-sm"
       } ${className}`}
     >
       {/* ── Collapsed Header ── */}
@@ -182,7 +182,7 @@ const JobViewerCard = ({
       >
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-5">
           {/* Company Logo Placeholder */}
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-blue-100 dark:border-white/5 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-500/20 dark:to-purple-500/20 transition-transform duration-300 group-hover:scale-105 sm:h-14 sm:w-14 md:group-hover:scale-110">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-blue-100 dark:border-white/5 bg-blue-50 dark:bg-blue-500/20 transition-transform duration-300 group-hover:scale-105 sm:h-14 sm:w-14 md:group-hover:scale-110">
             <Briefcase size={28} className="text-blue-600 dark:text-blue-400 max-sm:h-6 max-sm:w-6" />
           </div>
 
@@ -230,8 +230,8 @@ const JobViewerCard = ({
                   )}
                 </p>
               </div>
-              <div className="mt-1 shrink-0 text-gray-400 dark:text-slate-500 transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+              <div className="mt-1 shrink-0 text-blue-500 transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                <ChevronDown size={20} className={`transform transition-transform ${isExpanded ? "rotate-180" : "-rotate-90"}`} />
               </div>
             </div>
 

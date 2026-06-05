@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { 
-  Award, BookOpen, CheckCircle2, Plus, Target, ExternalLink, Video, FileText, Globe, User, ArrowLeft, ArrowRight, MessageSquare
+  Award, BookOpen, CheckCircle2, Plus, Target, ExternalLink, Video, FileText, Globe, User, ArrowLeft, ArrowRight, MessageSquare, Sparkles
 } from "lucide-react";
 import Navbar from "../../../shared/components/Navbar";
 import Footer from "../../../shared/components/Footer";
@@ -17,7 +17,7 @@ import logger from "../../../utils/logger";
 
 
 export default function TutorRoadmapLobby() {
-  useDocumentTitle("Tutor Roadmap Lobby");
+  useDocumentTitle("Student's Roadmap");
   const { user } = useSelector((state) => state.auth);
   const { success: showSuccess, error: showError } = useToast();
   const [students, setStudents] = useState([]);
@@ -142,42 +142,52 @@ export default function TutorRoadmapLobby() {
   if (loading) return <LoadingState message="Loading Student Progress Lobby..." />;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#020617] text-slate-900 dark:text-white font-sans flex flex-col">
+    <main className="min-h-screen transition-colors duration-300 relative bg-gradient-to-br from-[#f0eeff] via-[#f7f9fc] to-[#edfdf5] dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 dark:bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] text-gray-900 dark:text-slate-100 flex flex-col pt-24">
       <Navbar />
-      <div className="flex-1 max-w-7xl mx-auto w-full pt-24 pb-20 px-4">
-        {/* Header */}
-        <div className="mb-12 animate-slide-up">
-          <Link 
-            to="/dashboard" 
-            className="inline-flex items-center gap-2 text-sm text-indigo-400 hover:text-indigo-300 mb-6 transition-colors"
-          >
-            <ArrowLeft size={16} />
-            Back to Dashboard
-          </Link>
-          <div className="flex items-center gap-2 mb-2">
-            <div className="p-1.5 bg-indigo-500/20 rounded-md">
-              <BookOpen className="w-4 h-4 text-indigo-400" />
-            </div>
-            <span className="text-xs font-black uppercase tracking-widest text-indigo-400">
-              Tutor Hub
-            </span>
+      <div className="container mx-auto px-4 pb-12 flex-1 relative">
+        <div className="w-full max-w-[1200px] mx-auto relative z-10">
+          
+          {/* Back to Dashboard Link */}
+          <div className="py-6">
+            <Link 
+              to="/dashboard" 
+              className="inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+            >
+              <ArrowLeft size={16} />
+              Back to Dashboard
+            </Link>
           </div>
-          <h1 className="text-4xl font-black tracking-tight leading-tight">
-            Student <span className="text-gradient">Learning Roadmaps</span>
-          </h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-2 max-w-xl">
-            Monitor active roadmap tracks, recommend target study materials, and verify critical milestone completions.
-          </p>
-        </div>
 
-        {/* Layout split */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Header Section */}
+          <div className="text-center space-y-4 mb-10 relative">
+            <div className="hidden md:flex absolute top-4 left-4 xl:left-8 w-14 h-14 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 rounded-2xl items-center justify-center shadow-sm transform -rotate-3 hover:rotate-0 transition-transform">
+               <BookOpen className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <div className="hidden md:flex absolute top-8 right-4 xl:right-8 w-14 h-14 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-2xl items-center justify-center shadow-sm transform rotate-3 hover:rotate-0 transition-transform">
+               <Target className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+            </div>
+
+            <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 shadow-sm text-[11px] font-bold text-indigo-600 dark:text-indigo-400 mx-auto tracking-wide uppercase">
+              <Sparkles size={12} className="text-indigo-500" /> TUTOR HUB
+            </div>
+            
+            <h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight">
+              <span className="bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-500 bg-clip-text text-transparent">Student's</span> Roadmap
+            </h1>
+            
+            <p className="text-gray-500 dark:text-gray-400 text-[15px] max-w-2xl mx-auto font-medium">
+              Monitor active roadmap tracks, recommend target study materials, and verify critical milestone completions.
+            </p>
+          </div>
+
+          {/* Layout split */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           {/* Left panel: list of students */}
           <div className={`lg:col-span-4 space-y-4 ${selectedStudent ? 'hidden lg:block' : 'block'}`}>
             <h2 className="text-lg font-bold text-slate-700 dark:text-slate-300 mb-2">Active Students</h2>
             {students.length === 0 ? (
-              <div className="p-8 text-center bg-white dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
+              <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] dark:shadow-none text-slate-500 dark:text-slate-400">
                 No active student roadmaps found.
               </div>
             ) : (
@@ -187,10 +197,10 @@ export default function TutorRoadmapLobby() {
                   <button
                     key={s._id}
                     onClick={() => selectStudent(s)}
-                    className={`w-full text-left p-5 rounded-2xl border transition-all duration-300 ${
+                    className={`w-full text-left p-5 rounded-2xl border transition-all duration-300 shadow-sm ${
                       isSelected 
-                        ? 'bg-indigo-600/10 border-indigo-500/40 shadow-[0_0_15px_rgba(99,102,241,0.15)]' 
-                        : 'bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:bg-slate-900/60'
+                        ? 'bg-indigo-50/50 dark:bg-indigo-900/20 border-indigo-500/40 shadow-[0_0_15px_rgba(99,102,241,0.15)]' 
+                        : 'bg-white dark:bg-slate-900 border-gray-100 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800/50'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-3">
@@ -230,7 +240,7 @@ export default function TutorRoadmapLobby() {
           {/* Right panel: student roadmap detail view */}
           <div className="lg:col-span-8">
             {selectedStudent ? (
-              <div className="bg-white dark:bg-slate-900/20 border border-slate-200 dark:border-slate-800/80 rounded-3xl p-6 md:p-8 relative">
+              <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] dark:shadow-none rounded-[2rem] p-6 md:p-8 relative">
                 
                 {/* Back button on mobile */}
                 <button 
@@ -255,7 +265,7 @@ export default function TutorRoadmapLobby() {
                         <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">Target Role: <strong className="text-slate-900 dark:text-white">{studentDetails.targetRole}</strong></p>
                       </div>
 
-                      <div className="flex items-center gap-4 bg-slate-100 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 p-3 rounded-2xl">
+                      <div className="flex items-center gap-4 bg-gray-50 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 p-3 rounded-2xl">
                         <div className="relative w-12 h-12 flex items-center justify-center">
                           <svg className="w-full h-full transform -rotate-90">
                             <circle cx="24" cy="24" r="20" fill="transparent" stroke="currentColor" strokeWidth="3" className="text-slate-900 dark:text-white/5" />
@@ -317,12 +327,12 @@ export default function TutorRoadmapLobby() {
                         return (
                           <div 
                             key={topic._id} 
-                            className={`p-5 rounded-2xl border transition-all ${
+                            className={`p-5 rounded-2xl border transition-all shadow-sm ${
                               isVerified 
-                                ? 'bg-indigo-900/10 border-indigo-500/20' 
+                                ? 'bg-indigo-50/50 dark:bg-indigo-900/20 border-indigo-500/20' 
                                 : isCompleted 
-                                  ? 'bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800' 
-                                  : 'bg-white dark:bg-slate-950/20 border-slate-200 dark:border-slate-900/80'
+                                  ? 'bg-gray-50 dark:bg-slate-800/50 border-gray-200 dark:border-slate-700' 
+                                  : 'bg-white dark:bg-slate-900 border-gray-100 dark:border-slate-800'
                             }`}
                           >
                             <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-4">
@@ -494,18 +504,18 @@ export default function TutorRoadmapLobby() {
                 )}
               </div>
             ) : (
-              <div className="hidden lg:flex flex-col items-center justify-center border border-dashed border-slate-200 dark:border-slate-800 bg-slate-900/10 rounded-3xl p-20 text-center h-[500px]">
-                <Target className="w-12 h-12 text-slate-600 mb-4" />
-                <h3 className="font-bold text-lg text-slate-600 dark:text-slate-400">Select a Student Roadmap</h3>
+              <div className="hidden lg:flex flex-col items-center justify-center border border-dashed border-gray-300 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/30 rounded-[2rem] p-20 text-center h-[500px]">
+                <Target className="w-12 h-12 text-slate-400 dark:text-slate-600 mb-4" />
+                <h3 className="font-bold text-lg text-slate-700 dark:text-slate-300">Select a Student Roadmap</h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-sm">
                   Click on any student profile on the left sidebar to view their roadmap, assign study resources, or verify milestone completions.
                 </p>
               </div>
             )}
           </div>
-
         </div>
       </div>
+    </div>
 
       {/* Collaboration Sidebar Panel */}
       {studentDetails && (
@@ -518,7 +528,7 @@ export default function TutorRoadmapLobby() {
           currentUser={user}
         />
       )}
-          <Footer />
-    </div>
+      <Footer />
+    </main>
   );
 }

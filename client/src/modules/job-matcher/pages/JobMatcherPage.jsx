@@ -32,15 +32,17 @@ export default function JobMatcherPage() {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
   const ITEMS_PER_PAGE = 6;
+  const [sortBy, setSortBy] = useState("score");
+  const [limit, setLimit] = useState(20);
 
   useEffect(() => {
-    if (refreshTrigger === 0) return;
+    if (!token) return;
 
     const fetchRecommendations = async () => {
       setLoading(true);
       setError(null);
       try {
-        const data = await getRecommendations(token);
+        const data = await getRecommendations(token, { sortBy, limit });
         setJobs(data.jobs || []);
         setHasResume(data.hasResume !== false);
         setMessage(data.message || "");
@@ -60,7 +62,7 @@ export default function JobMatcherPage() {
     };
 
     fetchRecommendations();
-  }, [token, refreshTrigger]);
+  }, [token, refreshTrigger, sortBy, limit]);
 
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -118,41 +120,39 @@ export default function JobMatcherPage() {
 
 
       <div className="container mx-auto px-4 pb-12 flex-1 relative">
-        {/* Floating Icons Background (visible mostly on desktop) */}
-        <div className="absolute top-24 left-[10%] hidden lg:flex items-center justify-center w-16 h-16 bg-white dark:bg-slate-800 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.08)] dark:shadow-white/5 opacity-80 pointer-events-none z-0 hover:opacity-100 transition-opacity">
-          <Briefcase size={28} className="text-purple-500" />
-        </div>
-        <div className="absolute top-36 right-[10%] hidden lg:flex items-center justify-center w-16 h-16 bg-white dark:bg-slate-800 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.08)] dark:shadow-white/5 opacity-80 pointer-events-none z-0 hover:opacity-100 transition-opacity">
-          <Target size={28} className="text-green-500" />
-        </div>
-
         <div className="w-full max-w-[1200px] mx-auto relative z-10">
           {/* Back to Dashboard Link */}
           <div className="py-6">
             <Link 
               to="/dashboard" 
-              className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
             >
               <ArrowLeft size={16} />
               Back to Dashboard
             </Link>
           </div>
 
-          {/* Header */}
-          <div className="mb-16 text-center max-w-3xl mx-auto relative pt-4">
-            <div className="relative flex flex-col items-center">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-bold tracking-wider uppercase mb-6 border border-blue-100 dark:border-blue-800/50">
-                <Sparkles size={14} /> AI POWERED MATCHING
-              </div>
+          {/* Hero Section */}
+          <div className="text-center space-y-4 mb-10 relative">
+            <div className="hidden md:flex absolute top-4 left-4 xl:left-8 w-14 h-14 bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 rounded-2xl items-center justify-center shadow-sm transform -rotate-3 hover:rotate-0 transition-transform">
+               <Briefcase className="w-6 h-6 text-purple-600" />
+            </div>
+            <div className="hidden md:flex absolute top-8 right-4 xl:right-8 w-14 h-14 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-2xl items-center justify-center shadow-sm transform rotate-3 hover:rotate-0 transition-transform">
+               <Target className="w-6 h-6 text-emerald-600" />
             </div>
 
-          <h1 className="text-5xl md:text-6xl font-black mb-6 tracking-tight leading-tight">
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-purple-500 to-teal-400">Smart Job</span> Matching
-          </h1>
-          <p className="text-gray-500 dark:text-slate-400 text-lg leading-relaxed font-medium">
-            AI-powered job recommendations based on your resume skills 🚀
-          </p>
-        </div>
+            <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 shadow-sm text-[11px] font-bold text-purple-600 dark:text-purple-400 mx-auto tracking-wide uppercase">
+              <Sparkles size={12} className="text-purple-500" /> AI POWERED MATCHING
+            </div>
+            
+            <h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight">
+              <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-teal-400 bg-clip-text text-transparent">Smart Job</span> Matching
+            </h1>
+            
+            <p className="text-gray-500 dark:text-gray-400 text-[15px] max-w-2xl mx-auto font-medium">
+              AI-powered job recommendations based on your resume skills 🚀
+            </p>
+          </div>
 
         {/* Content */}
         {/* Always display the Upload Prompt so users can update their resume */}
@@ -228,7 +228,7 @@ export default function JobMatcherPage() {
         </div>
 
         {/* Results Section */}
-        {refreshTrigger === 0 && !loading && !error ? null : loading ? (
+        {!hasResume && !loading && !error ? null : loading ? (
           <div className="min-h-[400px] flex items-center justify-center bg-gray-100 dark:bg-slate-900/30 rounded-2xl border border-gray-200 dark:border-white/5 backdrop-blur-sm">
             <LoadingState message="Analyzing your profile for the best matches..." />
           </div>
@@ -263,16 +263,58 @@ export default function JobMatcherPage() {
         ) : (
           /* Recommendations found */
           <div>
-            <div className="mb-6 flex items-center gap-3">
-              <div className="p-2 bg-blue-500/10 rounded-lg">
-                <Sparkles size={20} className="text-blue-400" />
+            <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-500/10 rounded-lg">
+                  <Sparkles size={20} className="text-blue-400" />
+                </div>
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-slate-200">
+                  Recommended for You
+                  <span className="ml-2 text-sm font-normal text-slate-600 dark:text-slate-400 bg-slate-200 dark:bg-slate-800/50 px-2 py-0.5 rounded-full border border-gray-300 dark:border-white/5">
+                    {jobs.length}
+                  </span>
+                </h2>
               </div>
-              <h2 className="text-xl font-semibold text-gray-800 dark:text-slate-200">
-                Recommended for You
-                <span className="ml-2 text-sm font-normal text-slate-600 dark:text-slate-400 bg-slate-200 dark:bg-slate-800/50 px-2 py-0.5 rounded-full border border-gray-300 dark:border-white/5">
-                  {jobs.length}
-                </span>
-              </h2>
+
+              {/* Sorting and Limiting Controls */}
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    Sort By:
+                  </span>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => {
+                      setSortBy(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl px-3 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-gray-700 dark:text-slate-200"
+                  >
+                    <option value="score">Best Match</option>
+                    <option value="salary">Highest Salary</option>
+                    <option value="date">Most Recent</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    Limit:
+                  </span>
+                  <select
+                    value={limit}
+                    onChange={(e) => {
+                      setLimit(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl px-3 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-gray-700 dark:text-slate-200"
+                  >
+                    <option value="5">5 Matches</option>
+                    <option value="10">10 Matches</option>
+                    <option value="20">20 Matches</option>
+                    <option value="50">50 Matches</option>
+                  </select>
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 gap-5">

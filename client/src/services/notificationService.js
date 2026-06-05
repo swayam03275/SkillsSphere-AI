@@ -10,11 +10,15 @@ import { apiRequest } from "./apiClient";
  * @returns {Promise<Object>} The API response containing notifications and pagination
  */
 export const fetchNotifications = async (token, params = {}) => {
-  const { page = 1, limit = 10, isRead } = params;
+  const { page = 1, limit = 10, isRead, type } = params;
   let queryString = `?page=${page}&limit=${limit}`;
   
   if (isRead !== undefined) {
     queryString += `&isRead=${isRead}`;
+  }
+
+  if (type) {
+    queryString += `&type=${type}`;
   }
 
   return apiRequest(`/api/notifications${queryString}`, {

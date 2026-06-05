@@ -8,7 +8,6 @@
     "start": "node index.js",
     "test": "node --test",
     "lint": "eslint . --ext js,cjs --report-unused-disable-directives --max-warnings 0",
-
     "depcruise": "depcruise src --config .dependency-cruiser.js",
     "depcruise:validate": "depcruise src --config .dependency-cruiser.js --output-type err-long",
     "depcruise:graph": "depcruise src --config .dependency-cruiser.js --output-type dot | dot -T svg > dependency-graph.svg",
@@ -35,6 +34,7 @@
     "nodemailer": "^8.0.5",
     "openai": "^4.104.0",
     "pdf-parse": "^2.4.5",
+    "rate-limit-redis": "^5.0.0",
     "redis": "^5.12.1",
     "socket.io": "^4.8.3",
     "swagger-jsdoc": "^6.2.8",

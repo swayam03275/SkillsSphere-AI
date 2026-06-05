@@ -92,6 +92,8 @@ export const registerUserAndIssueToken = async ({ name, email, password, role })
       name: user.get('name'),
       email: user.get('email'),
       isVerified: skipVerification,
+      isOnboarded: user.isOnboarded,
+      profilePic: user.profilePic,
     },
   };
 };
@@ -111,19 +113,28 @@ export const verifyUserEmail = async (email, otp) => {
   const isMatch = await bcrypt.compare(otp, user.verificationToken);
   const isExpired = user.verificationTokenExpires < Date.now();
 
-  if (!isMatch || isExpired) {
+  if (isExpired) {
+    // Clear the expired token so it does not accumulate in the database.
+    user.verificationToken = null;
+    user.verificationTokenExpires = null;
+    user.otpAttempts = 0;
+    await user.save();
+    throw new AppError("OTP expired. Please request a new one.", 400);
+  }
+
+  if (!isMatch) {
     user.otpAttempts += 1;
     await user.save();
-    throw new AppError(isExpired ? "OTP expired" : "Invalid OTP", 400);
+    throw new AppError("Invalid OTP", 400);
   }
 
   user.isVerified = true;
-  user.verificationToken = undefined;
-  user.verificationTokenExpires = undefined;
+  user.verificationToken = null;
+  user.verificationTokenExpires = null;
   user.otpAttempts = 0;
   await user.save();
 
-  return { success: true, message: "Email verified successfully" };
+  return { user };
 };
 
 // 🔑 Forgot password
@@ -167,17 +178,26 @@ export const resetUserPassword = async (email, otp, newPassword) => {
   const isMatch = await bcrypt.compare(otp, user.resetPasswordToken);
   const isExpired = user.resetPasswordExpires < Date.now();
 
-  if (!isMatch || isExpired) {
+  if (isExpired) {
+    // Clear the expired token so it does not accumulate in the database.
+    user.resetPasswordToken = null;
+    user.resetPasswordExpires = null;
+    user.otpAttempts = 0;
+    await user.save();
+    throw new AppError("Code expired. Please request a new password reset.", 400);
+  }
+
+  if (!isMatch) {
     user.otpAttempts += 1;
     await user.save();
-    throw new AppError(isExpired ? "Code expired" : "Invalid code", 400);
+    throw new AppError("Invalid code", 400);
   }
 
   const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
 
   user.password = hashedPassword;
-  user.resetPasswordToken = undefined;
-  user.resetPasswordExpires = undefined;
+  user.resetPasswordToken = null;
+  user.resetPasswordExpires = null;
   user.otpAttempts = 0;
   await user.save();
 
@@ -251,12 +271,14 @@ export const loginUser = async (email, password) => {
       id: user._id.toString(),
       name: user.get('name'),
       email: user.get('email'),
-      role: user.role
+      role: user.role,
+      isOnboarded: user.isOnboarded,
+      profilePic: user.profilePic,
     }
   };
 };
 
-export const findOrCreateGoogleUser = async ({ email, name, picture, role = "student" }) => {
+export const findOrCreateGoogleUser = async ({ email, name, picture, role = "student", action = "signup" }) => {
   const existing = await User.findOne({ email });
 
   if (existing) {
@@ -264,6 +286,10 @@ export const findOrCreateGoogleUser = async ({ email, name, picture, role = "stu
       throw new AppError(LOCAL_EMAIL_REGISTERED_MESSAGE, 409);
     }
     return existing;
+  }
+
+  if (action === "login") {
+    throw new AppError("No account found with this Google email. Please sign up first.", 404);
   }
 
   return User.create({
@@ -293,6 +319,8 @@ export const exchangeAuthCodeForToken = async (code) => {
       name: user.get('name'),
       email: user.get('email'),
       role: user.role,
+      isOnboarded: user.isOnboarded,
+      profilePic: user.profilePic,
     },
   };
 };

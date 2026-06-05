@@ -35,12 +35,24 @@ export const createNotification = async (notificationData) => {
  * @returns {Promise<Object>} - Notifications and metadata
  */
 export const getUserNotifications = async (userId, queryParams = {}) => {
-  const { page = 1, limit = 20, isRead } = queryParams;
+  const { page = 1, limit = 20, isRead, type } = queryParams;
 
   const filters = { userId };
 
   if (isRead !== undefined) {
     filters.isRead = isRead === "true" || isRead === true;
+  }
+
+  if (type) {
+    if (type === "jobs") {
+      filters.type = { $in: ["job-update", "application", "new_application"] };
+    } else if (type === "interviews") {
+      filters.type = { $in: ["interview"] };
+    } else if (type === "system") {
+      filters.type = { $in: ["info", "warning", "success", "error", "skill_gap_alert"] };
+    } else {
+      filters.type = type;
+    }
   }
 
   const skip = (page - 1) * limit;

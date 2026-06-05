@@ -504,52 +504,124 @@ export const getTutorSessionDetails = async (sessionId, tutorId) => {
 };
 
 export const addTutorFeedback = async (sessionId, tutorId, { tutorOverallScore, tutorOverallFeedback, answersFeedback }) => {
-  const session = await InterviewSession.findById(sessionId);
-  if (!session) throw new AppError('Session not found', 404);
-  
-  const authorizedRoadmap = await LearningProgress.findOne({
-    user: session.userId,
-    tutorsTracking: tutorId
-  });
+  const client = mongoose.connection?.client;
+  const topologyType = client?.topology?.description?.type;
+  const useTransaction = topologyType && (
+    topologyType.includes("ReplicaSet") ||
+    topologyType === "Sharded" ||
+    (client?.topology?.description?.servers && client.topology.description.servers.size > 1)
+  );
 
-  if (!authorizedRoadmap) {
-    throw new AppError("You are not authorized to add feedback to this session", 403);
-  }
+  if (useTransaction) {
+    const dbSession = await mongoose.startSession();
+    dbSession.startTransaction();
 
-  if (tutorOverallScore !== undefined) session.tutorOverallScore = tutorOverallScore;
-  if (tutorOverallFeedback !== undefined) session.tutorOverallFeedback = tutorOverallFeedback;
-  
-  if (answersFeedback && Array.isArray(answersFeedback)) {
-    answersFeedback.forEach(fb => {
-      const answer = session.answers.find(a => a.questionId.toString() === fb.questionId);
-      if (answer) {
-        if (fb.tutorScores) answer.tutorScores = fb.tutorScores;
-        if (fb.tutorFeedback) answer.tutorFeedback = fb.tutorFeedback;
+    try {
+      const session = await InterviewSession.findById(sessionId).session(dbSession);
+      if (!session) throw new AppError('Session not found', 404);
+      
+      const authorizedRoadmap = await LearningProgress.findOne({
+        user: session.userId,
+        tutorsTracking: tutorId
+      }).session(dbSession);
+
+      if (!authorizedRoadmap) {
+        throw new AppError("You are not authorized to add feedback to this session", 403);
       }
+
+      if (tutorOverallScore !== undefined) session.tutorOverallScore = tutorOverallScore;
+      if (tutorOverallFeedback !== undefined) session.tutorOverallFeedback = tutorOverallFeedback;
+      
+      if (answersFeedback && Array.isArray(answersFeedback)) {
+        answersFeedback.forEach(fb => {
+          const answer = session.answers.find(a => a.questionId.toString() === fb.questionId);
+          if (answer) {
+            if (fb.tutorScores) answer.tutorScores = fb.tutorScores;
+            if (fb.tutorFeedback) answer.tutorFeedback = fb.tutorFeedback;
+          }
+        });
+      }
+      
+      await session.save({ session: dbSession });
+
+      // Create persistent notification in DB for student
+      const [notif] = await Notification.create([{
+        userId: session.userId,
+        type: "interview",
+        title: "Interview Feedback Submitted",
+        message: `Tutor has submitted feedback for your "${session.topic}" interview.`,
+        metadata: {
+          relatedId: session._id,
+          relatedModel: "Interview",
+          actionUrl: `/mock-interview/${session._id}/results`,
+        },
+      }], { session: dbSession });
+
+      await dbSession.commitTransaction();
+
+      // Emit real-time socket notification to the student (after commit)
+      const io = getIO();
+      if (io) {
+        const roomName = `user_${session.userId}`;
+        io.to(roomName).emit("new-notification", notif);
+      }
+
+      return session;
+    } catch (error) {
+      await dbSession.abortTransaction();
+      logger.error("Transaction aborted in addTutorFeedback:", error);
+      throw error;
+    } finally {
+      dbSession.endSession();
+    }
+  } else {
+    const session = await InterviewSession.findById(sessionId);
+    if (!session) throw new AppError('Session not found', 404);
+    
+    const authorizedRoadmap = await LearningProgress.findOne({
+      user: session.userId,
+      tutorsTracking: tutorId
     });
+
+    if (!authorizedRoadmap) {
+      throw new AppError("You are not authorized to add feedback to this session", 403);
+    }
+
+    if (tutorOverallScore !== undefined) session.tutorOverallScore = tutorOverallScore;
+    if (tutorOverallFeedback !== undefined) session.tutorOverallFeedback = tutorOverallFeedback;
+    
+    if (answersFeedback && Array.isArray(answersFeedback)) {
+      answersFeedback.forEach(fb => {
+        const answer = session.answers.find(a => a.questionId.toString() === fb.questionId);
+        if (answer) {
+          if (fb.tutorScores) answer.tutorScores = fb.tutorScores;
+          if (fb.tutorFeedback) answer.tutorFeedback = fb.tutorFeedback;
+        }
+      });
+    }
+    
+    await session.save();
+
+    // Create persistent notification in DB for student
+    const notif = await Notification.create({
+      userId: session.userId,
+      type: "interview",
+      title: "Interview Feedback Submitted",
+      message: `Tutor has submitted feedback for your "${session.topic}" interview.`,
+      metadata: {
+        relatedId: session._id,
+        relatedModel: "Interview",
+        actionUrl: `/mock-interview/${session._id}/results`,
+      },
+    });
+
+    // Emit real-time socket notification to the student
+    const io = getIO();
+    if (io) {
+      const roomName = `user_${session.userId}`;
+      io.to(roomName).emit("new-notification", notif);
+    }
+
+    return session;
   }
-  
-  await session.save();
-
-  // Create persistent notification in DB for student
-  const notif = await Notification.create({
-    userId: session.userId,
-    type: "interview",
-    title: "Interview Feedback Submitted",
-    message: `Tutor has submitted feedback for your "${session.topic}" interview.`,
-    metadata: {
-      relatedId: session._id,
-      relatedModel: "Interview",
-      actionUrl: `/mock-interview/${session._id}/results`,
-    },
-  });
-
-  // Emit real-time socket notification to the student
-  const io = getIO();
-  if (io) {
-    const roomName = `user_${session.userId}`;
-    io.to(roomName).emit("new-notification", notif);
-  }
-
-  return session;
 };

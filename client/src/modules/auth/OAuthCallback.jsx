@@ -9,6 +9,25 @@ import { reportError } from "../../utils/errorReporter";
 
 const OAUTH_ERROR_MESSAGE =
   "Authentication failed. Please try signing in again.";
+const OAUTH_REDIRECT_FALLBACK = "/dashboard";
+
+export const sanitizeOAuthRedirect = (redirectTo) => {
+  if (typeof redirectTo !== "string") return OAUTH_REDIRECT_FALLBACK;
+
+  const normalizedRedirect = redirectTo.trim();
+  if (!normalizedRedirect) return OAUTH_REDIRECT_FALLBACK;
+  if (!normalizedRedirect.startsWith("/")) return OAUTH_REDIRECT_FALLBACK;
+  if (normalizedRedirect.startsWith("//")) return OAUTH_REDIRECT_FALLBACK;
+  if (normalizedRedirect.includes("\\")) return OAUTH_REDIRECT_FALLBACK;
+
+  try {
+    decodeURI(normalizedRedirect);
+  } catch {
+    return OAUTH_REDIRECT_FALLBACK;
+  }
+
+  return normalizedRedirect;
+};
 
 const OAuthCallback = () => {
   useDocumentTitle("OAuth Callback");
@@ -79,9 +98,9 @@ const OAuthCallback = () => {
 
         dispatch(setOAuthData({ token, user, rememberMe: true }));
         success(`Welcome ${user.name}!`);
-        const fallbackPath = "/dashboard";
-        const redirectTo =
-          sessionStorage.getItem("oauth_redirect") || fallbackPath;
+        const redirectTo = sanitizeOAuthRedirect(
+          sessionStorage.getItem("oauth_redirect"),
+        );
         sessionStorage.removeItem("oauth_redirect");
         startTransition(() => {
           navigate(redirectTo, { replace: true });

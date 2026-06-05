@@ -41,6 +41,11 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
+    isOnboarded: {
+      type: Boolean,
+      default: false,
+    },
+
     profilePicPublicId: {
       type: String,
       default: null,

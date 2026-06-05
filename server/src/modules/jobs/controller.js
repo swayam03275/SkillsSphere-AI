@@ -247,7 +247,8 @@ export const getJobs = asyncHandler(async (req, res) => {
  * @access  Private (Students only)
  */
 export const getRecommendations = asyncHandler(async (req, res) => {
-  const recommendations = await getJobRecommendations(req.user);
+  const { sortBy, limit } = req.query;
+  const recommendations = await getJobRecommendations(req.user, { sortBy, limit });
   res.status(200).json(recommendations);
 });
 

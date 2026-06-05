@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { ArrowLeft, Search, Filter, TrendingUp, Users, Award } from "lucide-react";
+import { ArrowLeft, Search, Filter, TrendingUp, Users, Award, Briefcase } from "lucide-react";
 import Navbar from "../../../shared/landing/Navbar";
 import Button from "../../../shared/components/Button";
 import Input from "../../../shared/components/Input";
@@ -96,7 +96,6 @@ const RecruiterInsightsPage = ({ jobId: propJobId }) => {
 
   useEffect(() => {
     fetchInsights(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobId]);
 
   const handleApplyFilters = (event) => {

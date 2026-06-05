@@ -1,622 +1,270 @@
-# Tutor Module Architecture & Documentation
+# Tutor & Mentorship Module Architecture
 
-This document provides an exhaustive, deeply technical overview of the Tutor Module within the SkillsSphere-AI platform. It is engineered to help contributors, backend engineers, and frontend developers build and scale the tutor experience.
+## 1. Executive Summary & Domain Scope
+
+The **Tutor & Mentorship Module** constitutes the educational backbone of the SkillsSphere-AI platform. It is engineered specifically to empower technical educators, mentors, and industry professionals to manage cohorts, curate content, and conduct live interactive sessions with zero friction.
+
+### Core Problem Addressed
+Most LMS (Learning Management Systems) feel bloated and disconnected from the modern developer ecosystem. Tutors often struggle with a lack of actionable analytics—they do not know which specific skills their students are failing at until midterms or final projects. This module flips the script by integrating deeply with the AI Resume Analyzer and Mock Interview Engine, giving tutors real-time, aggregated data on their cohort’s weaknesses, allowing them to instantly spin up targeted Live Classrooms or assign customized Learning Roadmaps.
+
+### Target User Personas
+- **Tutors / Instructors**: Require macro-level analytics (how is the cohort performing on "React Server Components"?), micro-level interventions (1-on-1 mock interview reviews), and administrative control over live classrooms.
+- **Bootcamp Managers**: Require oversight on mentor performance and student graduation readiness.
+
+### High-Level Capability Matrix
+**What the Module Does:**
+- **Cohort Management**: Enables the grouping of students into structured cohorts with shared analytics dashboards.
+- **Analytics Aggregation**: Rolls up individual student scores (ATS, Mock Interviews) into a unified "Cohort Health" metric.
+- **Live Classroom Orchestration**: Provides the host controls to spin up WebRTC mesh networks, enforce strict entry policies, and manage collaborative whiteboards/code editors.
+- **Curriculum Assignment**: Allows tutors to push specific `Resource` nodes into their students' active Learning Roadmaps.
+
+**What the Module Deliberately Avoids:**
+- **Automated Grading**: Tutors have access to AI-generated scores for mock interviews, but the platform does not restrict tutors from overriding these scores based on human nuance.
 
 ---
 
-## 1. High-Level Architecture
+## 2. Comprehensive Architecture & Sequence Diagrams
 
-The Tutor module focuses on live classroom management, mock interview grading, and student analytics. It is the most real-time intensive module in the platform, relying heavily on WebSockets (Socket.io) and WebRTC for live video/audio transmission.
+The Tutor Module architecture acts primarily as an aggregation and orchestration layer on top of the underlying `User`, `Resume`, and `ClassroomSession` models.
 
-### Core Pillars
-1. **Real-Time Communication**: Classrooms require sub-second latency for video, audio, and chat.
-2. **Analytics Aggregation**: Tutors need to see bird's-eye views of student performance across multiple metrics.
-3. **Asynchronous Grading**: Tutors review AI-generated mock interviews and provide human overrides.
-
----
-
-## 2. Classroom Management (WebRTC & Sockets)
-
-### Sequence Diagram: Live Classroom Handshake
+### End-to-End User Flow (Cohort Analytics & Intervention)
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Tutor
-    participant React App (Frontend)
-    participant Socket.IO Server
-    participant WebRTC (PeerJS)
-    actor Student
-
-    Tutor->>React App: Creates Room (Generates UUID)
-    React App->>Socket.IO Server: emit('create-room', { roomId, tutorId })
-    Socket.IO Server-->>React App: emit('room-created')
-    React App->>WebRTC (PeerJS): peer.connect(roomId)
+    actor Tutor as Tutor
+    participant UI as React Client (TutorDashboard.jsx)
+    participant BE as Node.js Gateway
+    participant DB as MongoDB
     
-    Student->>React App: Joins Room (UUID)
-    React App->>Socket.IO Server: emit('join-room', { roomId, studentId })
-    Socket.IO Server-->>React App (Tutor): emit('student-joined', studentId)
+    Tutor->>UI: Navigates to /tutor/dashboard
+    UI->>BE: GET /api/tutor/cohorts/active
     
-    React App (Student)->>WebRTC (PeerJS): peer.call(tutorPeerId, mediaStream)
-    WebRTC (PeerJS)-->>React App (Tutor): receives mediaStream
-    React App (Tutor)->>React App (Tutor): Renders <video> element
+    Note over BE, DB: Phase 1: Heavy Aggregation
+    BE->>DB: Aggregate User data where role='student' and cohortId matches
+    BE->>DB: Lookup embedded InterviewSessions & Resumes
+    DB-->>BE: Return raw aggregated payload
+    
+    Note over BE: Phase 2: Statistical Rollup
+    BE->>BE: Calculate average ATS scores, identify lowest performing concepts
+    BE-->>UI: Return Cohort Health DTO
+    
+    UI->>UI: Renders Radar Charts and Weakness Lists
+    
+    Tutor->>UI: Notices "System Design" is failing across cohort
+    Tutor->>UI: Clicks "Schedule Intervention Session"
+    UI->>BE: POST /api/classrooms/init { title: "System Design Review", target: cohortId }
+    BE->>DB: Create ClassroomSession & trigger notification to cohort
+    BE-->>UI: Return roomId
 ```
 
-### Socket.IO Event Dictionary
+### Component Hierarchy & Service Boundaries
 
-The following events are critical for the live classroom experience. All payloads must be strictly typed on both client and server.
+```mermaid
+graph TD
+    subgraph Frontend [React Client Layer]
+        TD[TutorDashboard.jsx] --> CA[CohortAnalytics.jsx]
+        CA --> RC[RadarChart.jsx]
+        TD --> SM[StudentManagement.jsx]
+        SM --> SP[StudentProfileModal.jsx]
+        TD --> CM[ClassroomManager.jsx]
+    end
 
-#### Event `classroom:event_1`
-- **Direction**: Client -> Server
-- **Description**: Handles sub-event 1 for classroom synchronization.
-- **Payload**:
+    subgraph Backend API [Node.js Server Layer]
+        TC[TutorController.js] --> CS[CohortService.js]
+        TC --> AS[AnalyticsService.js]
+        AS --> DB[(MongoDB)]
+    end
 
-```json
-{
-  "roomId": "uuid-v4",
-  "timestamp": 1632344,
-  "data": {
-    "metric_1": true
-  }
-}
-```
-
-#### Event `classroom:event_2`
-- **Direction**: Client -> Server
-- **Description**: Handles sub-event 2 for classroom synchronization.
-- **Payload**:
-
-```json
-{
-  "roomId": "uuid-v4",
-  "timestamp": 1632344,
-  "data": {
-    "metric_2": true
-  }
-}
-```
-
-#### Event `classroom:event_3`
-- **Direction**: Client -> Server
-- **Description**: Handles sub-event 3 for classroom synchronization.
-- **Payload**:
-
-```json
-{
-  "roomId": "uuid-v4",
-  "timestamp": 1632344,
-  "data": {
-    "metric_3": true
-  }
-}
-```
-
-#### Event `classroom:event_4`
-- **Direction**: Client -> Server
-- **Description**: Handles sub-event 4 for classroom synchronization.
-- **Payload**:
-
-```json
-{
-  "roomId": "uuid-v4",
-  "timestamp": 1632344,
-  "data": {
-    "metric_4": true
-  }
-}
-```
-
-#### Event `classroom:event_5`
-- **Direction**: Client -> Server
-- **Description**: Handles sub-event 5 for classroom synchronization.
-- **Payload**:
-
-```json
-{
-  "roomId": "uuid-v4",
-  "timestamp": 1632344,
-  "data": {
-    "metric_5": true
-  }
-}
-```
-
-#### Event `classroom:event_6`
-- **Direction**: Client -> Server
-- **Description**: Handles sub-event 6 for classroom synchronization.
-- **Payload**:
-
-```json
-{
-  "roomId": "uuid-v4",
-  "timestamp": 1632344,
-  "data": {
-    "metric_6": true
-  }
-}
-```
-
-#### Event `classroom:event_7`
-- **Direction**: Client -> Server
-- **Description**: Handles sub-event 7 for classroom synchronization.
-- **Payload**:
-
-```json
-{
-  "roomId": "uuid-v4",
-  "timestamp": 1632344,
-  "data": {
-    "metric_7": true
-  }
-}
-```
-
-#### Event `classroom:event_8`
-- **Direction**: Client -> Server
-- **Description**: Handles sub-event 8 for classroom synchronization.
-- **Payload**:
-
-```json
-{
-  "roomId": "uuid-v4",
-  "timestamp": 1632344,
-  "data": {
-    "metric_8": true
-  }
-}
-```
-
-#### Event `classroom:event_9`
-- **Direction**: Client -> Server
-- **Description**: Handles sub-event 9 for classroom synchronization.
-- **Payload**:
-
-```json
-{
-  "roomId": "uuid-v4",
-  "timestamp": 1632344,
-  "data": {
-    "metric_9": true
-  }
-}
-```
-
-#### Event `classroom:event_10`
-- **Direction**: Client -> Server
-- **Description**: Handles sub-event 10 for classroom synchronization.
-- **Payload**:
-
-```json
-{
-  "roomId": "uuid-v4",
-  "timestamp": 1632344,
-  "data": {
-    "metric_10": true
-  }
-}
-```
-
-#### Event `classroom:event_11`
-- **Direction**: Client -> Server
-- **Description**: Handles sub-event 11 for classroom synchronization.
-- **Payload**:
-
-```json
-{
-  "roomId": "uuid-v4",
-  "timestamp": 1632344,
-  "data": {
-    "metric_11": true
-  }
-}
-```
-
-#### Event `classroom:event_12`
-- **Direction**: Client -> Server
-- **Description**: Handles sub-event 12 for classroom synchronization.
-- **Payload**:
-
-```json
-{
-  "roomId": "uuid-v4",
-  "timestamp": 1632344,
-  "data": {
-    "metric_12": true
-  }
-}
-```
-
-#### Event `classroom:event_13`
-- **Direction**: Client -> Server
-- **Description**: Handles sub-event 13 for classroom synchronization.
-- **Payload**:
-
-```json
-{
-  "roomId": "uuid-v4",
-  "timestamp": 1632344,
-  "data": {
-    "metric_13": true
-  }
-}
-```
-
-#### Event `classroom:event_14`
-- **Direction**: Client -> Server
-- **Description**: Handles sub-event 14 for classroom synchronization.
-- **Payload**:
-
-```json
-{
-  "roomId": "uuid-v4",
-  "timestamp": 1632344,
-  "data": {
-    "metric_14": true
-  }
-}
-```
-
-#### Event `classroom:event_15`
-- **Direction**: Client -> Server
-- **Description**: Handles sub-event 15 for classroom synchronization.
-- **Payload**:
-
-```json
-{
-  "roomId": "uuid-v4",
-  "timestamp": 1632344,
-  "data": {
-    "metric_15": true
-  }
-}
-```
-
-#### Event `classroom:event_16`
-- **Direction**: Client -> Server
-- **Description**: Handles sub-event 16 for classroom synchronization.
-- **Payload**:
-
-```json
-{
-  "roomId": "uuid-v4",
-  "timestamp": 1632344,
-  "data": {
-    "metric_16": true
-  }
-}
-```
-
-#### Event `classroom:event_17`
-- **Direction**: Client -> Server
-- **Description**: Handles sub-event 17 for classroom synchronization.
-- **Payload**:
-
-```json
-{
-  "roomId": "uuid-v4",
-  "timestamp": 1632344,
-  "data": {
-    "metric_17": true
-  }
-}
-```
-
-#### Event `classroom:event_18`
-- **Direction**: Client -> Server
-- **Description**: Handles sub-event 18 for classroom synchronization.
-- **Payload**:
-
-```json
-{
-  "roomId": "uuid-v4",
-  "timestamp": 1632344,
-  "data": {
-    "metric_18": true
-  }
-}
-```
-
-#### Event `classroom:event_19`
-- **Direction**: Client -> Server
-- **Description**: Handles sub-event 19 for classroom synchronization.
-- **Payload**:
-
-```json
-{
-  "roomId": "uuid-v4",
-  "timestamp": 1632344,
-  "data": {
-    "metric_19": true
-  }
-}
+    TD -- "GET /api/tutor/analytics" --> TC
+    CM -- "POST /api/classrooms/init" --> TC
 ```
 
 ---
 
-## 3. Redux State Management (`tutorSlice.js`)
+## 3. Detailed Data Models & Schemas
 
-The tutor slice manages the global state for the tutor dashboard. It is heavily normalized to prevent deep object updates from triggering massive re-renders.
+The Tutor module relies heavily on the `Cohort` grouping model and extensive aggregation pipelines over the `User` model.
 
-### State Shape
+### MongoDB Schemas
+
+**Cohort Model (`src/database/models/Cohort.js`)**
+Represents a logical grouping of students managed by one or more tutors.
 
 ```javascript
-const initialState = {
-  classrooms: {
-    byId: {},
-    allIds: [],
-    activeRoom: null,
+const mongoose = require('mongoose');
+
+const cohortSchema = new mongoose.Schema({
+  name: { 
+    type: String, 
+    required: true,
+    index: true 
   },
-  students: {
-    byId: {},
-    allIds: [],
+  tutorIds: [{ 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User',
+    required: true,
+    index: true
+  }],
+  studentIds: [{ 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User' 
+  }],
+  curriculumTags: [{ 
+    type: String 
+  }], // e.g., ['MERN', 'DataStructures', 'AWS']
+  status: { 
+    type: String, 
+    enum: ['active', 'archived', 'upcoming'], 
+    default: 'active' 
   },
-  analytics: {
-    timeframe: '7d',
-    data: null,
-    loading: false,
-    error: null
+  metrics: {
+    averageAtsScore: { type: Number, default: 0 },
+    averageInterviewScore: { type: Number, default: 0 },
+    lastCalculatedAt: { type: Date }
   }
-};
+}, { timestamps: true });
+
+// Prevent a tutor from having identically named active cohorts
+cohortSchema.index({ name: 1, tutorIds: 1 }, { unique: true });
+
+module.exports = mongoose.model('Cohort', cohortSchema);
 ```
 
-### Reducers & Actions
-- `action_1_trigger`: Dispatched when tutor interacts with component 1.
-- `action_2_trigger`: Dispatched when tutor interacts with component 2.
-- `action_3_trigger`: Dispatched when tutor interacts with component 3.
-- `action_4_trigger`: Dispatched when tutor interacts with component 4.
-- `action_5_trigger`: Dispatched when tutor interacts with component 5.
-- `action_6_trigger`: Dispatched when tutor interacts with component 6.
-- `action_7_trigger`: Dispatched when tutor interacts with component 7.
-- `action_8_trigger`: Dispatched when tutor interacts with component 8.
-- `action_9_trigger`: Dispatched when tutor interacts with component 9.
-- `action_10_trigger`: Dispatched when tutor interacts with component 10.
-- `action_11_trigger`: Dispatched when tutor interacts with component 11.
-- `action_12_trigger`: Dispatched when tutor interacts with component 12.
-- `action_13_trigger`: Dispatched when tutor interacts with component 13.
-- `action_14_trigger`: Dispatched when tutor interacts with component 14.
-
----
-
-## 4. REST API Contracts
-
-These are the exact JSON schemas for the Tutor REST endpoints.
-
-### GET `/api/tutor/resource_1`
-Fetches the detailed resource 1 for the tutor dashboard.
-**Response (200 OK):**
+**Aggregated Analytics Payload Structure (DTO)**
+The backend `AnalyticsService.js` performs heavy `$lookup` and `$group` operations to construct this payload, preventing the frontend from having to stitch data together.
 
 ```json
-{{
-  "success": true,
-  "metadata": {{
-    "page": 1,
-    "limit": 50,
-    "total": 1450
-  }},
-  "data": [
-    {{
-      "id": "res_{i}_001",
-      "status": "active",
-      "metrics": {{
-        "engagement": 85,
-        "completion": 92
-      }}
-    }}
+{
+  "cohortId": "60d5ec...",
+  "headcount": 45,
+  "overallHealthScore": 82,
+  "conceptMastery": [
+    { "concept": "React Hooks", "averageScore": 92, "status": "excellent" },
+    { "concept": "Node.js Streams", "averageScore": 45, "status": "critical" }
+  ],
+  "atRiskStudents": [
+    {
+      "studentId": "60d5ec...",
+      "name": "Jane Doe",
+      "recentAtsScore": 42,
+      "unresolvedGaps": ["System Design"]
+    }
   ]
-}}
-```
-
-### GET `/api/tutor/resource_2`
-Fetches the detailed resource 2 for the tutor dashboard.
-**Response (200 OK):**
-
-```json
-{{
-  "success": true,
-  "metadata": {{
-    "page": 1,
-    "limit": 50,
-    "total": 1450
-  }},
-  "data": [
-    {{
-      "id": "res_{i}_001",
-      "status": "active",
-      "metrics": {{
-        "engagement": 85,
-        "completion": 92
-      }}
-    }}
-  ]
-}}
-```
-
-### GET `/api/tutor/resource_3`
-Fetches the detailed resource 3 for the tutor dashboard.
-**Response (200 OK):**
-
-```json
-{{
-  "success": true,
-  "metadata": {{
-    "page": 1,
-    "limit": 50,
-    "total": 1450
-  }},
-  "data": [
-    {{
-      "id": "res_{i}_001",
-      "status": "active",
-      "metrics": {{
-        "engagement": 85,
-        "completion": 92
-      }}
-    }}
-  ]
-}}
-```
-
-### GET `/api/tutor/resource_4`
-Fetches the detailed resource 4 for the tutor dashboard.
-**Response (200 OK):**
-
-```json
-{{
-  "success": true,
-  "metadata": {{
-    "page": 1,
-    "limit": 50,
-    "total": 1450
-  }},
-  "data": [
-    {{
-      "id": "res_{i}_001",
-      "status": "active",
-      "metrics": {{
-        "engagement": 85,
-        "completion": 92
-      }}
-    }}
-  ]
-}}
-```
-
-### GET `/api/tutor/resource_5`
-Fetches the detailed resource 5 for the tutor dashboard.
-**Response (200 OK):**
-
-```json
-{{
-  "success": true,
-  "metadata": {{
-    "page": 1,
-    "limit": 50,
-    "total": 1450
-  }},
-  "data": [
-    {{
-      "id": "res_{i}_001",
-      "status": "active",
-      "metrics": {{
-        "engagement": 85,
-        "completion": 92
-      }}
-    }}
-  ]
-}}
-```
-
-### GET `/api/tutor/resource_6`
-Fetches the detailed resource 6 for the tutor dashboard.
-**Response (200 OK):**
-
-```json
-{{
-  "success": true,
-  "metadata": {{
-    "page": 1,
-    "limit": 50,
-    "total": 1450
-  }},
-  "data": [
-    {{
-      "id": "res_{i}_001",
-      "status": "active",
-      "metrics": {{
-        "engagement": 85,
-        "completion": 92
-      }}
-    }}
-  ]
-}}
-```
-
-### GET `/api/tutor/resource_7`
-Fetches the detailed resource 7 for the tutor dashboard.
-**Response (200 OK):**
-
-```json
-{{
-  "success": true,
-  "metadata": {{
-    "page": 1,
-    "limit": 50,
-    "total": 1450
-  }},
-  "data": [
-    {{
-      "id": "res_{i}_001",
-      "status": "active",
-      "metrics": {{
-        "engagement": 85,
-        "completion": 92
-      }}
-    }}
-  ]
-}}
-```
-
-### GET `/api/tutor/resource_8`
-Fetches the detailed resource 8 for the tutor dashboard.
-**Response (200 OK):**
-
-```json
-{{
-  "success": true,
-  "metadata": {{
-    "page": 1,
-    "limit": 50,
-    "total": 1450
-  }},
-  "data": [
-    {{
-      "id": "res_{i}_001",
-      "status": "active",
-      "metrics": {{
-        "engagement": 85,
-        "completion": 92
-      }}
-    }}
-  ]
-}}
-```
-
-### GET `/api/tutor/resource_9`
-Fetches the detailed resource 9 for the tutor dashboard.
-**Response (200 OK):**
-
-```json
-{{
-  "success": true,
-  "metadata": {{
-    "page": 1,
-    "limit": 50,
-    "total": 1450
-  }},
-  "data": [
-    {{
-      "id": "res_{i}_001",
-      "status": "active",
-      "metrics": {{
-        "engagement": 85,
-        "completion": 92
-      }}
-    }}
-  ]
-}}
+}
 ```
 
 ---
 
-## 5. Security & RBAC
+## 4. API Endpoints & State Management
 
-All tutor routes must be wrapped in `<ProtectedRoute requiredRole="tutor">`. The backend verifies the JWT role field before allowing access to `/api/tutor/*` endpoints.
+### REST Endpoints
 
-<!-- End of Tutor Module Documentation -->
+| Method | Endpoint | Auth Level | Purpose | Request Payload | Response |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/api/tutor/cohorts` | Tutor | Lists all cohorts managed by the authenticated tutor. | `None` | `[{ cohortId, name, headcount, status }]` |
+| `GET` | `/api/tutor/cohorts/:id/analytics` | Tutor | Fetches the deep aggregated health metrics. | `None` | `{ headCount, overallHealthScore, conceptMastery: [...] }` |
+| `POST` | `/api/tutor/cohorts/:id/students` | Tutor | Adds a student to the cohort. | `{ studentEmail }` | `{ success: true, updatedHeadcount }` |
+| `DELETE` | `/api/tutor/cohorts/:id/students/:studentId` | Tutor | Removes a student. | `None` | `{ success: true }` |
+| `POST` | `/api/tutor/interventions/roadmap` | Tutor | Pushes a mandatory module into the roadmaps of specific students. | `{ studentIds: [...], conceptTag: "Streams" }` | `{ success: true }` |
 
-## Global Infrastructure & Security Implementations
+### Redux State Management
 
-### Architecture Stability
-- **Backend Port Resolution**: Critical `EADDRINUSE` and backend boot crashes that previously caused instability in the live classroom Socket.io server have been fully patched.
-- **Seamless Navigation**: The Tutor module leverages the platform-wide `TopLoadingBar` and global Navbar/Footer, guaranteeing tutors see immediate visual feedback when transitioning between the heavy Analytics and Interview Lobby pages.
-- **Centralized Logger (`logger.js`)**: Raw `console.log` usage is removed globally. The Tutor module uses the secure logger to track WebRTC/Socket handshake failures without exposing internal IP addresses or student PII.
+Tutors often manage large datasets (e.g., a cohort of 100 students, each with 5 mock interview histories). To keep the React UI snappy, data is normalized using Redux Toolkit's `createEntityAdapter`, which stores data in a dictionary format rather than arrays to ensure O(1) lookups.
+
+```javascript
+// client/src/features/tutor/tutorSlice.js
+import { createSlice, createEntityAdapter } from '@reduxjs/toolkit';
+
+const cohortsAdapter = createEntityAdapter({
+  selectId: (cohort) => cohort._id,
+  sortComparer: (a, b) => b.metrics.averageAtsScore - a.metrics.averageAtsScore,
+});
+
+const studentsAdapter = createEntityAdapter({
+  selectId: (student) => student._id,
+});
+
+export const tutorSlice = createSlice({
+  name: 'tutor',
+  initialState: {
+    cohorts: cohortsAdapter.getInitialState(),
+    activeCohortStudents: studentsAdapter.getInitialState({
+      loading: false,
+      analytics: null
+    }),
+    ui: {
+      isAnalyticsModalOpen: false,
+      selectedStudentId: null
+    }
+  },
+  reducers: {
+    setCohorts: cohortsAdapter.setAll,
+    setActiveCohortStudents: (state, action) => {
+      studentsAdapter.setAll(state.activeCohortStudents, action.payload.students);
+      state.activeCohortStudents.analytics = action.payload.analytics;
+    },
+    updateStudentMetric: (state, action) => {
+      studentsAdapter.updateOne(state.activeCohortStudents, {
+        id: action.payload.id,
+        changes: action.payload.changes
+      });
+    }
+  }
+});
+```
+
+---
+
+## 5. Security, Edge Cases & Error Handling
+
+### Data Privacy & Tenant Isolation (RBAC)
+A severe security risk in educational platforms is IDOR (Insecure Direct Object Reference) where Tutor A attempts to view the analytics of Tutor B's cohort.
+- **Middleware Guard**: Every `/api/tutor/cohorts/:id/*` route is protected by a specialized `verifyCohortOwnership` middleware.
+- **Implementation**: The middleware queries the DB: `Cohort.exists({ _id: req.params.id, tutorIds: req.user._id })`. If false, it immediately throws a `403 Forbidden`, blocking the controller from executing the heavy aggregation pipeline.
+
+### Aggregation Pipeline Throttling
+Calculating the `averageAtsScore` and `conceptMastery` across 100 students (who each might have 10 resume versions and 5 interview sessions) requires traversing thousands of sub-documents.
+- **Edge Case**: If a tutor rapidly refreshes the analytics page, they could crash the MongoDB instance via CPU exhaustion.
+- **Mitigation 1 (Rate Limiting)**: The `/analytics` endpoint enforces an aggressive API rate limit (max 5 requests per minute per IP).
+- **Mitigation 2 (Materialized Views)**: Instead of calculating metrics completely on-the-fly, the `ResumeAnalyzerService` and `aiInterviewService` emit events upon completion. A background cron job listens to these events and updates the `Cohort.metrics.lastCalculatedAt` fields asynchronously, meaning the `GET /analytics` endpoint is merely fetching pre-computed integers rather than running the `$group` aggregations in real-time.
+
+---
+
+## 6. Component-Level Implementation Specs
+
+### `TutorDashboard.jsx` (The Command Center)
+The entry point for the tutor persona. 
+- **Layout**: Utilizes a persistent left-hand navigation sidebar (Cohorts, Students, Classrooms, Settings) and a main content area powered by `<Outlet />`.
+- **Initialization**: Dispatches `fetchCohortsThunk` on mount. If no cohorts exist, it renders an Empty State component with an illustrative SVG and a prominent "Create Your First Cohort" call to action.
+
+### `CohortAnalytics.jsx` (Data Visualization)
+This component is responsible for turning raw numbers into actionable insights.
+- **Charting Libraries**: Heavily utilizes `Recharts` for rendering.
+- **Radar Chart Implementation**:
+  ```jsx
+  <RadarChart cx="50%" cy="50%" outerRadius="80%" data={analytics.conceptMastery}>
+    <PolarGrid stroke="#374151" />
+    <PolarAngleAxis dataKey="concept" tick={{ fill: '#9CA3AF', fontSize: 12 }} />
+    <Radar 
+      name="Average Score" 
+      dataKey="averageScore" 
+      stroke="#6366F1" // Indigo-500
+      fill="#6366F1" 
+      fillOpacity={0.4} 
+    />
+    <Tooltip content={<CustomTooltip />} />
+  </RadarChart>
+  ```
+- It maps over the `atRiskStudents` array, rendering warning banners that allow the tutor to click "View Profile" to initiate a direct intervention.
+
+### `StudentProfileModal.jsx` (The Micro View)
+A heavily detailed slide-over panel (using headless UI's `<Dialog />`) that appears when a specific student is selected.
+- **Tabs**: Splits data into "Resume History", "Interview History", and "Roadmap Progress".
+- **Action Buttons**: Contains high-visibility actions: "Invite to Classroom" and "Assign Curriculum".
+
+### `ClassroomManager.jsx` (Live Session Orchestration)
+Provides the UI to initialize a WebRTC room.
+- Allows the tutor to toggle settings: `allowScreenShare` (prevents students from hijacking the screen), `requireApproval` (enables a waiting room mechanism).
+- Upon successful creation, it copies the unique `roomId` to the clipboard and provides a direct navigation link to `/classrooms/:roomId` where the Tutor assumes the Host role defined in the Classrooms Workflow.
+EOF

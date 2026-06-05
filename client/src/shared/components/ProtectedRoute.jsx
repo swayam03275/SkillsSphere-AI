@@ -15,6 +15,11 @@ const ProtectedRoute = ({ children, requiredRole }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // Redirect to onboarding if not onboarded, EXCEPT when already on the onboarding page
+  if (user && !user.isOnboarded && location.pathname !== '/onboarding') {
+    return <Navigate to="/onboarding" replace />;
+  }
+
   if (requiredRole && user?.role !== requiredRole) {
     // If a role is required but the user doesn't have it, redirect to dashboard
     // or a specialized unauthorized page if one exists.

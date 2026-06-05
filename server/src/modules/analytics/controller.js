@@ -6,13 +6,25 @@ import InterviewSession from "../../database/models/InterviewSession.js";
 import logger from "../../utils/logger.js";
 
 /**
- * Compile global/class-wide student skill data.
+ * Compile global/class-wide student skill data for a tutor.
  * This runs a MongoDB aggregation pipeline to count skill frequencies
- * and identify common skill gaps based on the candidate pool.
+ * and identify common skill gaps based on the tutor's specific candidate pool.
  */
 export const getSkillGapHeatmap = async (req, res) => {
   try {
+    // 1. Find the students this tutor is tracking
+    const trackedProgress = await LearningProgress.find({ tutorsTracking: req.user._id }).select("user");
+    const studentIds = trackedProgress.map(p => p.user);
+
+    // If the tutor has no tracked students, return an empty array for placeholders
+    if (studentIds.length === 0) {
+      return res.status(200).json({ success: true, data: [] });
+    }
+
     const pipeline = [
+      {
+        $match: { user: { $in: studentIds } }
+      },
       {
         $project: { skills: 1 }
       },

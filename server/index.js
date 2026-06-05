@@ -21,7 +21,7 @@ import { logEvaluatorConfig } from "./src/config/evaluatorConfig.js";
 import redisClient, { connectRedis } from "./src/config/redis.js";
 // import swaggerSpec from "./src/config/swaggerConfig.js";
 import connectDB, { isConnected } from "./src/database/db.js";
-import { verifySocketToken } from "./src/middleware/authMiddleware.js";
+import { protect, verifySocketToken } from "./src/middleware/authMiddleware.js";
 import globalErrorHandler from "./src/middleware/errorMiddleware.js";
 import { globalLimiter } from "./src/middleware/rateLimiter.js";
 import requireDB from "./src/middleware/requireDB.js";
@@ -52,8 +52,7 @@ import { initRoadmapSockets } from "./src/modules/roadmap/socket.js";
 import userRoutes from "./src/modules/users/routes.js";
 import aiAssistantRoutes from "./src/modules/ai-assistant/routes.js";
 import { setIO } from "./src/utils/socketIO.js";
-import { protect } from "./src/middleware/authMiddleware.js";
-import swaggerSpec from "./src/config/swaggerConfig.js";
+
 import attachSocketRateLimiter from "./src/middleware/socketRateLimiter.js";
 
 const app = express();
@@ -148,14 +147,44 @@ app.use((req, res, next) => {
 // Apply global rate limiting to all /api routes
 app.use("/api", globalLimiter);
 
-await connectDB();
-await connectRedis();
+// Safe startup: MongoDB/Redis may be temporarily unavailable.
+// Keep server running in degraded mode instead of crashing the process.
+let didConnectRedis = false;
+try {
+  await connectDB();
+} catch (err) {
+  logger.error(
+    "MongoDB startup error (degraded mode):",
+    err instanceof Error ? err.message : err,
+  );
+}
+
+try {
+  await connectRedis();
+  didConnectRedis = true;
+} catch (err) {
+  logger.error(
+    "Redis startup error (degraded mode):",
+    err instanceof Error ? err.message : err,
+  );
+}
+
+// Expose a simple readiness signal for /health without relying on redisClient internals.
+globalThis.__REDIS_READY__ = didConnectRedis;
+
 logEvaluatorConfig();
+
+
 
 // Initialize Gemini AI client logic moved to src/modules/ai-assistant/controller.js
 
 app.get("/health", (req, res) => {
-  res.json({ status: "OK", db: isConnected ? "connected" : "disconnected" });
+  res.json({
+    status: "OK",
+    db: isConnected ? "connected" : "disconnected",
+    redis: globalThis.__REDIS_READY__ ? "connected" : "disconnected",
+
+  });
 });
 
 // app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
@@ -214,10 +243,23 @@ initRoadmapSockets(io);
 // Catch-all 404 handler for API routes
 // This prevents Express from returning HTML on missing routes, which crashes frontend JSON parsers.
 app.use("/api/*", (req, res) => {
-  res.status(404).json({ success: false, message: `API route not found: ${req.method} ${req.originalUrl}` });
+  res.status(404).json({
+    success: false,
+    message: `API route not found: ${req.method} ${req.originalUrl}`,
+  });
+});
+
+// Global 404 JSON handler for non-API routes.
+// Prevents Express from returning HTML for unknown routes which may break JSON-based frontend calls.
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `Route not found: ${req.method} ${req.originalUrl}`,
+  });
 });
 
 app.use(globalErrorHandler);
+
 
 server.listen(PORT, () => {
   logger.log(`Server running on http://localhost:${PORT}`);

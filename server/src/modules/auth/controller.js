@@ -30,7 +30,191 @@ import {
   getGoogleOAuthConfig,
   GOOGLE_OAUTH_NOT_CONFIGURED_MESSAGE,
   isGoogleOAuthConfigured,
+  buildGoogleAuthUrl,
 } from "../../config/googleOAuth.js";
+import { getFrontendUrl } from "../../config/env.js";
+import logger from "../../utils/logger.js";
+
+export const DEFAULT_OAUTH_REDIRECT_PATH = "/auth/callback";
+
+const decodeRedirectPath = (value) => {
+  let decoded = value;
+
+  // Decode repeatedly until the string stabilises (i.e. no more encoded
+  // characters remain). A fixed-iteration loop (e.g. 2 rounds) would leave
+  // triple-encoded payloads like %25252e%25252e%25252f partially decoded,
+  // allowing them to bypass the safety checks below.
+  while (true) {
+    let next;
+    try {
+      next = decodeURIComponent(decoded);
+    } catch {
+      return null;
+    }
+    if (next === decoded) break;
+    decoded = next;
+  }
+
+  return decoded;
+};
+
+export const isSafeRedirectPath = (value) => {
+  if (typeof value !== "string" || value.length === 0 || value.length > 500 || value !== value.trim()) {
+    return false;
+  }
+
+  if (/[\s\\\u0000-\u001F\u007F]/.test(value)) {
+    return false;
+  }
+
+  const decoded = decodeRedirectPath(value);
+  if (!decoded || decoded.length === 0 || decoded.length > 500 || decoded !== decoded.trim()) {
+    return false;
+  }
+
+  if (/[\s\\\u0000-\u001F\u007F]/.test(decoded)) {
+    return false;
+  }
+
+  if (/^[A-Za-z][A-Za-z0-9+.-]*:/.test(decoded)) {
+    return false;
+  }
+
+  if (!decoded.startsWith("/") || decoded.startsWith("//")) {
+    return false;
+  }
+
+  if (/\/\.\.\//.test(decoded) || /\/\.\.$/.test(decoded)) {
+    return false;
+  }
+
+  const pathPart = decoded.split("?")[0];
+  const allowedPathRegex = /^\/(auth|dashboard|profile|jobs|classrooms|mock-interview|resume-analyzer|settings|tutors|recruiters|interviews)?(\/[a-zA-Z0-9_\-\.\/]+)?$/;
+  if (!allowedPathRegex.test(pathPart)) {
+    return false;
+  }
+
+  const queryPart = decoded.split("?")[1];
+  if (queryPart) {
+    const queryParams = new URLSearchParams(queryPart);
+    for (const [key, val] of queryParams.entries()) {
+      if (!/^[a-zA-Z0-9_\-]+$/.test(key) || !/^[a-zA-Z0-9_\-\.\s@%:\/\+]*$/.test(val)) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+};
+
+export const normalizeOAuthRedirectPath = (
+  value,
+  fallbackPath = DEFAULT_OAUTH_REDIRECT_PATH,
+) => {
+  if (!isSafeRedirectPath(value)) {
+    return fallbackPath;
+  }
+
+  return decodeRedirectPath(value);
+};
+
+export const signOAuthState = (stateObj) => {
+  const secret = process.env.JWT_SECRET || "fallback-secret-for-state-signing";
+  const payload = {
+    ...stateObj,
+    nonce: crypto.randomBytes(16).toString("hex"),
+  };
+  const signString = `${payload.redirect || ""}:${payload.role || ""}:${payload.nonce}`;
+  const signature = crypto
+    .createHmac("sha256", secret)
+    .update(signString)
+    .digest("hex");
+  
+  payload.sig = signature;
+  return Buffer.from(JSON.stringify(payload), "utf8").toString("base64");
+};
+
+export const verifyAndDecodeOAuthState = (stateStr) => {
+  if (!stateStr) return null;
+  const secret = process.env.JWT_SECRET || "fallback-secret-for-state-signing";
+  
+  let decodedStr = null;
+  try {
+    const rawState = stateStr.includes("%") ? decodeURIComponent(stateStr) : stateStr;
+    decodedStr = Buffer.from(rawState, "base64").toString("utf8");
+  } catch {
+    decodedStr = null;
+  }
+
+  if (!decodedStr) {
+    if (isSafeRedirectPath(stateStr)) {
+      return { redirect: stateStr };
+    }
+    return null;
+  }
+
+  try {
+    const payload = JSON.parse(decodedStr);
+    
+    // Signed state check
+    if (payload && typeof payload === "object" && payload.sig && payload.nonce) {
+      const signString = `${payload.redirect || ""}:${payload.role || ""}:${payload.nonce}`;
+      const computedSignature = crypto
+        .createHmac("sha256", secret)
+        .update(signString)
+        .digest("hex");
+      
+      if (computedSignature !== payload.sig) {
+        logger.error("[AUTH] Google OAuth state signature verification failed");
+        return null;
+      }
+      return payload;
+    }
+
+    // Legacy JSON state
+    if (payload && typeof payload === "object") {
+      return { redirect: payload.redirect, role: payload.role };
+    }
+  } catch {
+    // If JSON parsing failed, it might be a legacy raw string redirect path
+    if (isSafeRedirectPath(decodedStr)) {
+      return { redirect: decodedStr };
+    }
+  }
+
+  if (isSafeRedirectPath(stateStr)) {
+    return { redirect: stateStr };
+  }
+
+  return null;
+};
+
+export const initiateGoogleOAuth = (req, res) => {
+  const frontendOrigin = new URL(getFrontendUrl()).origin;
+  const requestedRedirect = req.query.redirect;
+  const role = req.query.role;
+  const redirectPath =
+    typeof requestedRedirect === "string" && requestedRedirect.length > 0
+      ? normalizeOAuthRedirectPath(requestedRedirect)
+      : DEFAULT_OAUTH_REDIRECT_PATH;
+  const redirectTarget = `${frontendOrigin}${redirectPath}`;
+
+  const stateObj = { redirect: redirectPath };
+  if (role) {
+    stateObj.role = role;
+  }
+
+  const state = encodeURIComponent(signOAuthState(stateObj));
+
+  if (!isGoogleOAuthConfigured()) {
+    logger.error("[AUTH] Google OAuth env vars are missing in server/.env");
+    return res.redirect(
+      `${redirectTarget}?error=${encodeURIComponent(GOOGLE_OAUTH_NOT_CONFIGURED_MESSAGE)}`,
+    );
+  }
+
+  res.redirect(buildGoogleAuthUrl({ state }));
+};
 
 // 📝 Register User
 export const register = asyncHandler(async (req, res, next) => {
@@ -59,11 +243,36 @@ export const verifyEmail = asyncHandler(async (req, res, next) => {
     return next(new AppError("Invalid verification data", 400));
   }
 
-  const result = await verifyUserEmail(
+  const { user } = await verifyUserEmail(
     validation.data.email,
     validation.data.otp,
   );
-  return res.status(200).json(result);
+
+  const token = jwt.sign(
+    {
+      userId: user._id.toString(),
+      role: user.role,
+      jti: crypto.randomUUID(),
+    },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+    },
+  );
+
+  return res.status(200).json({
+    success: true,
+    message: "Email verified successfully",
+    token,
+    user: {
+      id: user._id.toString(),
+      name: user.get("name"),
+      email: user.get("email"),
+      role: user.role,
+      isOnboarded: user.isOnboarded,
+      profilePic: user.profilePic,
+    },
+  });
 });
 
 // 🔑 Forgot Password
@@ -159,6 +368,8 @@ export const googleLogin = asyncHandler(async (req, res, next) => {
       name: user.get('name'),
       email: user.get('email'),
       role: user.role,
+      isOnboarded: user.isOnboarded,
+      profilePic: user.profilePic,
     },
   });
 });
@@ -168,37 +379,36 @@ export const googleOAuthCallback = asyncHandler(async (req, res, next) => {
   const { code, state } = req.query;
   const frontendRedirectBase =
     process.env.FRONTEND_URL || "http://localhost:5174";
-  const fallbackCallbackUrl = `${frontendRedirectBase}/auth/callback`;
+  const frontendRedirectOrigin = new URL(frontendRedirectBase).origin;
+  const fallbackCallbackUrl = `${frontendRedirectOrigin}${DEFAULT_OAUTH_REDIRECT_PATH}`;
   let callbackUrl = fallbackCallbackUrl;
   let requestedRole = "student";
+  let requestedAction = "signup"; // Default to signup
 
   if (typeof state === "string" && state.length > 0) {
     try {
-      const decoded = Buffer.from(decodeURIComponent(state), "base64").toString(
-        "utf8",
-      );
-      
-      let stateObj;
-      try {
-        stateObj = JSON.parse(decoded);
-      } catch {
-        // Fallback for legacy state which was just a raw URL string
-        stateObj = { redirect: decoded };
+      const stateObj = verifyAndDecodeOAuthState(state);
+      if (stateObj) {
+        if (stateObj.role) {
+          requestedRole = stateObj.role;
+        }
+
+        const redirectPath = normalizeOAuthRedirectPath(stateObj.redirect);
+        callbackUrl = `${frontendRedirectOrigin}${redirectPath}`;
+      } else {
+        callbackUrl = fallbackCallbackUrl;
       }
 
       if (stateObj.role) {
         requestedRole = stateObj.role;
       }
-
-      const decodedUrl = new URL(stateObj.redirect);
-      const fallbackOrigin = new URL(frontendRedirectBase).origin;
-      const isAllowedLocalhost =
-        decodedUrl.hostname === "localhost" ||
-        decodedUrl.hostname === "127.0.0.1";
-
-      if (decodedUrl.origin === fallbackOrigin || isAllowedLocalhost) {
-        callbackUrl = decodedUrl.toString();
+      
+      if (stateObj.action) {
+        requestedAction = stateObj.action;
       }
+
+      const redirectPath = normalizeOAuthRedirectPath(stateObj.redirect);
+      callbackUrl = `${frontendRedirectOrigin}${redirectPath}`;
     } catch {
       callbackUrl = fallbackCallbackUrl;
     }
@@ -247,7 +457,11 @@ export const googleOAuthCallback = asyncHandler(async (req, res, next) => {
 
   let user;
   try {
-    user = await findOrCreateGoogleUser({ ...googleUser, role: requestedRole });
+    user = await findOrCreateGoogleUser({ 
+      ...googleUser, 
+      role: requestedRole,
+      action: requestedAction 
+    });
   } catch (error) {
     const message =
       error instanceof AppError
