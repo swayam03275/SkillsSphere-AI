@@ -58,8 +58,8 @@ Implemented:
 
 Scaffolded placeholders:
 
-- `classrooms/`
-- `job-matcher/`
+- `classrooms/` — Live collaborative environment with whiteboard, code editor, and WebRTC
+- `job-matcher/` — AI-powered candidate-to-job matching pipeline
 
 #### Mock Interview Module (`mock-interview/`)
 
@@ -92,7 +92,9 @@ Implemented:
   - `src/modules/auth/service.js`
   - `src/validations/authValidation.js`
 - Auth & RBAC Middleware:
-  - `src/middleware/authMiddleware.js` (JWT & Role verification)
+  - `src/middleware/authMiddleware.js` (JWT, Role verification, and strict OAuth state checking)
+  - `src/middleware/rateLimiter.js` (API Gateway Query Complexity and rate limits)
+  - `src/middleware/webhookMiddleware.js` (Robust webhook signing framework)
 - Resume upload and analysis flow:
   - `src/modules/resumes/routes.js`
   - `src/modules/resumes/controller.js`
@@ -148,6 +150,9 @@ Implemented:
 
 - Skill evaluator test coverage in `evaluators/__tests__/skillEvaluator.test.js`
 - Keyword evaluator test coverage in `evaluators/__tests__/keywordEvaluator.test.js`
+- Advanced ATS Evaluators:
+  - `evaluators/readabilityEvaluator.js` (Domain Scoring)
+  - `evaluators/formattingEvaluator.js` (Content Scoring)
 - Resume analysis pipeline helpers:
   - `pipeline/evaluatorContract.js`: shared evaluator output schema
   - `pipeline/runPipeline.js`: unified evaluator execution runner

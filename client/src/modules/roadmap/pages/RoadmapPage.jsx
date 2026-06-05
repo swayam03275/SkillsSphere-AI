@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { CheckCircle2, Circle, Clock, Rocket, Target, Award, Star, MessageSquare } from "lucide-react";
+import { Link } from "react-router-dom";
+import { CheckCircle2, Circle, Clock, Rocket, Target, Award, Star, MessageSquare, ArrowLeft, Sparkles, TrendingUp } from "lucide-react";
 import Navbar from "../../../shared/components/Navbar";
 import Footer from "../../../shared/components/Footer";
 
@@ -65,56 +66,138 @@ const RoadmapPage = () => {
 
   if (!roadmap) {
     return (
-      <div className="min-h-screen bg-[var(--background)] text-[var(--text-main)] pt-24">
+      <div className="min-h-screen bg-gray-50/50 dark:bg-[#09090b] text-gray-900 dark:text-text-main font-sans pt-20 flex flex-col">
         <Navbar />
-        <div className="pt-40 flex flex-col items-center justify-center text-center px-4">
-          <div className="p-6 bg-primary/10 rounded-full mb-6">
-            <Target className="w-16 h-16 text-primary" />
+        
+        <main className="flex-grow flex flex-col items-center justify-start px-4 sm:px-6 lg:px-8 pb-12 animate-fade-in relative overflow-hidden">
+          {/* Background glow effects */}
+          <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+            <div className="absolute -top-[10%] -left-[5%] w-[40%] h-[40%] rounded-full bg-blue-100/40 dark:bg-blue-900/10 blur-[120px]" />
+            <div className="absolute top-[20%] -right-[5%] w-[35%] h-[35%] rounded-full bg-purple-100/40 dark:bg-purple-900/10 blur-[100px]" />
+            <div className="absolute top-[5%] right-[20%] w-[35%] h-[35%] rounded-full bg-teal-50/40 dark:bg-teal-900/10 blur-[100px]" />
           </div>
-          <h1 className="text-4xl font-black mb-4">No Active Roadmap</h1>
-          <p className="text-text-muted max-w-md mb-8">
-            Analyze your resume first to generate a personalized learning roadmap tailored to your target role.
-          </p>
-          <a href="/resume-analyzer" className="px-8 py-3 bg-primary rounded-xl font-bold hover:scale-105 transition-all">
-            Analyze Resume
-          </a>
-        </div>
+
+          <div className="w-full max-w-[1200px] relative z-10">
+            {/* Back to Dashboard Link */}
+            <div className="py-6">
+              <Link 
+                to="/dashboard" 
+                className="inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+              >
+                <ArrowLeft size={16} />
+                Back to Dashboard
+              </Link>
+            </div>
+
+            {/* Hero Section */}
+            <div className="text-center space-y-4 mb-10 relative">
+              <div className="hidden md:flex absolute top-4 left-4 xl:left-8 w-14 h-14 bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 rounded-2xl items-center justify-center shadow-sm transform -rotate-3 hover:rotate-0 transition-transform">
+                 <Rocket className="w-6 h-6 text-purple-600" />
+              </div>
+              <div className="hidden md:flex absolute top-8 right-4 xl:right-8 w-14 h-14 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-2xl items-center justify-center shadow-sm transform rotate-3 hover:rotate-0 transition-transform">
+                 <Target className="w-6 h-6 text-emerald-600" />
+              </div>
+
+              <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 shadow-sm text-[11px] font-bold text-purple-600 dark:text-purple-400 mx-auto tracking-wide uppercase">
+                <Sparkles size={12} className="text-purple-500" /> Advanced AI Roadmap Active
+              </div>
+              
+              <h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight">
+                <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-teal-400 bg-clip-text text-transparent">Learning</span> Roadmap
+              </h1>
+              
+              <p className="text-gray-500 dark:text-gray-400 text-[15px] max-w-2xl mx-auto font-medium">
+                Your personalized AI-generated learning path. Complete milestones to 
+                <br className="hidden sm:block" /> achieve job readiness and earn achievements.
+              </p>
+            </div>
+            
+            {/* Empty State Card */}
+            <div className="max-w-3xl mx-auto flex flex-col items-center justify-center py-16 text-center bg-white dark:bg-slate-900/30 rounded-3xl border border-gray-100 dark:border-white/5 shadow-xl mt-8">
+              <div className="w-20 h-20 bg-indigo-500/10 rounded-full flex items-center justify-center mb-6">
+                <Target className="w-10 h-10 text-indigo-500" />
+              </div>
+              <h3 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">No Active Roadmap</h3>
+              <p className="text-gray-500 dark:text-slate-400 max-w-md mx-auto mb-8">
+                Analyze your resume first to generate a personalized learning roadmap tailored to your target role.
+              </p>
+              <Link 
+                to="/resume-analyzer"
+                className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-teal-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2 hover:from-indigo-500 hover:to-teal-400"
+              >
+                <TrendingUp size={18} />
+                Analyze Resume
+              </Link>
+            </div>
+          </div>
+        </main>
+        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[var(--background)] text-[var(--text-main)] font-sans pt-24">
+    <div className="min-h-screen bg-gray-50/50 dark:bg-[#09090b] text-gray-900 dark:text-text-main font-sans pt-20 flex flex-col">
       <Navbar />
-      <div className="max-w-4xl mx-auto pt-8 pb-20 px-4">
-        {/* Header section */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16 animate-slide-up">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="p-1.5 bg-primary/20 rounded-md">
-                <Rocket className="w-4 h-4 text-primary" />
-              </div>
-              <span className="text-xs font-black uppercase tracking-widest text-primary">Your Learning Journey</span>
-            </div>
-            <h1 className="text-5xl font-black tracking-tight leading-tight">
-              Mastering <span className="text-gradient">{roadmap.targetRole}</span>
-            </h1>
+      
+      <main className="flex-grow flex flex-col items-center justify-start px-4 sm:px-6 lg:px-8 pb-12 animate-fade-in relative overflow-hidden">
+        {/* Background glow effects */}
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+          <div className="absolute -top-[10%] -left-[5%] w-[40%] h-[40%] rounded-full bg-blue-100/40 dark:bg-blue-900/10 blur-[120px]" />
+          <div className="absolute top-[20%] -right-[5%] w-[35%] h-[35%] rounded-full bg-purple-100/40 dark:bg-purple-900/10 blur-[100px]" />
+          <div className="absolute top-[5%] right-[20%] w-[35%] h-[35%] rounded-full bg-teal-50/40 dark:bg-teal-900/10 blur-[100px]" />
+        </div>
+
+        <div className="w-full max-w-[1200px] relative z-10">
+          {/* Back to Dashboard Link */}
+          <div className="py-6">
+            <Link 
+              to="/dashboard" 
+              className="inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+            >
+              <ArrowLeft size={16} />
+              Back to Dashboard
+            </Link>
           </div>
-          
-          <div className="flex flex-col sm:flex-row gap-4 items-stretch md:items-end">
+
+          {/* Hero Section (Globally Visible) */}
+          <div className="text-center space-y-4 mb-10 relative">
+            {/* Floating Icons */}
+            <div className="hidden md:flex absolute top-4 left-4 xl:left-8 w-14 h-14 bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 rounded-2xl items-center justify-center shadow-sm transform -rotate-3 hover:rotate-0 transition-transform">
+               <Rocket className="w-6 h-6 text-purple-600" />
+            </div>
+            <div className="hidden md:flex absolute top-8 right-4 xl:right-8 w-14 h-14 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-2xl items-center justify-center shadow-sm transform rotate-3 hover:rotate-0 transition-transform">
+               <Target className="w-6 h-6 text-emerald-600" />
+            </div>
+
+            <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 shadow-sm text-[11px] font-bold text-purple-600 dark:text-purple-400 mx-auto tracking-wide uppercase">
+              <Sparkles size={12} className="text-purple-500" /> Advanced AI Roadmap Active
+            </div>
+            
+            <h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight">
+              Mastering <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-teal-400 bg-clip-text text-transparent">{roadmap.targetRole}</span>
+            </h1>
+            
+            <p className="text-gray-500 dark:text-gray-400 text-[15px] max-w-2xl mx-auto font-medium">
+              Your personalized AI-generated learning path. Complete milestones to 
+              <br className="hidden sm:block" /> achieve job readiness and earn achievements.
+            </p>
+          </div>
+
+          <div className="max-w-4xl mx-auto flex flex-col sm:flex-row gap-4 justify-center items-stretch md:items-end mb-16">
             <ContributionSummaryCard roadmap={roadmap} />
 
-            <div className="bg-[var(--surface)] border border-[var(--border)] p-4 rounded-2xl flex items-center gap-4 shadow-xl">
+            <div className="bg-white dark:bg-[#121214] border border-gray-100 dark:border-white/5 p-4 rounded-2xl flex items-center gap-4 shadow-sm">
               <div className="relative w-16 h-16 flex items-center justify-center">
                   <svg className="w-full h-full transform -rotate-90">
-                    <circle cx="32" cy="32" r="28" fill="transparent" stroke="currentColor" strokeWidth="4" className="text-[var(--border)] opacity-40" />
-                    <circle cx="32" cy="32" r="28" fill="transparent" stroke="currentColor" strokeWidth="4" strokeDasharray={175.9} strokeDashoffset={175.9 * (1 - roadmap.overallProgress / 100)} className="text-primary transition-all duration-1000" />
+                    <circle cx="32" cy="32" r="28" fill="transparent" stroke="currentColor" strokeWidth="4" className="text-gray-200 dark:text-white/10" />
+                    <circle cx="32" cy="32" r="28" fill="transparent" stroke="currentColor" strokeWidth="4" strokeDasharray={175.9} strokeDashoffset={175.9 * (1 - roadmap.overallProgress / 100)} className="text-indigo-500 transition-all duration-1000" />
                   </svg>
                   <span className="absolute text-sm font-black">{roadmap.overallProgress}%</span>
               </div>
               <div>
-                <p className="text-xs font-bold text-text-muted uppercase">Overall Readiness</p>
-                <p className="text-lg font-black">{roadmap.overallProgress === 100 ? "Job Ready!" : "In Progress"}</p>
+                <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Overall Readiness</p>
+                <p className="text-lg font-black text-gray-900 dark:text-white">{roadmap.overallProgress === 100 ? "Job Ready!" : "In Progress"}</p>
                 {roadmap.achievements && roadmap.achievements.length > 0 && (
                   <div className="flex items-center gap-1.5 mt-1.5">
                     {roadmap.achievements.map((ach, i) => (
@@ -127,39 +210,38 @@ const RoadmapPage = () => {
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Roadmap Visualization */}
-        <div className="relative space-y-12 pl-4 md:pl-0">
+
+          <div className="max-w-4xl mx-auto relative space-y-12 pl-4 md:pl-0">
           {/* Vertical Line */}
-          <div className="absolute left-[23px] top-4 bottom-4 w-1 bg-gradient-to-b from-primary via-primary/50 to-transparent rounded-full hidden md:block md:left-1/2 md:-ml-0.5 opacity-20"></div>
+          <div className="absolute left-[23px] top-4 bottom-4 w-1 bg-gradient-to-b from-indigo-500 via-indigo-500/50 to-transparent rounded-full hidden md:block md:left-1/2 md:-ml-0.5 opacity-20"></div>
 
           {roadmap.roadmap.map((topic, index) => {
             const isCompleted = topic.status === "completed";
             const isLeft = index % 2 === 0;
             const isContribution = topic.type === "contribution";
-            const completedBorderColor = isContribution ? 'bg-amber-500 border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.5)]' : 'bg-primary border-primary shadow-[0_0_15px_rgba(99,102,241,0.5)]';
-            const cardBorderCompleted = isContribution ? 'border-amber-500/30' : 'border-primary/30';
-            const cardHoverBorder = isContribution ? 'hover:border-amber-500/50' : 'hover:border-primary/50';
-            const glowColor = isContribution ? 'bg-amber-500/10' : 'bg-primary/10';
+            const completedBorderColor = isContribution ? 'bg-amber-500 border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.5)]' : 'bg-indigo-500 border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.5)]';
+            const cardBorderCompleted = isContribution ? 'border-amber-500/30' : 'border-indigo-500/30';
+            const cardHoverBorder = isContribution ? 'hover:border-amber-500/50' : 'hover:border-indigo-500/50';
+            const glowColor = isContribution ? 'bg-amber-500/10' : 'bg-indigo-500/10';
 
             return (
               <div key={topic._id} className={`relative flex items-center gap-8 ${isLeft ? "md:flex-row" : "md:flex-row-reverse"} animate-slide-up`} style={{ animationDelay: `${index * 100}ms` }}>
                 
                 {/* Visual Dot on the line */}
-                 <div className={`absolute left-[19px] md:left-1/2 md:-ml-3 w-6 h-6 rounded-full border-4 ${isCompleted ? completedBorderColor : 'bg-[var(--background)] border-[var(--border)]'} z-20 transition-all duration-500`}>
+                 <div className={`absolute left-[19px] md:left-1/2 md:-ml-3 w-6 h-6 rounded-full border-4 ${isCompleted ? completedBorderColor : 'bg-white dark:bg-[#121214] border-gray-200 dark:border-white/10'} z-20 transition-all duration-500`}>
                    {isCompleted && (isContribution ? <Star className="w-full h-full text-white p-0.5" /> : <CheckCircle2 className="w-full h-full text-white p-0.5" />)}
                 </div>
 
                 {/* Content Card */}
                 <div className={`w-full md:w-1/2 ${isLeft ? "md:pr-16" : "md:pl-16"}`}>
-                  <div className={`group p-6 bg-[var(--surface)] border ${isCompleted ? cardBorderCompleted : (isContribution ? 'border-amber-500/20' : 'border-[var(--border)]')} rounded-[2rem] ${cardHoverBorder} transition-all hover:bg-[var(--surface-hover)] shadow-lg relative overflow-hidden`}>
+                  <div className={`group p-6 bg-white dark:bg-[#121214] border ${isCompleted ? cardBorderCompleted : (isContribution ? 'border-amber-500/20' : 'border-gray-100 dark:border-white/5')} rounded-3xl ${cardHoverBorder} transition-all hover:bg-gray-50 dark:hover:bg-white/5 shadow-sm relative overflow-hidden`}>
                     
                     {/* Background Glow */}
                     {isCompleted && <div className={`absolute -top-12 -right-12 w-24 h-24 ${glowColor} rounded-full blur-[40px] pointer-events-none`}></div>}
 
                     <div className="flex items-start justify-between mb-4">
-                       <span className={`text-[10px] font-black uppercase tracking-widest ${isContribution ? 'text-amber-500' : 'text-[var(--text-muted)]'} flex items-center gap-1`}>
+                       <span className={`text-[10px] font-black uppercase tracking-widest ${isContribution ? 'text-amber-500' : 'text-gray-500 dark:text-gray-400'} flex items-center gap-1`}>
                          {isContribution ? <Star className="w-3 h-3" /> : null}
                          {index + 1}. {isContribution ? "Contribution" : "Milestone"}
                        </span>
@@ -181,27 +263,27 @@ const RoadmapPage = () => {
                        </div>
                     </div>
 
-                     <h3 className={`text-xl font-bold text-[var(--text-main)] mb-4 transition-colors ${isContribution ? 'group-hover:text-amber-500' : 'group-hover:text-primary'}`}>
+                     <h3 className={`text-xl font-bold text-gray-900 dark:text-white mb-4 transition-colors ${isContribution ? 'group-hover:text-amber-500' : 'group-hover:text-indigo-500'}`}>
                       {topic.topicName}
                     </h3>
 
                     {topic.resources && topic.resources.length > 0 && (
-                      <div className="mt-2 mb-4 space-y-2 border-t border-[var(--border)] border-opacity-30 pt-3">
-                        <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider mb-1">Study Resources:</p>
+                      <div className="mt-2 mb-4 space-y-2 border-t border-gray-100 dark:border-white/10 pt-3">
+                        <p className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Study Resources:</p>
                         {topic.resources.map((res, rIdx) => (
                           <a 
                             key={res._id || rIdx} 
                             href={res.url} 
                             target="_blank" 
                             rel="noopener noreferrer" 
-                            className={`flex items-center justify-between p-2 rounded-xl text-xs font-semibold transition-all border ${res.tutorAssigned ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/20' : 'bg-[var(--surface-soft)] border-[var(--border)] border-opacity-30 hover:bg-[var(--surface-hover)] text-[var(--text-main)]'}`}
+                            className={`flex items-center justify-between p-2 rounded-xl text-xs font-semibold transition-all border ${res.tutorAssigned ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/20' : 'bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-800 dark:text-gray-200'}`}
                           >
                             <span className="truncate max-w-[200px]">{res.title}</span>
                             <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
                               {res.tutorAssigned && (
                                 <span className="px-1.5 py-0.5 bg-indigo-500 text-white rounded text-[8px] font-black uppercase tracking-tighter">Tutor</span>
                               )}
-                              <span className="text-[10px] uppercase tracking-tighter text-[var(--text-muted)] opacity-80">{res.type}</span>
+                              <span className="text-[10px] uppercase tracking-tighter text-gray-500 dark:text-gray-400 opacity-80">{res.type}</span>
                             </div>
                           </a>
                         ))}
@@ -212,7 +294,7 @@ const RoadmapPage = () => {
                        <button 
                          onClick={() => handleStatusUpdate(topic._id, topic.status)}
                          disabled={updatingId === topic._id || topic.isVerified}
-                         className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${topic.isVerified ? 'bg-indigo-500/10 text-indigo-400 cursor-not-allowed' : isCompleted ? 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20' : isContribution ? 'bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white' : 'bg-primary/10 text-primary hover:bg-primary hover:text-white'}`}
+                         className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${topic.isVerified ? 'bg-indigo-500/10 text-indigo-400 cursor-not-allowed' : isCompleted ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20' : isContribution ? 'bg-amber-500/10 text-amber-600 dark:text-amber-500 hover:bg-amber-500 hover:text-white' : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500 hover:text-white'}`}
                        >
                          {updatingId === topic._id ? (
                            <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
@@ -230,7 +312,7 @@ const RoadmapPage = () => {
                            setActiveMilestoneId(topic._id);
                            setPanelOpen(true);
                          }}
-                         className="flex items-center gap-1.5 p-2 bg-[var(--surface-soft)] border border-[var(--border)] border-opacity-30 rounded-xl text-xs font-bold text-primary hover:bg-primary hover:text-white transition-all shadow-md"
+                         className="flex items-center gap-1.5 p-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all shadow-sm"
                          title="Discuss Milestone"
                        >
                          <MessageSquare className="w-4 h-4" />
@@ -248,20 +330,21 @@ const RoadmapPage = () => {
         </div>
 
         {/* Graduation / Job Ready Note */}
-        <div className="mt-20 p-12 bg-gradient-to-br from-primary/20 to-secondary/10 border border-primary/20 rounded-[3rem] text-center relative overflow-hidden group shadow-2xl">
+        <div className="max-w-4xl mx-auto mt-20 p-12 bg-gradient-to-br from-indigo-500/20 to-teal-500/10 border border-indigo-500/20 rounded-3xl text-center relative overflow-hidden group shadow-lg">
            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-5 pointer-events-none"></div>
            <div className="relative z-10">
               <Award className="w-16 h-16 text-yellow-400 mx-auto mb-6 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]" />
-              <h2 className="text-3xl font-black mb-4 uppercase tracking-tighter">Career Readiness Goal</h2>
-              <p className="text-[var(--text-muted)] max-w-lg mx-auto mb-8 font-medium italic">
-                "Complete this roadmap to reach top-tier competency for <span className="text-[var(--text-main)] font-bold">{roadmap.targetRole}</span> roles. Your progress is synced across recruiters and mentors."
+              <h2 className="text-3xl font-black mb-4 uppercase tracking-tighter text-gray-900 dark:text-white">Career Readiness Goal</h2>
+              <p className="text-gray-500 dark:text-gray-400 max-w-lg mx-auto mb-8 font-medium italic">
+                "Complete this roadmap to reach top-tier competency for <span className="text-gray-900 dark:text-white font-bold">{roadmap.targetRole}</span> roles. Your progress is synced across recruiters and mentors."
               </p>
-              <div className="h-2 w-full bg-[var(--border)]/20 rounded-full overflow-hidden max-w-md mx-auto">
-                <div className="h-full bg-primary transition-all duration-1000" style={{ width: `${roadmap.overallProgress}%` }}></div>
+              <div className="h-2 w-full bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden max-w-md mx-auto">
+                <div className="h-full bg-indigo-500 transition-all duration-1000" style={{ width: `${roadmap.overallProgress}%` }}></div>
               </div>
            </div>
         </div>
-      </div>
+        </div>
+      </main>
 
       {/* Collaboration Sidebar Panel */}
       {roadmap && (
@@ -274,7 +357,7 @@ const RoadmapPage = () => {
           currentUser={user}
         />
       )}
-          <Footer />
+      <Footer />
     </div>
   );
 };

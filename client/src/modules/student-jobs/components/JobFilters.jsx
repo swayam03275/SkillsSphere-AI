@@ -75,10 +75,10 @@ const JobFilters = ({ onFilterChange }) => {
   ];
 
   return (
-    <div className="bg-gray-100 dark:bg-slate-900/50 backdrop-blur-xl border border-gray-200 dark:border-white/10 rounded-2xl p-6 h-fit sticky top-28">
+    <div className="bg-white dark:bg-slate-900/50 backdrop-blur-xl border border-gray-200 dark:border-white/10 rounded-3xl p-6 h-fit sticky top-28 shadow-[0_4px_20px_rgb(0,0,0,0.03)] dark:shadow-none">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-          <Filter size={20} className="text-blue-400" />
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <Filter size={20} className="text-blue-500" />
           Filters
         </h2>
         <button
@@ -108,7 +108,7 @@ const JobFilters = ({ onFilterChange }) => {
             onChange={handleChange}
             placeholder="e.g. Software Engineer"
             leftIcon={<Search size={18} />}
-            className="bg-slate-800/50 border-white/5 focus:border-blue-500/50"
+            className="bg-white dark:bg-slate-800/50 border-gray-200 dark:border-white/5 focus:border-blue-500/50 text-gray-900 dark:text-white"
           />
         </div>
 
@@ -125,7 +125,7 @@ const JobFilters = ({ onFilterChange }) => {
               value={filters.minSalary}
               onChange={handleChange}
               placeholder="Min"
-              className="bg-slate-800/50 border-white/5 focus:border-blue-500/50"
+              className="bg-white dark:bg-slate-800/50 border-gray-200 dark:border-white/5 focus:border-blue-500/50 text-gray-900 dark:text-white"
             />
             <Input
               id="filter-max-salary"
@@ -134,7 +134,7 @@ const JobFilters = ({ onFilterChange }) => {
               value={filters.maxSalary}
               onChange={handleChange}
               placeholder="Max"
-              className="bg-slate-800/50 border-white/5 focus:border-blue-500/50"
+              className="bg-white dark:bg-slate-800/50 border-gray-200 dark:border-white/5 focus:border-blue-500/50 text-gray-900 dark:text-white"
             />
           </div>
         </div>
@@ -157,7 +157,7 @@ const JobFilters = ({ onFilterChange }) => {
             onChange={handleChange}
             options={dateOptions}
             placeholder="Anytime"
-            className="bg-slate-800/50 border-white/5 focus:border-blue-500/50"
+            className="bg-white dark:bg-slate-800/50 border-gray-200 dark:border-white/5 focus:border-blue-500/50 text-gray-900 dark:text-white"
           />
         </div>
       </div>

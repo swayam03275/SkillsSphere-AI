@@ -183,6 +183,7 @@ export const transformAnalysisHistoryResponse = (response) => {
     data: response.data
       .filter(isPlainObject)
       .map(transformAnalysisHistoryItem),
+    pagination: response.pagination || null,
   };
 };
 
@@ -235,6 +236,7 @@ export const transformCoverLetterHistoryResponse = (response) => {
     success: true,
     data,
     count: toSafeNumber(response.count, data.length),
+    pagination: response.pagination || null,
   };
 };
 
@@ -523,10 +525,10 @@ const requestDashboardResource = async (
  * @returns {Promise<{success: boolean, data: Array, message?: string, isFallback?: boolean}>}
  * Safe analysis history response.
  */
-export const getAnalysisHistory = async (token) => {
+export const getAnalysisHistory = async (token, page = 1, limit = 10) => {
   const authToken = getAuthToken(token);
 
-  return requestDashboardResource("/api/dashboard/history", {
+  return requestDashboardResource(`/api/dashboard/history?page=${page}&limit=${limit}`, {
     token: authToken,
     payloadKey: "data",
     fallbackValue: [],
@@ -559,10 +561,10 @@ export const getSkillTrends = async (token) => {
  * @returns {Promise<{success: boolean, data: Array, count: number, message?: string, isFallback?: boolean}>}
  * Safe cover letter history response.
  */
-export const getCoverLetterHistory = async (token) => {
+export const getCoverLetterHistory = async (token, page = 1, limit = 10) => {
   const authToken = getAuthToken(token);
 
-  return requestDashboardResource("/api/cover-letters", {
+  return requestDashboardResource(`/api/cover-letters?page=${page}&limit=${limit}`, {
     token: authToken,
     payloadKey: "data",
     fallbackValue: [],

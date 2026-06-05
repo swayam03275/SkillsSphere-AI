@@ -125,16 +125,17 @@ const TutorInterviewConsole = () => {
   if (!session || !session.userId || !session.answers) return <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-900"><Navbar /><div className="flex-1 pt-24 text-center">Session data is incomplete or missing.</div><Footer /></div>;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
+    <main className="min-h-screen transition-colors duration-300 relative bg-gradient-to-br from-[#f0eeff] via-[#f7f9fc] to-[#edfdf5] dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 dark:bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] text-gray-900 dark:text-slate-100 flex flex-col pt-24">
       <Navbar />
-      <div className="flex-1 px-6 pb-6 pt-24 max-w-5xl mx-auto w-full space-y-6">
+      <div className="container mx-auto px-4 pb-12 flex-1 relative">
+        <div className="w-full max-w-[1200px] mx-auto relative z-10 flex flex-col gap-6">
         
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-6">
           <div>
-            <Link to="/tutor/interviews" className="flex items-center gap-2 text-indigo-600 mb-2 hover:text-indigo-500 transition-colors">
-              <ArrowLeft size={16} /> Back to Interviews
+            <Link to="/tutor/interviews" className="inline-flex items-center gap-2 mb-4 text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors">
+              <ArrowLeft size={16} /> Back to Dashboard
             </Link>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Interview Player Console</h1>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Student's Interview Console</h1>
             <p className="text-slate-500">Evaluating {session.userId.name || 'Unknown User'}'s mock interview on {session.topic}</p>
           </div>
           <button 
@@ -148,7 +149,7 @@ const TutorInterviewConsole = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-1 space-y-6">
-            <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+            <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] dark:shadow-none">
               <h2 className="text-lg font-bold mb-4 border-b pb-2 dark:border-slate-700">Overall Grading</h2>
               
               <div className="mb-4">
@@ -189,7 +190,7 @@ const TutorInterviewConsole = () => {
             <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200">Answer Transcripts & Scoring</h2>
             
             {session.answers.map((ans, idx) => (
-              <div key={idx} className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+              <div key={idx} className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] dark:shadow-none">
                 <div className="flex items-start justify-between mb-4">
                   <h3 className="font-bold text-lg">Q{idx + 1}: {ans.questionText}</h3>
                   {ans.audioPath && (
@@ -202,7 +203,7 @@ const TutorInterviewConsole = () => {
                   )}
                 </div>
                 
-                <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg text-sm text-slate-700 dark:text-slate-300 italic mb-6 border-l-4 border-slate-300 dark:border-slate-600">
+                <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl text-sm text-slate-700 dark:text-slate-300 italic mb-6 border border-slate-200 dark:border-slate-700">
                   "{ans.transcript || "No transcript available."}"
                 </div>
                 
@@ -261,8 +262,9 @@ const TutorInterviewConsole = () => {
           </div>
         </div>
       </div>
-          <Footer />
-    </div>
+      </div>
+      <Footer />
+    </main>
   );
 };
 

@@ -157,13 +157,24 @@ export const seedJobData = async () => {
       logger.log("[seed] Created mock recruiter for seeded jobs.");
     }
 
-    const jobsToInsert = jobPostingsData.map(job => ({
+    let jobsToInsert = jobPostingsData.map(job => ({
       ...job,
       recruiter: recruiter._id
     }));
 
-    await JobPosting.insertMany(jobsToInsert);
-    logger.log(`[seed] ✅ ${jobsToInsert.length} Job Postings seeded successfully!`);
+    // Duplicate the jobs to create a large dataset (500 jobs total)
+    const expandedJobs = [];
+    for (let i = 0; i < 50; i++) {
+      jobsToInsert.forEach((job, index) => {
+        expandedJobs.push({
+          ...job,
+          title: i === 0 ? job.title : `${job.title} - ${i + 1}`,
+        });
+      });
+    }
+
+    await JobPosting.insertMany(expandedJobs);
+    logger.log(`[seed] ✅ ${expandedJobs.length} Job Postings seeded successfully!`);
   } catch (error) {
     logger.error("[seed] Error seeding job data:", error);
   }

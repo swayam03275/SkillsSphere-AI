@@ -1,129 +1,137 @@
-# Resume Analyzer Module
+# AI Resume Analyzer Module Architecture
 
-The AI Resume Analyzer provides comprehensive, multi-dimensional resume evaluation using a modular 9-evaluator pipeline. It supports dual modes—**Job Description (JD) Matching** and **Industry Benchmarking**—to score resumes on skill relevance, ATS readability, quantifiable impact, grammatical consistency, and technical depth.
+## 1. Executive Summary & Domain Scope
+
+The **AI Resume Analyzer** provides comprehensive, multi-dimensional resume evaluation using a modular 9-evaluator pipeline. It acts as the core parsing and scoring engine that feeds structural data into the Job Matcher, the Learning Roadmaps, and the Recruiter Talent Finder modules.
+
+### Core Problem Addressed
+Generic ATS (Applicant Tracking System) checkers rely almost entirely on simple keyword matching. If a job description says "UI Development" and the resume says "Frontend Engineering", standard parsers fail the candidate. Furthermore, they do not measure the *quality* of the experience (e.g., quantifiable impact, power verbs, sentence readability). This module solves this by executing 9 distinct ML/NLP evaluators concurrently to provide a deeply nuanced score across semantic meaning, grammatical consistency, and technical breadth.
+
+### Target User Personas
+- **Students / Candidates**: Need instant, brutally honest feedback on their resume formatting, missing skills, and overall ATS compatibility before submitting a real application.
+
+### High-Level Capability Matrix
+**What the Module Does:**
+- **Dual Scoring Modes**: Automatically adjusts its scoring weights based on whether the user provided a target Job Description (JD Match Mode) or just uploaded a naked resume (Industry Benchmark Mode).
+- **Parallel AI Execution**: Executes 9 separate evaluation functions concurrently via `Promise.all` to minimize latency.
+- **Deep Document Parsing**: Extracts raw text from complex PDFs and DOCX files.
+- **Semantic Caching**: Utilizes a Redis/MongoDB caching layer based on SHA-256 hashes of the file buffer to return instant results for duplicate uploads.
+- **Advanced ATS Scoring**: Utilizes deep linguistic analysis to score readability (Flesch-Kincaid analogs) and formatting standard compliance.
+- **Unified History Hub**: Exposes a deeply paginated tabbed interface to review past resume analyses and generated cover letters.
+
+**What the Module Deliberately Avoids:**
+- **File Storage Bloat**: The platform avoids storing the raw multi-megabyte PDF binaries forever. It relies heavily on parsed text extraction to keep the database lightweight, using AWS S3 / Cloudinary for temporary binary retention.
 
 ---
 
-## 1. System Architecture & Component Interactions
+## 2. Comprehensive Architecture & Sequence Diagrams
+
+The architecture focuses on high-speed text extraction followed by massive parallelization.
+
+### End-to-End User Flow (Analysis Pipeline)
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor User as Student
-    participant FE as React Frontend
-    participant BE as Node.js Backend
-    participant DB as MongoDB Database
-    participant AI as AI/ML Pipeline (Gemini / HF)
-
-    User->>FE: Upload Resume (PDF/DOCX) + Job Description
-    Note over FE: Client-side validation:<br/>Max 5MB, correct MIME type
+    participant FE as React Client (ResumeAnalyzerPage.jsx)
+    participant BE as Node.js Gateway
+    participant Cache as Semantic Cache
+    participant AI as Pipeline (runPipeline.js)
+    participant DB as MongoDB
+    
+    User->>FE: Uploads PDF & pastes Job Description
+    Note over FE: Client-side validation: Max 5MB, PDF/DOCX
     FE->>BE: POST /api/resume/analyze (FormData)
-    Note over BE: Run magic byte validation<br/>& SSRF links scanner
-    BE->>BE: Generate SHA-256 Hash Pair
-    BE->>DB: Check SemanticCache for hit
+    
+    Note over BE: Phase 1: Security & Parsing
+    BE->>BE: validateResumeBufferSignatureSync(magic bytes)
+    BE->>BE: pdf-parse extract raw text
+    
+    Note over BE, Cache: Phase 2: Cache Check
+    BE->>BE: hash = SHA256(resumeText + jobDescriptionText)
+    BE->>Cache: GET hash
+    
     alt Cache Hit
-        DB-->>BE: Return cached analysis results
-        BE-->>FE: Return 200 OK + Analysis Result
-        FE-->>User: Render Dashboard & Skill Venn
+        Cache-->>BE: Return cached 9-evaluator result
     else Cache Miss
-        BE->>BE: Parse PDF/DOCX to plain text
-        BE->>AI: Trigger 9-Evaluator Pipeline (Parallel)
-        activate AI
-        AI-->>BE: Return individual evaluator outputs (Zod validated)
-        deactivate AI
-        BE->>BE: Run Aggregator (Compute weighted score)
-        BE->>BE: Run Gap Analyzer (Generate improvement suggestions)
-        BE->>DB: Save Resume & AnalysisHistory (Max 10 per user)
-        BE->>DB: Save to SemanticCache (7-day TTL)
-        BE->>BE: Trigger syncRoadmap()
-        BE-->>FE: Return 200 OK + Analysis Result
-        FE-->>User: Render Dashboard, Skill Venn & Gap Heatmap
+        Note over BE, AI: Phase 3: Parallel Execution
+        BE->>AI: Trigger 9 Evaluators (Promise.all)
+        
+        par Semantic Match
+            AI->>AI: Hugging Face API
+        and Impact Match
+            AI->>AI: Regex / Metric extraction
+        and Readability Evaluator
+            AI->>AI: NLP Sentence Analysis
+        and 6 Other Evaluators...
+            AI->>AI: (...)
+        end
+        
+        AI-->>BE: Aggregate all 9 outputs (Zod Validated)
+        BE->>Cache: SET hash (TTL: 7 Days)
     end
+    
+    Note over BE, DB: Phase 4: Persistence
+    BE->>DB: Upsert Resume Document
+    BE->>DB: Insert AnalysisHistory Document
+    BE-->>FE: Return Detailed Scorecard
+```
+
+### Component Hierarchy & Service Boundaries
+
+```mermaid
+graph TD
+    subgraph Frontend [React Client Layer]
+        RA[ResumeAnalyzerPage.jsx] --> DD[DragDropUpload.jsx]
+        RA --> JD[JobDescriptionInput.jsx]
+        RA --> AR[AnalysisResult.jsx]
+        AR --> SG[SkillGapVenn.jsx]
+        
+        Hist[ResumeAnalyzerHistoryPage.jsx] --> Tabs[TabbedInterface.jsx]
+    end
+
+    subgraph Backend API [Node.js Server Layer]
+        RC[ResumeController.js] --> RP[runPipeline.js]
+        RP --> Agg[Aggregator.js]
+    end
+
+    subgraph Evaluator Engine [ai-ml/evaluators/]
+        E1[skillEvaluator.js]
+        E2[semanticEvaluator.js]
+        E3[impactEvaluator.js]
+        E4[readabilityEvaluator.js]
+        E5[formattingEvaluator.js]
+        E6[...]
+    end
+
+    RC --> RP
+    RP --> E1 & E2 & E3 & E4 & E5 & E6
 ```
 
 ---
 
-## 2. End-to-End Pipeline Workflow
+## 3. Detailed Data Models & Schemas
 
-### Phase A: Upload & Security Guardrails
-1. **File Type & Signature Validation**:
-   - The user uploads a file via `DragDropUpload`.
-   - Before uploading, the frontend validates that the file size is under 5MB.
-   - The server inspects the buffer headers using **magic byte helpers** (`validateResumeBufferSignatureSync`) to confirm that a renamed `.txt` file cannot bypass filters as a `.pdf`.
-2. **SSRF Link Verification**:
-   - The text is scanned for hyperlinks (e.g., LinkedIn, GitHub, portfolio).
-   - Each link is passed to `verifyLink()` to prevent Server-Side Request Forgery (SSRF) by blocking private IPs (`127.0.0.1`, `192.168.x.x`), localhost, and cloud metadata endpoints (`169.254.169.254`).
+### MongoDB Schemas
 
-### Phase B: Hashing & Semantic Caching
-1. **Hash Generation**:
-   - The server takes the SHA-256 hash of the plain-text resume content.
-   - If a JD is provided, it generates a combined hash of `resumeText + jobDescriptionText`.
-2. **Cache Lookup**:
-   - The server queries the `SemanticCache` collection.
-   - If a match is found, the pipeline bypasses AI model execution entirely, cutting analysis time from ~4 seconds down to under 200 milliseconds.
-   - Cache entries have a **7-day Time-To-Live (TTL)** index.
-
-### Phase C: Text Parsing
-- If the cache misses, the server extracts raw text using `pdf-parse` or standard docx parsers.
-- It extracts contact information, profile links, skills, experience blocks, and project sections.
-
-### Phase D: The 9-Evaluator AI Pipeline
-The core of the analyzer is a modular pipeline where all 9 evaluators execute concurrently using `Promise.all`:
-
-```text
-┌───────────────────────────────────────────────────────────────────────────────────┐
-│                                runPipeline.js                                     │
-├──────────────────────────┬─────────────────────────────┬──────────────────────────┤
-│    skillMatch            │    keywordMatch             │    experienceMatch       │
-│    (exact matches)       │    (synonym expansion)      │    (duration validation) │
-├──────────────────────────┼─────────────────────────────┼──────────────────────────┤
-│    semanticMatch         │    impactMatch              │    atsOptimization       │
-│    (embeddings similarity)│    (quantifiable metrics)   │    (parser readiness)    │
-├──────────────────────────┼─────────────────────────────┼──────────────────────────┤
-│    readabilityMatch      │    consistencyMatch         │    techStandard          │
-│    (power verbs scan)    │    (generic cliché check)    │    (domain breadth check)│
-└──────────────────────────┴─────────────────────────────┴──────────────────────────┘
-```
-
-1. **`skillMatch`**: Measures direct intersections of hard and soft skills.
-2. **`keywordMatch`**: Scans for specific keywords from the job description, using synonym matching.
-3. **`experienceMatch`**: Checks duration of work experiences against required JD experience.
-4. **`semanticMatch`**: Uses Hugging Face/Gemini Embeddings to compute cosine similarity between the resume text and the job description, capturing structural alignment even when different vocabularies are used.
-5. **`impactMatch`**: Checks for quantifiable metrics (e.g., percentages, dollar amounts, multipliers like `2x`) and power verbs.
-6. **`atsOptimization`**: Evaluates parseability, standard section headings, and contact block formatting.
-7. **`readabilityMatch`**: Scores formatting, sentence lengths, and the presence of professional action verbs.
-8. **`consistencyMatch`**: Scans for repetitive phrasing, overly generic clichés, and buzzwords.
-9. **`techStandard`**: Benchmarks the breadth of skills against standard industry profiles (e.g., frontend, backend, fullstack).
-
----
-
-## 3. Dual Scoring Modes
-
-Scoring weights adjust automatically based on whether a job description is provided:
-
-| Evaluator | Weight (JD Match Mode) | Weight (Benchmark Mode) | Primary Metric Target |
-| :--- | :--- | :--- | :--- |
-| **`semanticMatch`** | 20% | 0% | Semantic context similarity |
-| **`skillMatch`** | 15% | 0% | Core skill overlap |
-| **`keywordMatch`** | 15% | 0% | Exact keyword overlap |
-| **`impactMatch`** | 15% | 40% | Quantified accomplishments |
-| **`experienceMatch`** | 10% | 0% | Years of experience match |
-| **`atsOptimization`** | 10% | 30% | Parser friendliness and sections |
-| **`readabilityMatch`** | 10% | 15% | Flow, layout clarity, power verbs |
-| **`consistencyMatch`** | 5% | 10% | Formatting and no jargon clichés |
-| **`techStandard`** | 0% | 5% | Industry role standards alignment |
-
----
-
-## 4. Database Models
-
-### Resume Schema (`server/src/database/models/Resume.js`)
+**Resume Schema (`src/database/models/Resume.js`)**
+Stores the parsed representation of the candidate.
 
 ```javascript
-{
-  user: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+const mongoose = require('mongoose');
+
+const resumeSchema = new mongoose.Schema({
+  user: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User', 
+    required: true, 
+    index: true 
+  },
   title: { type: String, default: 'My Resume' },
   isActive: { type: Boolean, default: false },
+  
+  // Structured Parsed Data
   skills: [{ type: String }],
   experience: [{
     role: String,
@@ -136,271 +144,130 @@ Scoring weights adjust automatically based on whether a job description is provi
     institution: String,
     year: String
   }],
-  projects: [{
-    title: String,
-    description: String,
-    link: String
-  }],
-  linkedin: String,
-  github: String,
-  portfolio: String,
-  resumeText: { type: String, select: false }, // Excluded from default queries for privacy
-  file: {
-    originalName: String,
-    storedName: String,
-    path: String,
-    size: Number,
-    mimeType: String
-  },
+  
+  resumeText: { type: String, select: false }, // Excluded from default queries to save bandwidth
+  
+  // The aggregated scorecard
   evaluation: {
     aggregatedScore: Number,
     mode: { type: String, enum: ['match', 'benchmark'] },
     classification: { type: String, enum: ['Beginner', 'Intermediate', 'Advanced', 'Strong Match'] },
+    
+    // Sub-scores from the 9 evaluators
     skillMatch: { score: Number, matched: [String], missing: [String] },
     keywordMatch: { score: Number, found: [String], missing: [String] },
     semanticMatch: { score: Number, similarityScore: Number },
     impactMatch: { score: Number, metricsFound: [String], suggestions: [String] },
     atsOptimization: { score: Number, issues: [String] },
     readabilityMatch: { score: Number, scoreReadability: Number, suggestions: [String] },
+    formattingMatch: { score: Number, issues: [String] },
+    
     gapAnalysis: {
       criticalGaps: [String],
       recommendedSkills: [String]
     }
   }
-}
+}, { timestamps: true });
+
+// Ensure a user can only have one active resume at a time
+resumeSchema.index({ user: 1, isActive: 1 });
+
+module.exports = mongoose.model('Resume', resumeSchema);
+```
+
+**Analysis History Schema (`src/database/models/AnalysisHistory.js`)**
+Because the `Resume` model is mutable, we need an immutable ledger to track how a student's score improves over time.
+
+```javascript
+const mongoose = require('mongoose');
+
+const analysisHistorySchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  resumeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Resume', required: true },
+  jobDescriptionProvided: { type: Boolean, default: false },
+  scoreSnapshot: { type: Number, required: true },
+  classificationSnapshot: { type: String, required: true },
+  timestamp: { type: Date, default: Date.now }
+});
+
+module.exports = mongoose.model('AnalysisHistory', analysisHistorySchema);
 ```
 
 ---
 
-## 5. Endpoints Specifications
+## 4. API Endpoints & State Management
 
-| Method | Endpoint | Auth | Request Payload | Response Success Payload (200 OK) |
-| :--- | :--- | :--- | :--- | :--- |
-| `POST` | `/api/resume/analyze` | Student | `FormData` { `file`: File, `jobDescription`: String } | `{ success: true, evaluation: { aggregatedScore: 82, ... }, classification: "Strong Match" }` |
-| `GET` | `/api/resume/me/latest` | Student | None | `{ success: true, resume: { ... } }` |
-| `PATCH` | `/api/resume/:id/active` | Student | None | `{ success: true, message: "Active resume updated successfully" }` |
-| `POST` | `/api/resume/:id/cover-letter` | Student | `{ tone: "Professional", language: "English" }` | `{ success: true, coverLetter: { content: "...", tone: "Professional" } }` |
+### REST Endpoints
+
+| Method | Endpoint | Auth Level | Purpose | Payload | Response |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `POST` | `/api/resume/analyze` | Student | Upload + full 9-evaluator AI analysis. | `FormData { file, jobDescription }` | `{ success: true, evaluation: {...} }` |
+| `GET` | `/api/resume/me/latest` | Any | Get active/latest resume for display on profile. | `None` | `{ resume: {...} }` |
+| `PATCH` | `/api/resume/:id/active` | Student | Flags a specific resume as the primary active one for job matching. | `None` | `{ success: true }` |
+| `POST` | `/api/resume/:id/cover-letter` | Student | Uses Gemini to generate an AI cover letter based on the parsed resume text. | `{ tone: "Professional" }` | `{ coverLetter: "..." }` |
+| `GET` | `/api/resume/history` | Student | Deeply paginated fetch for the Unified History Hub. | `?page=1&type=analysis` | `{ history: [...], pagination: {...} }` |
+
+### The 9-Evaluator Weighting Matrix (Dual Mode)
+
+The aggregator changes the mathematical weighting of the sub-scores based on the presence of a Job Description.
+
+```javascript
+// server/src/ai-ml/config/weights.config.js
+module.exports = {
+  JD_MATCH_MODE: {
+    semanticMatch: 0.20,
+    skillMatch: 0.15,
+    keywordMatch: 0.15,
+    impactMatch: 0.15,
+    experienceMatch: 0.10,
+    atsOptimization: 0.10,
+    readabilityMatch: 0.10,
+    consistencyMatch: 0.05
+  },
+  BENCHMARK_MODE: {
+    // If no JD is provided, Semantic/Keyword/Experience are irrelevant (0)
+    impactMatch: 0.40,
+    atsOptimization: 0.30,
+    readabilityMatch: 0.15,
+    consistencyMatch: 0.10,
+    techStandard: 0.05
+  }
+};
+```
 
 ---
 
-## 6. Integration Points with Other Modules
+## 5. Security, Edge Cases & Error Handling
 
-1. **Learning Roadmap Module**:
-   - When an analysis finishes, the `gapAnalysis.criticalGaps` list is checked.
-   - The backend triggers `syncRoadmap(userId, evaluation.gapAnalysis)`.
-   - This creates or updates a dynamic **Learning Roadmap** with tailored resource links matching the missing skills.
-2. **Job Matcher Module**:
-   - The active resume's parsed skills feed directly into the **Job Recommendation Engine** (`GET /api/jobs/recommendations`).
-   - Recommends relevant jobs based on semantic fit.
-3. **Recruiter Talent Finder**:
-   - Recruiters performing searches query the `skills` index of the `Resume` model.
-   - Candidates are ranked based on their latest `aggregatedScore`.
-The AI Resume Analyzer provides comprehensive resume evaluation using a 9-evaluator pipeline that scores resumes on skill match, ATS readiness, impact, readability, and more. Supports dual modes: JD-matching and industry benchmarking.
+### PDF Magic Byte & SSRF Validation
+If a user renames `malicious.exe` to `resume.pdf`, standard mime-type checking via `multer` will fail to detect the threat.
+- **Handling**: The backend utilizes `file-type` to inspect the raw binary buffer (the "magic bytes"). If the buffer headers do not explicitly match `application/pdf` or `application/msword`, the upload is rejected with a `415 Unsupported Media Type` error before it ever reaches the parsing layer.
+- **SSRF Prevention**: If the resume text contains hyperlinks (e.g., a portfolio link), the backend runs a regex extractor. If it detects internal IP ranges (`127.0.0.1`, `169.254.x.x`), it strips the links to prevent Server-Side Request Forgery via the parsing library.
 
-## Architecture
+### ML Service Latency Optimization
+Running 9 deep linguistic models sequentially could take 30 seconds.
+- **Handling**: The `runPipeline.js` orchestrator utilizes `Promise.allSettled`. This allows the Regex/Heuristic evaluators (like Impact and ATS Formatting) to execute in milliseconds on the Node.js event loop, while simultaneously awaiting the HTTP response from the Hugging Face Inference API for the `semanticMatch`. 
 
-```text
-┌──────────────────────────────────────────────────────────────────┐
-│                        React Frontend                             │
-│  ResumeAnalyzerPage → DragDropUpload + JobDescriptionInput        │
-│                     → AnalysisResult + SkillGapVenn               │
-│                     → AnalysisReportPDF (export)                  │
-│  resumeService.js (API client)                                   │
-└──────────────────────────┬───────────────────────────────────────┘
-                           │ REST API
-┌──────────────────────────▼───────────────────────────────────────┐
-│                      Node.js Backend                              │
-│  routes.js → controller.js → service.js                           │
-│  evaluatorAdapters.js → runPipeline.js (9 evaluators)            │
-│  coverLetter.controller.js → Gemini AI                           │
-│  Models: Resume, AnalysisHistory, SemanticCache, CoverLetter      │
-└──────────────────────────┬───────────────────────────────────────┘
-                           │
-┌──────────────────────────▼───────────────────────────────────────┐
-│                    AI/ML Pipeline                                  │
-│  skillEvaluator | keywordEvaluator | experienceEvaluator         │
-│  semanticEvaluator (HF API) | impactEvaluator                    │
-│  readabilityEvaluator | consistencyEvaluator                     │
-│  atsOptimizationEvaluator | techStandardEvaluator                │
-│  aggregator.js → weighted scoring → gapAnalyzer → classifier     │
-└──────────────────────────────────────────────────────────────────┘
-```
+### Evaluator Failure Isolation
+If the Hugging Face API goes down, the entire analysis should not fail.
+- **Handling**: Because `Promise.allSettled` is used, if `semanticMatch` throws a TimeoutError, the Aggregator intercepts the rejection, logs a warning, and dynamically re-distributes its 20% weight across the remaining 8 successful evaluators, ensuring the student still receives a highly accurate score.
 
-## Resume Flow
+---
 
-1. **Student uploads PDF** → `DragDropUpload` validates file (max 5MB, PDF/DOC/DOCX)
-2. **Optionally provides JD** → `JobDescriptionInput` with clipboard paste, .txt upload, auto-clean
-3. **Clicks Analyze** → `POST /api/resume/analyze` with FormData (file + optional JD)
-4. **Server parses** → Extracts text, skills, experience, education via `parseResume()`
-5. **Cache check** → SHA-256 hash of resume+JD; returns cached result if hit
-6. **Pipeline runs** → 9 evaluators execute in parallel via `Promise.all`
-7. **Aggregation** → Weighted score computed (different weights for JD vs no-JD mode)
-8. **Results saved** → Upserted to `Resume` model, history tracked in `AnalysisHistory`
-9. **Response returned** → Score, breakdown, skill gap, suggestions, classification
-10. **Roadmap sync** → If classification exists, triggers `syncRoadmap()` for learning path
+## 6. Component-Level Implementation Specs
 
-## Dual Scoring Modes
+### `ResumeAnalyzerPage.jsx`
+The main orchestrator component.
+- Implements a Split-Pane design on desktop. The left pane handles the `DragDropUpload` and `JobDescriptionInput`. The right pane is conditionally rendered: initially showing a `ResumeSkeleton` (a pulsing CSS layout simulating AI thought), and eventually swapping to the `AnalysisResult` once the data arrives.
 
-| Mode          | Trigger                  | Weight Focus                                                                                                               |
-| ------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| ------        | ---------                | --------------                                                                                                             |
-| **Match**     | Job description provided | Semantic (20%), Skill (15%), Keyword (15%), Impact (15%), Experience (10%), ATS (10%), Readability (10%), Consistency (5%) |
-| **Benchmark** | No JD provided           | Impact (40%), ATS (30%), Readability (15%), Consistency (10%), Tech Standard (5%)                                          |
+### `AnalysisResult.jsx`
+A massive dashboard component broken down into discrete visual sections.
+- **Score Ring**: Uses an SVG `<circle>` with a computed `stroke-dashoffset` to smoothly animate the final `aggregatedScore` from 0 to its actual value on mount.
+- **SkillGapVenn.jsx**: A custom SVG component representing the intersection of "Your Skills" and "Job Requirements". It calculates the circle overlap ratios mathematically based on the length of the `matchedSkills` vs `missingSkills` arrays.
 
-## Evaluator Pipeline
-
-| Evaluator          | Weight (JD)   | Weight (No-JD)   | What It Measures                                   |
-| ------------------ | ------------- | ---------------- | -------------------------------------------------- |
-| -----------        | ------------- | ---------------- | ------------------                                 |
-| `skillMatch`       | 0.15          | 0.00             | Exact skill overlap between resume and job         |
-| `keywordMatch`     | 0.15          | 0.00             | JD keyword presence in resume                      |
-| `experienceMatch`  | 0.10          | 0.00             | Years of experience comparison                     |
-| `semanticMatch`    | 0.20          | 0.00             | Embedding-based semantic similarity (HF API)       |
-| `impactMatch`      | 0.15          | 0.40             | Quantifiable achievements (%, $, multipliers)      |
-| `atsOptimization`  | 0.10          | 0.30             | ATS compatibility (sections, contacts, formatting) |
-| `readabilityMatch` | 0.10          | 0.15             | Sentence quality, power verb usage                 |
-| `consistencyMatch` | 0.05          | 0.10             | Repetitive content, generic phrases                |
-| `techStandard`     | 0.00          | 0.05             | Technical breadth across domains                   |
-
-**Semantic caching:** Results cached in MongoDB with 7-day TTL using SHA-256 hash pairs.
-
-## Database Models
-
-### Resume
-
-Stores parsed resume data and all evaluation results.
-
-| Field                                                             | Type     | Notes                                          |
-| ----------------------------------------------------------------- | -------- | ---------------------------------------------- |
-| -------                                                           | ------   | -------                                        |
-| `user`                                                            | ObjectId | Ref: User, indexed                             |
-| `title`                                                           | String   | Default "My Resume"                            |
-| `isActive`                                                        | Boolean  | Active baseline flag                           |
-| `skills`, `education`, `experience`, `projects`, `certifications` | [String] | Parsed sections                                |
-| `linkedin`, `github`, `portfolio`                                 | String   | Profile URLs                                   |
-| `resumeText`                                                      | String   | `select: false` for privacy                    |
-| `file`                                                            | Object   | originalName, storedName, path, size, mimeType |
-| `skillMatch`, `keywordMatch`, `experienceMatch`, `semanticMatch`  | Object   | Evaluator results                              |
-| `aggregatedScore`                                                 | Number   | Final weighted score                           |
-| `classification`                                                  | String   | Beginner/Intermediate/Advanced/Strong Match    |
-| `gapAnalysis`                                                     | Mixed    | Categorized improvement suggestions            |
-| `mode`                                                            | String   | "match" or "benchmark"                         |
-
-### AnalysisHistory
-
-Tracks analysis history for version comparison. Max 10 records per user.
-
-### SemanticCache
-
-Caches semantic similarity results. TTL index expires after 7 days.
-
-### CoverLetter
-
-Generated cover letters linked to resume and job description.
-
-## API Endpoints
-
-| Method   | Endpoint                       | Auth    | Description                 |
-| -------- | ------------------------------ | ------- | --------------------------- |
-| -------- | ----------                     | ------  | -------------               |
-| `POST`   | `/api/resume/upload`           | student | Upload resume file          |
-| `POST`   | `/api/resume/analyze`          | student | Upload + full AI analysis   |
-| `GET`    | `/api/resume/me/latest`        | any     | Get active/latest resume    |
-| `GET`    | `/api/resume/list`             | student | List all resume versions    |
-| `PATCH`  | `/api/resume/:id/active`       | student | Set active resume           |
-| `PATCH`  | `/api/resume/:id/rename`       | student | Rename resume               |
-| `DELETE` | `/api/resume/:id`              | student | Delete resume               |
-| `GET`    | `/api/resume/result/:id`       | any     | Get specific result         |
-| `POST`   | `/api/resume/compare`          | any     | AI compare two versions     |
-| `POST`   | `/api/resume/:id/cover-letter` | student | Generate AI cover letter    |
-| `GET`    | `/api/cover-letters`           | student | List cover letters          |
-| `POST`   | `/api/cover-letters/generate`  | student | Template-based cover letter |
-
-## Frontend Routes
-
-| Route              | Page               | Description                                                 |
-| ------------------ | ------------------ | ----------------------------------------------------------- |
-| -------            | ------             | -------------                                               |
-| `/resume-analyzer` | ResumeAnalyzerPage | Main analysis page with upload, JD input, results dashboard |
-
-## Key Components
-
-| Component             | Purpose                                                                     |
-| --------------------- | --------------------------------------------------------------------------- |
-| -----------           | ---------                                                                   |
-| `ResumeAnalyzerPage`  | Orchestrates upload, analysis, results, version management (max 3 versions) |
-| `DragDropUpload`      | Drag-and-drop + clipboard paste + file browser for PDF upload               |
-| `JobDescriptionInput` | JD text input with paste from clipboard, .txt upload, auto-clean            |
-| `AnalysisResult`      | Full results dashboard: score, metrics, skill gap, ATS checklist, actions   |
-| `SkillGapVenn`        | SVG Venn diagram showing matched vs missing skills                          |
-| `AnalysisReportPDF`   | Print-friendly layout for PDF export (html2canvas + jsPDF)                  |
-| `ResumeSkeleton`      | Loading placeholder during analysis                                         |
-
-## Version Management
-
-- Students can upload up to **3 resume versions**
-- One version is marked `isActive` (the baseline for matching)
-- Switching active version reloads latest analysis for that version
-- Deleting the active version auto-activates the most recent remaining one
-- Inline rename support for version titles
-
-## Cover Letter Generation
-
-Two generation paths:
-
-1. **AI-powered** (`coverLetter.controller.js`): Uses Google Gemini with dynamic prompt engineering
-   - Tone options: Professional, Formal, Confident, Concise, Startup-Friendly, Creative
-   - Language support: English, Hindi, German, French, Spanish
-   - Saves to `CoverLetter` model
-
-2. **Template-based** (`coverLetters/service.js`): Injects user data into a professional template
-   - Faster, no AI dependency
-   - Available via `/api/cover-letters/generate`
-
-## Key Files
-
-```text
-client/src/modules/resume-analyzer/
-├── pages/ResumeAnalyzerPage.jsx          # Main page (509 lines)
-├── components/
-│   ├── DragDropUpload.jsx                # File upload (284 lines)
-│   ├── AnalysisResult.jsx                # Results dashboard (559 lines)
-│   ├── JobDescriptionInput.jsx           # JD input (249 lines)
-│   ├── AnalysisReportPDF.jsx             # PDF export template (364 lines)
-│   ├── SkillGapVenn.jsx                  # Venn diagram (106 lines)
-│   └── ResumeSkeleton.jsx               # Loading skeleton (117 lines)
-└── services/resumeService.js             # API client (176 lines)
-
-server/src/modules/resumes/
-├── routes.js                             # 10 endpoints (197 lines)
-├── controller.js                         # Core logic (519 lines)
-├── service.js                            # DB operations (126 lines)
-├── evaluatorAdapters.js                  # Pipeline adapters (134 lines)
-└── coverLetter.controller.js             # AI cover letter (88 lines)
-
-ai-ml/
-├── evaluators/                           # 9 evaluators
-│   ├── skillEvaluator.js
-│   ├── keywordEvaluator.js
-│   ├── experienceEvaluator.js
-│   ├── semanticEvaluator.js
-│   ├── impactEvaluator.js
-│   ├── readabilityEvaluator.js
-│   ├── consistencyEvaluator.js
-│   ├── atsOptimizationEvaluator.js
-│   └── techStandardEvaluator.js
-├── pipeline/
-│   ├── runPipeline.js                    # Orchestrator (257 lines)
-│   ├── aggregator.js                     # Weighted scoring (37 lines)
-│   ├── evaluatorContract.js              # Zod validation (19 lines)
-│   └── recommendationEngine.js           # Multi-job matching (45 lines)
-└── config/weights.config.js              # Weight maps
-```
-
-## Integration Points
-
-- **Roadmap module**: Analysis triggers `syncRoadmap()` to update learning path based on skill gaps
-- **Dashboard module**: Resume score feeds into skill tracking metrics
-- **Job Matcher module**: Parsed resume data used for job recommendations
-- **Recruiter Talent Finder**: Resume data searchable by recruiters
-- **Notifications**: Cover letter generation and analysis events can trigger notifications
+### `ResumeAnalyzerHistoryPage.jsx` (Unified History Hub)
+The newly introduced hub to centralize historical artifacts.
+- **Tabbed Interface**: Utilizes a sleek, animated pill-style tab selector (`framer-motion` `layoutId="activeTab"`) to seamlessly swap the view between "Resume Analyses" and "Cover Letters".
+- **Pagination**: Unlike earlier implementations that hardcoded a 10-item limit, this component natively supports robust API pagination. It tracks `raPage` and `clPage` separately in state, ensuring that changing pages on the Cover Letter tab does not reset the scroll position of the Analysis tab.
+- **Aesthetic Consistency**: Applies the platform's standardized floating icons, custom CSS text gradients, and decorative layout blobs to ensure the history page feels as premium as the main analyzer interface.
+EOF

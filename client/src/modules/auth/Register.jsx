@@ -6,9 +6,9 @@ import { registerUser } from "../../features/auth/authSlice";
 import { useToast } from "../../shared/components";
 import Button from "../../shared/components/Button";
 import Input from "../../shared/components/Input";
-import Select from "../../shared/components/Select";
 import GoogleOAuthButton from "../../shared/components/GoogleOAuthButton";
 import Navbar from "../../shared/components/Navbar";
+import Footer from "../../shared/components/Footer";
 import { API_URL } from "../../config/env";
 import { z } from "zod";
 import { useDocumentTitle } from "../../hooks/useDocumentTitle";
@@ -18,7 +18,6 @@ const registerSchema = z.object({
   email: z.string().min(1, "Email is required").email("Please enter a valid email"),
   password: z.string().min(1, "Password is required"),
   confirmPassword: z.string().min(1, "Please confirm your password"),
-  role: z.string()
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
@@ -71,7 +70,6 @@ const Register = () => {
     email: "",
     password: "",
     confirmPassword: "",
-    role: "student",
   });
 
   const [errors, setErrors] = useState({});
@@ -84,13 +82,6 @@ const Register = () => {
 
     if (errors[id] || errors.form) {
       setErrors({ ...errors, [id]: "", form: "" });
-    }
-  };
-
-  const handleRoleChange = (e) => {
-    setFormData({ ...formData, role: e.target.value });
-    if (errors.role || errors.form) {
-      setErrors({ ...errors, role: "", form: "" });
     }
   };
 
@@ -132,15 +123,14 @@ const Register = () => {
         name: formData.name.trim(),
         email,
         password: formData.password,
-        role: formData.role,
       }),
     );
 
     if (registerUser.fulfilled.match(resultAction)) {
       const isAutoVerified = resultAction.payload?.user?.isVerified;
       if (isAutoVerified) {
-        success("Account created and verified! You can now log in.");
-        navigate("/login", { replace: true });
+        success("Account created and verified! Let's complete your profile.");
+        navigate("/dashboard", { replace: true });
       } else {
         success("Account created. Check your email for the verification code.");
         navigate(`/verify-email?email=${encodeURIComponent(email)}`, {
@@ -158,12 +148,6 @@ const Register = () => {
     }
   };
 
-  const roleOptions = [
-    { value: "student", label: "Student" },
-    { value: "tutor", label: "Tutor" },
-    { value: "recruiter", label: "Recruiter" },
-  ];
-
   const passwordsMatch =
     formData.password && formData.confirmPassword && formData.password === formData.confirmPassword;
 
@@ -175,14 +159,16 @@ const Register = () => {
     strength.score < 4;
 
   return (
-    <div className="min-h-[125vh] flex flex-col justify-center items-center bg-slate-50 dark:bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] overflow-hidden relative px-3 py-6 box-border">
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] overflow-hidden relative">
       <Navbar />
-      <div className="relative z-10 w-full max-w-[380px] mt-16 sm:mt-24">
-        {/* Background glow */}
-        <div className="hidden sm:block absolute w-[520px] h-[520px] bg-blue-400/45 dark:bg-blue-500/40 rounded-full blur-[140px] dark:blur-[120px] -top-[150px] -left-[150px] -z-10 animate-pulse"></div>
-        <div className="hidden sm:block absolute w-[420px] h-[420px] bg-purple-400/45 dark:bg-purple-500/40 rounded-full blur-[140px] dark:blur-[120px] -bottom-[120px] -right-[120px] -z-10 animate-pulse"></div>
+      
+      <main className="flex-grow flex flex-col justify-center items-center px-3 py-16 sm:py-24 min-h-screen relative z-10">
+        <div className="w-full max-w-[380px] relative">
+          {/* Background glow */}
+          <div className="hidden sm:block absolute w-[520px] h-[520px] bg-blue-400/45 dark:bg-blue-500/40 rounded-full blur-[140px] dark:blur-[120px] -top-[150px] -left-[150px] -z-10 animate-pulse"></div>
+          <div className="hidden sm:block absolute w-[420px] h-[420px] bg-purple-400/45 dark:bg-purple-500/40 rounded-full blur-[140px] dark:blur-[120px] -bottom-[120px] -right-[120px] -z-10 animate-pulse"></div>
 
-        <form
+          <form
           className="p-4 sm:p-[30px] rounded-[20px] backdrop-blur-[20px] bg-white/95 dark:bg-slate-900/70 border border-slate-200 dark:border-white/10 shadow-[0_20px_60px_rgba(15,23,42,0.14)] dark:shadow-[0_0_40px_rgba(0,0,0,0.6)] animate-[fadeIn_0.8s_ease] w-full"
           onSubmit={handleSubmit}
           noValidate
@@ -274,15 +260,6 @@ const Register = () => {
                 <Check size={16} /> Passwords match
               </p>
             )}
-
-            <Select
-              id="role"
-              label="I am a"
-              value={formData.role}
-              onChange={handleRoleChange}
-              options={roleOptions}
-              disabled={loading}
-            />
           </div>
 
           <Button
@@ -300,7 +277,7 @@ const Register = () => {
               {errors.form}
             </p>
           )}
-          <GoogleOAuthButton role={formData.role} />
+          <GoogleOAuthButton />
         </form>
         {/* Footer */}
         <p className="text-center mt-4 sm:mt-5 text-slate-600 dark:text-slate-400 text-xs sm:text-sm">
@@ -312,7 +289,10 @@ const Register = () => {
             Login
           </Link>
         </p>
-      </div>
+        </div>
+      </main>
+
+      <Footer />
     </div>
   );
 };

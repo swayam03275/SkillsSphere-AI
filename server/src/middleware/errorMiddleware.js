@@ -16,15 +16,30 @@ const handleDuplicateFieldsDB = (err) => {
 };
 
 const handleValidationErrorDB = (err) => {
-  // Build field-level errors object for frontend consumption
+  // Build field-level errors object for frontend consumption.
+  // Hardened: Mongoose ValidationError should have `err.errors`,
+  // but some callers/mocked errors may pass it as undefined or non-object.
+  const rawErrors = err?.errors;
+
+  if (!rawErrors || typeof rawErrors !== "object") {
+    const message = "Invalid input data.";
+    const error = new AppError(message, 400);
+    error.errors = {};
+    return error;
+  }
+
   const errors = {};
-  Object.keys(err.errors).forEach((key) => {
-    errors[key] = err.errors[key].message;
+  Object.keys(rawErrors).forEach((key) => {
+    const fieldErr = rawErrors[key];
+    errors[key] = fieldErr?.message || "Invalid value";
   });
-  
-  const messages = Object.values(err.errors).map((el) => el.message);
-  const message = `Invalid input data. ${messages.join(". ")}`;
-  
+
+  const messages = Object.values(rawErrors)
+    .map((el) => el?.message)
+    .filter((m) => typeof m === "string" && m.trim().length > 0);
+
+  const message = `Invalid input data. ${messages.join(". ")}`.trim();
+
   const error = new AppError(message, 400);
   error.errors = errors; // Attach field-level errors
   return error;
@@ -134,13 +149,16 @@ const globalErrorHandler = (err, req, res, next) => {
   if (error.name === "ValidationError") error = handleValidationErrorDB(error);
   
   // Handle AI errors (Axios/OpenAI-like + Gemini/Google Generative AI)
+  // IMPORTANT: Do NOT classify AI errors solely by message text (e.g. "google"),
+  // otherwise non-AI operational errors containing these words get misclassified.
   if (
     error.isAxiosError ||
     error.type === "invalid_request_error" ||
     error?.name === "GoogleGenerativeAI" ||
     error?.provider === "google" ||
-    (typeof error?.status === 'number') ||
-    /gemini|generative ai|google/i.test(String(error?.message || ""))
+    (typeof error?.status === "number" &&
+      // Gate status-based heuristics behind known AI/provider identifiers.
+      (error?.name === "GoogleGenerativeAI" || error?.provider === "google"))
   ) {
     error = handleAIError(error);
   }
@@ -185,12 +203,20 @@ const globalErrorHandler = (err, req, res, next) => {
       });
     } else {
       logger.error("ERROR 💥", error);
-      res.status(500).json({
+
+      // Standardize non-operational error payload shape for frontend reliability.
+      // Frontend may expect `errors` and `statusCode` consistently.
+      const statusCode = 500;
+
+      res.status(statusCode).json({
         success: false,
         status: "error",
+        statusCode,
         message: "Something went very wrong!",
+        errors: {},
       });
     }
+
   }
 };
 

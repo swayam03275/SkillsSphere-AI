@@ -11,9 +11,34 @@ export default function registerChatHandler(io, socket) {
       return;
     }
 
+    // Validate payload
+    if (typeof message !== "string" || message.trim().length === 0) {
+      socket.emit("error", { message: "Message must be a non-empty string" });
+      return;
+    }
+
+    if (message.length > 2000) {
+      socket.emit("error", { message: "Message is too long (maximum 2000 characters)" });
+      return;
+    }
+
+    // Sanitize HTML/XSS tags to protect clients
+    const cleanMessage = message
+      .trim()
+      .replace(/[&<>"']/g, (char) => {
+        const entityMap = {
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#x27;",
+        };
+        return entityMap[char] || char;
+      });
+
     const msgObj = {
       sender: socket.data.user,
-      message,
+      message: cleanMessage,
       timestamp: new Date().toISOString(),
     };
 
@@ -33,6 +58,11 @@ export default function registerChatHandler(io, socket) {
       socket.emit("unauthorized", {
         message: "Cross-classroom action detected",
       });
+      return;
+    }
+
+    if (typeof isRaised !== "boolean") {
+      socket.emit("error", { message: "isRaised must be a boolean value" });
       return;
     }
 

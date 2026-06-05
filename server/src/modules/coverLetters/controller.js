@@ -10,11 +10,11 @@ import AppError from "../../utils/AppError.js";
  */
 export const getCoverLetters = asyncHandler(async (req, res, next) => {
   const userId = req.user._id || req.user.id;
-  const page = Math.max(1, parseInt(req.query.page, 10) || 1);
-  const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 10));
+  const page = Math.max(1, parseInt(req.query.page) || 1);
+  const limit = Math.min(20, parseInt(req.query.limit) || 10);
   const skip = (page - 1) * limit;
 
-  const [coverLetters, totalCount] = await Promise.all([
+  const [coverLetters, total] = await Promise.all([
     CoverLetter.find({ user: userId })
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -22,18 +22,18 @@ export const getCoverLetters = asyncHandler(async (req, res, next) => {
       .lean(),
     CoverLetter.countDocuments({ user: userId })
   ]);
-  
-res.status(200).json({
-  success: true,
-  count: coverLetters.length,
-  data: coverLetters,
-  pagination: {
-    total: totalCount,
-    page,
-    limit,
-    totalPages: Math.ceil(totalCount / limit),
-  },
-});
+
+  res.status(200).json({
+    success: true,
+    count: coverLetters.length,
+    data: coverLetters,
+    pagination: {
+      page,
+      limit,
+      total,
+      pages: Math.ceil(total / limit)
+    }
+  });
 });
 /**
  * @desc    Get single cover letter by ID

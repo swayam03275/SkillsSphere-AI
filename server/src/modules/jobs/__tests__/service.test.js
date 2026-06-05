@@ -160,7 +160,9 @@ describe("Job Service", () => {
       ];
 
       const mockLimitFn = mock.fn(async () => mockJobs);
+      const mockSortFn = mock.fn(() => ({ limit: mockLimitFn }));
       mock.method(JobPosting, "find", () => ({
+        sort: mockSortFn,
         limit: mockLimitFn
       }));
 
@@ -188,6 +190,187 @@ describe("Job Service", () => {
       assert.equal(result.jobs.length, 1);
       assert.equal(result.jobs[0].matchScore, 85);
       assert.equal(result.jobs[0].relevanceInsights, "Great match");
+    });
+
+    it("should sort recommendations by matchScore (default/score) descending and limit results", async () => {
+      const mockUser = { _id: new mongoose.Types.ObjectId() };
+      const mockResume = {
+        _id: "resume123",
+        skills: ["React"],
+        keywords: ["Developer"]
+      };
+
+      const mockQuery = {
+        select: mock.fn(() => mockQuery),
+        lean: mock.fn(async () => mockResume)
+      };
+      mock.method(Resume, "findOne", () => mockQuery);
+
+      const mockJobs = [
+        { _id: "job1", title: "Job 1", salary: { max: 100 }, createdAt: new Date("2026-06-01"), _doc: { _id: "job1", title: "Job 1", salary: { max: 100 }, createdAt: new Date("2026-06-01") } },
+        { _id: "job2", title: "Job 2", salary: { max: 200 }, createdAt: new Date("2026-06-03"), _doc: { _id: "job2", title: "Job 2", salary: { max: 200 }, createdAt: new Date("2026-06-03") } },
+        { _id: "job3", title: "Job 3", salary: { max: 150 }, createdAt: new Date("2026-06-02"), _doc: { _id: "job3", title: "Job 3", salary: { max: 150 }, createdAt: new Date("2026-06-02") } }
+      ];
+
+      const mockLimitFn = mock.fn(async () => mockJobs);
+      const mockSortFn = mock.fn(() => ({ limit: mockLimitFn }));
+      mock.method(JobPosting, "find", () => ({
+        sort: mockSortFn,
+        limit: mockLimitFn
+      }));
+
+      const mockMatchResult = {
+        recommendations: [
+          { job: "job1", score: 70 },
+          { job: "job2", score: 95 },
+          { job: "job3", score: 85 }
+        ]
+      };
+      mock.method(matchingService, "evaluateMatches", async () => mockMatchResult);
+      mock.method(matchingService, "getLatestRecommendations", async () => null);
+
+      // Verify default sorting by score and limiting to 2
+      const result = await jobService.getJobRecommendations(mockUser, { sortBy: "score", limit: 2 });
+      assert.equal(result.success, true);
+      assert.equal(result.jobs.length, 2);
+      assert.equal(result.jobs[0].title, "Job 2"); // score 95
+      assert.equal(result.jobs[1].title, "Job 3"); // score 85
+    });
+
+    it("should sort recommendations by highest salary descending when sortBy: 'salary' is passed", async () => {
+      const mockUser = { _id: new mongoose.Types.ObjectId() };
+      const mockResume = {
+        _id: "resume123",
+        skills: ["React"],
+        keywords: ["Developer"]
+      };
+
+      const mockQuery = {
+        select: mock.fn(() => mockQuery),
+        lean: mock.fn(async () => mockResume)
+      };
+      mock.method(Resume, "findOne", () => mockQuery);
+
+      const mockJobs = [
+        { _id: "job1", title: "Job 1", salary: { max: 100 }, createdAt: new Date("2026-06-01"), _doc: { _id: "job1", title: "Job 1", salary: { max: 100 }, createdAt: new Date("2026-06-01") } },
+        { _id: "job2", title: "Job 2", salary: { max: 200 }, createdAt: new Date("2026-06-03"), _doc: { _id: "job2", title: "Job 2", salary: { max: 200 }, createdAt: new Date("2026-06-03") } },
+        { _id: "job3", title: "Job 3", salary: { max: 150 }, createdAt: new Date("2026-06-02"), _doc: { _id: "job3", title: "Job 3", salary: { max: 150 }, createdAt: new Date("2026-06-02") } }
+      ];
+
+      const mockLimitFn = mock.fn(async () => mockJobs);
+      const mockSortFn = mock.fn(() => ({ limit: mockLimitFn }));
+      mock.method(JobPosting, "find", () => ({
+        sort: mockSortFn,
+        limit: mockLimitFn
+      }));
+
+      const mockMatchResult = {
+        recommendations: [
+          { job: "job1", score: 70 },
+          { job: "job2", score: 95 },
+          { job: "job3", score: 85 }
+        ]
+      };
+      mock.method(matchingService, "evaluateMatches", async () => mockMatchResult);
+      mock.method(matchingService, "getLatestRecommendations", async () => null);
+
+      const result = await jobService.getJobRecommendations(mockUser, { sortBy: "salary" });
+      assert.equal(result.success, true);
+      assert.equal(result.jobs.length, 3);
+      assert.equal(result.jobs[0].title, "Job 2"); // salary max 200
+      assert.equal(result.jobs[1].title, "Job 3"); // salary max 150
+      assert.equal(result.jobs[2].title, "Job 1"); // salary max 100
+      // Check MongoDB sort was called with {"salary.max": -1}
+      assert.equal(mockSortFn.mock.calls.length, 1);
+      assert.deepEqual(mockSortFn.mock.calls[0].arguments[0], { "salary.max": -1 });
+    });
+
+    it("should sort recommendations by posting date descending when sortBy: 'date' is passed", async () => {
+      const mockUser = { _id: new mongoose.Types.ObjectId() };
+      const mockResume = {
+        _id: "resume123",
+        skills: ["React"],
+        keywords: ["Developer"]
+      };
+
+      const mockQuery = {
+        select: mock.fn(() => mockQuery),
+        lean: mock.fn(async () => mockResume)
+      };
+      mock.method(Resume, "findOne", () => mockQuery);
+
+      const mockJobs = [
+        { _id: "job1", title: "Job 1", salary: { max: 100 }, createdAt: new Date("2026-06-01"), _doc: { _id: "job1", title: "Job 1", salary: { max: 100 }, createdAt: new Date("2026-06-01") } },
+        { _id: "job2", title: "Job 2", salary: { max: 200 }, createdAt: new Date("2026-06-03"), _doc: { _id: "job2", title: "Job 2", salary: { max: 200 }, createdAt: new Date("2026-06-03") } },
+        { _id: "job3", title: "Job 3", salary: { max: 150 }, createdAt: new Date("2026-06-02"), _doc: { _id: "job3", title: "Job 3", salary: { max: 150 }, createdAt: new Date("2026-06-02") } }
+      ];
+
+      const mockLimitFn = mock.fn(async () => mockJobs);
+      const mockSortFn = mock.fn(() => ({ limit: mockLimitFn }));
+      mock.method(JobPosting, "find", () => ({
+        sort: mockSortFn,
+        limit: mockLimitFn
+      }));
+
+      const mockMatchResult = {
+        recommendations: [
+          { job: "job1", score: 70 },
+          { job: "job2", score: 95 },
+          { job: "job3", score: 85 }
+        ]
+      };
+      mock.method(matchingService, "evaluateMatches", async () => mockMatchResult);
+      mock.method(matchingService, "getLatestRecommendations", async () => null);
+
+      const result = await jobService.getJobRecommendations(mockUser, { sortBy: "date" });
+      assert.equal(result.success, true);
+      assert.equal(result.jobs.length, 3);
+      assert.equal(result.jobs[0].title, "Job 2"); // createdAt 2026-06-03
+      assert.equal(result.jobs[1].title, "Job 3"); // createdAt 2026-06-02
+      assert.equal(result.jobs[2].title, "Job 1"); // createdAt 2026-06-01
+      // Check MongoDB sort was called with {createdAt: -1}
+      assert.equal(mockSortFn.mock.calls.length, 1);
+      assert.deepEqual(mockSortFn.mock.calls[0].arguments[0], { createdAt: -1 });
+    });
+
+    it("should cap the recommendation limit at 50 if a larger limit is requested", async () => {
+      const mockUser = { _id: new mongoose.Types.ObjectId() };
+      const mockResume = {
+        _id: "resume123",
+        skills: ["React"],
+        keywords: ["Developer"]
+      };
+
+      const mockQuery = {
+        select: mock.fn(() => mockQuery),
+        lean: mock.fn(async () => mockResume)
+      };
+      mock.method(Resume, "findOne", () => mockQuery);
+
+      const mockJobs = Array.from({ length: 60 }, (_, i) => ({
+        _id: `job${i}`,
+        title: `Job ${i}`,
+        salary: { max: 100 },
+        createdAt: new Date("2026-06-01"),
+        _doc: { _id: `job${i}`, title: `Job ${i}`, salary: { max: 100 }, createdAt: new Date("2026-06-01") }
+      }));
+
+      const mockLimitFn = mock.fn(async () => mockJobs);
+      const mockSortFn = mock.fn(() => ({ limit: mockLimitFn }));
+      mock.method(JobPosting, "find", () => ({
+        sort: mockSortFn,
+        limit: mockLimitFn
+      }));
+
+      const mockMatchResult = {
+        recommendations: mockJobs.map((j, i) => ({ job: j._id, score: 50 + (i % 50) }))
+      };
+      mock.method(matchingService, "evaluateMatches", async () => mockMatchResult);
+      mock.method(matchingService, "getLatestRecommendations", async () => null);
+
+      const result = await jobService.getJobRecommendations(mockUser, { limit: 100 });
+      assert.equal(result.success, true);
+      assert.equal(result.jobs.length, 50); // capped at 50
     });
   });
 

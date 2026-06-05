@@ -1,110 +1,351 @@
-# Proactive Recruitment & Job Application Workflow
+# Recruitment & Talent Discovery Workflow
 
-This document outlines the end-to-end recruitment pipeline within the SkillsSphere-AI platform. It bridges the Recruiter's proactive talent discovery tools with the Student's job application process, all powered by real-time WebSockets and an advanced AI scoring engine that evaluates candidates deterministically.
+## 1. Executive Summary & Domain Scope
+
+The **Recruitment & Talent Discovery** module serves as the primary B2B engine for the SkillsSphere-AI platform. It is explicitly designed to solve the "resume black hole" problem by reversing the traditional job board paradigm: instead of waiting for candidates to apply, recruiters proactively query an indexed, AI-scored database of opted-in student profiles. By integrating deep semantic search, ATS evaluation history, and real-time Socket.IO invitations, the module accelerates the sourcing pipeline from weeks to seconds.
+
+### Core Problem Addressed
+Standard applicant tracking systems rely on exact keyword matching, which frequently discards highly qualified candidates who use slightly different terminology (e.g., "frontend engineering" vs. "UI development"). Furthermore, recruiters waste countless hours manually screening resumes. This module introduces the **AI Talent Finder**, which leverages vector embeddings and semantic similarity scoring to uncover hidden talent, while exposing the candidate's historical AI interview and resume analysis scores to provide a holistic measure of competence.
+
+### Target User Personas
+- **Recruiters / Hiring Managers**: Need a high-fidelity search interface, transparent candidate scoring, and the ability to instantly trigger application invitations.
+- **Candidates (Students)**: Need a passive, privacy-first way to be discovered by employers based purely on merit (verified skills and AI evaluation scores) without actively applying.
+
+### High-Level Capability Matrix
+**What the Module Does:**
+- **Semantic Talent Discovery**: Enables searching the entire candidate database using natural language queries, technical specializations, graduation years, and ATS score minimums.
+- **Dynamic Scorecards**: Generates a real-time "Match Scorecard" computing the compatibility between a candidate's resume and a recruiter's specific active job posting.
+- **Proactive Outreach**: Allows recruiters to send one-click invitations that trigger real-time, in-app notifications and emails to the candidate.
+- **Privacy-First Indexing**: Strictly enforces opt-in policies; candidates who disable discovery or set their profile to private are hard-filtered from all recruiter aggregations.
+
+**What the Module Deliberately Avoids:**
+- **Automated Rejections**: The AI matching pipeline provides recommendations and percentage scores, but it intentionally does not auto-reject candidates. All final outreach decisions remain with the human recruiter.
+- **Direct Messaging**: To prevent spam, recruiters cannot directly chat with candidates until the candidate accepts an application invitation.
 
 ---
 
-## 1. High-Level Architecture Overview
+## 2. Comprehensive Architecture & Sequence Diagrams
 
-The Recruitment module flips the traditional job board model. Rather than posting a job and waiting for applicants to organically discover it, Recruiters are empowered to proactively discover candidates via Semantic Search over the global `Resume` collection.
+The architecture separates the search index (MongoDB text and array indexing) from the heavy semantic matching pipeline (Hugging Face / Gemini API).
 
-When a candidate is invited, they receive a real-time `Socket.io` notification. They can then generate an AI-tailored Cover Letter and apply. Finally, the `recruiterIntelligence` pipeline evaluates the application against the job requirements and assigns a deterministic Match Score, allowing the Recruiter to filter their applicant tracking system instantly.
-
----
-
-## 2. End-to-End Workflow & Sequence
-
-### Step 1: Job Posting & Talent Discovery
-
-1. **Job Creation**: The Recruiter navigates to `RecruiterJobsPage.jsx` and creates a new `JobPosting`. This schema contains required skills (automatically lowercased for indexing), structured salary ranges (validated ensuring `max >= min`), and required experience levels.
-2. **Talent Finder Interface**: The Recruiter navigates to `TalentFinderPage.jsx` to search for candidates matching this new job.
-3. **The Aggregation Pipeline**: When a search is triggered, the backend `recruiter/controller.js` runs a complex MongoDB Aggregation Pipeline:
-   - It utilizes a `$text` index search (yielding a `$meta textScore`) to rank resumes based on query relevance.
-   - It applies a `$match` stage with regex operators to filter by specific required technical skills.
-   - It extracts the candidate's graduation year from the `education` array to filter by experience level.
-
-**Specialization Mapping**:
-The UI simplifies searches by mapping broad domains to backend keyword arrays:
-- *Frontend*: `react, vue, angular, javascript, typescript, html, css, next.js`
-- *Backend*: `node.js, express, django, flask, java, go, rust`
-- *DevOps*: `docker, kubernetes, aws, azure, ci/cd, terraform`
-
-### Step 2: The Invitation (Real-Time Sync)
-
-When a Recruiter identifies a promising candidate, they click "Invite to Apply". This triggers a real-time notification flow.
+### End-to-End User Flow (Talent Discovery)
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant Recruiter UI
-    participant Backend (recruiter/controller)
-    participant Socket.IO Server
-    participant DB (Notification Collection)
-    participant Student UI
-
-    Recruiter UI->>Backend: POST /api/recruiter/invite-candidate (studentId, jobId)
+    actor Recruiter as Recruiter
+    participant UI as React Client (TalentFinder.jsx)
+    participant BE as Node.js API Gateway
+    participant DB as MongoDB (Resumes/Users)
+    participant AI as Semantic Pipeline (HF API)
+    actor Candidate as Candidate
     
-    Note over Backend: Validate no existing invite exists
-    Backend->>DB: Check for duplicate Notification
-    Backend->>DB: Create Notification { type: "job-update", user: studentId, ... }
+    Recruiter->>UI: Navigates to /recruiter/talent-finder
+    Recruiter->>UI: Enters search criteria (e.g., "Senior React Developer, >80 ATS")
+    UI->>BE: GET /api/recruiter/talent-finder?query=React&atsMin=80
     
-    Note over Backend: Dispatch real-time alert
-    Backend->>Socket.IO: emit("new-notification", payload) targeted to room "user_{studentId}"
+    Note over BE, DB: Phase 1: High-Speed Pre-filtering
+    BE->>DB: Aggregate active resumes matching criteria & opt-in status
+    DB-->>BE: Returns top 50 candidate profiles
     
-    Socket.IO-->>Student UI: Receive Event via SocketNotificationListener.jsx
-    Student UI->>Student UI: Trigger UI Toaster & increment bell icon
-    Student UI->>Student UI: Display "You've been invited to apply!"
+    Note over BE: Phase 2: Lightweight Formatting
+    BE-->>UI: Returns paginated list of candidates
+    
+    Recruiter->>UI: Selects Candidate A & clicks "Match against Job X"
+    UI->>BE: POST /api/recruiter/match-candidate { candidateId, jobId }
+    
+    Note over BE, AI: Phase 3: Heavy Semantic Matching
+    BE->>DB: Fetch Candidate Resume Text & Job Description
+    BE->>AI: Trigger SemanticMatchEvaluator (Vector comparison)
+    AI-->>BE: Returns Cosine Similarity Score (e.g., 92%)
+    BE-->>UI: Renders detailed Match Scorecard
+    
+    Recruiter->>UI: Clicks "Invite to Apply"
+    UI->>BE: POST /api/recruiter/invite-candidate
+    
+    Note over BE: Phase 4: Notification Orchestration
+    BE->>DB: Create JobApplication record (status: 'invited')
+    BE->>Candidate: Socket.io emit("new-notification", InvitationPayload)
+    BE->>Candidate: Trigger transactional email (SendGrid/SMTP)
 ```
 
-### Step 3: The Application & Cover Letter Generation
+### Component Hierarchy & Service Boundaries
 
-1. The student clicks the notification and is routed to the detailed Job View.
-2. **AI Cover Letter Generation**: Before finalizing the application, the student can launch the `CoverLetterModal.jsx`.
-   - The frontend calls `POST /api/cover-letters/generate`.
-   - The `coverLetters/service.js` backend service retrieves the specific `JobPosting` text and the student's `Resume` text.
-   - An LLM prompt merges these two data sources, instructing the AI to output a highly tailored, professional cover letter highlighting exactly how the student's projects align with the job's required skills.
-3. The student reviews, edits, and submits the application, generating a `JobApplication` document.
+```mermaid
+graph TD
+    subgraph Frontend [React Client Layer]
+        TF[TalentFinderDashboard.jsx] --> SF[SearchFilters.jsx]
+        TF --> CG[CandidateGrid.jsx]
+        CG --> CC[CandidateCard.jsx]
+        CC --> MM[MatchModal.jsx]
+    end
 
-### Step 4: The Intelligence Matching Pipeline
+    subgraph Backend API [Node.js Server Layer]
+        RC[RecruiterController.js] --> TS[TalentService.js]
+        TS --> EM[EvaluatorManager.js]
+        TS --> NM[NotificationService.js]
+    end
 
-The moment the `JobApplication` is created, the system must grade the candidate. This is handled by the `recruiterIntelligence/service.js` module.
+    subgraph Data & AI [Infrastructure Layer]
+        DB[(MongoDB)] 
+        AI[Hugging Face / Gemini API]
+    end
 
-The system calculates an aggregated Match Score (0-100) using a 5-pillar formula:
-
-`Final Score = (ATS × 0.20) + (Skills × 0.35) + (Projects × 0.25) + (Career × 0.10) + (Contributions × 0.10)`
-
-- **ATS (20%)**: Checks if the resume formatting and keyword density pass standard ATS filters.
-- **Skills (35%)**: Direct intersection check between `JobPosting.skills` and `Resume.skills`.
-- **Projects (25%)**: Semantic evaluation of project descriptions against the job role.
-- **Career (10%) & Contributions (10%)**: These metrics are uniquely parsed dynamically from the student's `LearningProgress` profile (e.g., their historical Mock Interview scores and completed Roadmaps).
-
-### Step 5: Recruiter Review & Badging
-
-The Recruiter opens `RecruiterApplicantsPage.jsx` to view the incoming applications. The UI parses the `matchCategory` returned by the AI and attaches semantic color-coded badges to instantly draw attention to top candidates:
-
-- **Excellent Match (Score ≥ 85)**: Highlighted in green. These are fast-tracked candidates.
-- **Moderate Match (Score ≥ 70)**: Highlighted in blue. Good candidates missing a minor skill.
-- **Growth Potential (Score ≥ 50)**: Highlighted in yellow. Lacking experience but showing high `Contributions` scores.
-- **Weak Alignment (Score < 50)**: Highlighted in red. Does not meet minimum ATS or skill thresholds.
+    TF -- "GET /api/recruiter/talent-finder" --> RC
+    MM -- "POST /api/recruiter/match-candidate" --> RC
+    RC --> DB
+    EM --> AI
+```
 
 ---
 
-## 3. Key Files & Components Reference
+## 3. Detailed Data Models & Schemas
 
-| File Path | Responsibility |
-| :--- | :--- |
-| `client/src/modules/recruiter-jobs/pages/TalentFinderPage.jsx` | UI for the Semantic Search interface and manual triggering of the "Evaluate Match" action. |
-| `client/src/modules/recruiter-jobs/pages/RecruiterApplicantsPage.jsx` | The applicant tracking dashboard where recruiters view applications sorted by AI Match Score. |
-| `client/src/shared/components/SocketNotificationListener.jsx` | A global React context wrapper that mounts at the root of the app. It listens for `new-notification` socket events and triggers non-intrusive UI toasts. |
-| `client/src/shared/components/CoverLetterModal.jsx` | The UI interceptor allowing students to generate AI cover letters before applying. |
-| `server/src/modules/recruiter/controller.js` | Contains the massive MongoDB `$text` aggregation logic powering the Talent Finder search. |
-| `server/src/modules/recruiterIntelligence/service.js` | The mathematical AI engine that calculates the Match Score based on the 5-pillar formula and generates actionable "Hiring Signals". |
-| `server/src/modules/coverLetters/service.js` | The backend service responsible for merging a Resume and a Job Posting via an LLM to output a tailored cover letter. |
+The recruitment workflow relies heavily on the `JobPosting` and `JobApplication` schemas, as well as complex aggregation pipelines targeting the `Resume` model.
+
+### MongoDB Schemas
+
+**Job Posting Model (`src/database/models/JobPosting.js`)**
+Represents a position opened by a recruiter. It requires detailed constraints to power the matching engine.
+
+```javascript
+const mongoose = require('mongoose');
+
+const jobPostingSchema = new mongoose.Schema({
+  recruiterId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User', 
+    required: true,
+    index: true
+  },
+  title: { type: String, required: true },
+  company: { type: String, required: true },
+  description: { type: String, required: true },
+  requirements: [{ type: String }],
+  skills: [{ type: String, index: true }], // Used for rapid exact-match filtering
+  location: { type: String },
+  salary: {
+    min: { type: Number },
+    max: { type: Number },
+    currency: { type: String, default: 'USD' }
+  },
+  status: { 
+    type: String, 
+    enum: ['draft', 'published', 'closed'], 
+    default: 'published',
+    index: true
+  },
+  metrics: {
+    views: { type: Number, default: 0 },
+    applications: { type: Number, default: 0 },
+    invitationsSent: { type: Number, default: 0 }
+  }
+}, { timestamps: true });
+
+// Text index to support full-text search across titles and descriptions
+jobPostingSchema.index({ title: 'text', description: 'text', company: 'text' });
+
+module.exports = mongoose.model('JobPosting', jobPostingSchema);
+```
+
+**Job Application Model (`src/database/models/JobApplication.js`)**
+The pivot table connecting a Candidate (via their Resume) to a Job Posting. It tracks the bidirectional lifecycle of hiring.
+
+```javascript
+const mongoose = require('mongoose');
+
+const jobApplicationSchema = new mongoose.Schema({
+  jobId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'JobPosting', 
+    required: true,
+    index: true
+  },
+  candidateId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User', 
+    required: true,
+    index: true
+  },
+  resumeId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Resume', 
+    required: true 
+  },
+  status: { 
+    type: String, 
+    enum: [
+      'invited',       // Recruiter initiated
+      'applied',       // Candidate initiated
+      'reviewing',     // Recruiter is reviewing
+      'interviewing',  // Advanced to interview stage
+      'rejected',      // Not selected
+      'withdrawn',     // Candidate withdrew
+      'hired'          // Successful placement
+    ], 
+    default: 'applied'
+  },
+  matchScore: { 
+    type: Number,      // Stored scorecard result to prevent re-computation
+    default: null 
+  },
+  timeline: [{
+    status: { type: String },
+    updatedAt: { type: Date, default: Date.now },
+    note: { type: String } // Internal recruiter notes
+  }]
+}, { timestamps: true });
+
+// Ensure a candidate cannot apply to or be invited to the same job twice concurrently
+jobApplicationSchema.index({ jobId: 1, candidateId: 1 }, { unique: true });
+
+module.exports = mongoose.model('JobApplication', jobApplicationSchema);
+```
+
+### The Pre-Filtering Aggregation Pipeline
+To rapidly search millions of potential candidates, the backend utilizes a multi-stage MongoDB aggregation pipeline.
+
+```javascript
+// Inside TalentService.js
+const candidates = await Resume.aggregate([
+  { 
+    $match: { 
+      isActive: true,
+      "evaluation.aggregatedScore": { $gte: atsMin || 0 }
+    } 
+  },
+  {
+    $lookup: {
+      from: 'users',
+      localField: 'user',
+      foreignField: '_id',
+      as: 'userData'
+    }
+  },
+  { $unwind: "$userData" },
+  { 
+    $match: { 
+      "userData.settings.isDiscoverable": true,
+      "userData.role": "student"
+    } 
+  },
+  // Apply text search if query provided
+  ...(query ? [{ $match: { $text: { $search: query } } }] : []),
+  { $sort: { "evaluation.aggregatedScore": -1 } },
+  { $skip: (page - 1) * limit },
+  { $limit: limit }
+]);
+```
 
 ---
 
-## 4. Security & Edge Cases
+## 4. API Endpoints & State Management
 
-- **Duplicate Invitations**: The backend controller actively checks the `Notification` collection to ensure a Recruiter cannot spam a candidate with multiple invitations for the same `JobPosting`.
-- **Socket Rooms**: Socket.io notifications are highly targeted. When a user connects, their socket is forced to join a room named `user_{userId}`. The invitation emit is sent *only* to this room, preventing other connected users from intercepting the payload.
-- **Missing Data Fallbacks**: If a student does not have a fully populated `LearningProgress` document, the AI scoring engine safely defaults the Career and Contributions metrics to baseline values to prevent `NaN` errors during the final score calculation.
+### REST Endpoints
+
+| Method | Endpoint | Auth Level | Purpose | Request Payload | Response |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/api/recruiter/talent-finder` | Recruiter | Searches the global resume index. | `?query=react&atsMin=80&page=1` | `{ candidates: [...], pagination: {...} }` |
+| `POST` | `/api/recruiter/match-candidate` | Recruiter | Triggers the heavy semantic pipeline to match a candidate against a specific job. | `{ candidateId, jobId }` | `{ score: 92, missingSkills: [...], strengths: [...] }` |
+| `POST` | `/api/recruiter/invite-candidate` | Recruiter | Creates an 'invited' application and triggers notifications. | `{ candidateId, jobId }` | `{ success: true, applicationId }` |
+| `GET` | `/api/recruiter/jobs/:jobId/applicants` | Recruiter | Lists all applications/invitations for a specific job posting. | `?status=applied` | `[{ applicationData, candidatePreview }]` |
+| `PATCH` | `/api/recruiter/applications/:id/status`| Recruiter | Advances a candidate through the hiring pipeline (e.g., 'reviewing' -> 'interviewing'). | `{ status: "interviewing", note: "Passed tech screen" }` | `{ success: true }` |
+
+### Redux State Management
+The recruiter dashboard relies heavily on Redux to cache search results and preserve filter states when navigating between candidate profiles and the main grid.
+
+```javascript
+// client/src/features/recruiter/recruiterSlice.js
+
+const initialState = {
+  talentSearch: {
+    query: '',
+    atsMin: 0,
+    specializations: [],
+    results: [],
+    loading: false,
+    page: 1,
+    totalPages: 1
+  },
+  activeJobs: [], // Cached list of the recruiter's open roles for dropdowns
+  selectedCandidateInfo: null
+};
+
+export const recruiterSlice = createSlice({
+  name: 'recruiter',
+  initialState,
+  reducers: {
+    setSearchFilters: (state, action) => {
+      state.talentSearch = { ...state.talentSearch, ...action.payload };
+    },
+    setSearchResults: (state, action) => {
+      state.talentSearch.results = action.payload.candidates;
+      state.talentSearch.totalPages = action.payload.pagination.totalPages;
+    },
+    clearSearch: (state) => {
+      state.talentSearch = initialState.talentSearch;
+    }
+  }
+});
+```
+
+---
+
+## 5. Security, Edge Cases & Error Handling
+
+### Data Privacy & Discoverability Boundaries
+- **Strict Opt-In Enforcement**: The aggregation pipeline enforces `"userData.settings.isDiscoverable": true`. Even if a user has a perfect 100 ATS score, they will be entirely invisible to recruiters if this toggle is off.
+- **Data Minimization**: The `/api/recruiter/talent-finder` endpoint explicitly strips out sensitive personal identifiers (like exact street addresses or phone numbers if parsed) until the candidate explicitly accepts the invitation to apply. It returns a sanitized DTO (Data Transfer Object) containing only skills, education, ATS metrics, and the first name / last initial.
+
+### Mitigating Semantic Match Abuse (Rate Limiting)
+The semantic match pipeline (`/api/recruiter/match-candidate`) calls out to external LLM/Embedding APIs (Hugging Face or Gemini). This operation is computationally expensive.
+- **API Query Complexity Limits**: The server utilizes `express-rate-limit` specifically scoped to this route, restricting recruiters to 50 deep semantic matches per hour.
+- **Score Caching**: Once a candidate is matched against `jobId_X`, the `matchScore` is cached in a Redis layer. Subsequent identical requests return the cached result instantly, saving API tokens.
+
+### Preventing Invitation Spam
+To prevent recruiters from mass-inviting the entire database, the system enforces a cooldown mechanism.
+- A recruiter can only have a maximum of 100 "pending" invitations across all jobs at any given time.
+- A candidate cannot receive a new invitation from the same company within a 30-day window if they ignored the previous one.
+- This logic is handled inside a MongoDB transaction block during the `invite-candidate` execution to prevent race conditions.
+
+---
+
+## 6. Component-Level Implementation Specs
+
+### `TalentFinderDashboard.jsx` (The Search Hub)
+This component acts as the primary layout for the Recruiter interface. It orchestrates the search bar, the filter sidebar, and the pagination logic.
+
+- **Dependencies**: Relies heavily on `useDispatch` and `useSelector` to pull filter states from Redux.
+- **Optimization**: Uses `lodash/debounce` on the main search input. It delays firing the `fetchCandidates` thunk until the user has stopped typing for 500ms, drastically reducing load on the MongoDB text indexes.
+
+```javascript
+// Search debounce implementation in TalentFinderDashboard.jsx
+const dispatch = useDispatch();
+const filters = useSelector(state => state.recruiter.talentSearch);
+
+const debouncedSearch = useCallback(
+  debounce((query) => {
+    dispatch(fetchTalentSearch({ ...filters, query, page: 1 }));
+  }, 500),
+  [filters]
+);
+
+const handleQueryChange = (e) => {
+  const query = e.target.value;
+  dispatch(setSearchFilters({ query })); // Updates local UI instantly
+  debouncedSearch(query); // Triggers network request after delay
+};
+```
+
+### `CandidateCard.jsx` (The Profile Summary)
+A highly optimized, memoized component that renders the candidate's core metrics. It uses vibrant conditional CSS classes to color-code ATS scores (e.g., green for >80, yellow for 60-79).
+- Uses `React.memo` because the parent `CandidateGrid` might render 50 of these at once. Re-rendering all 50 when a single modal opens is a massive performance drain.
+
+### `MatchModal.jsx` (The Pipeline Trigger)
+This component mounts when a recruiter clicks "Match".
+1. It requests the recruiter's active job postings (`GET /api/jobs/recruiter`).
+2. Renders a dropdown allowing the recruiter to select a specific job.
+3. Upon selection, it fires the `match-candidate` endpoint.
+4. Renders a loading skeleton (simulating deep AI thought) for ~2 seconds.
+5. Displays the resulting scorecard using a circular SVG progress bar for the match percentage, alongside a two-column list of "Strengths" (matched skills) and "Gaps" (missing skills).
+6. Provides the final "Send Invitation" call-to-action button, which triggers the Socket.IO notification payload to the candidate.

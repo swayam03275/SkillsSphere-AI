@@ -57,6 +57,13 @@ it in `server/src/config/redis.js`.
 4. Search the repository history and current tree for the exposed value.
 5. Notify maintainers if the secret may have been used by an unauthorized party.
 
+## Strict Validation & Rate Limiting
+
+- **Classrooms/Sockets**: All WebRTC and socket connections require strict authentication token validation to prevent unauthorized entry.
+- **OAuth & Redirects**: All OAuth states are strictly validated. Open redirects are actively blocked.
+- **Webhooks**: A strict webhook signing framework is required to verify incoming payloads.
+- **Rate Limits**: Complex GraphQL or API queries are gated behind API Query Complexity rate limiters.
+
 ## Review checklist
 
 - `.env.example` contains placeholders only.

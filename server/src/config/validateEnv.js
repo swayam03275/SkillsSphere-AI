@@ -2,6 +2,7 @@ const REQUIRED_ENV_VARS = [
   { name: "JWT_SECRET", description: "Secret key for signing JWT tokens" },
   { name: "GOOGLE_CLIENT_ID", description: "Google Client ID for OAuth authentication" },
   { name: "FILE_URL_SIGNING_SECRET", description: "Secret key for signing protected file URLs" },
+  { name: "ENCRYPTION_KEY", description: "AES-256 key for encrypting user PII at rest" },
 ];
 
 const WEAK_VALUES = new Set([
@@ -294,6 +295,52 @@ export const validateFileSigningSecret = (env = process.env) => {
   return { errors, warnings };
 };
 
+export const validateEncryptionKey = (env = process.env) => {
+  const errors = [];
+  const warnings = [];
+  const production = isProduction(env);
+  const value = env.ENCRYPTION_KEY;
+
+  if (isBlank(value)) {
+    // Already caught by REQUIRED_ENV_VARS; skip duplicate messaging.
+    return { errors, warnings };
+  }
+
+  const key = String(value);
+
+  if (hasPlaceholderValue(key)) {
+    addIssue(
+      production ? errors : warnings,
+      "ENCRYPTION_KEY",
+      "must not use a weak, default, or placeholder value.",
+    );
+  }
+
+  if (production && key.length < 32) {
+    addIssue(errors, "ENCRYPTION_KEY", "must be at least 32 characters in production for AES-256 security.");
+  } else if (!production && key.length < 16) {
+    addIssue(warnings, "ENCRYPTION_KEY", "is short. Use a value of at least 32 characters before deploying.");
+  }
+
+  if (key === env.JWT_SECRET) {
+    addIssue(
+      production ? errors : warnings,
+      "ENCRYPTION_KEY",
+      "must not be the same as JWT_SECRET. Use a separate dedicated key for field-level encryption.",
+    );
+  }
+
+  if (key === env.FILE_URL_SIGNING_SECRET) {
+    addIssue(
+      production ? errors : warnings,
+      "ENCRYPTION_KEY",
+      "must not be the same as FILE_URL_SIGNING_SECRET. Each secret must be unique.",
+    );
+  }
+
+  return { errors, warnings };
+};
+
 export const validateExternalApiKeys = (env = process.env) => {
   const errors = [];
   const warnings = [];
@@ -373,6 +420,7 @@ export const collectEnvValidationIssues = (env = process.env) => {
   const checks = [
     validateRequiredEnv,
     validateJwtSecret,
+    validateEncryptionKey,
     validateDatabaseUrl,
     validateEmailConfig,
     validateExternalApiKeys,

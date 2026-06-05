@@ -8,11 +8,15 @@ import {
   removeAvatar,
   getPreferences,
   updatePreferences,
+  onboardUser,
 } from "./controller.js";
 
 const router = express.Router();
 
 router.use(protect);
+
+// 🚀 Onboard User
+router.put("/onboard", onboardUser);
 
 router.get("/preferences", getPreferences);
 router.put("/preferences", updatePreferences);

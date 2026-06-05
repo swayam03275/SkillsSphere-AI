@@ -9,7 +9,9 @@ import {
 import Button from "../../shared/components/Button";
 import Input from "../../shared/components/Input";
 import { useToast } from "../../shared/components";
-import { ShieldCheck, ArrowLeft, CheckCircle } from "lucide-react";
+import Navbar from "../../shared/components/Navbar";
+import Footer from "../../shared/components/Footer";
+import { ShieldCheck, ArrowLeft } from "lucide-react";
 import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 
 
@@ -41,7 +43,6 @@ const VerifyEmail = () => {
   const [emailError, setEmailError] = useState("");
   const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(""));
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
   const [countdown, setCountdown] = useState(COOLDOWN_SECONDS);
   const [canResend, setCanResend] = useState(false);
 
@@ -164,8 +165,8 @@ const VerifyEmail = () => {
     );
 
     if (verifyEmail.fulfilled.match(resultAction)) {
-      setSuccess(true);
-      showSuccess("Email verified successfully. You can now log in.");
+      showSuccess("Email verified successfully. Let's complete your profile.");
+      navigate("/dashboard", { replace: true });
     } else {
       const message = resultAction.payload || "Email verification failed";
       setError(message);
@@ -195,38 +196,19 @@ const VerifyEmail = () => {
   };
 
   return (
-    <div className="min-h-screen flex justify-center items-center bg-slate-50 dark:bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] overflow-hidden relative p-5 box-border">
-      <div className="relative z-10 w-full max-w-[420px]">
-        <div className="absolute w-[520px] h-[520px] bg-blue-400/45 dark:bg-blue-500/40 rounded-full blur-[140px] dark:blur-[120px] -top-[150px] -left-[150px] -z-10 animate-pulse"></div>
-        <div className="absolute w-[420px] h-[420px] bg-purple-400/45 dark:bg-purple-500/40 rounded-full blur-[140px] dark:blur-[120px] -bottom-[120px] -right-[120px] -z-10 animate-pulse"></div>
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] overflow-hidden relative">
+      <Navbar />
+      
+      <main className="flex-grow flex flex-col justify-center items-center px-3 py-16 sm:py-24 min-h-screen relative z-10">
+        <div className="w-full max-w-[420px] relative">
+          <div className="absolute w-[520px] h-[520px] bg-blue-400/45 dark:bg-blue-500/40 rounded-full blur-[140px] dark:blur-[120px] -top-[150px] -left-[150px] -z-10 animate-pulse"></div>
+          <div className="absolute w-[420px] h-[420px] bg-purple-400/45 dark:bg-purple-500/40 rounded-full blur-[140px] dark:blur-[120px] -bottom-[120px] -right-[120px] -z-10 animate-pulse"></div>
 
-        {success ? (
-          <div className="p-6 sm:p-[30px] rounded-[20px] backdrop-blur-[20px] bg-white/95 dark:bg-slate-900/70 border border-slate-200 dark:border-white/10 shadow-[0_20px_60px_rgba(15,23,42,0.14)] dark:shadow-[0_0_40px_rgba(0,0,0,0.6)] animate-[fadeIn_0.8s_ease] text-center">
-            <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
-                <CheckCircle className="w-8 h-8 text-green-400" />
-              </div>
-            </div>
-            <h2 className="text-gray-900 dark:text-white text-2xl font-semibold mb-2">
-              Email Verified
-            </h2>
-            <p className="text-slate-600 dark:text-slate-400 text-sm mb-6">
-              Your email has been verified successfully. Log in to continue.
-            </p>
-            <Button
-              fullWidth
-              className="rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 border-none font-bold text-[15px] hover:scale-105 hover:shadow-[0_0_20px_rgba(59,130,246,0.6)] transition-all duration-300"
-              onClick={() => navigate("/login", { replace: true })}
-            >
-              Continue to Login
-            </Button>
-          </div>
-        ) : (
           <form
-            className="p-6 sm:p-[30px] rounded-[20px] backdrop-blur-[20px] bg-white/95 dark:bg-slate-900/70 border border-slate-200 dark:border-white/10 shadow-[0_20px_60px_rgba(15,23,42,0.14)] dark:shadow-[0_0_40px_rgba(0,0,0,0.6)] animate-[fadeIn_0.8s_ease]"
-            onSubmit={handleSubmit}
-            noValidate
-          >
+          className="p-6 sm:p-[30px] rounded-[20px] backdrop-blur-[20px] bg-white/95 dark:bg-slate-900/70 border border-slate-200 dark:border-white/10 shadow-[0_20px_60px_rgba(15,23,42,0.14)] dark:shadow-[0_0_40px_rgba(0,0,0,0.6)] animate-[fadeIn_0.8s_ease]"
+          onSubmit={handleSubmit}
+          noValidate
+        >
             <div className="flex justify-center mb-4">
               <div className="w-14 h-14 rounded-full bg-blue-500/20 flex items-center justify-center">
                 <ShieldCheck className="w-7 h-7 text-blue-400" />
@@ -330,8 +312,10 @@ const VerifyEmail = () => {
               </Link>
             </p>
           </form>
-        )}
-      </div>
+        </div>
+      </main>
+
+      <Footer />
     </div>
   );
 };

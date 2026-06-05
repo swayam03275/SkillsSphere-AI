@@ -75,47 +75,53 @@ const InterviewLobby = () => {
   }));
 
   return (
-    <div className="min-h-screen bg-bg-main text-text-main overflow-hidden relative pt-24">
-      {/* Premium Animated Backgrounds */}
-      <div className="pointer-events-none absolute -left-28 top-12 h-[500px] w-[500px] rounded-full bg-indigo-500/20 blur-[120px] dark:bg-indigo-600/15 animate-pulse" />
-      <div className="pointer-events-none absolute -right-24 top-1/4 h-[600px] w-[600px] rounded-full bg-violet-500/20 blur-[120px] dark:bg-violet-600/15 animate-pulse" style={{ animationDelay: "2s" }} />
-      <div className="pointer-events-none absolute bottom-0 left-1/3 h-[400px] w-[400px] rounded-full bg-emerald-500/20 blur-[120px] dark:bg-emerald-600/15" />
-
+    <div className="min-h-screen bg-gray-50/50 dark:bg-[#09090b] text-gray-900 dark:text-text-main font-sans pt-20 flex flex-col overflow-hidden relative">
       <Navbar />
 
-      <main className="relative z-10 pt-8 pb-12 max-w-[1200px] mx-auto px-4 sm:px-8 min-h-[calc(100vh-80px)] flex flex-col gap-10">
+      <main className="flex-grow flex flex-col items-center justify-start px-4 sm:px-6 lg:px-8 pb-12 animate-fade-in relative overflow-hidden w-full">
+        {/* Background glow effects */}
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+          <div className="absolute -top-[10%] -left-[5%] w-[40%] h-[40%] rounded-full bg-blue-100/40 dark:bg-blue-900/10 blur-[120px]" />
+          <div className="absolute top-[20%] -right-[5%] w-[35%] h-[35%] rounded-full bg-purple-100/40 dark:bg-purple-900/10 blur-[100px]" />
+          <div className="absolute top-[5%] right-[20%] w-[35%] h-[35%] rounded-full bg-teal-50/40 dark:bg-teal-900/10 blur-[100px]" />
+        </div>
+
+        <div className="w-full max-w-[1200px] relative z-10 flex flex-col gap-6">
         
-        {/* Floating Icons Background */}
-        <div className="absolute top-24 left-[2%] xl:-left-[5%] hidden lg:flex items-center justify-center w-16 h-16 bg-white dark:bg-surface rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.08)] dark:shadow-white/5 opacity-80 pointer-events-none z-0 hover:opacity-100 transition-opacity animate-[float_6s_ease-in-out_infinite]">
-          <Briefcase size={28} className="text-purple-500" />
-        </div>
-        <div className="absolute top-36 right-[2%] xl:-right-[5%] hidden lg:flex items-center justify-center w-16 h-16 bg-white dark:bg-surface rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.08)] dark:shadow-white/5 opacity-80 pointer-events-none z-0 hover:opacity-100 transition-opacity animate-[float_7s_ease-in-out_infinite_reverse]">
-          <Brain size={28} className="text-indigo-500" />
-        </div>
+        {/* Floating Icons Background (managed in hero section now) */}
 
-        {/* Back to Dashboard Link */}
-        <div className="-mt-4 mb-2 flex">
-          <Link 
-            to="/dashboard" 
-            className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
-          >
-            <ArrowLeft size={16} />
-            Back to Dashboard
-          </Link>
-        </div>
-
-        {/* Header Section */}
-        <header className="mb-8 text-center max-w-3xl mx-auto relative pt-4 animate-[fadeIn_0.8s_ease-out] z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-sm font-bold tracking-wide uppercase mb-4">
-            <Sparkles size={16} /> Cognitive Evaluation Engine
+          {/* Back to Dashboard Link */}
+          <div className="py-6">
+            <Link 
+              to="/dashboard" 
+              className="inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+            >
+              <ArrowLeft size={16} />
+              Back to Dashboard
+            </Link>
           </div>
-          <h1 className="text-5xl md:text-6xl font-black tracking-tight bg-gradient-to-br from-indigo-600 via-purple-600 to-emerald-500 bg-clip-text text-transparent mb-6 drop-shadow-sm leading-tight">
-            Mock Interview
-          </h1>
-          <p className="text-text-muted max-w-2xl mx-auto text-lg leading-relaxed font-medium">
-            Configure your simulator. The AI interviewer dynamically adapts its questions based on your real-time performance and chosen persona.
-          </p>
-        </header>
+
+          {/* Hero Section */}
+          <div className="text-center space-y-4 mb-10 relative">
+            <div className="hidden md:flex absolute top-4 left-4 xl:left-8 w-14 h-14 bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 rounded-2xl items-center justify-center shadow-sm transform -rotate-3 hover:rotate-0 transition-transform">
+               <Briefcase className="w-6 h-6 text-purple-600" />
+            </div>
+            <div className="hidden md:flex absolute top-8 right-4 xl:right-8 w-14 h-14 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-2xl items-center justify-center shadow-sm transform rotate-3 hover:rotate-0 transition-transform">
+               <Brain className="w-6 h-6 text-emerald-600" />
+            </div>
+
+            <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 shadow-sm text-[11px] font-bold text-purple-600 dark:text-purple-400 mx-auto tracking-wide uppercase">
+              <Sparkles size={12} className="text-purple-500" /> COGNITIVE EVALUATION ENGINE
+            </div>
+            
+            <h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight">
+              <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-teal-400 bg-clip-text text-transparent">Mock</span> Interview
+            </h1>
+            
+            <p className="text-gray-500 dark:text-gray-400 text-[15px] max-w-2xl mx-auto font-medium">
+              Configure your simulator. The AI interviewer dynamically adapts its questions based on your real-time performance and chosen persona.
+            </p>
+          </div>
 
         {error && (
           <div className="max-w-2xl mx-auto w-full bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 p-4 rounded-xl text-center backdrop-blur-md font-medium shadow-lg animate-[shake_0.5s_ease-in-out]">
@@ -227,10 +233,10 @@ const InterviewLobby = () => {
               </div>
             </div>
           </div>
-
+        </div>
         </div>
       </main>
-          <Footer />
+      <Footer />
     </div>
   );
 };

@@ -151,7 +151,7 @@ export default function SharedCodeEditor({ socket, roomId, userRole, initialCode
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-[#0b0f19] rounded-2xl overflow-hidden border border-slate-800 h-full relative">
+    <div className="w-full h-full flex flex-col bg-[#0b0f19] rounded-2xl overflow-hidden border border-slate-800 relative shadow-2xl">
       {/* Editor Header / Controls */}
       <div className="bg-slate-900 border-b border-slate-800 p-4 flex items-center justify-between z-10 flex-wrap gap-3">
         <div className="flex items-center space-x-2 text-indigo-400">
@@ -205,7 +205,7 @@ export default function SharedCodeEditor({ socket, roomId, userRole, initialCode
       </div>
 
       {/* Monaco Editor Container */}
-      <div className="flex-1 min-h-[400px] h-full relative">
+      <div className="flex-1 w-full relative min-h-0">
         <Editor
           height="100%"
           language={language}
