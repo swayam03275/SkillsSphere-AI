@@ -8,9 +8,38 @@ const handleCastErrorDB = (err) => {
 };
 
 const handleDuplicateFieldsDB = (err) => {
-  const raw = err.errmsg || err.message || "";
-  const match = raw.match(/(["'])(\\?.)*?\1/);
-  const value = match ? match[0] : "unknown";
+  // MongoDB duplicate key errors usually look like:
+  // - err.code === 11000
+  // - message includes: "dup key: { <field>: \"<value>\" }"
+  // - and may also include: err.keyValue === { <field>: <value> }
+
+  // Preferred: keyValue (works regardless of MongoDB version / message format)
+  if (err?.keyValue && typeof err.keyValue === "object") {
+    const keys = Object.keys(err.keyValue);
+    if (keys.length > 0) {
+      const firstKey = keys[0];
+      const rawValue = err.keyValue[firstKey];
+      const value =
+        rawValue === null || rawValue === undefined
+          ? "unknown"
+          : String(rawValue).replace(/^['"]|['"]$/g, "");
+
+      const message = `Duplicate field value: ${value}. Please use another value!`;
+      return new AppError(message, 400);
+    }
+  }
+
+  // Fallback: parse message "dup key: { ...: \"VALUE\" }"
+  const raw = err?.errmsg || err?.message || "";
+
+  // Capture either a quoted string or a number-like value inside the dup key object.
+  // Example: dup key: { email: "a@b.com" }
+  const match = raw.match(/dup key:\s*\{[^}]*:\s*(?:"([^"]*)"|'([^']*)'|([^\s}]+))\s*\}/i);
+
+  const value = match
+    ? String(match[1] || match[2] || match[3] || "unknown").trim()
+    : "unknown";
+
   const message = `Duplicate field value: ${value}. Please use another value!`;
   return new AppError(message, 400);
 };
