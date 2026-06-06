@@ -36,33 +36,33 @@ sequenceDiagram
     participant Fast as Python FastAPI (ML Worker)
     participant STT as Faster-Whisper Model
     participant NLP as Sentence-Transformer
-    
+
     Client->>Gateway: POST /api/evaluate { audioBlob, idealAnswer }
-    
+
     Note over Gateway, Redis: Non-Blocking Handoff
     Gateway->>Redis: Job.add({ audioBlob, idealAnswer, jobId: 123 })
     Gateway-->>Client: Returns 202 Accepted { jobId: 123 }
-    
+
     loop Polling
         Client->>Gateway: GET /api/evaluate/status/123
     end
-    
+
     Redis->>Fast: Worker consumes Job 123
-    
+
     Note over Fast, STT: Phase 1: Transcription
     Fast->>STT: Decode Base64 & Transcribe
     STT-->>Fast: Returns "I think React hooks manage state..."
-    
+
     Note over Fast, NLP: Phase 2: NLP Evaluation
     Fast->>NLP: encode(userTranscript) & encode(idealAnswer)
     NLP->>NLP: cosine_similarity(tensorA, tensorB)
     NLP-->>Fast: Returns Similarity Float (e.g., 0.85)
-    
+
     Note over Fast: Phase 3: Entity Extraction
     Fast->>Fast: spaCy(userTranscript) -> extract ['state', 'hooks']
-    
+
     Fast->>Redis: Job.complete({ score: 85, extracted: [...] })
-    
+
     Client->>Gateway: GET /api/evaluate/status/123
     Gateway->>Redis: Fetch completed payload
     Gateway-->>Client: Returns 200 OK { Scorecard }
@@ -81,7 +81,7 @@ graph TD
         API --> STT[Whisper_Service.py]
         API --> SEM[Semantic_Service.py]
         API --> SPC[Spacy_Service.py]
-        
+
         STT -->|HuggingFace Hub| WM[(Whisper Base Model)]
         SEM -->|HuggingFace Hub| ST[(all-MiniLM-L6-v2)]
         SPC -->|en_core_web_sm| SP[(spaCy NER Models)]
@@ -145,11 +145,11 @@ class EvaluationResponse(BaseModel):
 
 ### Python Microservice Endpoints
 
-| Method | Endpoint | Purpose | GPU Accelerated? |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/v1/evaluate` | The monolithic endpoint that handles STT, Semantic matching, and spaCy extraction in one pass. | Yes (if CUDA available) |
-| `GET` | `/v1/health` | Used by Node.js to determine if the ML service is ready to accept traffic or if it's currently OOM. | No |
-| `POST` | `/v1/transcribe-only`| Bypasses the evaluation pipeline. Used strictly for converting audio to text. | Yes |
+ | Method | Endpoint | Purpose | GPU Accelerated? |
+ | :--- | :--- | :--- | :--- |
+ | `POST` | `/v1/evaluate` | The monolithic endpoint that handles STT, Semantic matching, and spaCy extraction in one pass. | Yes (if CUDA available) |
+ | `GET` | `/v1/health` | Used by Node.js to determine if the ML service is ready to accept traffic or if it's currently OOM. | No |
+ | `POST` | `/v1/transcribe-only` | Bypasses the evaluation pipeline. Used strictly for converting audio to text. | Yes |
 
 ### Node.js Heuristic Fallback Engine
 
@@ -159,12 +159,12 @@ If the Python server returns a 5xx error or times out after 10 seconds, the Node
 // server/src/integrations/heuristicEngine.js
 const generateMockScore = (userAnswer, idealAnswer, keyConcepts) => {
   const normalizedAnswer = userAnswer.toLowerCase();
-  
+
   // 1. Concept Density Check
   let conceptsFound = 0;
   const matched = [];
   const missing = [];
-  
+
   keyConcepts.forEach(concept => {
     if (normalizedAnswer.includes(concept.toLowerCase())) {
       conceptsFound++;
@@ -173,16 +173,16 @@ const generateMockScore = (userAnswer, idealAnswer, keyConcepts) => {
       missing.push(concept);
     }
   });
-  
+
   const coverageScore = (conceptsFound / keyConcepts.length) * 100;
-  
+
   // 2. Length Penalty (Answers less than 50 chars are heavily penalized)
   let lengthMultiplier = 1.0;
   if (normalizedAnswer.length < 50) lengthMultiplier = 0.5;
   if (normalizedAnswer.length > 500) lengthMultiplier = 0.9; // Rambling penalty
-  
+
   const finalScore = Math.round(coverageScore * lengthMultiplier);
-  
+
   return {
     score: finalScore,
     feedback: finalScore > 80 ? "Great coverage of key concepts." : "You missed several critical technical terms.",
@@ -236,21 +236,21 @@ app = FastAPI(title="Interview AI Engine")
 async def evaluate_answer(request: EvaluationRequest):
     try:
         user_text = request.answer_text
-        
+
         # Phase 1: Transcribe if audio is provided
         if request.audio_b64:
             user_text = await whisper_service.transcribe_base64(request.audio_b64)
-            
+
         if not user_text:
             raise HTTPException(status_code=400, detail="No transcript generated.")
-            
+
         # Phase 2 & 3: Run Semantic and Concept Evaluation
         score, matched, missing = semantic_service.evaluate(
-            user_text, 
-            request.ideal_answer, 
+            user_text,
+            request.ideal_answer,
             request.key_concepts
         )
-        
+
         return EvaluationResponse(
             technical_score=score,
             communication_score=85.0, # Placeholder for readability heuristic
@@ -262,4 +262,5 @@ async def evaluate_answer(request: EvaluationRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 ```
+
 EOF

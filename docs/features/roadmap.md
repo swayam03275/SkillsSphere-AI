@@ -61,18 +61,18 @@ sequenceDiagram
     participant State as Zustand Store
     participant Sidebar as ResourceSidebar.jsx
     participant API as Axios / Node.js
-    
+
     User->>Node: Clicks 'React Hooks' (Available State)
     Node->>State: setSelectedNode('node_hooks')
     State-->>Sidebar: Trigger Framer Motion slide-in
-    
+
     User->>Sidebar: Clicks Checkbox on 'useEffect Tutorial'
     Sidebar->>State: Optimistic Update: markResourceComplete()
     State-->>Sidebar: Renders Green Checkmark instantly
-    
+
     Sidebar->>API: PATCH /api/roadmaps/nodes/.../complete
     Note over Sidebar, API: Background network request
-    
+
     alt API Success
         API-->>Sidebar: 200 OK (Unlocked 'Context API')
         Sidebar->>State: updateNodeStatus('node_context', 'available')
@@ -98,7 +98,7 @@ const initialNodes = [
     id: "node_1",
     type: "custom", // Tells ReactFlow to use our CustomNode.jsx
     position: { x: 250, y: 50 },
-    data: { 
+    data: {
       label: "JavaScript Fundamentals",
       status: "completed", // 'locked', 'available', 'completed'
       progress: 100,
@@ -107,13 +107,13 @@ const initialNodes = [
       ]
     },
     // Prevent user from dragging the node to preserve the strict DAG layout
-    draggable: false 
+    draggable: false
   },
   {
     id: "node_2",
     type: "custom",
     position: { x: 250, y: 150 },
-    data: { 
+    data: {
       label: "Promises & Async",
       status: "available",
       progress: 0,
@@ -158,7 +158,7 @@ export const useRoadmapStore = create((set, get) => ({
   nodes: [],
   edges: [],
   selectedNodeId: null,
-  
+
   // High-frequency Canvas Event Handlers
   onNodesChange: (changes) => {
     set({ nodes: applyNodeChanges(changes, get().nodes) });
@@ -166,29 +166,29 @@ export const useRoadmapStore = create((set, get) => ({
   onEdgesChange: (changes) => {
     set({ edges: applyEdgeChanges(changes, get().edges) });
   },
-  
+
   // Business Logic Handlers
   selectNode: (id) => set({ selectedNodeId: id }),
   closeSidebar: () => set({ selectedNodeId: null }),
-  
+
   toggleResourceCompletion: (nodeId, resourceId) => {
     const nodes = get().nodes.map(node => {
       if (node.id !== nodeId) return node;
-      
-      const updatedResources = node.data.resources.map(res => 
+
+      const updatedResources = node.data.resources.map(res =>
         res.id === resourceId ? { ...res, isCompleted: !res.isCompleted } : res
       );
-      
+
       // Calculate new progress percentage
       const completedCount = updatedResources.filter(r => r.isCompleted).length;
       const progress = Math.round((completedCount / updatedResources.length) * 100);
-      
+
       return {
         ...node,
         data: { ...node.data, resources: updatedResources, progress }
       };
     });
-    
+
     set({ nodes });
   }
 }));
@@ -224,28 +224,28 @@ const CustomNode = ({ data, isConnectable }) => {
 
   return (
     <div className={`px-4 py-3 rounded-lg border-2 shadow-lg w-48 bg-gray-900 transition-all ${
-      isLocked ? 'border-gray-700 opacity-50 grayscale' : 
-      isCompleted ? 'border-green-500' : 
+      isLocked ? 'border-gray-700 opacity-50 grayscale' :
+      isCompleted ? 'border-green-500' :
       'border-indigo-500 animate-pulse-border'
     }`}>
       {/* Invisible Handles required for Edges to connect */}
       <Handle type="target" position={Position.Top} isConnectable={false} className="opacity-0" />
-      
+
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-bold text-white truncate">{data.label}</h3>
         {isLocked && <Lock size={14} className="text-gray-500" />}
         {isCompleted && <CheckCircle size={14} className="text-green-500" />}
         {isAvailable && <BookOpen size={14} className="text-indigo-400" />}
       </div>
-      
+
       {/* Mini Progress Bar embedded in the node */}
       <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
-        <div 
-          className={`h-full ${isCompleted ? 'bg-green-500' : 'bg-indigo-500'} transition-all duration-500`} 
-          style={{ width: `${data.progress}%` }} 
+        <div
+          className={`h-full ${isCompleted ? 'bg-green-500' : 'bg-indigo-500'} transition-all duration-500`}
+          style={{ width: `${data.progress}%` }}
         />
       </div>
-      
+
       <Handle type="source" position={Position.Bottom} isConnectable={false} className="opacity-0" />
     </div>
   );
@@ -259,6 +259,7 @@ Configures the environment.
 
 ### `ResourceSidebar.jsx`
 Uses `<AnimatePresence>` from Framer Motion.
+
 ```jsx
 <AnimatePresence>
   {selectedNodeId && (
@@ -274,4 +275,5 @@ Uses `<AnimatePresence>` from Framer Motion.
   )}
 </AnimatePresence>
 ```
+
 EOF

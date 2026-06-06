@@ -35,20 +35,20 @@ sequenceDiagram
     participant UI as React Client (JobBoard.jsx)
     participant BE as Node.js Gateway
     participant DB as MongoDB
-    
+
     Student->>UI: Navigates to /jobs
     UI->>BE: GET /api/jobs?role=frontend&remote=true
     BE->>DB: Query JobPosting collection
     DB-->>BE: Returns paginated jobs
     BE-->>UI: Render list of jobs
-    
+
     Student->>UI: Clicks "Apply" on Job X
     UI->>BE: POST /api/jobs/:jobId/apply
-    
+
     Note over BE, DB: Application Verification
     BE->>DB: Check if Application already exists
     BE->>DB: Fetch Student's active Resume ID
-    
+
     alt Active Resume Found & No Duplicate
         BE->>DB: Insert JobApplication (status: 'applied')
         BE->>DB: Increment JobPosting.metrics.applications
@@ -68,7 +68,7 @@ graph TD
         JM[JobManager.jsx] --> JTab[JobsTab.jsx]
         JM --> ATab[ApplicationsTab.jsx]
         JM --> ITab[InvitationsTab.jsx]
-        
+
         ATab --> AT[ApplicationTracker.jsx]
         AT --> TL[TimelineView.jsx]
     end
@@ -94,19 +94,20 @@ This module heavily utilizes the `JobApplication` schema. While the full schema 
 ```javascript
 // Embedded within JobApplication schema
 timeline: [{
-  status: { 
-    type: String, 
-    enum: ['applied', 'invited', 'reviewing', 'interviewing', 'rejected', 'withdrawn'] 
+  status: {
+    type: String,
+    enum: ['applied', 'invited', 'reviewing', 'interviewing', 'rejected', 'withdrawn']
   },
-  updatedAt: { 
-    type: Date, 
-    default: Date.now 
+  updatedAt: {
+    type: Date,
+    default: Date.now
   },
-  note: { 
+  note: {
     type: String // Optional public feedback provided by the recruiter
   }
 }]
 ```
+
 Whenever a recruiter changes the status of an application, the backend does not just overwrite the `status` field. It pushes a new entry onto the `timeline` array. This allows the frontend to render a vertical progression tracker (similar to package tracking UIs), showing the student exactly when their application moved from 'applied' to 'reviewing'.
 
 ---

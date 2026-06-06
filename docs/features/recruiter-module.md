@@ -36,19 +36,19 @@ sequenceDiagram
     participant State as Redux Store
     participant BE as Node.js Gateway
     participant DB as MongoDB
-    
+
     Recruiter->>UI: Drags Candidate A from 'Reviewing' to 'Interviewing'
     UI->>UI: onDragEnd(result) triggered
-    
+
     Note over UI, State: Phase 1: Optimistic Update
     UI->>State: dispatch(moveApplicantLocal({ id: A, newStatus: 'interviewing' }))
     State-->>UI: Instantly rerenders Candidate A in new column
-    
+
     Note over UI, BE: Phase 2: Network Synchronization
     UI->>BE: PATCH /api/recruiter/applications/A/status { status: 'interviewing' }
-    
+
     BE->>DB: findOneAndUpdate({ _id: A }, { $set: { status }, $push: { timeline: ... } })
-    
+
     alt Network Success
         DB-->>BE: 200 OK
         BE-->>UI: Returns updated timeline
@@ -67,12 +67,12 @@ graph TD
     subgraph Frontend [React Client Layer]
         RD[RecruiterDashboard.jsx] --> JG[JobGrid.jsx]
         JG --> JC[JobPostingCard.jsx]
-        
+
         RD --> RAP[RecruiterApplicantsPage.jsx]
         RAP --> KB[ApplicantsKanbanBoard.jsx]
         KB --> Col[KanbanColumn.jsx]
         Col --> Card[ApplicantCard.jsx]
-        
+
         RD --> EJ[EditJobPostingPage.jsx]
         EJ --> RTE[RichTextEditor.jsx]
     end
@@ -135,13 +135,13 @@ export const KANBAN_COLUMNS = {
 
 ### REST Endpoints
 
-| Method | Endpoint | Auth Level | Purpose | Payload | Response |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `GET` | `/api/recruiter/jobs` | Recruiter | Lists all jobs created by the authenticated recruiter. | `None` | `[{ _id, title, status, metrics }]` |
-| `POST` | `/api/recruiter/jobs` | Recruiter | Creates a new job requisition. | `{ title, company, description, skills, salary }` | `{ success: true, jobId }` |
-| `PATCH` | `/api/recruiter/jobs/:id` | Recruiter | Updates an existing job (e.g., closing a filled role). | `{ status: 'closed' }` | `{ success: true }` |
-| `GET` | `/api/recruiter/jobs/:jobId/applicants` | Recruiter | Fetches all applications for the Kanban board. | `None` | `[{ application, candidatePreview }]` |
-| `PATCH` | `/api/recruiter/applications/:id/status`| Recruiter | Moves a candidate between Kanban columns. | `{ status: "interviewing", note: "Optional feedback" }` | `{ success: true, timeline: [...] }` |
+ | Method | Endpoint | Auth Level | Purpose | Payload | Response |
+ | :--- | :--- | :--- | :--- | :--- | :--- |
+ | `GET` | `/api/recruiter/jobs` | Recruiter | Lists all jobs created by the authenticated recruiter. | `None` | `[{ _id, title, status, metrics }]` |
+ | `POST` | `/api/recruiter/jobs` | Recruiter | Creates a new job requisition. | `{ title, company, description, skills, salary }` | `{ success: true, jobId }` |
+ | `PATCH` | `/api/recruiter/jobs/:id` | Recruiter | Updates an existing job (e.g., closing a filled role). | `{ status: 'closed' }` | `{ success: true }` |
+ | `GET` | `/api/recruiter/jobs/:jobId/applicants` | Recruiter | Fetches all applications for the Kanban board. | `None` | `[{ application, candidatePreview }]` |
+ | `PATCH` | `/api/recruiter/applications/:id/status` | Recruiter | Moves a candidate between Kanban columns. | `{ status: "interviewing", note: "Optional feedback" }` | `{ success: true, timeline: [...] }` |
 
 ### Redux State Management for Drag & Drop
 
@@ -168,7 +168,7 @@ export const kanbanSlice = createSlice({
     initializeBoard: (state, action) => {
       // Clear existing columns
       Object.keys(state.columns).forEach(key => state.columns[key] = []);
-      
+
       // Populate Hash and Columns
       action.payload.forEach(app => {
         if (state.columns[app.status]) {
@@ -179,18 +179,18 @@ export const kanbanSlice = createSlice({
     },
     optimisticMove: (state, action) => {
       const { applicantId, sourceCol, destCol, destIndex } = action.payload;
-      
+
       // Remove from source
       state.columns[sourceCol] = state.columns[sourceCol].filter(id => id !== applicantId);
-      
+
       // Insert into destination at specific index
       state.columns[destCol].splice(destIndex, 0, applicantId);
-      
+
       // Update hash status
       state.applicantsHash[applicantId].status = destCol;
     },
     revertMove: (state, action) => {
-      // Identical to optimisticMove but reversing the parameters 
+      // Identical to optimisticMove but reversing the parameters
       // Triggered if the Axios PATCH fails.
     }
   }

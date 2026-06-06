@@ -35,10 +35,10 @@ sequenceDiagram
     participant UI as React Client (StudentDashboard.jsx)
     participant BE as Node.js Gateway
     participant DB as MongoDB
-    
+
     User->>UI: Logs in & Navigates to /dashboard
     UI->>BE: GET /api/student/dashboard-summary
-    
+
     Note over BE, DB: Concurrent Aggregation (Promise.all)
     par Fetch Resume Data
         BE->>DB: findOne({ userId, isActive: true }) -> Active Resume
@@ -49,10 +49,10 @@ sequenceDiagram
     and Fetch Roadmap Data
         BE->>DB: findOne({ userId }) -> Roadmap Progress %
     end
-    
+
     Note over BE: Construct unified DTO
     BE-->>UI: Returns { kpis, recentActivity, alerts }
-    
+
     UI->>UI: Dispatch to Redux Store
     UI->>UI: Render Grid Layout (KPI Cards, Activity Feed, Radar Chart)
 ```
@@ -96,19 +96,19 @@ Stored directly on the `User` document.
 ```javascript
 // Embedded within src/database/models/User.js
 settings: {
-  isDiscoverable: { 
-    type: Boolean, 
+  isDiscoverable: {
+    type: Boolean,
     default: true,
     description: "If false, hard-filtered from recruiter Talent Finder"
   },
-  theme: { 
-    type: String, 
-    enum: ['light', 'dark', 'system'], 
-    default: 'dark' 
+  theme: {
+    type: String,
+    enum: ['light', 'dark', 'system'],
+    default: 'dark'
   },
-  emailNotifications: { 
-    type: Boolean, 
-    default: true 
+  emailNotifications: {
+    type: Boolean,
+    default: true
   },
   preferredRoles: [{
     type: String // e.g., 'Frontend', 'DevOps'
@@ -124,18 +124,18 @@ An append-only ledger used to generate the dashboard activity feed.
 const mongoose = require('mongoose');
 
 const activityLogSchema = new mongoose.Schema({
-  userId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User', 
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
     required: true,
-    index: true 
+    index: true
   },
-  type: { 
-    type: String, 
+  type: {
+    type: String,
     enum: [
-      'RESUME_ANALYZED', 
-      'INTERVIEW_COMPLETED', 
-      'JOB_APPLIED', 
+      'RESUME_ANALYZED',
+      'INTERVIEW_COMPLETED',
+      'JOB_APPLIED',
       'ROADMAP_NODE_COMPLETED',
       'CLASSROOM_ATTENDED'
     ],
@@ -144,7 +144,7 @@ const activityLogSchema = new mongoose.Schema({
   metadata: {
     // Dynamic payload depending on the type
     // e.g., { score: 95, targetId: "resume_id" }
-    type: mongoose.Schema.Types.Mixed 
+    type: mongoose.Schema.Types.Mixed
   },
   title: { type: String, required: true }, // "You scored 95% on React Interview"
   description: { type: String },
@@ -184,7 +184,7 @@ export const fetchDashboardData = createAsyncThunk(
     // Prevent fetching if data is less than 5 minutes old
     const lastFetch = getState().student.lastFetched;
     if (lastFetch && Date.now() - lastFetch < 300000) {
-      return null; 
+      return null;
     }
     const response = await api.get('/api/student/dashboard');
     return response.data;
@@ -220,7 +220,7 @@ export const studentSlice = createSlice({
 ## 5. Security, Edge Cases & Error Handling
 
 ### The Privacy Toggle Boundary
-The `isDiscoverable` toggle is the most critical compliance feature in the module. 
+The `isDiscoverable` toggle is the most critical compliance feature in the module.
 - **Edge Case**: A student disables discoverability, but their data is currently cached in the Recruiter module's Redis layer.
 - **Handling**: When `PATCH /api/student/profile` is hit with `isDiscoverable: false`, the backend doesn't just update MongoDB. It immediately fires an event bus hook: `eventBus.emit('user-privacy-changed', { userId, isDiscoverable: false })`. The Recruiter Service listens to this and actively sweeps its local Redis cache, purging any references to this user ID, ensuring instantaneous compliance.
 

@@ -39,30 +39,30 @@ sequenceDiagram
     participant DB as MongoDB (Resumes/Users)
     participant AI as Semantic Pipeline (HF API)
     actor Candidate as Candidate
-    
+
     Recruiter->>UI: Navigates to /recruiter/talent-finder
     Recruiter->>UI: Enters search criteria (e.g., "Senior React Developer, >80 ATS")
     UI->>BE: GET /api/recruiter/talent-finder?query=React&atsMin=80
-    
+
     Note over BE, DB: Phase 1: High-Speed Pre-filtering
     BE->>DB: Aggregate active resumes matching criteria & opt-in status
     DB-->>BE: Returns top 50 candidate profiles
-    
+
     Note over BE: Phase 2: Lightweight Formatting
     BE-->>UI: Returns paginated list of candidates
-    
+
     Recruiter->>UI: Selects Candidate A & clicks "Match against Job X"
     UI->>BE: POST /api/recruiter/match-candidate { candidateId, jobId }
-    
+
     Note over BE, AI: Phase 3: Heavy Semantic Matching
     BE->>DB: Fetch Candidate Resume Text & Job Description
     BE->>AI: Trigger SemanticMatchEvaluator (Vector comparison)
     AI-->>BE: Returns Cosine Similarity Score (e.g., 92%)
     BE-->>UI: Renders detailed Match Scorecard
-    
+
     Recruiter->>UI: Clicks "Invite to Apply"
     UI->>BE: POST /api/recruiter/invite-candidate
-    
+
     Note over BE: Phase 4: Notification Orchestration
     BE->>DB: Create JobApplication record (status: 'invited')
     BE->>Candidate: Socket.io emit("new-notification", InvitationPayload)
@@ -87,7 +87,7 @@ graph TD
     end
 
     subgraph Data & AI [Infrastructure Layer]
-        DB[(MongoDB)] 
+        DB[(MongoDB)]
         AI[Hugging Face / Gemini API]
     end
 
@@ -112,9 +112,9 @@ Represents a position opened by a recruiter. It requires detailed constraints to
 const mongoose = require('mongoose');
 
 const jobPostingSchema = new mongoose.Schema({
-  recruiterId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User', 
+  recruiterId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
     required: true,
     index: true
   },
@@ -129,9 +129,9 @@ const jobPostingSchema = new mongoose.Schema({
     max: { type: Number },
     currency: { type: String, default: 'USD' }
   },
-  status: { 
-    type: String, 
-    enum: ['draft', 'published', 'closed'], 
+  status: {
+    type: String,
+    enum: ['draft', 'published', 'closed'],
     default: 'published',
     index: true
   },
@@ -155,25 +155,25 @@ The pivot table connecting a Candidate (via their Resume) to a Job Posting. It t
 const mongoose = require('mongoose');
 
 const jobApplicationSchema = new mongoose.Schema({
-  jobId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'JobPosting', 
+  jobId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'JobPosting',
     required: true,
     index: true
   },
-  candidateId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User', 
+  candidateId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
     required: true,
     index: true
   },
-  resumeId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Resume', 
-    required: true 
+  resumeId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Resume',
+    required: true
   },
-  status: { 
-    type: String, 
+  status: {
+    type: String,
     enum: [
       'invited',       // Recruiter initiated
       'applied',       // Candidate initiated
@@ -182,12 +182,12 @@ const jobApplicationSchema = new mongoose.Schema({
       'rejected',      // Not selected
       'withdrawn',     // Candidate withdrew
       'hired'          // Successful placement
-    ], 
+    ],
     default: 'applied'
   },
-  matchScore: { 
+  matchScore: {
     type: Number,      // Stored scorecard result to prevent re-computation
-    default: null 
+    default: null
   },
   timeline: [{
     status: { type: String },
@@ -208,11 +208,11 @@ To rapidly search millions of potential candidates, the backend utilizes a multi
 ```javascript
 // Inside TalentService.js
 const candidates = await Resume.aggregate([
-  { 
-    $match: { 
+  {
+    $match: {
       isActive: true,
       "evaluation.aggregatedScore": { $gte: atsMin || 0 }
-    } 
+    }
   },
   {
     $lookup: {
@@ -223,11 +223,11 @@ const candidates = await Resume.aggregate([
     }
   },
   { $unwind: "$userData" },
-  { 
-    $match: { 
+  {
+    $match: {
       "userData.settings.isDiscoverable": true,
       "userData.role": "student"
-    } 
+    }
   },
   // Apply text search if query provided
   ...(query ? [{ $match: { $text: { $search: query } } }] : []),
@@ -243,13 +243,13 @@ const candidates = await Resume.aggregate([
 
 ### REST Endpoints
 
-| Method | Endpoint | Auth Level | Purpose | Request Payload | Response |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `GET` | `/api/recruiter/talent-finder` | Recruiter | Searches the global resume index. | `?query=react&atsMin=80&page=1` | `{ candidates: [...], pagination: {...} }` |
-| `POST` | `/api/recruiter/match-candidate` | Recruiter | Triggers the heavy semantic pipeline to match a candidate against a specific job. | `{ candidateId, jobId }` | `{ score: 92, missingSkills: [...], strengths: [...] }` |
-| `POST` | `/api/recruiter/invite-candidate` | Recruiter | Creates an 'invited' application and triggers notifications. | `{ candidateId, jobId }` | `{ success: true, applicationId }` |
-| `GET` | `/api/recruiter/jobs/:jobId/applicants` | Recruiter | Lists all applications/invitations for a specific job posting. | `?status=applied` | `[{ applicationData, candidatePreview }]` |
-| `PATCH` | `/api/recruiter/applications/:id/status`| Recruiter | Advances a candidate through the hiring pipeline (e.g., 'reviewing' -> 'interviewing'). | `{ status: "interviewing", note: "Passed tech screen" }` | `{ success: true }` |
+ | Method | Endpoint | Auth Level | Purpose | Request Payload | Response |
+ | :--- | :--- | :--- | :--- | :--- | :--- |
+ | `GET` | `/api/recruiter/talent-finder` | Recruiter | Searches the global resume index. | `?query=react&atsMin=80&page=1` | `{ candidates: [...], pagination: {...} }` |
+ | `POST` | `/api/recruiter/match-candidate` | Recruiter | Triggers the heavy semantic pipeline to match a candidate against a specific job. | `{ candidateId, jobId }` | `{ score: 92, missingSkills: [...], strengths: [...] }` |
+ | `POST` | `/api/recruiter/invite-candidate` | Recruiter | Creates an 'invited' application and triggers notifications. | `{ candidateId, jobId }` | `{ success: true, applicationId }` |
+ | `GET` | `/api/recruiter/jobs/:jobId/applicants` | Recruiter | Lists all applications/invitations for a specific job posting. | `?status=applied` | `[{ applicationData, candidatePreview }]` |
+ | `PATCH` | `/api/recruiter/applications/:id/status` | Recruiter | Advances a candidate through the hiring pipeline (e.g., 'reviewing' -> 'interviewing'). | `{ status: "interviewing", note: "Passed tech screen" }` | `{ success: true }` |
 
 ### Redux State Management
 The recruiter dashboard relies heavily on Redux to cache search results and preserve filter states when navigating between candidate profiles and the main grid.

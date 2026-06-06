@@ -38,24 +38,24 @@ sequenceDiagram
     participant Node as Node.js Backend (Gateway)
     participant DB as MongoDB
     participant Py as Python FastAPI (Interview AI)
-    
+
     User->>UI: Selects Topic (e.g., "React") & Difficulty
     UI->>Node: POST /api/interviews/start { topic, difficulty, persona }
-    
+
     Note over Node, DB: Session Initialization
     Node->>DB: Fetch 5 random non-repeating questions for Topic
     Node->>DB: Create InterviewSession record
     Node-->>UI: Return Session ID + 5 Questions
-    
+
     loop For each Question (1 to 5)
         UI->>UI: Start 120s Countdown Timer
         User->>UI: Records Audio via MediaRecorder API
         UI->>UI: Convert Blob to Base64
         UI->>Node: POST /api/interviews/:id/answer { questionId, audioBase64 }
-        
+
         Note over Node, Py: STT & NLP Evaluation Pipeline
         Node->>Py: POST /api/evaluate { answerText, idealAnswer, expectedConcepts }
-        
+
         alt Python Service Online
             Py->>Py: NLP Semantic Similarity (Sentence Transformers)
             Py->>Py: Concept Extraction (spaCy)
@@ -63,12 +63,12 @@ sequenceDiagram
         else Python Service Timeout (Fail-Soft)
             Node->>Node: Fallback to Heuristic Mock Scoring
         end
-        
+
         Node->>DB: Append Answer & Score to Session.questions array
         Node-->>UI: Return Interim Scorecard for this Question
         UI->>UI: Render live feedback, increment question index
     end
-    
+
     UI->>Node: POST /api/interviews/:id/complete
     Node->>DB: Compute Aggregated Score, Update Status to 'completed'
     Node-->>UI: Return Final Results
@@ -120,27 +120,27 @@ Stores the expert-curated questions used to evaluate candidates.
 const mongoose = require('mongoose');
 
 const questionBankSchema = new mongoose.Schema({
-  topic: { 
-    type: String, 
-    required: true, 
+  topic: {
+    type: String,
+    required: true,
     index: true,
     enum: ['React', 'Node.js', 'System Design', 'JavaScript', 'Data Structures']
   },
-  difficulty: { 
-    type: String, 
-    enum: ['Beginner', 'Intermediate', 'Advanced'], 
-    required: true 
+  difficulty: {
+    type: String,
+    enum: ['Beginner', 'Intermediate', 'Advanced'],
+    required: true
   },
-  question: { 
-    type: String, 
-    required: true 
+  question: {
+    type: String,
+    required: true
   },
-  idealAnswer: { 
-    type: String, 
-    required: true 
+  idealAnswer: {
+    type: String,
+    required: true
   },
-  keyConcepts: [{ 
-    type: String 
+  keyConcepts: [{
+    type: String
   }], // Extracted by spaCy during DB seeding
   metadata: {
     estimatedTimeSeconds: { type: Number, default: 120 },
@@ -166,7 +166,7 @@ const answerSchema = new mongoose.Schema({
   userAnswer: { type: String, required: true },
   timeSpentSeconds: { type: Number, required: true },
   isAudio: { type: Boolean, default: false },
-  
+
   // Evaluation block populated by Python AI Service
   evaluation: {
     score: { type: Number, min: 0, max: 100 },
@@ -180,19 +180,19 @@ const answerSchema = new mongoose.Schema({
 });
 
 const interviewSessionSchema = new mongoose.Schema({
-  userId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User', 
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
     required: true,
     index: true
   },
   topic: { type: String, required: true },
   difficulty: { type: String, required: true },
   persona: { type: String, enum: ['Strict', 'Friendly', 'Technical'], default: 'Friendly' },
-  status: { 
-    type: String, 
-    enum: ['initialized', 'in-progress', 'completed', 'abandoned'], 
-    default: 'initialized' 
+  status: {
+    type: String,
+    enum: ['initialized', 'in-progress', 'completed', 'abandoned'],
+    default: 'initialized'
   },
   questions: [answerSchema], // Embedded sub-documents for fast read/write
   finalScore: { type: Number },
@@ -213,21 +213,21 @@ module.exports = mongoose.model('InterviewSession', interviewSessionSchema);
 
 ### REST Endpoints (Node.js Gateway)
 
-| Method | Endpoint | Auth Level | Purpose | Payload | Response |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `GET` | `/api/interviews/topics` | Auth | Retrieves available topics and total question counts. | `None` | `[{ topic: "React", count: 45 }]` |
-| `POST` | `/api/interviews/start` | Auth | Starts a session, selects 5 random questions. | `{ topic: "React", difficulty: "Intermediate" }` | `{ sessionId: "...", questions: [...] }` |
-| `POST` | `/api/interviews/:id/answer` | Auth | Submits a single answer for AI evaluation. | `{ questionId, text, timeSpent }` | `{ evaluation: { score, feedback, ... } }` |
-| `POST` | `/api/interviews/:id/complete` | Auth | Aggregates the 5 sub-scores into a final result. | `None` | `{ finalScore: 88, status: "completed" }` |
-| `GET` | `/api/interviews/:id/results` | Auth | Retrieves the full historical scorecard. | `None` | `{ session: {...} }` |
+ | Method | Endpoint | Auth Level | Purpose | Payload | Response |
+ | :--- | :--- | :--- | :--- | :--- | :--- |
+ | `GET` | `/api/interviews/topics` | Auth | Retrieves available topics and total question counts. | `None` | `[{ topic: "React", count: 45 }]` |
+ | `POST` | `/api/interviews/start` | Auth | Starts a session, selects 5 random questions. | `{ topic: "React", difficulty: "Intermediate" }` | `{ sessionId: "...", questions: [...] }` |
+ | `POST` | `/api/interviews/:id/answer` | Auth | Submits a single answer for AI evaluation. | `{ questionId, text, timeSpent }` | `{ evaluation: { score, feedback, ... } }` |
+ | `POST` | `/api/interviews/:id/complete` | Auth | Aggregates the 5 sub-scores into a final result. | `None` | `{ finalScore: 88, status: "completed" }` |
+ | `GET` | `/api/interviews/:id/results` | Auth | Retrieves the full historical scorecard. | `None` | `{ session: {...} }` |
 
 ### Python Microservice Endpoints (Internal Only)
 These endpoints are intentionally not exposed to the public internet. The Node.js gateway securely forwards traffic to them over the internal docker network or VPC.
 
-| Method | Endpoint | Payload | Action |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/evaluate` | `{ answer, ideal, concepts }` | Computes semantic similarity (SentenceTransformers) and extracts NLP concepts (spaCy). |
-| `POST` | `/api/transcribe`| `{ audio_base64 }` | Converts Base64 audio back to bytes and runs Faster-Whisper to transcribe speech to text. |
+ | Method | Endpoint | Payload | Action |
+ | :--- | :--- | :--- | :--- |
+ | `POST` | `/api/evaluate` | `{ answer, ideal, concepts }` | Computes semantic similarity (SentenceTransformers) and extracts NLP concepts (spaCy). |
+ | `POST` | `/api/transcribe` | `{ audio_base64 }` | Converts Base64 audio back to bytes and runs Faster-Whisper to transcribe speech to text. |
 
 ### React State Management (Custom Hook)
 To prevent massive Redux bloat for ephemeral interview data, the frontend manages session state using a specialized custom hook `useInterviewState.js` coupled with standard React context.
@@ -245,12 +245,12 @@ export function useInterviewState(sessionId) {
     try {
       const q = session.questions[currentQuestionIndex];
       const res = await interviewService.submitAnswer(sessionId, q._id, answerText, 120 - timeRemaining);
-      
+
       // Mutate local session state optimistically
       const updatedQuestions = [...session.questions];
       updatedQuestions[currentQuestionIndex] = { ...q, evaluation: res.evaluation };
       setSession({ ...session, questions: updatedQuestions });
-      
+
       // Move to next question or complete
       if (currentQuestionIndex < session.questions.length - 1) {
         setCurrentQuestionIndex(prev => prev + 1);
@@ -281,7 +281,7 @@ const evaluateAnswer = async (userAnswer, idealAnswer, keyConcepts) => {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // Strict 10s timeout
-    
+
     const response = await axios.post(PYTHON_SERVICE_URL, payload, { signal: controller.signal });
     clearTimeout(timeoutId);
     return response.data;
@@ -291,6 +291,7 @@ const evaluateAnswer = async (userAnswer, idealAnswer, keyConcepts) => {
   }
 };
 ```
+
 If the Python service times out, the `generateMockHeuristicScore` function kicks in. It performs a rapid, regex-based keyword density check in Node.js to provide an approximate score (e.g., 75%) and generic feedback, ensuring the student's interview is never interrupted by a server 500 error.
 
 ### Audio Blob Validation & Security

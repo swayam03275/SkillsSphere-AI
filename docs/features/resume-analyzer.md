@@ -39,25 +39,25 @@ sequenceDiagram
     participant Cache as Semantic Cache
     participant AI as Pipeline (runPipeline.js)
     participant DB as MongoDB
-    
+
     User->>FE: Uploads PDF & pastes Job Description
     Note over FE: Client-side validation: Max 5MB, PDF/DOCX
     FE->>BE: POST /api/resume/analyze (FormData)
-    
+
     Note over BE: Phase 1: Security & Parsing
     BE->>BE: validateResumeBufferSignatureSync(magic bytes)
     BE->>BE: pdf-parse extract raw text
-    
+
     Note over BE, Cache: Phase 2: Cache Check
     BE->>BE: hash = SHA256(resumeText + jobDescriptionText)
     BE->>Cache: GET hash
-    
+
     alt Cache Hit
         Cache-->>BE: Return cached 9-evaluator result
     else Cache Miss
         Note over BE, AI: Phase 3: Parallel Execution
         BE->>AI: Trigger 9 Evaluators (Promise.all)
-        
+
         par Semantic Match
             AI->>AI: Hugging Face API
         and Impact Match
@@ -67,11 +67,11 @@ sequenceDiagram
         and 6 Other Evaluators...
             AI->>AI: (...)
         end
-        
+
         AI-->>BE: Aggregate all 9 outputs (Zod Validated)
         BE->>Cache: SET hash (TTL: 7 Days)
     end
-    
+
     Note over BE, DB: Phase 4: Persistence
     BE->>DB: Upsert Resume Document
     BE->>DB: Insert AnalysisHistory Document
@@ -87,7 +87,7 @@ graph TD
         RA --> JD[JobDescriptionInput.jsx]
         RA --> AR[AnalysisResult.jsx]
         AR --> SG[SkillGapVenn.jsx]
-        
+
         Hist[ResumeAnalyzerHistoryPage.jsx] --> Tabs[TabbedInterface.jsx]
     end
 
@@ -122,15 +122,15 @@ Stores the parsed representation of the candidate.
 const mongoose = require('mongoose');
 
 const resumeSchema = new mongoose.Schema({
-  user: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User', 
-    required: true, 
-    index: true 
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    index: true
   },
   title: { type: String, default: 'My Resume' },
   isActive: { type: Boolean, default: false },
-  
+
   // Structured Parsed Data
   skills: [{ type: String }],
   experience: [{
@@ -144,15 +144,15 @@ const resumeSchema = new mongoose.Schema({
     institution: String,
     year: String
   }],
-  
+
   resumeText: { type: String, select: false }, // Excluded from default queries to save bandwidth
-  
+
   // The aggregated scorecard
   evaluation: {
     aggregatedScore: Number,
     mode: { type: String, enum: ['match', 'benchmark'] },
     classification: { type: String, enum: ['Beginner', 'Intermediate', 'Advanced', 'Strong Match'] },
-    
+
     // Sub-scores from the 9 evaluators
     skillMatch: { score: Number, matched: [String], missing: [String] },
     keywordMatch: { score: Number, found: [String], missing: [String] },
@@ -161,7 +161,7 @@ const resumeSchema = new mongoose.Schema({
     atsOptimization: { score: Number, issues: [String] },
     readabilityMatch: { score: Number, scoreReadability: Number, suggestions: [String] },
     formattingMatch: { score: Number, issues: [String] },
-    
+
     gapAnalysis: {
       criticalGaps: [String],
       recommendedSkills: [String]
@@ -246,7 +246,7 @@ If a user renames `malicious.exe` to `resume.pdf`, standard mime-type checking v
 
 ### ML Service Latency Optimization
 Running 9 deep linguistic models sequentially could take 30 seconds.
-- **Handling**: The `runPipeline.js` orchestrator utilizes `Promise.allSettled`. This allows the Regex/Heuristic evaluators (like Impact and ATS Formatting) to execute in milliseconds on the Node.js event loop, while simultaneously awaiting the HTTP response from the Hugging Face Inference API for the `semanticMatch`. 
+- **Handling**: The `runPipeline.js` orchestrator utilizes `Promise.allSettled`. This allows the Regex/Heuristic evaluators (like Impact and ATS Formatting) to execute in milliseconds on the Node.js event loop, while simultaneously awaiting the HTTP response from the Hugging Face Inference API for the `semanticMatch`.
 
 ### Evaluator Failure Isolation
 If the Hugging Face API goes down, the entire analysis should not fail.
