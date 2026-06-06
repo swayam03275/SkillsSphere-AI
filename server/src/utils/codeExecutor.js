@@ -115,6 +115,7 @@ const sanitizeOutput = (outputStr) => {
     truncated = outputStr.substring(0, limit) + "\n[Output Truncated: Exceeded Maximum Size Limit]";
   }
 
+  // eslint-disable-next-line no-control-regex
   return truncated.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, "");
 };
 

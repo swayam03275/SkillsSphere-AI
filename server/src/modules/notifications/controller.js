@@ -32,6 +32,7 @@ export const isSafeNotificationActionUrl = (value) => {
     return false;
   }
 
+  // eslint-disable-next-line no-control-regex
   if (/[\s\\\u0000-\u001F\u007F]/.test(value)) {
     return false;
   }
@@ -41,6 +42,7 @@ export const isSafeNotificationActionUrl = (value) => {
     return false;
   }
 
+  // eslint-disable-next-line no-control-regex
   if (/[\s\\\u0000-\u001F\u007F]/.test(decoded)) {
     return false;
   }

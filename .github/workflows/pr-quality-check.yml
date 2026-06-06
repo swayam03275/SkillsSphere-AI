@@ -60,11 +60,10 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm' # Enables automated dependency caching
-          cache-dependency-path: './client/package-lock.json'
+          cache-dependency-path: './package-lock.json'
 
-      - name: 📦 Install Client Dependencies
-        working-directory: ./client
-        run: npm ci # 'ci' is faster and strictly adheres to package-lock.json
+      - name: 📦 Install Dependencies
+        run: npm ci # installs all workspaces from root package-lock.json
 
       - name: 🧹 Run Linter
         working-directory: ./client
@@ -99,11 +98,10 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
-          cache-dependency-path: './server/package-lock.json'
+          cache-dependency-path: './package-lock.json'
 
-      - name: 📦 Install Server Dependencies
-        working-directory: ./server
-        run: npm ci
+      - name: 📦 Install Dependencies
+        run: npm ci # installs all workspaces from root package-lock.json
 
       - name: 🧹 Run Linter
         working-directory: ./server

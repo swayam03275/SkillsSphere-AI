@@ -44,6 +44,7 @@ const decodeRedirectPath = (value) => {
   // characters remain). A fixed-iteration loop (e.g. 2 rounds) would leave
   // triple-encoded payloads like %25252e%25252e%25252f partially decoded,
   // allowing them to bypass the safety checks below.
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     let next;
     try {
@@ -63,6 +64,7 @@ export const isSafeRedirectPath = (value) => {
     return false;
   }
 
+  // eslint-disable-next-line no-control-regex
   if (/[\s\\\u0000-\u001F\u007F]/.test(value)) {
     return false;
   }
@@ -72,6 +74,7 @@ export const isSafeRedirectPath = (value) => {
     return false;
   }
 
+  // eslint-disable-next-line no-control-regex
   if (/[\s\\\u0000-\u001F\u007F]/.test(decoded)) {
     return false;
   }
@@ -89,7 +92,7 @@ export const isSafeRedirectPath = (value) => {
   }
 
   const pathPart = decoded.split("?")[0];
-  const allowedPathRegex = /^\/(auth|dashboard|profile|jobs|classrooms|mock-interview|resume-analyzer|settings|tutors|recruiters|interviews)?(\/[a-zA-Z0-9_\-\.\/]+)?$/;
+  const allowedPathRegex = /^\/(auth|dashboard|profile|jobs|classrooms|mock-interview|resume-analyzer|settings|tutors|recruiters|interviews)?(\/[a-zA-Z0-9_./-]+)?$/;
   if (!allowedPathRegex.test(pathPart)) {
     return false;
   }
@@ -98,7 +101,7 @@ export const isSafeRedirectPath = (value) => {
   if (queryPart) {
     const queryParams = new URLSearchParams(queryPart);
     for (const [key, val] of queryParams.entries()) {
-      if (!/^[a-zA-Z0-9_\-]+$/.test(key) || !/^[a-zA-Z0-9_\-\.\s@%:\/\+]*$/.test(val)) {
+      if (!/^[a-zA-Z0-9_-]+$/.test(key) || !/^[a-zA-Z0-9_\-.\\s@%:/+]*$/.test(val)) {
         return false;
       }
     }
