@@ -36,9 +36,16 @@ const handleValidationErrorDB = (err) => {
 
   const messages = Object.values(rawErrors)
     .map((el) => el?.message)
-    .filter((m) => typeof m === "string" && m.trim().length > 0);
+    .filter((m) => typeof m === "string" && m.trim().length > 0)
+    .map((m) => m.trim())
+    // Normalize punctuation to avoid odd sequences like "...invalid.. other".
+    // Keep the join delimiter consistent instead.
+    .map((m) => m.replace(/[.!?]+\s*$/u, ""));
 
-  const message = `Invalid input data. ${messages.join(". ")}`.trim();
+  const message = messages.length
+    ? `Invalid input data. ${messages.join(". ")}.`
+    : "Invalid input data.";
+
 
   const error = new AppError(message, 400);
   error.errors = errors; // Attach field-level errors
