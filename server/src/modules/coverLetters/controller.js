@@ -73,7 +73,12 @@ export const generateCoverLetter = asyncHandler(async (req, res, next) => {
     return next(new AppError("Resume ID and Job Description are required", 400));
   }
 
-  const newCoverLetter = await generateCoverLetterService(userId, resumeId, jobDescription);
+  // Sanitize: remove null bytes and strip HTML tags
+  const sanitizedJobDescription = jobDescription
+    .replace(/\0/g, "")
+    .replace(/<[^>]*>/g, "");
+
+  const newCoverLetter = await generateCoverLetterService(userId, resumeId, sanitizedJobDescription);
 
   res.status(201).json({
     success: true,
