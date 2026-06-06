@@ -184,11 +184,46 @@ const globalErrorHandler = (err, req, res, next) => {
   if (error.code === 11000) error = handleDuplicateFieldsDB(error);
   if (error.name === "ValidationError") error = handleValidationErrorDB(error);
   
-  // Handle AI errors (Axios/OpenAI-like + Gemini/Google Generative AI)
+  // Handle AI errors (Gemini/Google Generative AI + AI-specific Axios errors)
   // IMPORTANT: Do NOT classify AI errors solely by message text (e.g. "google"),
   // otherwise non-AI operational errors containing these words get misclassified.
+  //
+  // IMPORTANT FIX: Do NOT classify all Axios errors as AI.
+  // `error.isAxiosError === true` can be true for operational failures to non-AI upstream services.
+  const url = typeof error?.config?.url === "string" ? error.config.url : "";
+  const aiUrlHints = [
+    // Google / Gemini endpoints (best-effort allowlist)
+    "generativelanguage.googleapis.com",
+    "googleapis.com",
+    "/v1beta/",
+    "/v1/",
+    // Some SDKs/clients may use a custom base URL that still includes these hints.
+    "gemini",
+    "generative",
+    // OpenAI (if used elsewhere in the app)
+    "api.openai.com",
+    "chat/completions",
+    "responses",
+  ];
+  const isAiAxiosError = Boolean(
+    error.isAxiosError &&
+      (aiUrlHints.some((hint) => url.toLowerCase().includes(hint)) ||
+        // Secondary check: provider header / type hints if present.
+        (typeof error?.config?.headers === "object" &&
+          (Object.values(error.config.headers)
+            .filter((v) => typeof v === "string")
+            .join(" ")
+            .toLowerCase()
+            .includes("google") ||
+            Object.values(error.config.headers)
+              .filter((v) => typeof v === "string")
+              .join(" ")
+              .toLowerCase()
+              .includes("gemini"))))
+  );
+
   if (
-    error.isAxiosError ||
+    isAiAxiosError ||
     error.type === "invalid_request_error" ||
     error?.name === "GoogleGenerativeAI" ||
     error?.provider === "google" ||
@@ -198,6 +233,7 @@ const globalErrorHandler = (err, req, res, next) => {
   ) {
     error = handleAIError(error);
   }
+
 
   
   // Preserve field-level errors from Mongoose if present (deterministic)
