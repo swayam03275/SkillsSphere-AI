@@ -102,10 +102,12 @@ export const registerUserAndIssueToken = async ({ name, email, password, role })
 export const verifyUserEmail = async (email, otp) => {
   const user = await User.findOne({ email });
 
-  if (!user || user.isVerified) {
-    throw new AppError("Invalid request", 400);
-  }
-
+  if (!user) {
+  throw new AppError("No account found with this email", 404);
+}
+if (user.isVerified) {
+  throw new AppError("Email is already verified. Please log in.", 400);
+}
   if (user.otpAttempts >= MAX_OTP_ATTEMPTS) {
     throw new AppError("Too many attempts. Please request a new OTP.", 429);
   }
