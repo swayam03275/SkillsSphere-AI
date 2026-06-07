@@ -38,39 +38,91 @@ const normalizeLanguage = (language) => {
 
 const DANGEROUS_PATTERNS = {
   javascript: [
+    /\brequire\b/i,
+    /\bimport\b/i,
+    /\bprocess\b/i,
+    /\bglobal\b/i,
+    /\bglobalThis\b/i,
+    /\bconstructor\b/i,
+    /\beval\b/i,
+    /\bFunction\b/i,
     /child_process/i,
-    /require\s*\(\s*['"]fs['"]\s*\)/i,
-    /process\.(exit|kill|env|stderr|stdout|stdin)/i,
-    /cluster/i,
     /worker_threads/i,
-    /eval\s*\(/i,
-    /Function\s*\(/i,
+    /cluster/i,
+    /\bfs\b/i,
+    /\b__proto__\b/i,
+    /\bprototype\b/i,
     /setInterval/i,
     /setTimeout/i
   ],
   python: [
-    /import\s+(os|subprocess|sys|shutil|pty|socket|requests|urllib)/i,
-    /from\s+(os|subprocess|sys|shutil|pty|socket|requests|urllib)\s+import/i,
-    /__import__\s*\(/i,
-    /eval\s*\(/i,
-    /exec\s*\(/i,
-    /open\s*\(/i
+    /\bimport\b/i,
+    /\bexec\b/i,
+    /\beval\b/i,
+    /\bopen\b/i,
+    /\b__import__\b/i,
+    /\bos\b/i,
+    /\bsys\b/i,
+    /\bsubprocess\b/i,
+    /\bshutil\b/i,
+    /\bpty\b/i,
+    /\bsocket\b/i,
+    /\brequests\b/i,
+    /\burllib\b/i,
+    /\bimportlib\b/i,
+    /\bgetattr\b/i,
+    /\bsetattr\b/i,
+    /\bglobals\b/i,
+    /\blocals\b/i
   ],
   cpp: [
-    /system\s*\(/i,
-    /popen\s*\(/i,
-    /fork\s*\(/i,
-    /exec(l|p|v)/i,
-    /fstream/i,
-    /remove\s*\(/i,
-    /rename\s*\(/i
+    /\bsystem\b/i,
+    /\bpopen\b/i,
+    /\bfork\b/i,
+    /\bexec(l|p|v|lp|vp|le|ve)?\b/i,
+    /\bfstream\b/i,
+    /\bremove\b/i,
+    /\brename\b/i,
+    /\bfilesystem\b/i
   ]
 };
 
+const preprocessCode = (language, code) => {
+  if (typeof code !== "string") return "";
+
+  let processed = code;
+
+  // 1. Decode hex (\xXX), Unicode (\uXXXX), and braced Unicode (\u{XXXX}) escapes
+  try {
+    processed = processed
+      .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+      .replace(/\\u\{([0-9a-fA-F]+)\}/g, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+      .replace(/\\x([0-9a-fA-F]{2})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+  } catch (e) {
+    // Ignore malformed escape errors
+  }
+
+  // 2. Remove line continuations (backslash followed by newline)
+  processed = processed.replace(/\\\r?\n/g, "");
+
+  // 3. Strip comments based on language style to prevent keyword hiding
+  if (language === "javascript" || language === "cpp") {
+    processed = processed
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/\/\/.*/g, "");
+  } else if (language === "python") {
+    processed = processed
+      .replace(/#.*/g, "");
+  }
+
+  return processed;
+};
+
 const hasDangerousPatterns = (language, code) => {
+  const preprocessed = preprocessCode(language, code);
   const patterns = DANGEROUS_PATTERNS[language];
   if (!patterns) return false;
-  return patterns.some(pattern => pattern.test(code));
+  return patterns.some(pattern => pattern.test(preprocessed));
 };
 
 class CodeExecutionCache {
