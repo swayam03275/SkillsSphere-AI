@@ -42,5 +42,31 @@ describe("errorMiddleware ValidationError handling", () => {
     assert.match(res.payload.message, /Invalid input data/i);
 
   });
+
+  test("normalizes error.errors when err.errors or error.errors is wrong-shaped (e.g. objects)", () => {
+    process.env.NODE_ENV = "production";
+
+    const err = new Error("Validation failed");
+    err.isOperational = true;
+    err.statusCode = 400;
+    err.status = "fail";
+    err.errors = {
+      username: { message: "Username is too short" },
+      email: "Email is invalid",
+    };
+
+    const req = { method: "POST", originalUrl: "/api/test" };
+    const res = makeRes();
+
+    globalErrorHandler(err, req, res, next);
+    
+    assert.equal(res.statusCode, 400);
+    assert.ok(res.payload);
+    assert.equal(res.payload.success, false);
+    assert.deepEqual(res.payload.errors, {
+      username: "Username is too short",
+      email: "Email is invalid",
+    });
+  });
 });
 
