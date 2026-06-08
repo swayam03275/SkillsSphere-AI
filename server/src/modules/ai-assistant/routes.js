@@ -4,6 +4,23 @@ import { generateChatResponse } from "./controller.js";
 
 const router = express.Router();
 
-router.post("/", protect, generateChatResponse);
+// Backward compatible chat handler:
+// Normalizes legacy payload `{ "message": "..." }` into the `{ "messages": [...] }` array format
+const transformLegacyMessage = (req, res, next) => {
+  const body = req.body || {};
+  if (body.message && typeof body.message === "string" && body.message.trim() && !body.messages) {
+    req.body = {
+      messages: [
+        {
+          sender: "user",
+          text: body.message.trim(),
+        },
+      ],
+    };
+  }
+  next();
+};
+
+router.post("/", protect, transformLegacyMessage, generateChatResponse);
 
 export default router;

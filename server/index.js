@@ -191,39 +191,7 @@ app.get("/health", (req, res) => {
 
 // app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// Backward compatible chat handler:
-// - New format: { "messages": [{ sender: "user"|"bot", text: "..." }] }
-// - Old format: { "message": "..." }
-//
-// We normalize the request into the `messages` shape expected by
-// server/src/modules/ai-assistant/controller.js and let the AI controller handle generation.
-app.post("/api/chat", protect, async (req, res, next) => {
-  try {
-    const body = req.body || {};
 
-    if (body.messages && Array.isArray(body.messages)) {
-      // Let downstream controller validate required contents.
-      return aiAssistantRoutes.handle(req, res, next);
-    }
-
-    if (typeof body.message === "string" && body.message.trim()) {
-      req.body = {
-        messages: [
-          {
-            sender: "user",
-            text: body.message.trim(),
-          },
-        ],
-      };
-      return aiAssistantRoutes.handle(req, res, next);
-    }
-
-    return res.status(400).json({ error: "Message required" });
-  } catch (err) {
-    logger.error("Chat API error:", err);
-    next(err);
-  }
-});
 
 
 
