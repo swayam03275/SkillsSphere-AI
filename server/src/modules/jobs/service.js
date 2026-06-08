@@ -234,7 +234,7 @@ await JobPosting.findByIdAndDelete(id);
 
 const io = getIO();
 for (const app of applications) {
-  await Notification.create({
+  const notifDoc = await Notification.create({
     userId: app.applicant,
     type: "application",
     title: "Job Posting Removed",
@@ -242,7 +242,7 @@ for (const app of applications) {
     metadata: { jobId: id }
   });
   if (io) {
-    io.to(`user_${app.applicant}`).emit("new-notification", {});
+    io.to(`user_${app.applicant}`).emit("new-notification", notifDoc);
   }
 }
 
@@ -268,7 +268,7 @@ for (const app of applications) {
 
     const io = getIO();
     for (const app of applications) {
-      await Notification.create({
+      const notifDoc = await Notification.create({
         userId: app.applicant,
         type: "application",
         title: "Job Posting Removed",
@@ -276,7 +276,7 @@ for (const app of applications) {
         metadata: { jobId: id }
       });
       if (io) {
-        io.to(`user_${app.applicant}`).emit("new-notification", {});
+        io.to(`user_${app.applicant}`).emit("new-notification", notifDoc);
       }
     }
   }

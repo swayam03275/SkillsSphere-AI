@@ -20,9 +20,9 @@ const SocketNotificationListener = () => {
   const socketRef = useRef(null);
   const dispatch = useDispatch();
 
-  // Keep a stable ref to toast so the socket effect does not re-run when the
-  // toast context object changes identity across renders.
   const toastRef = useRef(toast);
+  const processedNotifs = useRef(new Set());
+
   useEffect(() => {
     toastRef.current = toast;
   }, [toast]);
@@ -68,6 +68,24 @@ const SocketNotificationListener = () => {
     };
 
     const handleNewNotification = (notif) => {
+      if (!notif || !notif._id) {
+        // Prevent processing empty or invalid notifications
+        return;
+      }
+      
+      if (processedNotifs.current.has(notif._id)) {
+        return;
+      }
+      processedNotifs.current.add(notif._id);
+
+      // Keep the Set size manageable
+      if (processedNotifs.current.size > 200) {
+        const iterator = processedNotifs.current.values();
+        for (let i = 0; i < 50; i++) {
+          processedNotifs.current.delete(iterator.next().value);
+        }
+      }
+
       dispatch(addLiveNotification(notif));
 
       if (
