@@ -62,14 +62,17 @@ const checkResumeAccess = async (userId, filename) => {
   }).select("_id");
 
   if (resumeDoc) {
-    const jobApp = await JobApplication.findOne({ resume: resumeDoc._id })
+    const jobApps = await JobApplication.find({ resume: resumeDoc._id })
       .populate({
         path: "job",
-        match: { recruiter: userId },
-        select: "_id recruiter",
+        select: "recruiter",
       });
 
-    if (jobApp && jobApp.job) {
+    const hasAccess = jobApps.some(
+      (app) => app.job && app.job.recruiter && app.job.recruiter.toString() === userId.toString()
+    );
+
+    if (hasAccess) {
       return true;
     }
   }
@@ -127,6 +130,8 @@ export const serveAvatar = asyncHandler(async (req, res, next) => {
   if (!avatarOwner) {
     return next(new AppError("File not found", 404));
   }
+  // Avatar images are profile pictures — accessible to any authenticated user
+  // as they appear in public-facing UI (classroom, recruiter views, etc.)
 
   if (!sendFileIfExists(res, resolved.absolutePath, resolved.safeName)) {
     return next(new AppError("File not found", 404));

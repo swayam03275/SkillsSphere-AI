@@ -74,7 +74,7 @@ describe("errorMiddleware AI detection", () => {
     err.config = {
       url: "https://non-ai-upstream.example.com/orders/v1/create",
       headers: {
-        Authorization: "Bearer some-non-google-token",
+        Authorization: "Bearer some-non-matching-token",
       },
     };
 

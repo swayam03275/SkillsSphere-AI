@@ -77,6 +77,7 @@ test("deleteProfile - cascades deletion to files and relational models", async (
 
   mock.method(JobPosting, "find", () => ({ session: async () => [mockJobPosting] }));
   mock.method(JobPosting, "deleteMany", async () => ({ deletedCount: 1 }));
+  mock.method(RoadmapComment, "deleteMany", async () => ({ deletedCount: 1 }));
 
   // Mock File System operations
   const unlinkedFiles = [];

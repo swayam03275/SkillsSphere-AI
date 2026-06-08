@@ -215,6 +215,7 @@ const ResetPassword = () => {
                 error={errors.newPassword}
                 helperText="Must be at least 8 characters"
                 disabled={loading}
+                autoComplete="new-password"
               />
 
               <Input
@@ -226,6 +227,7 @@ const ResetPassword = () => {
                 onChange={handleChange}
                 error={errors.confirmPassword}
                 disabled={loading}
+                autoComplete="new-password"
               />
             </div>
 

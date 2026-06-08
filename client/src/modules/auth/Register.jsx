@@ -186,6 +186,7 @@ const Register = () => {
               onChange={handleChange}
               error={errors.name}
               disabled={loading}
+              autoComplete="name"
             />
 
             <Input
@@ -197,6 +198,7 @@ const Register = () => {
               onChange={handleChange}
               error={errors.email}
               disabled={loading}
+              autoComplete="email"
             />
 
             <div className="flex flex-col gap-1">
@@ -209,6 +211,7 @@ const Register = () => {
                 onChange={handleChange}
                 error={errors.password}
                 disabled={loading}
+                autoComplete="new-password"
               />
               
               {/* Password Strength Indicator */}
@@ -254,6 +257,7 @@ const Register = () => {
               onChange={handleChange}
               error={errors.confirmPassword}
               disabled={loading}
+              autoComplete="new-password"
             />
             {passwordsMatch && (
               <p className="text-emerald-500 text-xs sm:text-sm -mt-1 font-medium flex items-center gap-1">

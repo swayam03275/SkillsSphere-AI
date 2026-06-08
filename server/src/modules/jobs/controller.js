@@ -191,6 +191,7 @@ export const getJobPostingById = asyncHandler(async (req, res) => {
  */
 export const updateJobPosting = asyncHandler(async (req, res) => {
   const updatedJob = await updateJobService(req.params.id, req.body, req.user._id);
+  await invalidateCacheByPrefix("jobs");
   await invalidateAnalyticsCache(req.user._id.toString());
   res.status(200).json({
     success: true,
@@ -205,6 +206,7 @@ export const updateJobPosting = asyncHandler(async (req, res) => {
  */
 export const deleteJobPosting = asyncHandler(async (req, res) => {
   await deleteJobService(req.params.id, req.user._id);
+  await invalidateCacheByPrefix("jobs");
   await invalidateAnalyticsCache(req.user._id.toString());
   res.status(200).json({
     success: true,

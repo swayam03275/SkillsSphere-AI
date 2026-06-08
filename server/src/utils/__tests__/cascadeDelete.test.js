@@ -75,6 +75,7 @@ test("cascadeDeleteUser sweeps all physical files and databases", async () => {
 
   mock.method(JobPosting, "find", () => ({ session: async () => [mockJobPosting] }));
   mock.method(JobPosting, "deleteMany", async () => ({ deletedCount: 1 }));
+  mock.method(RoadmapComment, "deleteMany", async () => ({ deletedCount: 1 }));
 
   // Mock File System operations
   const unlinkedFiles = [];

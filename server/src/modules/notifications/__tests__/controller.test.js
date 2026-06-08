@@ -165,6 +165,22 @@ describe("Notification Controller", () => {
       assert.deepEqual(res.json.mock.calls[0].arguments[0].data, mockCreated);
     });
 
+    it("should validate and accept system, message, and application_status types", async () => {
+      for (const t of ["system", "message", "application_status"]) {
+        req.body = { ...validBody(), userId: req.user._id, type: t };
+        const mockCreated = { _id: "n1", ...req.body };
+        mock.method(Notification, "create", () => ({
+          populate: () => mockCreated,
+        }));
+
+        createNotification(req, res, next);
+        await flush();
+
+        assert.equal(res.status.mock.calls[res.status.mock.calls.length - 1].arguments[0], 201);
+        mock.restoreAll();
+      }
+    });
+
     it("should throw AppError(403) when userId does not match authenticated user", async () => {
       req.body = { ...validBody(), userId: "someOtherUser" };
 

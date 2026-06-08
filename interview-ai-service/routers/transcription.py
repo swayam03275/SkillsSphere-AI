@@ -114,18 +114,18 @@ async def websocket_transcribe(websocket: WebSocket):
                         
                     # Save accumulated bytes to a temp file and transcribe
                     tmp_path = None
-                    with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as tmp:
-                        tmp.write(audio_buffer)
-                        tmp_path = tmp.name
-                    
                     try:
+                        with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as tmp:
+                            tmp.write(audio_buffer)
+                            tmp_path = tmp.name
+                        
                         transcript = await asyncio.to_thread(transcribe_audio, tmp_path)
                         await websocket.send_json({"transcript": transcript})
                     except Exception as e:
                         print(f"WebSocket transcription failed: {type(e).__name__}")
                         await websocket.send_json({"error": "Transcription failed. Please try again."})
                     finally:
-                        if os.path.exists(tmp_path):
+                        if tmp_path and os.path.exists(tmp_path):
                             os.unlink(tmp_path)
                     
                     # Reset buffer for next utterance

@@ -13,6 +13,8 @@ import {
 import { getServiceStatus } from "../../integrations/aiInterviewService.js";
 import asyncHandler from "../../utils/asyncHandler.js";
 import AppError from "../../utils/AppError.js";
+import InterviewSession from "../../database/models/InterviewSession.js";
+import { safeDeletePhysicalFile } from "../../utils/fileUtils.js";
 
 /**
  * @desc    Start a new interview session
@@ -224,5 +226,37 @@ export const submitTutorFeedback = asyncHandler(async (req, res) => {
     success: true,
     message: "Feedback submitted successfully",
     data: session,
+  });
+});
+
+/**
+ * @desc    Delete an interview session and its associated audio files
+ * @route   DELETE /api/interviews/:id
+ * @access  Private (session owner only)
+ */
+export const deleteInterviewSession = asyncHandler(async (req, res) => {
+  const session = await InterviewSession.findOne({
+    _id: req.params.id,
+    userId: req.user._id,
+  });
+
+  if (!session) {
+    throw new AppError("Interview session not found", 404);
+  }
+
+  // Delete associated audio files from disk before removing the DB record.
+  if (Array.isArray(session.answers)) {
+    for (const answer of session.answers) {
+      if (answer.audioPath) {
+        safeDeletePhysicalFile(answer.audioPath);
+      }
+    }
+  }
+
+  await session.deleteOne();
+
+  res.status(200).json({
+    success: true,
+    message: "Interview session deleted successfully",
   });
 });

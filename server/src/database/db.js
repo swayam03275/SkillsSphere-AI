@@ -5,6 +5,8 @@ export let isConnected = false;
 
 import { seedInterviewData } from "../modules/interviews/seed/seedInterviewData.js";
 import { seedJobData } from "../modules/jobs/seed/seedJobData.js";
+import QuestionBank from "./models/QuestionBank.js";
+import JobPosting from "./models/JobPosting.js";
 import { seedTutorRoadmap } from "../modules/roadmap/seed/seedTutorRoadmap.js";
 
 import logger from "../utils/logger.js";
@@ -47,6 +49,20 @@ const connectDB = async () => {
     });
     isConnected = true;
     logger.log(`MongoDB Connected Successfully! : ${conn.connection.host}`);
+
+    // Seed data if collections are empty
+    try {
+      if ((await QuestionBank.countDocuments()) === 0) {
+        logger.log("QuestionBank is empty — seeding interview data...");
+        await seedInterviewData();
+      }
+      if ((await JobPosting.countDocuments()) === 0) {
+        logger.log("JobPosting is empty — seeding job data...");
+        await seedJobData();
+      }
+    } catch (seedError) {
+      logger.warn(`Seed error (non-fatal): ${seedError.message}`);
+    }
   } catch (error) {
     logger.warn(`MongoDB Connection Error: ${error.message}`);
     logger.warn("Server will continue in degraded mode — DB-dependent features will return 503");

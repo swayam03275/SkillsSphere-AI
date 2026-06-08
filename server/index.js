@@ -12,23 +12,19 @@ validateEnv();
 setupGlobalLogSanitizer();
 
 
-// Trigger nodemon restart!!!!!
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import http from "http";
 import { Server } from "socket.io";
-import swaggerUi from "swagger-ui-express";
 import { logEvaluatorConfig } from "./src/config/evaluatorConfig.js";
 import redisClient, { connectRedis } from "./src/config/redis.js";
 // import swaggerSpec from "./src/config/swaggerConfig.js";
 import connectDB, { isConnected } from "./src/database/db.js";
-import { protect, verifySocketToken } from "./src/middleware/authMiddleware.js";
+import { verifySocketToken } from "./src/middleware/authMiddleware.js";
 import globalErrorHandler from "./src/middleware/errorMiddleware.js";
 import { globalLimiter } from "./src/middleware/rateLimiter.js";
 import requireDB from "./src/middleware/requireDB.js";
 import {
   SOCKET_AUTH_ERROR_CODES,
   createSocketAuthError,
-  getSocketAuthErrorMessage,
 } from "./src/middleware/socketAuthError.js";
 import analyticsRoutes from "./src/modules/analytics/routes.js";
 import authRoutes from "./src/modules/auth/routes.js";
@@ -153,6 +149,16 @@ app.use("/api", globalLimiter);
 let didConnectRedis = false;
 try {
   await connectDB();
+  
+  // Clear ghost sockets from active classroom sessions on server startup to prevent WebRTC continuity issues
+  const ClassroomSession = (await import("./src/database/models/ClassroomSession.js")).default;
+  const resetResult = await ClassroomSession.updateMany(
+    { status: "active" },
+    { $set: { participants: [] } }
+  );
+  if (resetResult.modifiedCount > 0) {
+    logger.log(`Cleared ghost participants from ${resetResult.modifiedCount} active classroom(s)`);
+  }
 } catch (err) {
   logger.error(
     "MongoDB startup error (degraded mode):",
@@ -175,16 +181,11 @@ globalThis.__REDIS_READY__ = didConnectRedis;
 
 logEvaluatorConfig();
 
-
-
-// Initialize Gemini AI client logic moved to src/modules/ai-assistant/controller.js
-
 app.get("/health", (req, res) => {
   res.json({
     status: "OK",
     db: isConnected ? "connected" : "disconnected",
     redis: globalThis.__REDIS_READY__ ? "connected" : "disconnected",
-
   });
 });
 

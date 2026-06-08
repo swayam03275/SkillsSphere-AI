@@ -3,6 +3,7 @@ import * as resumeService from "../resumes/service.js";
 import { parseResume } from "../../utils/parseResume.js";
 import asyncHandler from "../../utils/asyncHandler.js";
 import AppError from "../../utils/AppError.js";
+import fsPromises from "fs/promises";
 
 /**
  * Handle matching evaluation.
@@ -69,6 +70,30 @@ export const getRecommended = asyncHandler(async (req, res, next) => {
   res.status(200).json({
     success: true,
     message: "Latest recommendations fetched successfully",
+    data: result,
+  });
+});
+
+/**
+ * Get a detailed match score between a job and the user's resume.
+ *
+ * @route GET /api/matching/detailed-score
+ */
+export const getDetailedScore = asyncHandler(async (req, res, next) => {
+  const { jobId } = req.query;
+  if (!jobId) {
+    return next(new AppError("jobId is required", 400));
+  }
+
+  const resume = await resumeService.getLatestResume(req.user._id, false);
+  if (!resume) {
+    return next(new AppError("No resume found. Please upload a resume first.", 404));
+  }
+
+  const result = await matchingService.getDetailedMatchScore(jobId, resume);
+
+  res.status(200).json({
+    success: true,
     data: result,
   });
 });

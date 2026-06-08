@@ -57,8 +57,11 @@ describe("analytics controller", () => {
       { averagePlatformScore: 80, totalMockInterviewsCompleted: 2 },
     ]);
     mock.method(LearningProgress, "countDocuments", async () => 9);
+    mock.method(LearningProgress, "find", () => ({
+      lean: mock.fn(async () => [{ user: "60b9f0f29b1d8b2a3c8e4d5a" }]),
+    }));
 
-    const req = { user: { _id: "tutor-1", role: "tutor" } };
+    const req = { user: { _id: "60b9f0f29b1d8b2a3c8e4d5f", role: "tutor" } };
     const res = createResponse();
 
     await getDashboardAnalytics(req, res);

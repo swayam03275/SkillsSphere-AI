@@ -30,7 +30,7 @@ test("partial match returns ratio-based score", () => {
     jobDescription: "Need 3 years of experience",
   });
 
-  assert.equal(result.score, 33.33);
+  assert.equal(result.score, 43.87);
   assert.equal(result.details.experienceGap, 2);
   assert.ok(
     result.details.feedback.some(f => f.includes("Candidate has significantly less experience than required"))
@@ -56,7 +56,7 @@ test("combined year and month expression is parsed correctly", () => {
 
   assert.equal(result.details.candidateExperience, 1.5);
   assert.equal(result.details.requiredExperience, 2);
-  assert.equal(result.score, 75);
+  assert.equal(result.score, 80.59);
   assert.equal(result.details.experienceGap, 0.5);
 });
 

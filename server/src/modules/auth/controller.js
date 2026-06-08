@@ -118,26 +118,87 @@ export const normalizeOAuthRedirectPath = (
   return decodeRedirectPath(value);
 };
 
+/**
+ * Roles that are allowed to be embedded in OAuth state and assigned
+ * to newly created Google users. Any role not in this set is silently
+ * replaced with the safe default "student" before user creation.
+ *
+ * This prevents a forged or tampered state payload from escalating
+ * privileges (e.g. role=admin) even if signature verification passes.
+ */
+const VALID_OAUTH_ROLES = new Set(["student", "recruiter", "tutor"]);
+
+/**
+ * Returns the HMAC signing secret for OAuth state tokens.
+ * Uses the dedicated OAUTH_STATE_SECRET environment variable — never JWT_SECRET.
+ *
+ * Throws at call time (not silently) if the secret is missing, so that a
+ * misconfigured server fails loudly instead of falling back to a known string.
+ *
+ * @throws {Error} If OAUTH_STATE_SECRET is not set in the environment
+ * @returns {string} The signing secret
+ */
+const getOAuthStateSecret = () => {
+  const secret = process.env.OAUTH_STATE_SECRET;
+  if (!secret || !secret.trim()) {
+    throw new Error(
+      "[AUTH] OAUTH_STATE_SECRET is not configured. " +
+      "Set this environment variable to a strong random string before using Google OAuth.",
+    );
+  }
+  return secret.trim();
+};
+
+/**
+ * Sanitizes a role value decoded from OAuth state against the allowlist.
+ * Returns the role unchanged if valid, or "student" as a safe default.
+ *
+ * @param {*} role - Raw role value from decoded state
+ * @returns {string} A validated, safe role string
+ */
+const sanitizeOAuthRole = (role) => {
+  if (typeof role === "string" && VALID_OAUTH_ROLES.has(role.trim().toLowerCase())) {
+    return role.trim().toLowerCase();
+  }
+  return "student";
+};
+
 export const signOAuthState = (stateObj) => {
-  const secret = process.env.JWT_SECRET || "fallback-secret-for-state-signing";
+  // Throws immediately if OAUTH_STATE_SECRET is missing — no silent fallback.
+  const secret = getOAuthStateSecret();
+
   const payload = {
     ...stateObj,
+    // role must pass the allowlist — sanitize before embedding in the signed payload
+    // so that even if someone manages to call signOAuthState with a bad role,
+    // the embedded value is already safe.
+    role: sanitizeOAuthRole(stateObj.role),
     nonce: crypto.randomBytes(16).toString("hex"),
+    iat: Math.floor(Date.now() / 1000), // issued-at timestamp for replay detection
   };
-  const signString = `${payload.redirect || ""}:${payload.role || ""}:${payload.nonce}`;
+
+  const signString = `${payload.redirect || ""}:${payload.role}:${payload.nonce}:${payload.iat}`;
   const signature = crypto
     .createHmac("sha256", secret)
     .update(signString)
     .digest("hex");
-  
+
   payload.sig = signature;
   return Buffer.from(JSON.stringify(payload), "utf8").toString("base64");
 };
 
 export const verifyAndDecodeOAuthState = (stateStr) => {
   if (!stateStr) return null;
-  const secret = process.env.JWT_SECRET || "fallback-secret-for-state-signing";
-  
+
+  // Throws immediately if OAUTH_STATE_SECRET is missing — no silent fallback.
+  let secret;
+  try {
+    secret = getOAuthStateSecret();
+  } catch (err) {
+    logger.error(err.message);
+    return null;
+  }
+
   let decodedStr = null;
   try {
     const rawState = stateStr.includes("%") ? decodeURIComponent(stateStr) : stateStr;
@@ -146,44 +207,72 @@ export const verifyAndDecodeOAuthState = (stateStr) => {
     decodedStr = null;
   }
 
+  // If base64 decode failed, check if the raw value is a safe redirect path (legacy support).
   if (!decodedStr) {
     if (isSafeRedirectPath(stateStr)) {
-      return { redirect: stateStr };
+      return { redirect: stateStr, role: "student" };
     }
     return null;
   }
 
+  let payload;
   try {
-    const payload = JSON.parse(decodedStr);
-    
-    // Signed state check
-    if (payload && typeof payload === "object" && payload.sig && payload.nonce) {
-      const signString = `${payload.redirect || ""}:${payload.role || ""}:${payload.nonce}`;
-      const computedSignature = crypto
-        .createHmac("sha256", secret)
-        .update(signString)
-        .digest("hex");
-      
-      if (computedSignature !== payload.sig) {
-        logger.error("[AUTH] Google OAuth state signature verification failed");
-        return null;
-      }
-      return payload;
-    }
-
-    // Legacy JSON state
-    if (payload && typeof payload === "object") {
-      return { redirect: payload.redirect, role: payload.role };
-    }
+    payload = JSON.parse(decodedStr);
   } catch {
-    // If JSON parsing failed, it might be a legacy raw string redirect path
+    // JSON parse failed — check if it's a plain redirect path (legacy support).
     if (isSafeRedirectPath(decodedStr)) {
-      return { redirect: decodedStr };
+      return { redirect: decodedStr, role: "student" };
     }
+    return null;
   }
 
+  if (!payload || typeof payload !== "object") return null;
+
+  // Signed state: verify HMAC signature.
+  if (payload.sig && payload.nonce) {
+    const signString = `${payload.redirect || ""}:${payload.role || ""}:${payload.nonce}:${payload.iat || ""}`;;
+    const computedSignature = crypto
+      .createHmac("sha256", secret)
+      .update(signString)
+      .digest("hex");
+
+    // Use timing-safe comparison to prevent timing oracle attacks.
+    const expectedBuf = Buffer.from(computedSignature, "hex");
+    const actualBuf   = Buffer.from(payload.sig,        "hex");
+    const signaturesMatch =
+      expectedBuf.length === actualBuf.length &&
+      crypto.timingSafeEqual(expectedBuf, actualBuf);
+
+    if (!signaturesMatch) {
+      logger.error("[AUTH] Google OAuth state signature verification failed — possible CSRF or tamper attempt");
+      return null;
+    }
+
+    // Enforce state freshness — reject states older than 10 minutes to limit replay window.
+    const STATE_MAX_AGE_SECONDS = 10 * 60;
+    if (payload.iat && Math.floor(Date.now() / 1000) - payload.iat > STATE_MAX_AGE_SECONDS) {
+      logger.error("[AUTH] Google OAuth state is expired (older than 10 minutes) — possible replay attack");
+      return null;
+    }
+
+    return {
+      redirect: payload.redirect,
+      // Always sanitize role through allowlist — even on a valid signed payload —
+      // in case an older signed state embeds a role that is no longer valid.
+      role: sanitizeOAuthRole(payload.role),
+      action: payload.action,
+      nonce: payload.nonce,
+    };
+  }
+
+  // Legacy unsigned JSON state (no sig/nonce) — accept redirect only, force default role.
+  if (isSafeRedirectPath(payload.redirect)) {
+    return { redirect: payload.redirect, role: "student" };
+  }
+
+  // Final fallback: treat raw state string as a plain redirect path.
   if (isSafeRedirectPath(stateStr)) {
-    return { redirect: stateStr };
+    return { redirect: stateStr, role: "student" };
   }
 
   return null;
@@ -391,28 +480,25 @@ export const googleOAuthCallback = asyncHandler(async (req, res, next) => {
   if (typeof state === "string" && state.length > 0) {
     try {
       const stateObj = verifyAndDecodeOAuthState(state);
+
+      // Guard: verifyAndDecodeOAuthState returns null on invalid/tampered state.
+      // Do not crash by accessing properties of null — fall back to defaults.
       if (stateObj) {
-        if (stateObj.role) {
-          requestedRole = stateObj.role;
+        // Role is already sanitized through VALID_OAUTH_ROLES inside verifyAndDecodeOAuthState.
+        requestedRole = sanitizeOAuthRole(stateObj.role);
+
+        if (stateObj.action) {
+          requestedAction = stateObj.action;
         }
 
         const redirectPath = normalizeOAuthRedirectPath(stateObj.redirect);
         callbackUrl = `${frontendRedirectOrigin}${redirectPath}`;
       } else {
+        logger.warn("[AUTH] OAuth state verification returned null — using fallback callback URL");
         callbackUrl = fallbackCallbackUrl;
       }
-
-      if (stateObj.role) {
-        requestedRole = stateObj.role;
-      }
-      
-      if (stateObj.action) {
-        requestedAction = stateObj.action;
-      }
-
-      const redirectPath = normalizeOAuthRedirectPath(stateObj.redirect);
-      callbackUrl = `${frontendRedirectOrigin}${redirectPath}`;
-    } catch {
+    } catch (err) {
+      logger.error("[AUTH] Unexpected error decoding OAuth state:", err.message);
       callbackUrl = fallbackCallbackUrl;
     }
   }

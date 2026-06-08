@@ -35,6 +35,12 @@ import {
   Info
 } from "lucide-react";
 
+const formatTime = (seconds) => {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`;
+};
+
 const InterviewSession = () => {
   useDocumentTitle("Interview Session");
   const { id: sessionId } = useParams();
@@ -44,7 +50,16 @@ const InterviewSession = () => {
 
   // 1. Manage State, Timers, Persistence, and API operations
   const state = useInterviewState(sessionId, false);
-  const isObserver = state.session && user && user._id !== state.session.userId;
+  const {
+    session,
+    currentIndex,
+    elapsedTime,
+    recoveryMessage,
+    requestStatus,
+    mediaWarning,
+    uploadStatus,
+  } = state;
+  const isObserver = session && user && user._id !== session.userId;
 
   // 2. Manage Socket.IO Network Connectivity
   const socketState = useInterviewSocket({
@@ -64,6 +79,7 @@ const InterviewSession = () => {
     textareaRef,
     setFailedAction: state.setFailedAction,
   });
+  const { socketStatus } = socketState;
 
   // 3. Manage Microphone voice inputs (MediaRecorder API)
   const audioState = useInterviewAudio({

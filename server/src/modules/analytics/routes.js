@@ -4,7 +4,7 @@ import { protect, authorizeRoles } from "../../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.get("/skill-gaps", protect, authorizeRoles("tutor"), getSkillGapHeatmap);
+router.get("/skill-gaps", protect, authorizeRoles("tutor", "recruiter"), getSkillGapHeatmap);
 router.get("/dashboard", protect, getDashboardAnalytics);
 
 export default router;

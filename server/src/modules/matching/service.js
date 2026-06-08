@@ -160,9 +160,28 @@ export const getLatestRecommendations = async (userId) => {
     .lean();
 };
 
+export const getDetailedMatchScore = async (jobId, resumeData) => {
+  const job = await JobPosting.findById(jobId).lean();
+  if (!job) {
+    throw new AppError("Job not found", 404);
+  }
+
+  const resumeSkills = (resumeData.skills || []).map(s => s.toLowerCase().trim());
+  const jobSkills = (job.skills || []).map(s => s.toLowerCase().trim());
+
+  const matchingSkills = jobSkills.filter(s => resumeSkills.includes(s));
+  const missingSkills = jobSkills.filter(s => !resumeSkills.includes(s));
+  const matchScore = jobSkills.length > 0
+    ? Math.round((matchingSkills.length / jobSkills.length) * 100)
+    : 0;
+
+  return { matchScore, matchingSkills, missingSkills };
+};
+
 const matchingService = {
   evaluateMatches,
-  getLatestRecommendations
+  getLatestRecommendations,
+  getDetailedMatchScore
 };
 
 export default matchingService;

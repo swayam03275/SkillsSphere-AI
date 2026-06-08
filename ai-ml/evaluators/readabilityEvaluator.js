@@ -48,6 +48,32 @@ export default function readabilityEvaluator({ resumeText = "" }) {
     return `${verb} ${trimmed.charAt(0).toLowerCase()}${trimmed.slice(1)}`;
   }
 
+  function estimateSentenceComplexity(sentence) {
+    const words = sentence.split(/\s+/);
+    const wordCount = words.length;
+    const longWords = words.filter(w => w.length > 8).length;
+    const longWordRatio = longWords / Math.max(1, wordCount);
+
+    if (wordCount > 30 || longWordRatio > 0.4) return "complex";
+    if (wordCount > 20 || longWordRatio > 0.25) return "moderate";
+    return "simple";
+  }
+
+  function detectRepetitiveVerbs(verbsUsed) {
+    const freq = {};
+    for (const v of verbsUsed) freq[v] = (freq[v] || 0) + 1;
+    return Object.entries(freq)
+      .filter(([, count]) => count > 2)
+      .map(([verb, count]) => ({ verb, count }));
+  }
+
+  function scoreBulletLength(sentence) {
+    const wordCount = sentence.split(/\s+/).length;
+    if (wordCount < 6) return "too_short";
+    if (wordCount > 35) return "too_long";
+    return "optimal";
+  }
+
   const sentences = resumeText
     .split(/[.!?\n]/)
     .map(s => s.trim())
@@ -68,6 +94,9 @@ export default function readabilityEvaluator({ resumeText = "" }) {
 
   let powerVerbCount = 0;
   let passiveVoiceCount = 0;
+  const verbsUsed = [];
+  const complexSentences = [];
+  const bulletLengthIssues = { too_short: 0, too_long: 0, optimal: 0 };
 
   sentences.forEach(sentence => {
     const cleanedSentence = cleanSentenceStart(sentence);
@@ -78,6 +107,16 @@ export default function readabilityEvaluator({ resumeText = "" }) {
 
     if (hasPowerVerb) {
       powerVerbCount++;
+      const matchedVerb = allPowerVerbs.find(verb => words.slice(0, 4).includes(verb));
+      if (matchedVerb) verbsUsed.push(matchedVerb);
+
+      const complexity = estimateSentenceComplexity(cleanedSentence);
+      if (complexity === "complex") {
+        complexSentences.push({ sentence: cleanedSentence, complexity });
+      }
+
+      const lengthScore = scoreBulletLength(cleanedSentence);
+      bulletLengthIssues[lengthScore]++;
     } else {
       const category = getSentenceCategory(cleanedSentence);
       if (category === "bullet") {
@@ -110,6 +149,7 @@ export default function readabilityEvaluator({ resumeText = "" }) {
 
   const highSeverity = weakBullets.filter(b => b.severity === "high");
   const mediumSeverity = weakBullets.filter(b => b.severity === "medium");
+  const repetitiveVerbs = detectRepetitiveVerbs(verbsUsed);
 
   if (passiveVoiceCount > 2) {
     suggestions.push(
@@ -132,6 +172,31 @@ export default function readabilityEvaluator({ resumeText = "" }) {
   if (verbDensity < MIN_VERB_DENSITY) {
     suggestions.push(
       `Verb density is ${Math.round(verbDensity * 100)}% — below 50%. Strengthen bullets using: ${relevantVerbs.slice(0, 3).join(", ")}.`
+    );
+  }
+
+  if (repetitiveVerbs.length > 0) {
+    const examples = repetitiveVerbs.map(r => `'${r.verb}' (${r.count}x)`).join(", ");
+    suggestions.push(
+      `Repetitive verbs detected: ${examples}. Vary your language to avoid sounding monotonous.`
+    );
+  }
+
+  if (complexSentences.length > 2) {
+    suggestions.push(
+      `${complexSentences.length} overly complex sentences detected. Break them into shorter, punchier bullets.`
+    );
+  }
+
+  if (bulletLengthIssues.too_long > 1) {
+    suggestions.push(
+      `${bulletLengthIssues.too_long} bullets exceed 35 words — trim for better ATS and recruiter readability.`
+    );
+  }
+
+  if (bulletLengthIssues.too_short > 1) {
+    suggestions.push(
+      `${bulletLengthIssues.too_short} bullets are too short (under 6 words) — add context or metrics.`
     );
   }
 
@@ -167,6 +232,9 @@ export default function readabilityEvaluator({ resumeText = "" }) {
       weakBulletCount: weakBullets.length,
       highSeverityCount: highSeverity.length,
       mediumSeverityCount: mediumSeverity.length,
+      repetitiveVerbs,
+      complexSentenceCount: complexSentences.length,
+      bulletLengthDistribution: bulletLengthIssues,
       suggestions,
       relevantVerbs,
     },

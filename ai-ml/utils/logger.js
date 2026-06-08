@@ -24,4 +24,10 @@ export function error(...args) {
   console.error("[ai-ml]", ...formatArgs(args));
 }
 
-export default { info, warn, error, redact };
+export function debug(...args) {
+  if (!isDev) return;
+  console.debug("[ai-ml-debug]", ...formatArgs(args));
+}
+
+export default { info, warn, error, debug, redact };
+

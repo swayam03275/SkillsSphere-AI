@@ -65,6 +65,16 @@ export const cascadeDeleteUser = async (userId) => {
     await Notification.deleteMany({ userId }, { session });
     await MatchResult.deleteMany({ user: userId }, { session });
     await LearningProgress.deleteMany({ user: userId }, { session });
+    await LearningProgress.updateMany(
+  { tutorsTracking: userId },
+  { $pull: { tutorsTracking: userId } },
+  { session }
+);
+await LearningProgress.updateMany(
+  { recruitersTracking: userId },
+  { $pull: { recruitersTracking: userId } },
+  { session }
+);
     await JobApplication.deleteMany({ applicant: userId }, { session });
     await CoverLetter.deleteMany({ user: userId }, { session });
     await AnalysisHistory.deleteMany({ user: userId }, { session });

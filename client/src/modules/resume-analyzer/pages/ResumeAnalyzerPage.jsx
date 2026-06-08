@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { useToast, ErrorState } from "../../../shared/components";
 import Navbar from "../../../shared/components/Navbar";
 import Footer from "../../../shared/components/Footer";
+import AnalysisResultSkeleton from "../components/AnalysisResultSkeleton";
+
 
 import AnalysisResult from "../components/AnalysisResult";
 import DragDropUpload from "../components/DragDropUpload";
@@ -274,6 +276,8 @@ const ResumeAnalyzerPage = () => {
 
           {isLoadingLatest ? (
             <ResumeSkeleton />
+          ) : loading && !result && !error ? (
+            <AnalysisResultSkeleton />
           ) : error && !result ? (
             <div className="w-full max-w-4xl mx-auto space-y-6 mt-12 bg-white dark:bg-[#121214] p-8 md:p-12 rounded-3xl shadow-sm border border-gray-100 dark:border-white/5">
               <div className="flex items-center gap-3 text-red-600 mb-8">

@@ -102,10 +102,12 @@ export const registerUserAndIssueToken = async ({ name, email, password, role })
 export const verifyUserEmail = async (email, otp) => {
   const user = await User.findOne({ email });
 
-  if (!user || user.isVerified) {
-    throw new AppError("Invalid request", 400);
-  }
-
+  if (!user) {
+  throw new AppError("No account found with this email", 404);
+}
+if (user.isVerified) {
+  throw new AppError("Email is already verified. Please log in.", 400);
+}
   if (user.otpAttempts >= MAX_OTP_ATTEMPTS) {
     throw new AppError("Too many attempts. Please request a new OTP.", 429);
   }
@@ -143,6 +145,10 @@ export const forgotPasswordRequest = async (email) => {
 
   if (!user) {
     return { success: true, message: "If an account exists with this email, a reset code has been sent." };
+  }
+
+  if (user.resetPasswordExpires && user.resetPasswordExpires.getTime() > Date.now() + (OTP_EXPIRY_MINUTES - 1) * 60 * 1000) {
+    throw new AppError("Please wait a minute before requesting another reset code", 429);
   }
 
   const otp = generateOTP();
@@ -196,9 +202,10 @@ export const resetUserPassword = async (email, otp, newPassword) => {
   const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
 
   user.password = hashedPassword;
-  user.resetPasswordToken = null;
-  user.resetPasswordExpires = null;
+  user.resetPasswordToken = undefined;
+  user.resetPasswordExpires = undefined;
   user.otpAttempts = 0;
+  user.passwordChangedAt = new Date();
   await user.save();
 
   return { success: true, message: "Password reset successfully" };
@@ -214,6 +221,10 @@ export const resendUserOTP = async (email) => {
 
   if (user.isVerified) {
     throw new AppError("User is already verified", 400);
+  }
+
+  if (user.verificationTokenExpires && user.verificationTokenExpires.getTime() > Date.now() + (OTP_EXPIRY_MINUTES - 1) * 60 * 1000) {
+    throw new AppError("Please wait a minute before requesting another verification code", 429);
   }
 
   const otp = generateOTP();

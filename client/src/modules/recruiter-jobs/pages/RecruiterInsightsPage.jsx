@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { ArrowLeft, Search, Filter, TrendingUp, Users, Award, Briefcase } from "lucide-react";
-import Navbar from "../../../shared/landing/Navbar";
+import Navbar from "../../../shared/components/Navbar";
 import Button from "../../../shared/components/Button";
 import Input from "../../../shared/components/Input";
 import LoadingState from "../../../shared/components/LoadingState";

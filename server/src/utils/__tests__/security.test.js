@@ -1,5 +1,8 @@
 import test from "node:test";
 import assert from "node:assert";
+
+process.env.ENCRYPTION_KEY = "x".repeat(32);
+
 import { encrypt, encryptDeterministic, decrypt } from "../encryption.js";
 import { sanitizeValue } from "../logSanitizer.js";
 

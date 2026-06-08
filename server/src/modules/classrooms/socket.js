@@ -113,9 +113,10 @@ export function initClassroomSockets(io) {
           return;
         }
 
-        // Update database: remove any existing/stale socket for this exact socket ID to prevent duplicates
+        // Update database: actively purge any stale/ghost socket IDs for this specific user
+        // to prevent ghost sockets from breaking WebRTC. This enforces 1 active WebRTC presence per user.
         session.participants = (session.participants || []).filter(
-          (p) => p.socketId !== socket.id
+          (p) => p.socketId !== socket.id && p.user?.id !== userIdStr
         );
 
         // Add this new active socket participant

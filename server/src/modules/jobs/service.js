@@ -374,23 +374,21 @@ export const getJobRecommendations = async (user, options = {}) => {
     ...(resume.keywords || []),
   ].map((term) => term.trim().toLowerCase()).filter(Boolean);
 
-  const uniqueTerms = [...new Set(candidateTerms)];
+  const uniqueTerms = [...new Set(candidateTerms)].slice(0, 30);
 
   if (uniqueTerms.length > 0) {
     // Pre-filter: Only fetch jobs where at least one skill or title matches a candidate term.
-    // This drastically reduces the number of jobs sent to the AI evaluator.
     const escapeRegex = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     
-    // We avoid \b for terms with special characters (like C++, Node.js) as it causes matching issues
-    const regexTerms = uniqueTerms.map((term) => {
-      const escaped = escapeRegex(term);
-      return new RegExp(`^${escaped}$|\\b${escaped}\\b`, "i");
-    });
+    // For exact match in arrays (highly optimized by MongoDB indexes)
+    const exactRegexTerms = uniqueTerms.map((term) => new RegExp(`^${escapeRegex(term)}$`, "i"));
+    // For substring match in title (prevents ReDoS from backtracking \b)
+    const substringRegexTerms = uniqueTerms.map((term) => new RegExp(escapeRegex(term), "i"));
     
     query.$or = [
-      { skills: { $in: regexTerms } },
-      { keywords: { $in: regexTerms } },
-      { title: { $in: regexTerms } }
+      { skills: { $in: exactRegexTerms } },
+      { keywords: { $in: exactRegexTerms } },
+      { title: { $in: substringRegexTerms } }
     ];
   }
 

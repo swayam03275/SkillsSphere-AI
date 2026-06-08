@@ -1,7 +1,7 @@
 import React from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { Info, CheckCircle, AlertTriangle, XCircle, Briefcase, Video, FileText, Trash2 } from "lucide-react";
+import { Info, CheckCircle, AlertTriangle, XCircle, Briefcase, Video, FileText, Trash2, Zap, MessageSquare } from "lucide-react";
 import { markAsRead, deleteNotificationById } from "../../features/notifications/notificationsSlice";
 
 const decodeActionUrl = (value) => {
@@ -116,6 +116,21 @@ const getNotificationConfig = (type) => {
       return {
         icon: <AlertTriangle className="text-rose-500" size={18} />,
         bgColor: "bg-rose-500/10 border-rose-500/20",
+      };
+    case "system":
+      return {
+        icon: <Zap className="text-amber-500" size={18} />,
+        bgColor: "bg-amber-500/10 border-amber-500/20",
+      };
+    case "message":
+      return {
+        icon: <MessageSquare className="text-indigo-500" size={18} />,
+        bgColor: "bg-indigo-500/10 border-indigo-500/20",
+      };
+    case "application_status":
+      return {
+        icon: <CheckCircle className="text-blue-500" size={18} />,
+        bgColor: "bg-blue-500/10 border-blue-500/20",
       };
     case "info":
     default:

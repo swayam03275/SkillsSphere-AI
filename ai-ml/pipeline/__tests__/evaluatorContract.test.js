@@ -22,7 +22,11 @@ const validResult = (overrides = {}) => ({
 test("accepts a valid evaluator result object", () => {
   const result = validateEvaluatorResult(validResult());
 
-  assert.deepEqual(result, validResult());
+  const expected = validResult();
+  expected.details.feedback = [];
+  expected.details.suggestions = [];
+
+  assert.deepEqual(result, expected);
 });
 
 test("applies defaults for optional summary, details, and meta fields", () => {
@@ -35,7 +39,7 @@ test("applies defaults for optional summary, details, and meta fields", () => {
   });
 
   assert.equal(result.summary, "");
-  assert.deepEqual(result.details, {});
+  assert.deepEqual(result.details, { feedback: [], suggestions: [] });
   assert.deepEqual(result.meta, {});
 });
 
