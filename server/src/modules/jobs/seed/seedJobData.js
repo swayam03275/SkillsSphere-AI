@@ -139,7 +139,7 @@ export const seedJobData = async () => {
   try {
     const existingJobs = await JobPosting.countDocuments();
     if (existingJobs > 0) {
-      logger.log(`[seed] JobPosting already has ${existingJobs} jobs. Clearing...`);
+      logger.info(`[seed] JobPosting already has ${existingJobs} jobs. Clearing...`);
       await JobPosting.deleteMany({});
     }
 
@@ -154,7 +154,7 @@ export const seedJobData = async () => {
         company: "Global Tech Inc.",
         isVerified: true
       });
-      logger.log("[seed] Created mock recruiter for seeded jobs.");
+      logger.info("[seed] Created mock recruiter for seeded jobs.");
     }
 
     let jobsToInsert = jobPostingsData.map(job => ({
@@ -174,7 +174,7 @@ export const seedJobData = async () => {
     }
 
     await JobPosting.insertMany(expandedJobs);
-    logger.log(`[seed] ✅ ${expandedJobs.length} Job Postings seeded successfully!`);
+    logger.info(`[seed] ✅ ${expandedJobs.length} Job Postings seeded successfully!`);
   } catch (error) {
     logger.error("[seed] Error seeding job data:", error);
   }

@@ -110,7 +110,7 @@ describe("codeEditorHandler execution security", () => {
     await handlers.get("execute-code-request")({
       roomId: "room-1",
       language: "javascript",
-      code: "console.log('too large')",
+      code: "logger.info('too large')",
     });
 
     assert.equal(postMock.mock.calls.length, 0);
@@ -134,12 +134,12 @@ describe("codeEditorHandler execution security", () => {
     await handlers.get("execute-code-request")({
       roomId: "room-1",
       language: "javascript",
-      code: "console.log('ok')",
+      code: "logger.info('ok')",
     });
     await handlers.get("execute-code-request")({
       roomId: "room-1",
       language: "javascript",
-      code: "console.log('again')",
+      code: "logger.info('again')",
     });
 
     const resultEvents = roomEmits.filter((emit) => emit.event === "execution-result");
@@ -163,7 +163,7 @@ describe("codeEditorHandler execution security", () => {
     await handlers.get("execute-code-request")({
       roomId: "room-1",
       language: "javascript",
-      code: "console.log('hello')",
+      code: "logger.info('hello')",
     });
 
     assert.deepEqual(
@@ -181,7 +181,7 @@ describe("codeEditorHandler execution security", () => {
     await handlers.get("execute-code-request")({
       roomId: "other-room",
       language: "javascript",
-      code: "console.log('hello')",
+      code: "logger.info('hello')",
     });
 
     assert.equal(socketEmits.length, 1);

@@ -87,7 +87,7 @@ test("getCoverLetters - returns paginated cover letters successfully", async () 
 
   const result = await invokeController(getCoverLetters, req);
 
-  console.log("RESULT BODY IS:", result.body);
+  logger.info("RESULT BODY IS:", result.body);
   assert.equal(result.statusCode, 200);
   assert.equal(result.body.success, true);
   assert.deepEqual(result.body.data, mockLetters);

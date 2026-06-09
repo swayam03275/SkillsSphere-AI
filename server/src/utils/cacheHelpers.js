@@ -17,7 +17,7 @@ export const invalidateCacheByPrefix = async (prefix) => {
 
     if (keys.length > 0) {
       await redisClient.del(keys);
-      logger.log(`Cache invalidated for ${keys.length} keys matching: ${prefix}:*`);
+      logger.info(`Cache invalidated for ${keys.length} keys matching: ${prefix}:*`);
     }
   } catch (error) {
     logger.error(`Failed to invalidate cache for prefix: ${prefix}`, error);

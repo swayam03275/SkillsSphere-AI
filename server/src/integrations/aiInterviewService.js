@@ -79,7 +79,7 @@ const fetchWithRetry = async (endpoint, options, timeoutMs) => {
       clearTimeout(timeout);
 
       const duration = Date.now() - startTime;
-      logger.log(
+      logger.info(
         `[aiInterviewService] ${endpoint} responded in ${duration}ms (attempt ${attempt})`
       );
 
@@ -105,7 +105,7 @@ const fetchWithRetry = async (endpoint, options, timeoutMs) => {
 
       if (attempt < MAX_RETRIES) {
         const backoff = Math.pow(2, attempt - 1) * 500; // 500ms, 1s, 2s
-        logger.log(
+        logger.info(
           `[aiInterviewService] Attempt ${attempt} failed for ${endpoint}, retrying in ${backoff}ms...`
         );
         await sleep(backoff);

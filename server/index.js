@@ -7,6 +7,9 @@ import { validateEnv } from "./src/config/validateEnv.js";
 import { setupGlobalLogSanitizer } from "./src/utils/logSanitizer.js";
 import logger from "./src/utils/logger.js";
 
+// Make logger globally available to avoid 30+ import merge conflicts
+global.logger = logger;
+
 dotenv.config({ override: true });
 validateEnv();
 setupGlobalLogSanitizer();
@@ -125,6 +128,8 @@ setIO(io);
 // Attach per-socket rate limiter to protect against message floods
 attachSocketRateLimiter(io);
 
+import { requestLogger } from "./src/middleware/requestLogger.js";
+
 app.use(compression());
 app.use(
   cors({
@@ -133,6 +138,7 @@ app.use(
   }),
 );
 app.use(express.json({ limit: "1mb" }));
+app.use(requestLogger);
 
 // Security headers
 app.use((req, res, next) => {
@@ -157,7 +163,7 @@ try {
     { $set: { participants: [] } }
   );
   if (resetResult.modifiedCount > 0) {
-    logger.log(`Cleared ghost participants from ${resetResult.modifiedCount} active classroom(s)`);
+    logger.info(`Cleared ghost participants from ${resetResult.modifiedCount} active classroom(s)`);
   }
 } catch (err) {
   logger.error(
@@ -239,23 +245,23 @@ app.use(globalErrorHandler);
 
 
 server.listen(PORT, () => {
-  logger.log(`Server running on http://localhost:${PORT}`);
+  logger.info(`Server running on http://localhost:${PORT}`);
 });
 
 // --- Graceful Shutdown ---
 const gracefulShutdown = async (signal) => {
-  logger.log(`\nReceived ${signal}. Gracefully shutting down...`);
+  logger.info(`\nReceived ${signal}. Gracefully shutting down...`);
   try {
     if (redisClient && redisClient.isReady) {
       await redisClient.quit();
-      logger.log("Redis client disconnected.");
+      logger.info("Redis client disconnected.");
     }
     if (mongoose.connection.readyState === 1) {
       await mongoose.connection.close();
-      logger.log("MongoDB connection closed.");
+      logger.info("MongoDB connection closed.");
     }
     server.close(() => {
-      logger.log("Express server closed.");
+      logger.info("Express server closed.");
       process.exit(0);
     });
 

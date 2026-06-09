@@ -36,7 +36,7 @@ describe("codeExecutor security validation", () => {
 
   it("rejects missing and malformed languages", async () => {
     for (const language of [undefined, "", "   ", "java script", "javascript;rm"]) {
-      const validation = validateCodeExecutionRequest(language, "console.log('hello')");
+      const validation = validateCodeExecutionRequest(language, "logger.info('hello')");
 
       assert.equal(validation.isValid, false);
       assert.equal(
@@ -54,7 +54,7 @@ describe("codeExecutor security validation", () => {
     });
 
     try {
-      const result = await executeCode("javascript", "console.log('too large')");
+      const result = await executeCode("javascript", "logger.info('too large')");
 
       assert.equal(result.isError, true);
       assert.equal(result.errorCode, CODE_EXECUTION_ERROR_CODES.CODE_INPUT_TOO_LARGE);
@@ -68,7 +68,7 @@ describe("codeExecutor security validation", () => {
     const postMock = mock.method(axios, "post", async (_url, payload) => {
       assert.equal(payload.language, "javascript");
       assert.equal(payload.version, "18.15.0");
-      assert.equal(payload.files[0].content, "console.log('hello')");
+      assert.equal(payload.files[0].content, "logger.info('hello')");
       return {
         data: {
           run: {
@@ -79,7 +79,7 @@ describe("codeExecutor security validation", () => {
       };
     });
 
-    const result = await executeCode("javascript", "console.log('hello')");
+    const result = await executeCode("javascript", "logger.info('hello')");
 
     assert.equal(result.isError, false);
     assert.equal(result.output, "hello\n");

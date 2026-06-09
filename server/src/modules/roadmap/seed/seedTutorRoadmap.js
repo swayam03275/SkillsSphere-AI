@@ -48,7 +48,7 @@ export const seedTutorRoadmap = async () => {
           }
         ]
       });
-      logger.log("Seeded Tutor Roadmap with dummy student.");
+      logger.info("Seeded Tutor Roadmap with dummy student.");
     }
   } catch (error) {
     logger.warn(`Failed to seed tutor roadmap: ${error.message}`);

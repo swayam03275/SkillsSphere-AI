@@ -80,7 +80,7 @@ export const registerUserAndIssueToken = async ({ name, email, password, role })
       throw new AppError("Failed to send verification email. Please try again.", 500);
     }
   } else {
-    logger.log(`[AUTH] User ${email} auto-verified (EMAIL_SERVICE_MODE=${emailMode})`);
+    logger.info(`[AUTH] User ${email} auto-verified (EMAIL_SERVICE_MODE=${emailMode})`);
   }
 
   const token = buildAuthToken(user);
