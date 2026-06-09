@@ -338,6 +338,10 @@ export const inviteCandidate = asyncHandler(async (req, res, next) => {
     return next(new AppError("Job posting not found", 404));
   }
 
+  if (job.recruiter.toString() !== req.user._id.toString()) {
+    return next(new AppError("You are not authorized to access this job", 403));
+  }
+
   const candidate = await User.findById(candidateId);
   if (!candidate || candidate.role !== "student") {
     return next(new AppError("Invalid candidate or user is not a student", 404));
