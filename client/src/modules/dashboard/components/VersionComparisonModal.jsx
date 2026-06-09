@@ -10,8 +10,121 @@ import {
   Layout
 } from "lucide-react";
 import Button from "../../../shared/components/Button";
+
+const normalizeSkill = (skill) =>
+  String(skill || "").trim().toLowerCase();
+
+const safeArray = (value) =>
+  Array.isArray(value) ? value : [];
+
+const getUniqueNormalizedSkills = (skills) => {
+  const map = new Map();
+
+  safeArray(skills).forEach((skill) => {
+    const normalized = normalizeSkill(skill);
+
+    if (normalized && !map.has(normalized)) {
+      map.set(normalized, skill);
+    }
+  });
+
+  return map;
+};
+
+const calculateDiff = (oldValues, newValues) => {
+  const oldMap = getUniqueNormalizedSkills(oldValues);
+  const newMap = getUniqueNormalizedSkills(newValues);
+
+  return {
+    added: [...newMap.entries()]
+      .filter(([key]) => !oldMap.has(key))
+      .map(([, value]) => value),
+
+    removed: [...oldMap.entries()]
+      .filter(([key]) => !newMap.has(key))
+      .map(([, value]) => value),
+  };
+};
+
+const getScoreTrend = (diff) => {
+  if (diff >= 15) {
+    return {
+      label: "Major Improvement",
+      color: "text-emerald-400",
+    };
+  }
+
+  if (diff >= 5) {
+    return {
+      label: "Strong Improvement",
+      color: "text-green-400",
+    };
+  }
+
+  if (diff > 0) {
+    return {
+      label: "Minor Improvement",
+      color: "text-blue-400",
+    };
+  }
+
+  if (diff === 0) {
+    return {
+      label: "No Change",
+      color: "text-slate-400",
+    };
+  }
+
+  if (diff <= -15) {
+    return {
+      label: "Major Regression",
+      color: "text-red-500",
+    };
+  }
+
+  return {
+    label: "Regression",
+    color: "text-red-400",
+  };
+};
+
+const validateVersion = (version) => {
+  return (
+    version &&
+    typeof version.score === "number" &&
+    !Number.isNaN(version.score) &&
+    version.createdAt
+  );
+};
+
 const VersionComparisonModal = ({ isOpen, onClose, versions }) => {
   if (!isOpen || !versions || versions.length !== 2) return null;
+
+  if (
+    !validateVersion(versions[0]) ||
+    !validateVersion(versions[1])
+  ) {
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-10 max-w-md">
+          <h2 className="text-xl font-bold mb-3">
+            Comparison Unavailable
+          </h2>
+
+          <p className="text-sm text-slate-500">
+            One or more resume versions contain invalid
+            comparison data.
+          </p>
+
+          <div className="mt-6">
+            <Button onClick={onClose}>
+              Close
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // versions[0] is the older one based on history array order (newest first)
   // But wait, the history is newest first, so history[0] is newer than history[1].
@@ -21,19 +134,35 @@ const VersionComparisonModal = ({ isOpen, onClose, versions }) => {
   const v2 = sorted[1]; // Newer
 
   const scoreDiff = v2.score - v1.score;
+
   
   // Calculate skill diffs
-  const oldSkills = new Set(v1.skills || []);
-  const newSkills = new Set(v2.skills || []);
-  
-  const addedSkills = [...newSkills].filter(s => !oldSkills.has(s));
-  const removedSkills = [...oldSkills].filter(s => !newSkills.has(s));
-  
-  // Missing skills diff
-  const oldMissing = new Set(v1.missingSkills || []);
-  const newMissing = new Set(v2.missingSkills || []);
-  const resolvedGaps = [...oldMissing].filter(s => !newMissing.has(s));
-  const newGaps = [...newMissing].filter(s => !oldMissing.has(s));
+  const skillDiff = calculateDiff(
+    v1.skills,
+    v2.skills
+  );
+
+  const addedSkills = skillDiff.added;
+  const removedSkills = skillDiff.removed;
+
+  const gapDiff = calculateDiff(
+    v1.missingSkills,
+    v2.missingSkills
+  );
+
+  const resolvedGaps = gapDiff.removed;
+  const newGaps = gapDiff.added;
+
+  const trend = getScoreTrend(scoreDiff);
+
+  const classificationChanged =
+    v1.classification !== v2.classification;
+
+  const totalChanges =
+    addedSkills.length +
+    removedSkills.length +
+    resolvedGaps.length +
+    newGaps.length;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
@@ -63,6 +192,61 @@ const VersionComparisonModal = ({ isOpen, onClose, versions }) => {
         <div className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar">
           
           {/* Summary Score View */}
+          <div className="p-6 rounded-3xl bg-indigo-500/5 border border-indigo-500/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-black text-lg">
+                  Comparison Summary
+                </h3>
+
+                <p className="text-sm text-slate-500">
+                  Comprehensive evolution metrics
+                </p>
+              </div>
+
+              <div className={`font-black ${trend.color}`}>
+                {trend.label}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+              <div>
+                <p className="text-xs text-slate-500">
+                  Added Skills
+                </p>
+                <p className="text-2xl font-black">
+                  {addedSkills.length}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-xs text-slate-500">
+                  Removed Skills
+                </p>
+                <p className="text-2xl font-black">
+                  {removedSkills.length}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-xs text-slate-500">
+                  Resolved Gaps
+                </p>
+                <p className="text-2xl font-black">
+                  {resolvedGaps.length}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-xs text-slate-500">
+                  Total Changes
+                </p>
+                <p className="text-2xl font-black">
+                  {totalChanges}
+                </p>
+              </div>
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="p-6 rounded-2xl bg-gray-100 dark:bg-slate-800/40 border border-gray-200 dark:border-white/5 text-center">
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Previous Score</p>
@@ -90,7 +274,37 @@ const VersionComparisonModal = ({ isOpen, onClose, versions }) => {
           {/* Skill Diffs */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             
-            {/* Added Skills */}
+            {/* Skills Removed */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-red-400">
+                <div className="p-2 bg-red-500/10 rounded-lg">
+                  <AlertCircle size={18} />
+                </div>
+
+                <h3 className="font-bold text-lg">
+                  Skills Removed
+                </h3>
+              </div>
+
+              <div className="p-6 rounded-2xl bg-gray-50 dark:bg-slate-800/40 border border-gray-200 dark:border-white/5 min-h-[120px]">
+                {removedSkills.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {removedSkills.map(skill => (
+                      <span
+                        key={skill}
+                        className="px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 text-xs font-bold border border-red-500/20 uppercase"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-slate-500 text-sm italic">
+                    No skills were removed.
+                  </p>
+                )}
+              </div>
+            </div>
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-emerald-400">
                 <div className="p-2 bg-emerald-500/10 rounded-lg">
@@ -114,6 +328,36 @@ const VersionComparisonModal = ({ isOpen, onClose, versions }) => {
             </div>
 
             {/* Resolved Gaps */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-amber-400">
+                <div className="p-2 bg-amber-500/10 rounded-lg">
+                  <AlertCircle size={18} />
+                </div>
+
+                <h3 className="font-bold text-lg">
+                  Newly Introduced Gaps
+                </h3>
+              </div>
+
+              <div className="p-6 rounded-2xl bg-gray-50 dark:bg-slate-800/40 border border-gray-200 dark:border-white/5 min-h-[120px]">
+                {newGaps.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {newGaps.map(skill => (
+                      <span
+                        key={skill}
+                        className="px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-400 text-xs font-bold border border-amber-500/20 uppercase"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-slate-500 text-sm italic">
+                    No new gaps detected.
+                  </p>
+                )}
+              </div>
+            </div>
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-blue-400">
                 <div className="p-2 bg-blue-500/10 rounded-lg">
@@ -150,6 +394,30 @@ const VersionComparisonModal = ({ isOpen, onClose, versions }) => {
               </div>
             </div>
             
+            <div className="mb-8 p-5 rounded-2xl bg-white/5 border border-white/10">
+              <h4 className="font-black text-sm uppercase tracking-widest mb-3">
+                Classification Progression
+              </h4>
+
+              <div className="flex items-center gap-3">
+                <span className="font-bold">
+                  {v1.classification}
+                </span>
+
+                <ArrowRight size={16} />
+
+                <span className="font-bold text-blue-400">
+                  {v2.classification}
+                </span>
+              </div>
+
+              {classificationChanged && (
+                <p className="mt-2 text-xs text-blue-400">
+                  Classification changed between versions.
+                </p>
+              )}
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-4">
                 <h4 className="text-sm font-black text-gray-600 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
