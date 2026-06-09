@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   createClassroomSession,
   getTutorClassroomSessions,
@@ -12,61 +12,156 @@ export const useClassroomsDashboard = (token, isTutor, navigate) => {
   const [subject, setSubject] = useState("");
   const [maxParticipants, setMaxParticipants] = useState(30);
   const [joinRoomId, setJoinRoomId] = useState("");
-  
+
   const [sessions, setSessions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isListLoading, setIsListLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Request consistency tracking
+  const latestRequestRef = useRef(0);
+  const isMountedRef = useRef(true);
+
   useEffect(() => {
-    if (token) {
-      if (isTutor) {
-        fetchMySessions();
-      } else {
-        fetchActiveSessions();
-      }
-    }
-  }, [isTutor, token]);
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
-  const fetchMySessions = async () => {
+  const reconcileSessions = (incomingSessions = []) => {
+    const uniqueSessions = new Map();
+
+    incomingSessions.forEach((session) => {
+      if (session?.roomId) {
+        uniqueSessions.set(session.roomId, session);
+      }
+    });
+
+    return [...uniqueSessions.values()];
+  };
+
+  const safeSetSessions = (data) => {
+    if (!isMountedRef.current) return;
+    setSessions(reconcileSessions(data));
+  };
+
+  const safeSetError = (message) => {
+    if (!isMountedRef.current) return;
+    setError(message);
+  };
+
+  const fetchMySessions = useCallback(async () => {
+    const requestId = ++latestRequestRef.current;
+
     try {
-      setIsListLoading(true);
-      setError(null);
+      if (isMountedRef.current) {
+        setIsListLoading(true);
+        setError(null);
+      }
+
       const res = await getTutorClassroomSessions(token);
-      if (res.success && res.data) {
-        setSessions(res.data);
-      }
-    } catch (err) {
-      logger.error("Failed to load sessions", err);
-      setError("Failed to load your classroom sessions. Please try again.");
-    } finally {
-      setIsListLoading(false);
-    }
-  };
 
-  const fetchActiveSessions = async () => {
-    try {
-      setIsListLoading(true);
-      setError(null);
-      const res = await getActiveClassroomSessions(token);
+      if (
+        requestId !== latestRequestRef.current ||
+        !isMountedRef.current
+      ) {
+        return;
+      }
+
       if (res.success && res.data) {
-        setSessions(res.data);
+        safeSetSessions(res.data);
       }
     } catch (err) {
-      logger.error("Failed to load active sessions", err);
-      setError("Failed to load active classrooms. Please try again.");
+      if (
+        requestId !== latestRequestRef.current ||
+        !isMountedRef.current
+      ) {
+        return;
+      }
+
+      logger.error("Failed to load sessions", err);
+      safeSetError(
+        "Failed to load your classroom sessions. Please try again."
+      );
     } finally {
-      setIsListLoading(false);
+      if (
+        requestId === latestRequestRef.current &&
+        isMountedRef.current
+      ) {
+        setIsListLoading(false);
+      }
     }
-  };
+  }, [token]);
+
+  const fetchActiveSessions = useCallback(async () => {
+    const requestId = ++latestRequestRef.current;
+
+    try {
+      if (isMountedRef.current) {
+        setIsListLoading(true);
+        setError(null);
+      }
+
+      const res = await getActiveClassroomSessions(token);
+
+      if (
+        requestId !== latestRequestRef.current ||
+        !isMountedRef.current
+      ) {
+        return;
+      }
+
+      if (res.success && res.data) {
+        safeSetSessions(res.data);
+      }
+    } catch (err) {
+      if (
+        requestId !== latestRequestRef.current ||
+        !isMountedRef.current
+      ) {
+        return;
+      }
+
+      logger.error("Failed to load active sessions", err);
+      safeSetError(
+        "Failed to load active classrooms. Please try again."
+      );
+    } finally {
+      if (
+        requestId === latestRequestRef.current &&
+        isMountedRef.current
+      ) {
+        setIsListLoading(false);
+      }
+    }
+  }, [token]);
+
+  const refreshSessions = useCallback(() => {
+    if (isTutor) {
+      return fetchMySessions();
+    }
+
+    return fetchActiveSessions();
+  }, [isTutor, fetchMySessions, fetchActiveSessions]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    refreshSessions();
+  }, [token, refreshSessions]);
 
   const handleStartSession = async (e) => {
     e.preventDefault();
-    if (!title.trim()) return;
+
+    if (!title.trim()) {
+      safeSetError("Session title is required.");
+      return;
+    }
 
     try {
       setIsLoading(true);
       setError(null);
+
       const res = await createClassroomSession(
         {
           title: title.trim(),
@@ -81,34 +176,65 @@ export const useClassroomsDashboard = (token, isTutor, navigate) => {
       }
     } catch (err) {
       logger.error("Failed to create room", err);
-      setError(err.message || "Failed to create live classroom session.");
+      safeSetError(
+        err.message || "Failed to create live classroom session."
+      );
     } finally {
-      setIsLoading(false);
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
     }
   };
 
   const handleEndSession = async (roomId) => {
-    if (!window.confirm("Are you sure you want to end this live session? All participants will be disconnected.")) {
+    if (
+      !window.confirm(
+        "Are you sure you want to end this live session? All participants will be disconnected."
+      )
+    ) {
       return;
     }
 
+    const previousSessions = [...sessions];
+
+    // Optimistic update
+    setSessions((prev) =>
+      prev.filter((session) => session.roomId !== roomId)
+    );
+
     try {
       setError(null);
+
       const res = await endClassroomSession(roomId, token);
+
       if (res.success) {
-        fetchMySessions();
+        await refreshSessions();
+      } else {
+        setSessions(previousSessions);
       }
     } catch (err) {
       logger.error("Failed to end session", err);
-      setError(err.message || "Failed to end the session.");
+
+      // Rollback on failure
+      setSessions(previousSessions);
+
+      safeSetError(
+        err.message || "Failed to end the session."
+      );
     }
   };
 
   const handleJoinSession = (e) => {
     e.preventDefault();
-    if (joinRoomId.trim()) {
-      navigate(`/classrooms/${joinRoomId.trim()}`);
+
+    const trimmedRoomId = joinRoomId.trim();
+
+    if (!trimmedRoomId) {
+      safeSetError("Please enter a valid room ID.");
+      return;
     }
+
+    navigate(`/classrooms/${trimmedRoomId}`);
   };
 
   return {
@@ -127,6 +253,7 @@ export const useClassroomsDashboard = (token, isTutor, navigate) => {
     setError,
     fetchMySessions,
     fetchActiveSessions,
+    refreshSessions,
     handleStartSession,
     handleEndSession,
     handleJoinSession,
