@@ -26,7 +26,7 @@ export function pythonBootstrapCommand() {
   for (const cmd of candidates) {
     const res = spawnSync(cmd, ["--version"], {
       stdio: "ignore",
-      shell: isWindows,
+      shell: isWindows && (cmd.endsWith(".cmd") || cmd.endsWith(".bat")),
     });
     if (res.status === 0) return cmd;
   }
@@ -44,11 +44,17 @@ export function run(cmd, args, options = {}) {
   const { cwd, env, label } = options;
 
   return new Promise((resolve, reject) => {
+    const useShell = isWindows && (
+      cmd.endsWith(".cmd") ||
+      cmd.endsWith(".bat") ||
+      cmd === "npm" ||
+      cmd === "npm.cmd"
+    );
     const child = spawn(cmd, args, {
       cwd,
       env: { ...process.env, ...env },
       stdio: "inherit",
-      shell: isWindows, // helps resolve npm/python shims on Windows
+      shell: useShell, // helps resolve npm shims on Windows
     });
 
     child.on("error", (err) => {

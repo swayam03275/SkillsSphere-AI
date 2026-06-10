@@ -105,7 +105,7 @@ describe("Job Service", () => {
       };
       mock.method(JobApplication, "find", () => mockQuery);
       mock.method(JobPosting, "findByIdAndDelete", () => mockExistingJob);
-      mock.method(Notification, "create", async () => ({}));
+      mock.method(Notification, "insertMany", async () => ([{}]));
 
       await jobService.deleteJob(mockJobId, mockRecruiterId);
 

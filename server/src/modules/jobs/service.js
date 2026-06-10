@@ -215,6 +215,8 @@ export const deleteJob = async (id, recruiterId) => {
     const dbSession = await mongoose.startSession();
     dbSession.startTransaction();
 
+    let notificationDocs = [];
+    
     try {
       const job = await JobPosting.findById(id).session(dbSession);
 
@@ -227,24 +229,24 @@ export const deleteJob = async (id, recruiterId) => {
         throw new AppError("You do not have permission to delete this job", 403);
       }
 
-      // Delete all associated applications
-      const applications = await JobApplication.find({ job: id }).select("applicant");
-await JobApplication.deleteMany({ job: id });
-await JobPosting.findByIdAndDelete(id);
+      // Get applications within transaction
+      const applications = await JobApplication.find({ job: id }).select("applicant").session(dbSession);
 
-const io = getIO();
-for (const app of applications) {
-  const notifDoc = await Notification.create({
-    userId: app.applicant,
-    type: "application",
-    title: "Job Posting Removed",
-    message: `A job you applied to has been removed by the recruiter.`,
-    metadata: { jobId: id }
-  });
-  if (io) {
-    io.to(`user_${app.applicant}`).emit("new-notification", notifDoc);
-  }
-}
+      // Delete all associated applications within transaction
+      await JobApplication.deleteMany({ job: id }, { session: dbSession });
+      await JobPosting.findByIdAndDelete(id, { session: dbSession });
+
+      if (applications.length > 0) {
+        const notificationsData = applications.map(app => ({
+          userId: app.applicant,
+          type: "application",
+          title: "Job Posting Removed",
+          message: `A job you applied to has been removed by the recruiter.`,
+          metadata: { jobId: id }
+        }));
+        
+        notificationDocs = await Notification.insertMany(notificationsData, { session: dbSession });
+      }
 
       await dbSession.commitTransaction();
     } catch (error) {
@@ -254,6 +256,14 @@ for (const app of applications) {
     } finally {
       dbSession.endSession();
     }
+
+    // Emit real-time notifications after successful commit
+    const io = getIO();
+    if (io && notificationDocs.length > 0) {
+      for (const notifDoc of notificationDocs) {
+        io.to(`user_${notifDoc.userId}`).emit("new-notification", notifDoc);
+      }
+    }
   } else {
     const job = await JobPosting.findById(id);
     if (!job) {
@@ -262,21 +272,27 @@ for (const app of applications) {
     if (job.recruiter.toString() !== recruiterId.toString()) {
       throw new AppError("You do not have permission to delete this job", 403);
     }
+    
     const applications = await JobApplication.find({ job: id }).select("applicant");
     await JobApplication.deleteMany({ job: id });
     await JobPosting.findByIdAndDelete(id);
 
-    const io = getIO();
-    for (const app of applications) {
-      const notifDoc = await Notification.create({
+    if (applications.length > 0) {
+      const notificationsData = applications.map(app => ({
         userId: app.applicant,
         type: "application",
         title: "Job Posting Removed",
         message: `A job you applied to has been removed by the recruiter.`,
         metadata: { jobId: id }
-      });
-      if (io) {
-        io.to(`user_${app.applicant}`).emit("new-notification", notifDoc);
+      }));
+      
+      const notificationDocs = await Notification.insertMany(notificationsData);
+      
+      const io = getIO();
+      if (io && notificationDocs.length > 0) {
+        for (const notifDoc of notificationDocs) {
+          io.to(`user_${notifDoc.userId}`).emit("new-notification", notifDoc);
+        }
       }
     }
   }
