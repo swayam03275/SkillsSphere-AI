@@ -15,24 +15,31 @@ export const evaluate = asyncHandler(async (req, res, next) => {
   let resume;
 
   if (req.file) {
-    const parsedData = await parseResume(req.file.path);
-    
-    resume = await resumeService.upsertResume(req.user._id, {
-      ...parsedData,
-      file: {
-        originalName: req.file.originalname,
-        storedName: req.file.filename,
-        path: req.file.path,
-        size: `${(req.file.size / 1024).toFixed(2)} KB`,
-        mimeType: req.file.mimetype,
-      },
-    }, true);
+    // Fresh upload flow — parse and persist the resume.
+    // The file is only cleaned up on failure; on success the file stays on disk
+    // so the database record's stored path remains valid and downloadable.
+    try {
+      const parsedData = await parseResume(req.file.path);
 
-    if (req.file?.path) {
-      await fsPromises.unlink(req.file.path).catch(() => {});
+      resume = await resumeService.upsertResume(req.user._id, {
+        ...parsedData,
+        file: {
+          originalName: req.file.originalname,
+          storedName: req.file.filename,
+          path: req.file.path,
+          size: `${(req.file.size / 1024).toFixed(2)} KB`,
+          mimeType: req.file.mimetype,
+        },
+      }, true);
+    } catch (err) {
+      // Parsing or database save failed — clean up the orphaned temp file
+      if (req.file?.path) {
+        await fsPromises.unlink(req.file.path).catch(() => {});
+      }
+      throw err;
     }
   } else {
-    // 2. Resume library reuse flow
+    // Resume library reuse flow
     // If no file is provided, we use the user's latest parsed resume record
     // We include resumeText for the matching pipeline (keyword evaluation)
     resume = await resumeService.getLatestResume(req.user._id, true);
@@ -41,7 +48,7 @@ export const evaluate = asyncHandler(async (req, res, next) => {
     }
   }
 
-  // 3. Perform matching against all open jobs
+  // Perform matching against all open jobs
   const result = await matchingService.evaluateMatches(req.user, resume);
 
   res.status(200).json({
