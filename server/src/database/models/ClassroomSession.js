@@ -77,6 +77,10 @@ const classroomSessionSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    emptySince: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );

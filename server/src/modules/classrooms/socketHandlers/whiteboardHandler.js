@@ -1,4 +1,4 @@
-import { getOrCreateRoomState } from "../socket.js";
+import { getOrCreateRoomState, persistRoomState } from "../socket.js";
 
 export const WHITEBOARD_ERROR_CODES = {
   INVALID_STROKE_PAYLOAD: "INVALID_STROKE_PAYLOAD",
@@ -248,7 +248,7 @@ export const canClearWhiteboard = (socket) =>
 
 export default function registerWhiteboardHandler(io, socket) {
   // Draw stroke event
-  socket.on("draw-stroke", ({ roomId, strokeData }) => {
+  socket.on("draw-stroke", async ({ roomId, strokeData }) => {
     if (!socket.data || socket.data.roomId !== roomId) {
       socket.emit("unauthorized", {
         message: "Cross-classroom action detected",
@@ -281,12 +281,13 @@ export default function registerWhiteboardHandler(io, socket) {
       state.whiteboard.shift();
     }
     state.whiteboard.push(payload);
+    persistRoomState(roomId);
 
     socket.to(roomId).emit("draw-stroke", payload);
   });
 
   // Clear canvas event
-  socket.on("clear-canvas", ({ roomId }) => {
+  socket.on("clear-canvas", async ({ roomId }) => {
     if (!socket.data || socket.data.roomId !== roomId) {
       socket.emit("unauthorized", {
         message: "Cross-classroom action detected",
@@ -305,6 +306,7 @@ export default function registerWhiteboardHandler(io, socket) {
 
     const state = getOrCreateRoomState(roomId);
     state.whiteboard = [];
+    persistRoomState(roomId);
     socket.to(roomId).emit("clear-canvas");
   });
 }

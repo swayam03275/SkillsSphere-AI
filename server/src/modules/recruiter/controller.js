@@ -230,6 +230,10 @@ export const matchCandidate = asyncHandler(async (req, res, next) => {
     return next(new AppError("Job posting not found", 404));
   }
 
+  if (job.recruiter.toString() !== req.user._id.toString()) {
+    return next(new AppError("You are not authorized to access this job", 403));
+  }
+
   let resume = await Resume.findOne({ user: candidateId, isActive: true }).select("+resumeText");
   if (!resume) {
     resume = await Resume.findOne({ user: candidateId }).sort({ createdAt: -1 }).select("+resumeText");
@@ -414,6 +418,10 @@ export const inviteCandidate = asyncHandler(async (req, res, next) => {
   const job = await JobPosting.findById(jobId);
   if (!job) {
     return next(new AppError("Job posting not found", 404));
+  }
+
+  if (job.recruiter.toString() !== req.user._id.toString()) {
+    return next(new AppError("You are not authorized to access this job", 403));
   }
 
   const candidate = await User.findById(candidateId);

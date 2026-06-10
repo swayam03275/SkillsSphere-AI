@@ -220,6 +220,11 @@ export const apiRequest = async (path, options = {}) => {
       undefined;
     error.url = url;
     error.method = method;
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("api:error", { detail: { message: error.message, status: error.status } }));
+    }
+
     throw error;
   }
 

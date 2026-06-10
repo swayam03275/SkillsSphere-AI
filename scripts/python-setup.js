@@ -47,6 +47,10 @@ async function main() {
   }
 
   printHeader("Installing Python dependencies");
+  await run(venvPython, ["-m", "pip", "install", "--upgrade", "pip"], {
+    cwd: serviceDir,
+    label: "pip-upgrade",
+  });
   await run(venvPython, ["-m", "pip", "install", "-r", "requirements.txt"], {
     cwd: serviceDir,
     label: "pip",

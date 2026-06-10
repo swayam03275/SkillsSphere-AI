@@ -2,6 +2,7 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import PropTypes from 'prop-types';
+import ErrorBoundary from './ErrorBoundary';
 
 const ProtectedRoute = ({ children, requiredRole }) => {
   const { isAuthenticated, user } = useSelector((state) => state.auth);
@@ -26,7 +27,11 @@ const ProtectedRoute = ({ children, requiredRole }) => {
     return <Navigate to="/dashboard" replace />;
   }
 
-  return children;
+  return (
+    <ErrorBoundary>
+      {children}
+    </ErrorBoundary>
+  );
 };
 
 ProtectedRoute.propTypes = {

@@ -314,17 +314,17 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="description" className="text-sm font-medium text-gray-300">
+        <label htmlFor="description" className="text-sm font-medium text-gray-700 dark:text-gray-300">
           Job Description <span className="text-red-500">*</span>
         </label>
         <textarea
           data-testid="input-description"
           id="description"
           rows={5}
-          className={`w-full rounded-lg border bg-slate-800 px-3.5 py-2.5 text-sm text-white caret-white placeholder:text-gray-500 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-0 ${
+          className={`w-full rounded-lg border bg-white dark:bg-[#121214] px-3.5 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-0 ${
             allErrors.description
               ? "border-red-400 focus:ring-red-400 focus:border-red-400"
-              : "border-slate-600 focus:ring-blue-500 focus:border-blue-500 hover:border-slate-500"
+              : "border-gray-200 dark:border-white/10 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-300 dark:hover:border-white/20"
           }`}
           placeholder="Describe the role, responsibilities, and team..."
           value={formData.description}
@@ -343,77 +343,77 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
 
       {/* skills */}
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="skills" className="text-sm font-medium text-gray-300">
+        <label htmlFor="skills" className="text-sm font-medium text-gray-700 dark:text-gray-300">
           Required Skills <span className="text-red-500">*</span>
         </label>
         <textarea
           data-testid="input-skills"
           id="skills"
           rows={2}
-          className={`w-full rounded-lg border bg-slate-800 px-3.5 py-2.5 text-sm text-white caret-white placeholder:text-gray-500 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-0 resize-y ${
+          className={`w-full rounded-lg border bg-white dark:bg-[#121214] px-3.5 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-0 resize-y ${
             allErrors.skills
               ? "border-red-400 focus:ring-red-400 focus:border-red-400"
-              : "border-slate-600 focus:ring-blue-500 focus:border-blue-500 hover:border-slate-500"
+              : "border-gray-200 dark:border-white/10 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-300 dark:hover:border-white/20"
           }`}
           placeholder="e.g. react, typescript, node.js, aws"
           value={formData.skills}
           onChange={handleChange}
           disabled={isFormSubmitting}
         />
-        <p className="text-xs text-slate-500">Comma-separated. Stored in lowercase — used to match candidates.</p>
+        <p className="text-xs text-gray-500 dark:text-slate-400">Comma-separated. Stored in lowercase — used to match candidates.</p>
         {allErrors.skills && <p data-testid="error-skills" className="text-xs text-red-400">{allErrors.skills}</p>}
       </div>
 
       {/* requirements */}
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="requirements" className="text-sm font-medium text-gray-300">Requirements</label>
+        <label htmlFor="requirements" className="text-sm font-medium text-gray-700 dark:text-gray-300">Requirements</label>
         <textarea
           data-testid="input-requirements"
           id="requirements"
           rows={3}
-          className="w-full rounded-lg border border-slate-600 bg-slate-800 px-3.5 py-2.5 text-sm text-white caret-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-slate-500 resize-y"
+          className="w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-[#121214] px-3.5 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-300 dark:hover:border-white/20 resize-y"
           placeholder="e.g. 3+ years experience, B.Tech in CS, Strong DSA"
           value={formData.requirements}
           onChange={handleChange}
           disabled={isFormSubmitting}
         />
-        <p className="text-xs text-slate-500">Comma-separated list of candidate qualifications.</p>
+        <p className="text-xs text-gray-500 dark:text-slate-400">Comma-separated list of candidate qualifications.</p>
       </div>
 
       {/* responsibilities */}
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="responsibilities" className="text-sm font-medium text-gray-300">Responsibilities</label>
+        <label htmlFor="responsibilities" className="text-sm font-medium text-gray-700 dark:text-gray-300">Responsibilities</label>
         <textarea
           data-testid="input-responsibilities"
           id="responsibilities"
           rows={3}
-          className="w-full rounded-lg border border-slate-600 bg-slate-800 px-3.5 py-2.5 text-sm text-white caret-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-slate-500 resize-y"
+          className="w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-[#121214] px-3.5 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-300 dark:hover:border-white/20 resize-y"
           placeholder="e.g. Design microservices, Lead code reviews, Mentor juniors"
           value={formData.responsibilities}
           onChange={handleChange}
           disabled={isFormSubmitting}
         />
-        <p className="text-xs text-slate-500">Comma-separated list of key responsibilities.</p>
+        <p className="text-xs text-gray-500 dark:text-slate-400">Comma-separated list of key responsibilities.</p>
       </div>
 
       {/* keywords */}
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="keywords" className="text-sm font-medium text-gray-300">Keywords</label>
+        <label htmlFor="keywords" className="text-sm font-medium text-gray-700 dark:text-gray-300">Keywords</label>
         <textarea
           data-testid="input-keywords"
           id="keywords"
           rows={2}
-          className="w-full rounded-lg border border-slate-600 bg-slate-800 px-3.5 py-2.5 text-sm text-white caret-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-slate-500 resize-y"
+          className="w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-[#121214] px-3.5 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-300 dark:hover:border-white/20 resize-y"
           placeholder="e.g. remote, fintech, startup, react"
           value={formData.keywords}
           onChange={handleChange}
           disabled={isFormSubmitting}
         />
-        <p className="text-xs text-slate-500">Comma-separated keywords to improve job discoverability.</p>
+        <p className="text-xs text-gray-500 dark:text-slate-400">Comma-separated keywords to improve job discoverability.</p>
       </div>
 
-      <div className="border-t border-slate-700 pt-6">
-        <h3 className="text-sm font-medium text-gray-300 mb-4">Location</h3>
+      <div className="border-t border-gray-200 dark:border-white/10 pt-6">
+        <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-4">Location</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Input
             id="location.city"
@@ -453,16 +453,16 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
             checked={formData.location.remote}
             onChange={(e) => handleLocationChange("remote", e.target.checked)}
             disabled={isFormSubmitting}
-            className="rounded border-slate-600 bg-slate-800 text-blue-600 focus:ring-blue-500"
+            className="rounded border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-blue-600 focus:ring-blue-500"
           />
-          <label htmlFor="location.remote" className="text-sm text-gray-300">
+          <label htmlFor="location.remote" className="text-sm text-gray-700 dark:text-gray-300">
             Remote position
           </label>
         </div>
       </div>
 
-      <div className="border-t border-slate-700 pt-6">
-        <h3 className="text-sm font-medium text-gray-300 mb-4">Salary</h3>
+      <div className="border-t border-gray-200 dark:border-white/10 pt-6">
+        <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-4">Salary</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Input
             id="salary.min"
@@ -503,9 +503,9 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
             checked={formData.salary.isNegotiable}
             onChange={(e) => handleSalaryChange("isNegotiable", e.target.checked)}
             disabled={isFormSubmitting}
-            className="rounded border-slate-600 bg-slate-800 text-blue-600 focus:ring-blue-500"
+            className="rounded border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-blue-600 focus:ring-blue-500"
           />
-          <label htmlFor="salary.isNegotiable" className="text-sm text-gray-300">
+          <label htmlFor="salary.isNegotiable" className="text-sm text-gray-700 dark:text-gray-300">
             Salary is negotiable
           </label>
         </div>

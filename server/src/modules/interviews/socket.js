@@ -100,9 +100,9 @@ export function initInterviewSockets(io) {
 
     // Handle answer submission
     socket.on("submit-answer", async ({ sessionId, transcript, audioBuffer }) => {
-      logger.log(`[Socket] Received submit-answer for session ${sessionId}, transcript: ${transcript}`);
+      logger.info(`[Socket] Received submit-answer for session ${sessionId}, transcript: ${transcript}`);
       if (!socket.data || socket.data.sessionId !== sessionId) {
-        logger.log(`[Socket] Missing socket.data or mismatched sessionId. socket.data:`, socket.data);
+        logger.info(`[Socket] Missing socket.data or mismatched sessionId. socket.data:`, socket.data);
         return;
       }
 
@@ -116,7 +116,7 @@ export function initInterviewSockets(io) {
           audioFile,
         });
 
-        logger.log(`[Socket] Answer evaluated successfully for session ${sessionId}`);
+        logger.info(`[Socket] Answer evaluated successfully for session ${sessionId}`);
         // Emit the result back to this specific client
         socket.emit("answer-evaluated", result);
       } catch (error) {

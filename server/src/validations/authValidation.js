@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-const allowedRoles = ["student", "tutor", "recruiter"];
+const allowedRoles = ["student"];
+
 const passwordSchema = z
   .string({ required_error: "Password is required" })
   .min(8, "Password must be at least 8 characters")
@@ -8,10 +9,10 @@ const passwordSchema = z
   .regex(/[a-z]/, "Password must contain at least one lowercase letter")
   .regex(/[0-9]/, "Password must contain at least one number")
   .regex(/[^A-Za-z0-9\s]/, "Password must contain at least one special character");
+
 const otpSchema = z
   .string({ required_error: "OTP is required" })
   .regex(/^\d{6}$/, "OTP must be exactly 6 numeric digits");
-
 // Helper for generic validation
 const validate = (schema, payload) => {
   const parsed = schema.safeParse(payload);
@@ -41,7 +42,7 @@ export const registerSchema = z.object({
     .trim()
     .toLowerCase()
     .refine((value) => allowedRoles.includes(value), {
-      message: "Role must be one of: student, tutor, recruiter"
+      message: "Role must be: student"
     })
     .optional()
     .default("student")

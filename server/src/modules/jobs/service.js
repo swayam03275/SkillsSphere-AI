@@ -215,6 +215,8 @@ export const deleteJob = async (id, recruiterId) => {
     const dbSession = await mongoose.startSession();
     dbSession.startTransaction();
 
+    let notificationDocs = [];
+    
     try {
       const job = await JobPosting.findById(id).session(dbSession);
 
@@ -227,10 +229,24 @@ export const deleteJob = async (id, recruiterId) => {
         throw new AppError("You do not have permission to delete this job", 403);
       }
 
-      // Delete all associated applications
-      await JobApplication.deleteMany({ job: id }).session(dbSession);
-      
-      await JobPosting.findByIdAndDelete(id).session(dbSession);
+      // Get applications within transaction
+      const applications = await JobApplication.find({ job: id }).select("applicant").session(dbSession);
+
+      // Delete all associated applications within transaction
+      await JobApplication.deleteMany({ job: id }, { session: dbSession });
+      await JobPosting.findByIdAndDelete(id, { session: dbSession });
+
+      if (applications.length > 0) {
+        const notificationsData = applications.map(app => ({
+          userId: app.applicant,
+          type: "application",
+          title: "Job Posting Removed",
+          message: `A job you applied to has been removed by the recruiter.`,
+          metadata: { jobId: id }
+        }));
+        
+        notificationDocs = await Notification.insertMany(notificationsData, { session: dbSession });
+      }
 
       await dbSession.commitTransaction();
     } catch (error) {
@@ -240,26 +256,47 @@ export const deleteJob = async (id, recruiterId) => {
     } finally {
       dbSession.endSession();
     }
+
+    // Emit real-time notifications after successful commit
+    const io = getIO();
+    if (io && notificationDocs.length > 0) {
+      for (const notifDoc of notificationDocs) {
+        io.to(`user_${notifDoc.userId}`).emit("new-notification", notifDoc);
+      }
+    }
   } else {
     const job = await JobPosting.findById(id);
-
     if (!job) {
       throw new AppError("Job not found", 404);
     }
-
-    // Check if the recruiter owns this job
     if (job.recruiter.toString() !== recruiterId.toString()) {
       throw new AppError("You do not have permission to delete this job", 403);
     }
-
-    // Delete all associated applications
-    await JobApplication.deleteMany({ job: id });
     
+    const applications = await JobApplication.find({ job: id }).select("applicant");
+    await JobApplication.deleteMany({ job: id });
     await JobPosting.findByIdAndDelete(id);
+
+    if (applications.length > 0) {
+      const notificationsData = applications.map(app => ({
+        userId: app.applicant,
+        type: "application",
+        title: "Job Posting Removed",
+        message: `A job you applied to has been removed by the recruiter.`,
+        metadata: { jobId: id }
+      }));
+      
+      const notificationDocs = await Notification.insertMany(notificationsData);
+      
+      const io = getIO();
+      if (io && notificationDocs.length > 0) {
+        for (const notifDoc of notificationDocs) {
+          io.to(`user_${notifDoc.userId}`).emit("new-notification", notifDoc);
+        }
+      }
+    }
   }
 };
-
-
 /**
  * Helper to sort and limit recommendations in memory.
  * @param {Array} jobs - List of recommendations with job details and matchScore
@@ -353,23 +390,21 @@ export const getJobRecommendations = async (user, options = {}) => {
     ...(resume.keywords || []),
   ].map((term) => term.trim().toLowerCase()).filter(Boolean);
 
-  const uniqueTerms = [...new Set(candidateTerms)];
+  const uniqueTerms = [...new Set(candidateTerms)].slice(0, 30);
 
   if (uniqueTerms.length > 0) {
     // Pre-filter: Only fetch jobs where at least one skill or title matches a candidate term.
-    // This drastically reduces the number of jobs sent to the AI evaluator.
     const escapeRegex = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     
-    // We avoid \b for terms with special characters (like C++, Node.js) as it causes matching issues
-    const regexTerms = uniqueTerms.map((term) => {
-      const escaped = escapeRegex(term);
-      return new RegExp(`^${escaped}$|\\b${escaped}\\b`, "i");
-    });
+    // For exact match in arrays (highly optimized by MongoDB indexes)
+    const exactRegexTerms = uniqueTerms.map((term) => new RegExp(`^${escapeRegex(term)}$`, "i"));
+    // For substring match in title (prevents ReDoS from backtracking \b)
+    const substringRegexTerms = uniqueTerms.map((term) => new RegExp(escapeRegex(term), "i"));
     
     query.$or = [
-      { skills: { $in: regexTerms } },
-      { keywords: { $in: regexTerms } },
-      { title: { $in: regexTerms } }
+      { skills: { $in: exactRegexTerms } },
+      { keywords: { $in: exactRegexTerms } },
+      { title: { $in: substringRegexTerms } }
     ];
   }
 
@@ -483,26 +518,15 @@ export const getRecruiterAnalytics = async (recruiterId) => {
     { $sort: { "_id.year": 1, "_id.month": 1 } },
   ]);
 
-  const jobsByMonth = jobsByMonthAgg.map((item) => ({
-    month: `${item._id.year}-${String(item._id.month).padStart(2, "0")}`,
-    count: item.count,
-  }));
-
-  // Top skills across all jobs
-  const skillCount = {};
-  allJobs.forEach((job) => {
-    (job.skills || []).forEach((skill) => {
-      const normalized = skill.toLowerCase().trim();
-      if (normalized) {
-        skillCount[normalized] = (skillCount[normalized] || 0) + 1;
-      }
-    });
-  });
-
-  const topSkills = Object.entries(skillCount)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10)
-    .map(([skill, count]) => ({ skill, count }));
+  const topSkillsAgg = await JobPosting.aggregate([
+  { $match: { recruiter: new mongoose.Types.ObjectId(recruiterId) } },
+  { $unwind: "$skills" },
+  { $group: { _id: { $toLower: "$skills" }, count: { $sum: 1 } } },
+  { $sort: { count: -1 } },
+  { $limit: 10 },
+  { $project: { skill: "$_id", count: 1, _id: 0 } }
+]);
+const topSkills = topSkillsAgg;
 
   // Recent jobs (last 5)
   const recentJobs = allJobs.slice(0, 5).map((job) => ({
@@ -517,7 +541,7 @@ export const getRecruiterAnalytics = async (recruiterId) => {
   const result = {
     totalJobs: allJobs.length,
     statusBreakdown,
-    jobsByMonth,
+    jobsByMonth: jobsByMonthAgg,
     topSkills,
     recentJobs,
   };

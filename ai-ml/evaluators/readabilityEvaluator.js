@@ -42,12 +42,47 @@ export default function readabilityEvaluator({ resumeText = "" }) {
     return "low";
   }
 
+  function buildRewriteSuggestion(cleanedSentence, relevantVerbsForSuggestion) {
+    const verb = relevantVerbsForSuggestion[Math.floor(Math.random() * Math.min(5, relevantVerbsForSuggestion.length))] ?? "Led";
+    const trimmed = cleanedSentence.replace(/^(responsible for|worked on|tasks included|helped|assisted)/i, "").trim();
+    return `${verb} ${trimmed.charAt(0).toLowerCase()}${trimmed.slice(1)}`;
+  }
+
+  function estimateSentenceComplexity(sentence) {
+    const words = sentence.split(/\s+/);
+    const wordCount = words.length;
+    const longWords = words.filter(w => w.length > 8).length;
+    const longWordRatio = longWords / Math.max(1, wordCount);
+
+    if (wordCount > 30 || longWordRatio > 0.4) return "complex";
+    if (wordCount > 20 || longWordRatio > 0.25) return "moderate";
+    return "simple";
+  }
+
+  function detectRepetitiveVerbs(verbsUsed) {
+    const freq = {};
+    for (const v of verbsUsed) freq[v] = (freq[v] || 0) + 1;
+    return Object.entries(freq)
+      .filter(([, count]) => count > 2)
+      .map(([verb, count]) => ({ verb, count }));
+  }
+
+  function scoreBulletLength(sentence) {
+    const wordCount = sentence.split(/\s+/).length;
+    if (wordCount < 6) return "too_short";
+    if (wordCount > 35) return "too_long";
+    return "optimal";
+  }
+
   const sentences = resumeText
     .split(/[.!?\n]/)
     .map(s => s.trim())
     .filter(s => s.length > 20);
 
   const allPowerVerbs = Object.values(powerVerbs).flat().map(v => v.toLowerCase());
+
+  const domainEarly = detectDomain(resumeText);
+  const relevantVerbsEarly = powerVerbs[domainEarly] ?? powerVerbs.general ?? [];
 
   const weakBullets = [];
   const passiveVoicePatterns = [
@@ -59,6 +94,9 @@ export default function readabilityEvaluator({ resumeText = "" }) {
 
   let powerVerbCount = 0;
   let passiveVoiceCount = 0;
+  const verbsUsed = [];
+  const complexSentences = [];
+  const bulletLengthIssues = { too_short: 0, too_long: 0, optimal: 0 };
 
   sentences.forEach(sentence => {
     const cleanedSentence = cleanSentenceStart(sentence);
@@ -69,17 +107,29 @@ export default function readabilityEvaluator({ resumeText = "" }) {
 
     if (hasPowerVerb) {
       powerVerbCount++;
+      const matchedVerb = allPowerVerbs.find(verb => words.slice(0, 4).includes(verb));
+      if (matchedVerb) verbsUsed.push(matchedVerb);
+
+      const complexity = estimateSentenceComplexity(cleanedSentence);
+      if (complexity === "complex") {
+        complexSentences.push({ sentence: cleanedSentence, complexity });
+      }
+
+      const lengthScore = scoreBulletLength(cleanedSentence);
+      bulletLengthIssues[lengthScore]++;
     } else {
       const category = getSentenceCategory(cleanedSentence);
       if (category === "bullet") {
         const severity = scoreWeakBulletSeverity(cleanedSentence);
         const section = extractBulletContext(sentence, resumeText);
+        const rewrite = buildRewriteSuggestion(cleanedSentence, relevantVerbsEarly);
         weakBullets.push({
           original: sentence,
           cleaned: cleanedSentence,
           reason: "No action verb in first 4 words",
           severity,
           section: section ?? "unknown",
+          suggestedRewrite: rewrite,
         });
       }
     }
@@ -99,6 +149,7 @@ export default function readabilityEvaluator({ resumeText = "" }) {
 
   const highSeverity = weakBullets.filter(b => b.severity === "high");
   const mediumSeverity = weakBullets.filter(b => b.severity === "medium");
+  const repetitiveVerbs = detectRepetitiveVerbs(verbsUsed);
 
   if (passiveVoiceCount > 2) {
     suggestions.push(
@@ -108,7 +159,7 @@ export default function readabilityEvaluator({ resumeText = "" }) {
 
   if (highSeverity.length > 0) {
     suggestions.push(
-      `${highSeverity.length} high-severity weak bullets detected (e.g., 'Responsible for...').`
+      `${highSeverity.length} high-severity weak bullets detected. Example rewrite: "${highSeverity[0].suggestedRewrite}"`
     );
   }
 
@@ -121,6 +172,31 @@ export default function readabilityEvaluator({ resumeText = "" }) {
   if (verbDensity < MIN_VERB_DENSITY) {
     suggestions.push(
       `Verb density is ${Math.round(verbDensity * 100)}% — below 50%. Strengthen bullets using: ${relevantVerbs.slice(0, 3).join(", ")}.`
+    );
+  }
+
+  if (repetitiveVerbs.length > 0) {
+    const examples = repetitiveVerbs.map(r => `'${r.verb}' (${r.count}x)`).join(", ");
+    suggestions.push(
+      `Repetitive verbs detected: ${examples}. Vary your language to avoid sounding monotonous.`
+    );
+  }
+
+  if (complexSentences.length > 2) {
+    suggestions.push(
+      `${complexSentences.length} overly complex sentences detected. Break them into shorter, punchier bullets.`
+    );
+  }
+
+  if (bulletLengthIssues.too_long > 1) {
+    suggestions.push(
+      `${bulletLengthIssues.too_long} bullets exceed 35 words — trim for better ATS and recruiter readability.`
+    );
+  }
+
+  if (bulletLengthIssues.too_short > 1) {
+    suggestions.push(
+      `${bulletLengthIssues.too_short} bullets are too short (under 6 words) — add context or metrics.`
     );
   }
 
@@ -150,11 +226,15 @@ export default function readabilityEvaluator({ resumeText = "" }) {
         cleaned: b.cleaned,
         severity: b.severity,
         section: b.section,
+        suggestedRewrite: b.suggestedRewrite,
         reason: b.reason,
       })),
       weakBulletCount: weakBullets.length,
       highSeverityCount: highSeverity.length,
       mediumSeverityCount: mediumSeverity.length,
+      repetitiveVerbs,
+      complexSentenceCount: complexSentences.length,
+      bulletLengthDistribution: bulletLengthIssues,
       suggestions,
       relevantVerbs,
     },

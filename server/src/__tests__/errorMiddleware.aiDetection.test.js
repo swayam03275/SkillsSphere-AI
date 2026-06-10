@@ -58,6 +58,45 @@ describe("errorMiddleware AI detection", () => {
     );
   });
 
+  test("does not classify Axios errors as AI when Axios error is not targeting AI endpoints", async () => {
+    process.env.NODE_ENV = "production";
+
+    // Simulate an Axios-shaped operational error from a non-AI upstream.
+    const err = new Error("Operational failure while calling upstream service");
+    err.isOperational = true;
+    err.statusCode = 502;
+    err.status = "error";
+    err.errors = undefined;
+    err.isAxiosError = true;
+    err.type = undefined;
+    err.name = "AxiosError";
+    err.provider = undefined;
+    err.config = {
+      url: "https://non-ai-upstream.example.com/orders/v1/create",
+      headers: {
+        Authorization: "Bearer some-non-matching-token",
+      },
+    };
+
+    const req = { method: "GET", originalUrl: "/api/test" };
+    const res = makeRes();
+
+    globalErrorHandler(err, req, res, next);
+
+    assert.equal(res.statusCode, 502);
+    assert.equal(
+      res.payload.message,
+      "Operational failure while calling upstream service"
+    );
+
+    // If misclassified as AI, payload.message would be rewritten.
+    assert.equal(
+      String(res.payload.message).includes("AI service"),
+      false
+    );
+  });
+
+
   test("classifies GoogleGenerativeAI errors as AI", async () => {
     process.env.NODE_ENV = "production";
 

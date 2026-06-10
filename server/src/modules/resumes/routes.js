@@ -162,8 +162,8 @@ router.post(
  */
 router.post(
   "/analyze",
-  resumeAnalysisLimiter,
-  protect,
+  protect,                  
+  resumeAnalysisLimiter,    
   authorizeRoles("student"),
   parseResumeUpload,
   validateAndPersistResumeFile,
@@ -256,7 +256,7 @@ router.get("/result/:id", protect, getResumeResult);
  *       200:
  *         description: Strategic comparison generated
  */
-router.post("/compare", aiActionLimiter, protect, compareVersions);
+router.post("/compare", protect, aiActionLimiter, compareVersions);
 
 /**
  * @openapi
@@ -293,6 +293,6 @@ router.post("/compare", aiActionLimiter, protect, compareVersions);
  *       500:
  *         description: AI generation failed
  */
-router.post("/:id/cover-letter", aiActionLimiter, protect, authorizeRoles("student"), generateCoverLetterForResume);
+router.post("/:id/cover-letter", protect, aiActionLimiter, authorizeRoles("student"), generateCoverLetterForResume);
 
 export default router;

@@ -1,5 +1,7 @@
 import express from "express";
 import { protect, authorizeRoles } from "../../middleware/authMiddleware.js";
+import { validateBody } from "../../middleware/validation.js";
+import { createClassroomSchema } from "../../validations/classrooms.validation.js";
 import {
   createClassroomSession,
   getTutorClassroomSessions,
@@ -40,7 +42,7 @@ router.use(protect);
  *       201:
  *         description: Classroom session created successfully
  */
-router.post("/create", authorizeRoles("tutor"), createClassroomSession);
+router.post("/create", authorizeRoles("tutor"), validateBody(createClassroomSchema), createClassroomSession);
 
 /**
  * @openapi

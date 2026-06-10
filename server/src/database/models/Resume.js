@@ -184,6 +184,50 @@ const resumeSchema = new mongoose.Schema(
   }
 );
 
+// Decrypt fields on lean query results
+resumeSchema.post(
+  [
+    "find",
+    "findOne",
+    "findOneAndUpdate",
+    "findOneAndDelete",
+    "findOneAndReplace",
+  ],
+  function (res) {
+    if (!res) return;
+    const isLean = this.mongooseOptions().lean;
+    if (isLean) {
+      const decryptResume = (resume) => {
+        if (!resume) return;
+        const encryptedFields = [
+          "name",
+          "email",
+          "phone",
+          "education",
+          "experience",
+          "projects",
+          "certifications",
+          "linkedin",
+          "github",
+          "portfolio",
+          "resumeText",
+        ];
+        for (const field of encryptedFields) {
+          if (resume[field] !== undefined && resume[field] !== null) {
+            resume[field] = decrypt(resume[field]);
+          }
+        }
+      };
+
+      if (Array.isArray(res)) {
+        res.forEach(decryptResume);
+      } else {
+        decryptResume(res);
+      }
+    }
+  }
+);
+
 const Resume = mongoose.model("Resume", resumeSchema);
 
 // Indexes for efficient matching and retrieval

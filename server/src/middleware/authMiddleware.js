@@ -42,7 +42,17 @@ export const protect = asyncHandler(async (req, res, next) => {
       );
     }
 
-    // 4) GRANT ACCESS TO PROTECTED ROUTE
+    // 5) Check if user changed password after the token was issued
+    if (currentUser.passwordChangedAt && decoded.iat) {
+      const changedTimestamp = parseInt(currentUser.passwordChangedAt.getTime() / 1000, 10);
+      if (decoded.iat < changedTimestamp) {
+        return next(
+          new AppError("User recently changed password! Please log in again.", 401)
+        );
+      }
+    }
+
+    // 6) GRANT ACCESS TO PROTECTED ROUTE
     req.user = currentUser;
     next();
   } catch (error) {
@@ -96,6 +106,13 @@ export const verifySocketToken = async (token) => {
   const user = await User.findById(decoded.userId).select("-password");
   if (!user) {
     throw new Error("User not found");
+  }
+
+  if (user.passwordChangedAt && decoded.iat) {
+    const changedTimestamp = parseInt(user.passwordChangedAt.getTime() / 1000, 10);
+    if (decoded.iat < changedTimestamp) {
+      throw new Error("User recently changed password");
+    }
   }
 
   return user;

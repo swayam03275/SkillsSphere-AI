@@ -47,8 +47,8 @@ export const generateCoverLetterForResume = async (req, res, next) => {
     }
 
     // Build the dynamic prompt using the parsed resume data
-    logger.log("Resume:", resume);
-    logger.log("JD:", jobDescription);
+    logger.info("Resume:", resume);
+    logger.info("JD:", jobDescription);
     const prompt = buildCoverLetterPrompt({
       resumeData: resume,
       analysisData: {
@@ -60,12 +60,12 @@ export const generateCoverLetterForResume = async (req, res, next) => {
       language
     });
 
-    logger.log("Generated Prompt:", prompt);
+    logger.info("Generated Prompt:", prompt);
 
     // Generate the cover letter using the Gemini service
     const aiResult = await generateCoverLetter(prompt);
 
-    logger.log("Gemini Response:", aiResult);
+    logger.info("Gemini Response:", aiResult);
 
     if (!aiResult.success) {
       return res.status(500).json({ 

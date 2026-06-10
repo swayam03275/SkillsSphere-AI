@@ -13,19 +13,19 @@ export const sendEmail = async (to, subject, text, html) => {
   const mode = process.env.EMAIL_SERVICE_MODE || "console";
 
   if (mode === "console") {
-    logger.log("=========================================");
-    logger.log(`[EMAIL SERVICE] Mode: CONSOLE`);
-    logger.log(`[EMAIL SERVICE] To: ${to}`);
-    logger.log(`[EMAIL SERVICE] Subject: ${subject}`);
-    logger.log(`[EMAIL SERVICE] Content: ${text}`);
-    logger.log("=========================================");
+    logger.info("=========================================");
+    logger.info(`[EMAIL SERVICE] Mode: CONSOLE`);
+    logger.info(`[EMAIL SERVICE] To: ${to}`);
+    logger.info(`[EMAIL SERVICE] Subject: ${subject}`);
+    logger.info(`[EMAIL SERVICE] Content: ${text}`);
+    logger.info("=========================================");
     return;
   }
 
   // SMTP Mode
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
     logger.error("[EMAIL SERVICE] SMTP Error: EMAIL_USER or EMAIL_PASS missing. Falling back to console.");
-    logger.log(`[FALLBACK] To: ${to} | Subject: ${subject} | Content: ${text}`);
+    logger.info(`[FALLBACK] To: ${to} | Subject: ${subject} | Content: ${text}`);
     return;
   }
 
@@ -49,7 +49,7 @@ export const sendEmail = async (to, subject, text, html) => {
 
   try {
     await transporter.sendMail(mailOptions);
-    logger.log(`[EMAIL SERVICE] SMTP: Email sent to ${to}`);
+    logger.info(`[EMAIL SERVICE] SMTP: Email sent to ${to}`);
   } catch (error) {
     logger.error(`[EMAIL SERVICE] SMTP Error: ${error.message}`);
     throw new Error(`Email delivery failed: ${error.message}`);

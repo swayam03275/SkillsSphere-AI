@@ -1,5 +1,6 @@
 import path from "path";
 import fs from "fs";
+import fsPromises from "fs/promises";
 import crypto from "crypto";
 import { parseResume } from "../../utils/parseResume.js";
 import logger from "../../utils/logger.js";
@@ -16,6 +17,7 @@ import AnalysisHistory from "../../database/models/AnalysisHistory.js";
 import { verifyLinks } from "../../utils/linkVerifier.js";
 import { generateComparisonInsights } from "../../utils/aiComparison.js";
 import { buildSignedFileUrl } from "../../utils/signedFileUrl.js";
+import { removeUploadedFile } from "../../middleware/uploadResume.js";
 
 const defaultDependencies = {
   parseResume,
@@ -102,6 +104,8 @@ export const uploadResume = asyncHandler(async (req, res, next) => {
 
   const count = await Resume.countDocuments({ user: req.user._id });
   if (count >= 10) {
+    // Clean up the orphaned file written to disk by Multer
+    await removeUploadedFile(req.file.path);
     return next(new AppError("Maximum limit of 10 resumes reached. Please delete an existing version to upload a new one.", 400));
   }
 
@@ -121,10 +125,6 @@ export const uploadResume = asyncHandler(async (req, res, next) => {
       mimeType: req.file.mimetype,
     },
   });
-
-  if (req.file?.path) {
-    await fsPromises.unlink(req.file.path).catch(() => {});
-  }
 });
 
 const normalizeJobSkills = (rawSkills) => {
@@ -157,32 +157,128 @@ export const analyzeResume = asyncHandler(async (req, res, next) => {
 
   const count = await Resume.countDocuments({ user: req.user._id });
   if (count >= 10) {
+    // Clean up the orphaned file written to disk by Multer
+    await removeUploadedFile(file.path);
     return next(new AppError("Maximum limit of 10 resumes reached. Please delete an existing version to upload a new one.", 400));
   }
 
-  console.time("ResumeAnalysis");
-  console.time("ResumeParsing");
-  const parsedData = await controllerDependencies.parseResume(file.path);
-  console.timeEnd("ResumeParsing");
+  try {
+    console.time("ResumeAnalysis");
+    console.time("ResumeParsing");
+    const parsedData = await controllerDependencies.parseResume(file.path);
+    console.timeEnd("ResumeParsing");
 
-  const isScannedPdf = controllerDependencies.validateExtractedText(parsedData.resumeText || "");
+    const isScannedPdf = controllerDependencies.validateExtractedText(parsedData.resumeText || "");
 
-  const jobSkills = normalizeJobSkills(req.body.jobSkills);
-  if (jobSkills === null) {
-    return next(new AppError("jobSkills must be a valid JSON array", 400));
-  }
+    const jobSkills = normalizeJobSkills(req.body.jobSkills);
+    if (jobSkills === null) {
+      // Clean up the orphaned file before returning the validation error
+      await removeUploadedFile(file.path);
+      return next(new AppError("jobSkills must be a valid JSON array", 400));
+    }
 
-  // --- SEMANTIC CACHE LOOKUP ---
-  const resumeText = parsedData.resumeText || "";
-  const jdText = req.body.jobDescription || "";
-  const resumeHash = getHash(resumeText);
-  const jdHash = getHash(jdText);
+    // --- SEMANTIC CACHE LOOKUP ---
+    const resumeText = parsedData.resumeText || "";
+    const jdText = req.body.jobDescription || "";
+    const resumeHash = getHash(resumeText);
+    const jdHash = getHash(jdText);
 
-  const cachedAnalysis = await controllerDependencies.findCachedAnalysis(resumeHash, jdHash);
-  if (cachedAnalysis) {
-    const safePipeline = cachedAnalysis.details || {};
-    const safeData = cachedAnalysis.meta?.safeData || {};
-    const verifiedLinks = cachedAnalysis.meta?.verifiedLinks || [];
+    const cachedAnalysis = await controllerDependencies.findCachedAnalysis(resumeHash, jdHash);
+    if (cachedAnalysis) {
+      const safePipeline = cachedAnalysis.details || {};
+      const safeData = cachedAnalysis.meta?.safeData || {};
+      const verifiedLinks = cachedAnalysis.meta?.verifiedLinks || [];
+
+      const evaluatorBreakdown = buildLegacyBreakdown(safePipeline, jobSkills, parsedData, req.body.jobDescription);
+      const overallScore = safePipeline.score || 0;
+
+      // Save to DB
+      const savedResume = await controllerDependencies.upsertResume(req.user._id, {
+        ...safeData,
+        ...safePipeline,
+        jobSkills,
+        jobDescription: req.body.jobDescription,
+        mode: safePipeline.mode || "match",
+        evaluatorBreakdown,
+        aggregatedScore: overallScore,
+        isScannedPdf,
+        file: {
+          originalName: file.originalname,
+          storedName: file.filename,
+          path: file.path,
+          size: `${(file.size / 1024).toFixed(2)} KB`,
+          mimeType: file.mimetype,
+        },
+      });
+
+      // Save Analysis History
+      await AnalysisHistory.create({
+        user: req.user._id,
+        score: safePipeline.score || 0,
+        classification: safePipeline.classification?.level || "Beginner",
+        skills: safeData.skills || [],
+        missingSkills: safePipeline.skillMatch?.missingSkills || [],
+        suggestions: safePipeline.gapAnalysis?.suggestions || [],
+        breakdown: safePipeline.breakdown || {},
+        mode: safePipeline.mode || "match",
+      });
+
+      // Clean up: Limit history to last 10 versions to prevent bloat
+      const historyCount = await AnalysisHistory.countDocuments({ user: req.user._id });
+      if (historyCount > 10) {
+        const surplus = historyCount - 10;
+        const oldestRecords = await AnalysisHistory.find({ user: req.user._id })
+          .sort({ createdAt: 1 })
+          .limit(surplus)
+          .select("_id");
+
+        if (oldestRecords.length > 0) {
+          await AnalysisHistory.deleteMany({
+            _id: { $in: oldestRecords.map(r => r._id) }
+          });
+        }
+      }
+
+      console.timeEnd("ResumeAnalysis");
+
+      const { resumeText: _rt, ...dataWithoutText } = safeData;
+      return res.status(200).json({
+        success: true,
+        message: "Resume analyzed successfully",
+        resumeId: savedResume._id,
+        data: dataWithoutText,
+        ...safePipeline,
+        verifiedLinks,
+        file: savedResume.file,
+        evaluatorBreakdown,
+        overallScore,
+        isScannedPdf,
+      });
+    }
+
+    // --- CACHE MISS: RUN PIPELINE ---
+    // 🧠 RUN PIPELINE (ONLY LOGIC ENTRY)
+    console.time("PipelineExecution");
+    const pipelineResult = await runPipeline({
+      resumeData: parsedData,
+      jobSkills,
+      jobDescription: req.body.jobDescription,
+    });
+    console.timeEnd("PipelineExecution");
+    
+    // 🔗 LINK VERIFICATION: Check if extracted links are alive
+    console.time("LinkVerification");
+    const linksToVerify = [
+      parsedData.linkedin,
+      parsedData.github,
+      parsedData.portfolio
+    ].filter(Boolean);
+    const verifiedLinks = await verifyLinks(linksToVerify);
+    console.timeEnd("LinkVerification");
+
+    // 🔥 Normalize everything
+    const safeData = normalizeResumeData(parsedData);
+    const safePipeline = normalizePipelineResult(pipelineResult);
 
     const evaluatorBreakdown = buildLegacyBreakdown(safePipeline, jobSkills, parsedData, req.body.jobDescription);
     const overallScore = safePipeline.score || 0;
@@ -193,7 +289,7 @@ export const analyzeResume = asyncHandler(async (req, res, next) => {
       ...safePipeline,
       jobSkills,
       jobDescription: req.body.jobDescription,
-      mode: safePipeline.mode || "match",
+      mode: pipelineResult.mode || "match",
       evaluatorBreakdown,
       aggregatedScore: overallScore,
       isScannedPdf,
@@ -215,10 +311,24 @@ export const analyzeResume = asyncHandler(async (req, res, next) => {
       missingSkills: safePipeline.skillMatch?.missingSkills || [],
       suggestions: safePipeline.gapAnalysis?.suggestions || [],
       breakdown: safePipeline.breakdown || {},
-      mode: safePipeline.mode || "match",
+      mode: pipelineResult.mode || "match",
     });
 
-    // Clean up: Limit history to last 10 versions to prevent bloat
+    // Save to semantic cache for future requests
+    await controllerDependencies.saveCachedAnalysis({
+      resumeHash,
+      jdHash,
+      score: safePipeline.score || 0,
+      similarity: pipelineResult.breakdown?.semanticMatch?.score || safePipeline.score || 0,
+      summary: pipelineResult.breakdown?.semanticMatch?.summary || "Analysis generated successfully",
+      details: safePipeline,
+      meta: {
+        safeData,
+        verifiedLinks
+      }
+    });
+
+    // Clean up: Limit history to last 10 versions to prevent bloat (Optimized with direct deletion)
     const historyCount = await AnalysisHistory.countDocuments({ user: req.user._id });
     if (historyCount > 10) {
       const surplus = historyCount - 10;
@@ -249,111 +359,11 @@ export const analyzeResume = asyncHandler(async (req, res, next) => {
       overallScore,
       isScannedPdf,
     });
+  } catch (error) {
+    // Clean up the orphaned file on any unexpected error (parsing, pipeline, DB, etc.)
+    await removeUploadedFile(file.path);
+    throw error;
   }
-
-  // --- CACHE MISS: RUN PIPELINE ---
-  // 🧠 RUN PIPELINE (ONLY LOGIC ENTRY)
-  console.time("PipelineExecution");
-  const pipelineResult = await runPipeline({
-    resumeData: parsedData,
-    jobSkills,
-    jobDescription: req.body.jobDescription,
-  });
-  console.timeEnd("PipelineExecution");
-  
-  // 🔗 LINK VERIFICATION: Check if extracted links are alive
-  console.time("LinkVerification");
-  const linksToVerify = [
-    parsedData.linkedin,
-    parsedData.github,
-    parsedData.portfolio
-  ].filter(Boolean);
-  const verifiedLinks = await verifyLinks(linksToVerify);
-  console.timeEnd("LinkVerification");
-
-  // 🔥 Normalize everything
-  const safeData = normalizeResumeData(parsedData);
-  const safePipeline = normalizePipelineResult(pipelineResult);
-
-  const evaluatorBreakdown = buildLegacyBreakdown(safePipeline, jobSkills, parsedData, req.body.jobDescription);
-  const overallScore = safePipeline.score || 0;
-
-  // Save to DB (optional)
-  const savedResume = await controllerDependencies.upsertResume(req.user._id, {
-    ...safeData,
-    ...safePipeline,
-    jobSkills,
-    jobDescription: req.body.jobDescription,
-    mode: pipelineResult.mode || "match",
-    evaluatorBreakdown,
-    aggregatedScore: overallScore,
-    isScannedPdf,
-    file: {
-      originalName: file.originalname,
-      storedName: file.filename,
-      path: file.path,
-      size: `${(file.size / 1024).toFixed(2)} KB`,
-      mimeType: file.mimetype,
-    },
-  });
-
-  // Save Analysis History
-  await AnalysisHistory.create({
-    user: req.user._id,
-    score: safePipeline.score || 0,
-    classification: safePipeline.classification?.level || "Beginner",
-    skills: safeData.skills || [],
-    missingSkills: safePipeline.skillMatch?.missingSkills || [],
-    suggestions: safePipeline.gapAnalysis?.suggestions || [],
-    breakdown: safePipeline.breakdown || {},
-    mode: pipelineResult.mode || "match",
-  });
-
-  // Save to semantic cache for future requests
-  await controllerDependencies.saveCachedAnalysis({
-    resumeHash,
-    jdHash,
-    score: safePipeline.score || 0,
-    similarity: pipelineResult.breakdown?.semanticMatch?.score || safePipeline.score || 0,
-    summary: pipelineResult.breakdown?.semanticMatch?.summary || "Analysis generated successfully",
-    details: safePipeline,
-    meta: {
-      safeData,
-      verifiedLinks
-    }
-  });
-
-  // Clean up: Limit history to last 10 versions to prevent bloat (Optimized with direct deletion)
-  const historyCount = await AnalysisHistory.countDocuments({ user: req.user._id });
-  if (historyCount > 10) {
-    const surplus = historyCount - 10;
-    const oldestRecords = await AnalysisHistory.find({ user: req.user._id })
-      .sort({ createdAt: 1 })
-      .limit(surplus)
-      .select("_id");
-
-    if (oldestRecords.length > 0) {
-      await AnalysisHistory.deleteMany({
-        _id: { $in: oldestRecords.map(r => r._id) }
-      });
-    }
-  }
-
-  console.timeEnd("ResumeAnalysis");
-
-  const { resumeText: _rt, ...dataWithoutText } = safeData;
-  return res.status(200).json({
-    success: true,
-    message: "Resume analyzed successfully",
-    resumeId: savedResume._id,
-    data: dataWithoutText,
-    ...safePipeline,
-    verifiedLinks,
-    file: savedResume.file,
-    evaluatorBreakdown,
-    overallScore,
-    isScannedPdf,
-  });
 });
 
 export const getResumeResult = asyncHandler(async (req, res, next) => {
@@ -517,7 +527,15 @@ export const deleteResume = asyncHandler(async (req, res, next) => {
   }
 
   const wasActive = resume.isActive;
+  const filePathToDelete = resume.file?.path;
   await Resume.deleteOne({ _id: id });
+
+  // Physically delete the file from disk to prevent storage leaks
+  if (filePathToDelete) {
+    await fsPromises.unlink(filePathToDelete).catch((err) => {
+      logger.warn(`Failed to physically delete resume file at ${filePathToDelete}: ${err.message}`);
+    });
+  }
 
   // If we deleted the active resume, activate the most recent fallback if available
   if (wasActive) {

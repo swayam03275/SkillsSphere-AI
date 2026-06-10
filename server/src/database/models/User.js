@@ -65,6 +65,7 @@ const userSchema = new mongoose.Schema(
     verificationTokenExpires: { type: Date, default: null },
     resetPasswordToken: { type: String, default: null },
     resetPasswordExpires: { type: Date, default: null },
+    passwordChangedAt: { type: Date, default: null },
 
     otpAttempts: {
       type: Number,
@@ -114,18 +115,65 @@ const userSchema = new mongoose.Schema(
 );
 
 // Intercept queries on email to transparently encrypt them so exact matches still work
-userSchema.pre(["find", "findOne", "countDocuments", "findOneAndUpdate", "updateOne"], function () {
-  const query = this.getQuery();
-  if (query && query.email) {
-    if (typeof query.email === "string" && !query.email.startsWith("v1:cbc:")) {
-      query.email = encryptDeterministic(query.email.toLowerCase().trim());
-    } else if (query.email.$in && Array.isArray(query.email.$in)) {
-      query.email.$in = query.email.$in.map(e => 
-        (typeof e === "string" && !e.startsWith("v1:cbc:")) ? encryptDeterministic(e.toLowerCase().trim()) : e
-      );
+userSchema.pre(
+  [
+    "find",
+    "findOne",
+    "countDocuments",
+    "findOneAndUpdate",
+    "updateOne",
+    "updateMany",
+    "deleteOne",
+    "deleteMany",
+    "findOneAndDelete",
+    "findOneAndReplace",
+    "replaceOne",
+  ],
+  function () {
+    const query = this.getQuery();
+    if (query && query.email) {
+      if (typeof query.email === "string" && !query.email.startsWith("v1:cbc:")) {
+        query.email = encryptDeterministic(query.email.toLowerCase().trim());
+      } else if (query.email.$in && Array.isArray(query.email.$in)) {
+        query.email.$in = query.email.$in.map(e => 
+          (typeof e === "string" && !e.startsWith("v1:cbc:")) ? encryptDeterministic(e.toLowerCase().trim()) : e
+        );
+      }
     }
   }
-});
+);
+
+// Decrypt fields on lean query results
+userSchema.post(
+  [
+    "find",
+    "findOne",
+    "findOneAndUpdate",
+    "findOneAndDelete",
+    "findOneAndReplace",
+  ],
+  function (res) {
+    if (!res) return;
+    const isLean = this.mongooseOptions().lean;
+    if (isLean) {
+      const decryptUser = (user) => {
+        if (!user) return;
+        if (user.name) {
+          user.name = decrypt(user.name);
+        }
+        if (user.email) {
+          user.email = decrypt(user.email);
+        }
+      };
+
+      if (Array.isArray(res)) {
+        res.forEach(decryptUser);
+      } else {
+        decryptUser(res);
+      }
+    }
+  }
+);
 
 const User = mongoose.model("User", userSchema);
 export default User;

@@ -85,16 +85,16 @@ export const createSession = async ({ userId, topic, difficulty, persona }) => {
     },
   }));
 
-  const session = await InterviewSession.create({
+ const session = await InterviewSession.create({
     userId,
     topic,
     difficulty,
-    persona,
     answers,
     totalQuestions: answers.length,
     currentQuestionIndex: 0,
     startedAt: new Date(),
-  });
+    ...(persona && { persona }),
+});
 
   return session;
 };

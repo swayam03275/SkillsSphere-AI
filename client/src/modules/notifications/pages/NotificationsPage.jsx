@@ -119,7 +119,7 @@ const NotificationsPage = () => {
       return ["interview"].includes(notificationType);
     }
     if (categoryFilter === "system") {
-      return ["info", "warning", "success", "error", "skill_gap_alert"].includes(notificationType);
+      return ["info", "warning", "success", "error", "skill_gap_alert", "system", "message"].includes(notificationType);
     }
     return false;
   };

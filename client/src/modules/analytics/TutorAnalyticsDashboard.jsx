@@ -77,32 +77,41 @@ const TutorAnalyticsDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 pt-24">
+      <main className="min-h-screen bg-[var(--background)] dark:bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] text-gray-900 dark:text-slate-100 flex flex-col pt-24">
         <Navbar />
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-      </div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        </div>
+        <Footer />
+      </main>
     );
   }
 
   if (error) {
     return (
-      <div className="p-6 text-center text-red-500">
-        <AlertCircle className="mx-auto mb-2" />
-        <p>{error}</p>
-      </div>
+      <main className="min-h-screen bg-[var(--background)] dark:bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] text-gray-900 dark:text-slate-100 flex flex-col pt-24">
+        <Navbar />
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-red-500">
+          <AlertCircle className="mb-2 w-10 h-10" />
+          <p className="text-lg font-medium">{error}</p>
+        </div>
+        <Footer />
+      </main>
     );
   }
 
+  const hasData = data && data.length > 0;
+  const totalSkills = hasData ? data.reduce((acc, curr) => acc + curr.count, 0) : 0;
+  const topSkill = hasData ? data[0]?.name : "No Data Yet";
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
+    <main className="min-h-screen bg-[var(--background)] dark:bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] text-gray-900 dark:text-slate-100 flex flex-col pt-24">
       <Navbar />
-      <div className="flex-1 px-6 pb-6 pt-24 sm:px-10 sm:pb-10">
-        <div className="max-w-7xl mx-auto space-y-8">
-        
-        {/* Header Section */}
-        <div className="text-center space-y-4 mb-10 relative">
-          {/* Back to Dashboard Link (Left aligned) */}
-          <div className="py-6 flex justify-start">
+      <div className="container mx-auto px-4 pb-12 flex-1 relative">
+        <div className="w-full max-w-[1200px] mx-auto relative z-10">
+          
+          {/* Back to Dashboard Link */}
+          <div className="py-6">
             <Link 
               to="/dashboard" 
               className="inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
@@ -112,92 +121,104 @@ const TutorAnalyticsDashboard = () => {
             </Link>
           </div>
 
-          <div className="hidden md:flex absolute top-16 left-4 xl:left-8 w-14 h-14 bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 rounded-2xl items-center justify-center shadow-sm transform -rotate-3 hover:rotate-0 transition-transform">
-             <Users className="w-6 h-6 text-purple-600" />
-          </div>
-          <div className="hidden md:flex absolute top-20 right-4 xl:right-8 w-14 h-14 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-2xl items-center justify-center shadow-sm transform rotate-3 hover:rotate-0 transition-transform">
-             <TrendingUp className="w-6 h-6 text-emerald-600" />
+          {/* Hero Section */}
+          <div className="text-center space-y-4 mb-10 relative">
+            <div className="hidden md:flex absolute top-4 left-4 xl:left-8 w-14 h-14 bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 rounded-2xl items-center justify-center shadow-sm transform -rotate-3 hover:rotate-0 transition-transform">
+               <Users className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+            </div>
+            <div className="hidden md:flex absolute top-8 right-4 xl:right-8 w-14 h-14 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-2xl items-center justify-center shadow-sm transform rotate-3 hover:rotate-0 transition-transform">
+               <TrendingUp className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+            </div>
+
+            <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 shadow-sm text-[11px] font-bold text-purple-600 dark:text-purple-400 mx-auto tracking-wide uppercase">
+              <Sparkles size={12} className="text-purple-500" /> PERFORMANCE METRICS
+            </div>
+            
+            <h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight">
+              <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-teal-400 bg-clip-text text-transparent">Analytics</span> Dashboard
+            </h1>
+            
+            <p className="text-gray-500 dark:text-gray-400 text-[15px] max-w-2xl mx-auto font-medium">
+              Class-wide skill gaps and candidate proficiencies.
+            </p>
           </div>
 
-          <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 shadow-sm text-[11px] font-bold text-purple-600 dark:text-purple-400 mx-auto tracking-wide uppercase">
-            <Sparkles size={12} className="text-purple-500" /> PERFORMANCE METRICS
+          {/* Top KPIs */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+            <div className="bg-white dark:bg-[#121214] p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100 dark:border-white/5">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg text-indigo-600 dark:text-indigo-400">
+                  <Users size={24} />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Skills Evaluated</p>
+                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{totalSkills}</h3>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white dark:bg-[#121214] p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100 dark:border-white/5">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-emerald-100 dark:bg-emerald-900/50 rounded-lg text-emerald-600 dark:text-emerald-400">
+                  <TrendingUp size={24} />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Top Skill Area</p>
+                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{topSkill}</h3>
+                </div>
+              </div>
+            </div>
           </div>
-          
-          <h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight">
-            <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-teal-400 bg-clip-text text-transparent">Tutor Analytics</span> Dashboard
-          </h1>
-          
-          <p className="text-gray-500 dark:text-gray-400 text-[15px] max-w-2xl mx-auto font-medium">
-            Class-wide skill gaps and candidate proficiencies.
-          </p>
+
+          {/* Charts Grid */}
+          {!hasData ? (
+            <div className="bg-white dark:bg-[#121214] p-12 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)] border border-gray-100 dark:border-white/5 text-center">
+              <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertCircle className="w-8 h-8 text-slate-400" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">No Analytics Data Yet</h3>
+              <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                Once your students start uploading resumes and taking mock interviews, you will see a detailed breakdown of their skills and critical gaps here.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Heatmap (Treemap) */}
+              <div className="bg-white dark:bg-[#121214] p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100 dark:border-white/5">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6">Skill Distribution Heatmap</h3>
+                <div className="h-[400px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <Treemap
+                      data={data}
+                      dataKey="count"
+                      aspectRatio={4 / 3}
+                      stroke="#fff"
+                      content={<CustomizedContent colors={COLORS} />}
+                    />
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Bar Chart (Gap Scores) */}
+              <div className="bg-white dark:bg-[#121214] p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100 dark:border-white/5">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6">Critical Skill Gaps (Severity)</h3>
+                <div className="h-[400px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={data.slice(0, 10)} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                      <XAxis type="number" />
+                      <YAxis dataKey="name" type="category" width={100} />
+                      <Tooltip />
+                      <Bar dataKey="gapScore" fill="#ef4444" radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-
-        {/* Top KPIs */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg text-indigo-600 dark:text-indigo-400">
-                <Users size={24} />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Skills Evaluated</p>
-                <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{data.reduce((acc, curr) => acc + curr.count, 0)}</h3>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-emerald-100 dark:bg-emerald-900/50 rounded-lg text-emerald-600 dark:text-emerald-400">
-                <TrendingUp size={24} />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Top Skill Area</p>
-                <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{data[0]?.name || "N/A"}</h3>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          
-          {/* Heatmap (Treemap) */}
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6">Skill Distribution Heatmap</h3>
-            <div className="h-[400px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <Treemap
-                  data={data}
-                  dataKey="count"
-                  aspectRatio={4 / 3}
-                  stroke="#fff"
-                  content={<CustomizedContent colors={COLORS} />}
-                />
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Bar Chart (Gap Scores) */}
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6">Critical Skill Gaps (Severity)</h3>
-            <div className="h-[400px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.slice(0, 10)} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                  <XAxis type="number" />
-                  <YAxis dataKey="name" type="category" width={100} />
-                  <Tooltip />
-                  <Bar dataKey="gapScore" fill="#ef4444" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-        </div>
-      </div>
       </div>
       <Footer />
-    </div>
+    </main>
   );
 };
 

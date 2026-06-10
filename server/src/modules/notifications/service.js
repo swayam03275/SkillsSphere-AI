@@ -49,7 +49,7 @@ export const getUserNotifications = async (userId, queryParams = {}) => {
     } else if (type === "interviews") {
       filters.type = { $in: ["interview"] };
     } else if (type === "system") {
-      filters.type = { $in: ["info", "warning", "success", "error", "skill_gap_alert"] };
+      filters.type = { $in: ["info", "warning", "success", "error", "skill_gap_alert", "system", "message"] };
     } else {
       filters.type = type;
     }

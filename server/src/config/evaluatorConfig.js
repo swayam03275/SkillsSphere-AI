@@ -86,7 +86,7 @@ export const logEvaluatorConfig = () => {
     ? " (fallback applied: at least one evaluator must remain enabled)"
     : "";
 
-  logger.log("Evaluator config:");
-  logger.log(`- toggles: ${JSON.stringify(config.toggles)}${fallbackNote}`);
-  logger.log(`- weights: ${JSON.stringify(config.weights)}`);
+  logger.info("Evaluator config:");
+  logger.info(`- toggles: ${JSON.stringify(config.toggles)}${fallbackNote}`);
+  logger.info(`- weights: ${JSON.stringify(config.weights)}`);
 };

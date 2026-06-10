@@ -21,13 +21,11 @@ const cacheMiddleware = (prefix, ttlSeconds) => {
       }
 
       const originalJson = res.json.bind(res);
-      res.json = async (body) => {
+      res.json = (body) => {
         if (res.statusCode >= 200 && res.statusCode < 300) {
-          try {
-            await redisClient.setEx(key, ttlSeconds, JSON.stringify(body));
-          } catch (err) {
-            logger.error("Redis set error:", err);
-          }
+          redisClient
+            .setEx(key, ttlSeconds, JSON.stringify(body))
+            .catch((err) => logger.error("Redis set error:", err));
         }
         return originalJson(body);
       };

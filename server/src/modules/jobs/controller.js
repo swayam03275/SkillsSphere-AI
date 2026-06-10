@@ -191,6 +191,7 @@ export const getJobPostingById = asyncHandler(async (req, res) => {
  */
 export const updateJobPosting = asyncHandler(async (req, res) => {
   const updatedJob = await updateJobService(req.params.id, req.body, req.user._id);
+  await invalidateCacheByPrefix("jobs");
   await invalidateAnalyticsCache(req.user._id.toString());
   res.status(200).json({
     success: true,
@@ -205,6 +206,7 @@ export const updateJobPosting = asyncHandler(async (req, res) => {
  */
 export const deleteJobPosting = asyncHandler(async (req, res) => {
   await deleteJobService(req.params.id, req.user._id);
+  await invalidateCacheByPrefix("jobs");
   await invalidateAnalyticsCache(req.user._id.toString());
   res.status(200).json({
     success: true,
@@ -340,10 +342,13 @@ export const getRankedCandidates = asyncHandler(async (req, res) => {
  */
 export const exportApplicationsToCSV = asyncHandler(async (req, res) => {
   const { status, sortBy } = req.query || {};
-  const result = await getJobAppsService(req.params.id, req.user._id, status, sortBy);
-  const applications = result.applications || result;
 
-  // Construct CSV headers
+  res.setHeader("Content-Type", "text/csv");
+  res.setHeader(
+    "Content-Disposition",
+    `attachment; filename=job-${req.params.id}-applicants.csv`
+  );
+
   const headers = [
     "Candidate Name",
     "Candidate Email",
@@ -354,6 +359,7 @@ export const exportApplicationsToCSV = asyncHandler(async (req, res) => {
     "Resume Link",
     "Cover Note"
   ];
+  res.write(headers.join(",") + "\n");
 
   const toCSVField = (value) => {
     if (value === null || value === undefined || value === "") return '"N/A"';
@@ -370,28 +376,41 @@ export const exportApplicationsToCSV = asyncHandler(async (req, res) => {
     return `"${str}"`;
   };
 
-  // Convert applications to CSV rows
-  const rows = applications.map(app => {
-    return [
-      toCSVField(app.applicant?.name),
-      toCSVField(app.applicant?.email),
-      toCSVField(app.aiMatchScore !== null && app.aiMatchScore !== undefined ? `${app.aiMatchScore}%` : null),
-      toCSVField(app.matchCategory),
-      toCSVField(app.status || "pending"),
-      toCSVField(new Date(app.createdAt).toLocaleDateString()),
-      toCSVField(app.resumeLink),
-      toCSVField(app.coverNote)
-    ].join(",");
-  });
+  let page = 1;
+  const limit = 100;
+  let hasMore = true;
 
-  const csvContent = [headers.join(","), ...rows].join("\n");
+  while (hasMore) {
+    const result = await getJobAppsService(req.params.id, req.user._id, { status, sortBy, page, limit });
+    const applications = result.applications || result;
 
-  res.setHeader("Content-Type", "text/csv");
-  res.setHeader(
-    "Content-Disposition",
-    `attachment; filename=job-${req.params.id}-applicants.csv`
-  );
-  res.status(200).send(csvContent);
+    if (!applications || applications.length === 0) {
+      break;
+    }
+
+    const rows = applications.map(app => {
+      return [
+        toCSVField(app.applicant?.name),
+        toCSVField(app.applicant?.email),
+        toCSVField(app.aiMatchScore !== null && app.aiMatchScore !== undefined ? `${app.aiMatchScore}%` : null),
+        toCSVField(app.matchCategory),
+        toCSVField(app.status || "pending"),
+        toCSVField(new Date(app.createdAt).toLocaleDateString()),
+        toCSVField(app.resumeLink),
+        toCSVField(app.coverNote)
+      ].join(",");
+    });
+
+    res.write(rows.join("\n") + "\n");
+
+    if (applications.length < limit) {
+      hasMore = false;
+    } else {
+      page++;
+    }
+  }
+
+  res.end();
 });
 
 /**

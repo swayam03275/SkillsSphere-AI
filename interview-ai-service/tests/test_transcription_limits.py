@@ -84,6 +84,45 @@ class TranscriptionLimitTests(unittest.TestCase):
         self.assertEqual(message["code"], "AUDIO_TOO_LARGE")
         self.assertIn("too large", message["error"])
 
+    def test_websocket_transcribe_success(self):
+        client, _transcription = create_client(max_audio_bytes=16)
+
+        with client.websocket_connect("/api/ws/transcribe") as websocket:
+            websocket.send_bytes(b"x" * 10)
+            websocket.send_text("STOP")
+            message = websocket.receive_json()
+
+        self.assertEqual(message, {"transcript": "transcribed text"})
+
+    def test_websocket_transcribe_empty(self):
+        client, _transcription = create_client(max_audio_bytes=16)
+
+        with client.websocket_connect("/api/ws/transcribe") as websocket:
+            websocket.send_text("STOP")
+            message = websocket.receive_json()
+
+        self.assertEqual(message, {"transcript": ""})
+
+    def test_websocket_transcribe_file_error_cleanup(self):
+        import tempfile
+        from unittest.mock import patch
+        
+        client, _transcription = create_client(max_audio_bytes=16)
+
+        # Mock NamedTemporaryFile to raise an exception (simulating disk/system error)
+        def mock_named_temp_file(*args, **kwargs):
+            raise IOError("Simulated write/creation failure")
+
+        with patch("tempfile.NamedTemporaryFile", mock_named_temp_file):
+            with client.websocket_connect("/api/ws/transcribe") as websocket:
+                websocket.send_bytes(b"x" * 10)
+                websocket.send_text("STOP")
+                message = websocket.receive_json()
+
+        # The error should be caught and returned, and no TypeError should bubble out
+        self.assertIn("error", message)
+        self.assertEqual(message["error"], "Transcription failed. Please try again.")
+
 
 if __name__ == "__main__":
     unittest.main()

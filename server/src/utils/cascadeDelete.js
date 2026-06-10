@@ -14,6 +14,7 @@ import AnalysisHistory from "../database/models/AnalysisHistory.js";
 import ClassroomSession from "../database/models/ClassroomSession.js";
 import JobPosting from "../database/models/JobPosting.js";
 import Notification from "../database/models/Notification.js";
+import RoadmapComment from "../database/models/RoadmapComment.js";
 
 import logger from "./logger.js";
 
@@ -64,10 +65,30 @@ export const cascadeDeleteUser = async (userId) => {
     await Notification.deleteMany({ userId }, { session });
     await MatchResult.deleteMany({ user: userId }, { session });
     await LearningProgress.deleteMany({ user: userId }, { session });
+    await LearningProgress.updateMany(
+  { tutorsTracking: userId },
+  { $pull: { tutorsTracking: userId } },
+  { session }
+);
+await LearningProgress.updateMany(
+  { recruitersTracking: userId },
+  { $pull: { recruitersTracking: userId } },
+  { session }
+);
     await JobApplication.deleteMany({ applicant: userId }, { session });
     await CoverLetter.deleteMany({ user: userId }, { session });
     await AnalysisHistory.deleteMany({ user: userId }, { session });
+    await RoadmapComment.deleteMany({ sender: userId }, { session });
     await ClassroomSession.deleteMany({ host: userId }, { session });
+
+    // Remove the deleted user from the participants list of any classroom
+    // session they joined as a guest. The user.id field in participants is
+    // stored as a plain string (see classrooms/socket.js).
+    await ClassroomSession.updateMany(
+      { "participants.user.id": userIdStr },
+      { $pull: { participants: { "user.id": userIdStr } } },
+      { session }
+    );
 
     // Remove chat messages sent by this user in other classrooms
     await ClassroomSession.updateMany(

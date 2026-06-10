@@ -8,8 +8,60 @@ import registerWebRTCHandler from "./socketHandlers/webrtcHandler.js";
 import registerWhiteboardHandler from "./socketHandlers/whiteboardHandler.js";
 import registerCodeEditorHandler from "./socketHandlers/codeEditorHandler.js";
 
+import redisClient from "../../config/redis.js";
+
 const roomStates = new Map();
-const teardownTimeouts = new Map();
+
+const getRedisKey = (roomId) => `classroom:state:${roomId}`;
+
+export async function loadRoomState(roomId, session = null) {
+  if (roomStates.has(roomId)) return roomStates.get(roomId);
+
+  const key = getRedisKey(roomId);
+  if (redisClient.isReady) {
+    try {
+      const cached = await redisClient.get(key);
+      if (cached) {
+        const state = JSON.parse(cached);
+        roomStates.set(roomId, state);
+        return state;
+      }
+    } catch (err) {
+      logger.error(`Redis loadRoomState error for ${roomId}:`, err);
+    }
+  }
+
+  // Fallback: load from database
+  const activeSession = session || await ClassroomSession.findOne({ roomId, status: "active" });
+  const state = {
+    chatHistory: activeSession ? activeSession.chatHistory || [] : [],
+    code: activeSession ? activeSession.codeSnapshot || "" : "",
+    whiteboard: activeSession ? activeSession.whiteboardSnapshot || [] : []
+  };
+
+  roomStates.set(roomId, state);
+
+  if (redisClient.isReady) {
+    try {
+      await redisClient.set(key, JSON.stringify(state));
+    } catch (err) {
+      logger.error(`Redis save default state error for ${roomId}:`, err);
+    }
+  }
+  return state;
+}
+
+export function persistRoomState(roomId) {
+  const state = roomStates.get(roomId);
+  if (!state) return;
+
+  const key = getRedisKey(roomId);
+  if (redisClient.isReady) {
+    redisClient.set(key, JSON.stringify(state)).catch((err) => {
+      logger.error(`Redis persistRoomState error for ${roomId}:`, err);
+    });
+  }
+}
 
 export function getOrCreateRoomState(roomId) {
   if (!roomStates.has(roomId)) {
@@ -24,6 +76,12 @@ export function getOrCreateRoomState(roomId) {
 
 export function clearRoomState(roomId) {
   roomStates.delete(roomId);
+  const key = getRedisKey(roomId);
+  if (redisClient.isReady) {
+    redisClient.del(key).catch((err) => {
+      logger.error(`Redis clearRoomState error for ${roomId}:`, err);
+    });
+  }
 }
 
 export function getRoomState(roomId) {
@@ -31,8 +89,69 @@ export function getRoomState(roomId) {
 }
 
 export function initClassroomSockets(io) {
+  // Start a periodic background sweeper to clean up empty classroom sessions across all instances
+  setInterval(async () => {
+    try {
+      const activeSessions = await ClassroomSession.find({ status: "active" });
+
+      for (const session of activeSessions) {
+        let activeSockets = [];
+        try {
+          activeSockets = await io.in(session.roomId).fetchSockets();
+        } catch (fetchErr) {
+          logger.error(`Error fetching sockets for room ${session.roomId}:`, fetchErr);
+          continue;
+        }
+
+        if (activeSockets.length === 0) {
+          // If the room has no active socket connections, check/set emptySince
+          if (!session.emptySince) {
+            logger.info(`Background Sweeper: Room ${session.roomId} is empty. Starting 30-second teardown countdown...`);
+            session.emptySince = new Date();
+            await session.save();
+          } else {
+            const gracePeriodMs = 30000; // 30 seconds
+            const cutoffTime = new Date(Date.now() - gracePeriodMs);
+            if (session.emptySince < cutoffTime) {
+              logger.info(`Background Sweeper: Ending empty classroom session ${session.roomId}`);
+              session.status = "ended";
+              session.endedAt = new Date();
+              await session.save();
+
+              await clearRoomState(session.roomId);
+              clearRoomLock(session.roomId);
+            }
+          }
+        } else {
+          // If there are active sockets, ensure emptySince is null and participants list in DB is updated/cleaned
+          let dbChanged = false;
+          if (session.emptySince !== null) {
+            session.emptySince = null;
+            dbChanged = true;
+          }
+
+          // Clean up participants in DB that are no longer active sockets
+          const activeSocketIds = new Set(activeSockets.map((s) => s.id));
+          const updatedParticipants = (session.participants || []).filter((p) =>
+            activeSocketIds.has(p.socketId)
+          );
+          if (updatedParticipants.length !== (session.participants || []).length) {
+            session.participants = updatedParticipants;
+            dbChanged = true;
+          }
+
+          if (dbChanged) {
+            await session.save();
+          }
+        }
+      }
+    } catch (err) {
+      logger.error("Background Sweeper Error:", err);
+    }
+  }, 10000); // Check every 10 seconds
+
   io.on("connection", (socket) => {
-    logger.log(`Socket connected: ${socket.id}`);
+    logger.info(`Socket connected: ${socket.id}`);
 
     // Join a specific room
     socket.on("join-room", async ({ roomId }) => {
@@ -76,14 +195,10 @@ export function initClassroomSockets(io) {
           },
         };
 
-        // Clear any pending teardown timeouts since someone joined
-        if (teardownTimeouts.has(roomId)) {
-          clearTimeout(teardownTimeouts.get(roomId));
-          teardownTimeouts.delete(roomId);
-          logger.log(`Teardown aborted for room ${roomId}, a user joined.`);
-        }
+        // Ensure state is loaded from Redis/DB into memory
+        await loadRoomState(roomId, session);
 
-        logger.log(
+        logger.info(
           `User ${socket.data.user.name} (${socket.id}) joining room ${roomId}`,
         );
 
@@ -113,9 +228,9 @@ export function initClassroomSockets(io) {
           return;
         }
 
-        // Update database: remove any existing/stale socket for this exact socket ID to prevent duplicates
+        // Update database: actively purge any stale/ghost socket IDs for this specific user
         session.participants = (session.participants || []).filter(
-          (p) => p.socketId !== socket.id
+          (p) => p.socketId !== socket.id && p.user?.id !== userIdStr
         );
 
         // Add this new active socket participant
@@ -123,6 +238,9 @@ export function initClassroomSockets(io) {
           socketId: socket.id,
           user: socket.data.user,
         });
+
+        // Reset emptySince timer since a user has joined
+        session.emptySince = null;
 
         await session.save();
 
@@ -166,7 +284,7 @@ export function initClassroomSockets(io) {
 
     // Disconnect
     socket.on("disconnecting", async () => {
-      logger.log(`Socket disconnecting: ${socket.id}`);
+      logger.info(`Socket disconnecting: ${socket.id}`);
       // Find all rooms this socket joined (excluding its own private room)
       const joinedRooms = Array.from(socket.rooms).filter((r) => r !== socket.id);
 
@@ -195,7 +313,7 @@ export function initClassroomSockets(io) {
             );
 
             // Sync transient in-memory state back to DB archive on disconnect
-            const finalState = getRoomState(roomId);
+            const finalState = await getRoomState(roomId);
             if (finalState) {
               session.chatHistory = finalState.chatHistory || [];
               session.codeSnapshot = finalState.code || "";
@@ -204,39 +322,8 @@ export function initClassroomSockets(io) {
 
             // Automatically teardown/end the classroom session in database if empty
             if (session.participants.length === 0) {
-              logger.log(`Classroom ${roomId} empty. Initiating 30-second teardown countdown...`);
-              
-              if (!teardownTimeouts.has(roomId)) {
-                const timeoutId = setTimeout(async () => {
-                  try {
-                    const tearLock = getRoomLock(roomId);
-                    const tearRelease = await tearLock.acquire();
-                    
-                    try {
-                      const finalSessionCheck = await ClassroomSession.findOne({
-                        roomId,
-                        status: "active",
-                      });
-                      
-                      if (finalSessionCheck && finalSessionCheck.participants.length === 0) {
-                        logger.log(`Classroom ${roomId} teardown timer completed. Automatically ending session.`);
-                        finalSessionCheck.status = "ended";
-                        finalSessionCheck.endedAt = new Date();
-                        await finalSessionCheck.save();
-                        clearRoomState(roomId);
-                        clearRoomLock(roomId);
-                      }
-                    } finally {
-                      tearRelease();
-                      teardownTimeouts.delete(roomId);
-                    }
-                  } catch (err) {
-                    logger.error("Error during teardown execution:", err);
-                  }
-                }, 30000); // 30 second grace period
-                
-                teardownTimeouts.set(roomId, timeoutId);
-              }
+              logger.info(`Classroom ${roomId} empty. Initiating 30-second teardown countdown...`);
+              session.emptySince = new Date();
             }
 
             await session.save();
@@ -250,3 +337,5 @@ export function initClassroomSockets(io) {
     });
   });
 }
+
+

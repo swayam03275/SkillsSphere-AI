@@ -5,6 +5,9 @@ export let isConnected = false;
 
 import { seedInterviewData } from "../modules/interviews/seed/seedInterviewData.js";
 import { seedJobData } from "../modules/jobs/seed/seedJobData.js";
+import QuestionBank from "./models/QuestionBank.js";
+import JobPosting from "./models/JobPosting.js";
+import { seedTutorRoadmap } from "../modules/roadmap/seed/seedTutorRoadmap.js";
 
 import logger from "../utils/logger.js";
 
@@ -15,15 +18,16 @@ const connectDB = async () => {
     const { MongoMemoryServer } = await import("mongodb-memory-server");
     const mongoServer = await MongoMemoryServer.create();
     const uri = mongoServer.getUri();
-    logger.log(`Started ephemeral Memory Database at: ${uri}`);
+    logger.info(`Started ephemeral Memory Database at: ${uri}`);
     process.env.MONGO_URI = uri;
     const res = await connectDB();
-    logger.log("Memory DB connected.");
+    logger.info("Memory DB connected.");
     // NOTE: If you need to seed interview data in memory mode,
     // call seedInterviewData() from app.js after connectDB() resolves.
-    logger.log("Memory DB connected. Auto-seeding mock interview data and job postings...");
+    logger.info("Memory DB connected. Auto-seeding mock interview data and job postings...");
     await seedInterviewData();
     await seedJobData();
+    await seedTutorRoadmap();
     return res;
   }
 
@@ -44,7 +48,21 @@ const connectDB = async () => {
       minPoolSize: 2,
     });
     isConnected = true;
-    logger.log(`MongoDB Connected Successfully! : ${conn.connection.host}`);
+    logger.info(`MongoDB Connected Successfully! : ${conn.connection.host}`);
+
+    // Seed data if collections are empty
+    try {
+      if ((await QuestionBank.countDocuments()) === 0) {
+        logger.info("QuestionBank is empty — seeding interview data...");
+        await seedInterviewData();
+      }
+      if ((await JobPosting.countDocuments()) === 0) {
+        logger.info("JobPosting is empty — seeding job data...");
+        await seedJobData();
+      }
+    } catch (seedError) {
+      logger.warn(`Seed error (non-fatal): ${seedError.message}`);
+    }
   } catch (error) {
     logger.warn(`MongoDB Connection Error: ${error.message}`);
     logger.warn("Server will continue in degraded mode — DB-dependent features will return 503");
@@ -58,7 +76,7 @@ mongoose.connection.on("disconnected", () => {
 
 mongoose.connection.on("reconnected", () => {
   isConnected = true;
-  logger.log("MongoDB reconnected — restored full functionality");
+  logger.info("MongoDB reconnected — restored full functionality");
 });
 
 export default connectDB;

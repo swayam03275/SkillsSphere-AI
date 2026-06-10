@@ -41,7 +41,8 @@ describe("Classroom Service - Active Sessions", () => {
 
       // Define mocked chain functions
       const mockLean = mock.fn(async () => mockActiveSessions);
-      const mockSort = mock.fn(() => ({ lean: mockLean }));
+      const mockLimit = mock.fn(() => ({ lean: mockLean }));
+      const mockSort = mock.fn(() => ({ limit: mockLimit }));
       const mockPopulate = mock.fn(() => ({ sort: mockSort }));
       
       mock.method(ClassroomSession, "find", () => ({
@@ -61,6 +62,10 @@ describe("Classroom Service - Active Sessions", () => {
       // Assert sort was called with createdAt: -1
       assert.equal(mockSort.mock.calls.length, 1);
       assert.deepEqual(mockSort.mock.calls[0].arguments[0], { createdAt: -1 });
+
+      // Assert limit was called with 20
+      assert.equal(mockLimit.mock.calls.length, 1);
+      assert.deepEqual(mockLimit.mock.calls[0].arguments[0], 20);
 
       // Assert final results match the mock data
       assert.deepEqual(result, mockActiveSessions);

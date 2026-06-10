@@ -1,8 +1,8 @@
-import { getOrCreateRoomState } from "../socket.js";
+import { getOrCreateRoomState, persistRoomState } from "../socket.js";
 
 export default function registerChatHandler(io, socket) {
   // Chat Message
-  socket.on("chat-message", ({ roomId, message }) => {
+  socket.on("chat-message", async ({ roomId, message }) => {
     // Validate that the socket is actually joined to this roomId
     if (!socket.data || socket.data.roomId !== roomId) {
       socket.emit("unauthorized", {
@@ -47,6 +47,7 @@ export default function registerChatHandler(io, socket) {
     if (state.chatHistory.length > 100) {
       state.chatHistory.shift();
     }
+    persistRoomState(roomId);
 
     socket.to(roomId).emit("chat-message", msgObj);
   });

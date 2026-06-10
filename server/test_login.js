@@ -14,12 +14,7 @@ async function run() {
   const password = "Password123!";
 
   // cleanup
-  const existing = await User.find({});
-  for (let u of existing) {
-    if (u.get('email') === email) {
-       await User.deleteOne({ _id: u._id });
-    }
-  }
+  await User.deleteMany({ email: email });
 
   console.log("Registering user...");
   try {

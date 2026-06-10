@@ -125,23 +125,17 @@ const TutorInterviewConsole = () => {
   if (!session || !session.userId || !session.answers) return <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-900"><Navbar /><div className="flex-1 pt-24 text-center">Session data is incomplete or missing.</div><Footer /></div>;
 
   return (
-    <div className="min-h-screen bg-gray-50/50 dark:bg-[#09090b] text-gray-900 dark:text-text-main font-sans pt-20 flex flex-col overflow-hidden relative">
+    <main className="min-h-screen transition-colors duration-300 relative bg-gradient-to-br from-[#f0eeff] via-[#f7f9fc] to-[#edfdf5] dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 dark:bg-[radial-gradient(circle_at_top_left,#0f172a,#020617)] text-gray-900 dark:text-slate-100 flex flex-col pt-24">
       <Navbar />
-
-      {/* Background glowing elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-blue-400/20 dark:bg-blue-900/20 blur-[120px] mix-blend-normal" />
-        <div className="absolute top-[20%] -right-[10%] w-[40%] h-[40%] rounded-full bg-purple-400/20 dark:bg-purple-900/20 blur-[120px] mix-blend-normal" />
-      </div>
-
-      <main className="container mx-auto px-4 max-w-6xl z-10 flex-grow py-8 relative space-y-6">
+      <div className="container mx-auto px-4 pb-12 flex-1 relative">
+        <div className="w-full max-w-[1200px] mx-auto relative z-10 flex flex-col gap-6">
         
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-6">
           <div>
-            <Link to="/tutor/interviews" className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/50 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 text-sm font-medium text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white transition-all backdrop-blur-md shadow-sm mb-4">
-              <ArrowLeft size={16} /> Back to Interviews
+            <Link to="/tutor/interviews" className="inline-flex items-center gap-2 mb-4 text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors">
+              <ArrowLeft size={16} /> Back to Dashboard
             </Link>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Interview Player Console</h1>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Student's Interview Console</h1>
             <p className="text-slate-500">Evaluating {session.userId.name || 'Unknown User'}'s mock interview on {session.topic}</p>
           </div>
           <button 
@@ -155,7 +149,7 @@ const TutorInterviewConsole = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-1 space-y-6">
-            <div className="bg-white dark:bg-slate-900/50 p-6 rounded-3xl border border-gray-200 dark:border-white/10 shadow-sm">
+            <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] dark:shadow-none">
               <h2 className="text-lg font-bold mb-4 border-b pb-2 dark:border-slate-700">Overall Grading</h2>
               
               <div className="mb-4">
@@ -196,7 +190,7 @@ const TutorInterviewConsole = () => {
             <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200">Answer Transcripts & Scoring</h2>
             
             {session.answers.map((ans, idx) => (
-              <div key={idx} className="bg-white dark:bg-slate-900/50 p-6 rounded-3xl border border-gray-200 dark:border-white/10 shadow-sm">
+              <div key={idx} className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-[2rem] border border-gray-100 dark:border-slate-800 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] dark:shadow-none">
                 <div className="flex items-start justify-between mb-4">
                   <h3 className="font-bold text-lg">Q{idx + 1}: {ans.questionText}</h3>
                   {ans.audioPath && (
@@ -209,7 +203,7 @@ const TutorInterviewConsole = () => {
                   )}
                 </div>
                 
-                <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg text-sm text-slate-700 dark:text-slate-300 italic mb-6 border-l-4 border-slate-300 dark:border-slate-600">
+                <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl text-sm text-slate-700 dark:text-slate-300 italic mb-6 border border-slate-200 dark:border-slate-700">
                   "{ans.transcript || "No transcript available."}"
                 </div>
                 
@@ -267,9 +261,10 @@ const TutorInterviewConsole = () => {
             ))}
           </div>
         </div>
-      </main>
-          <Footer />
-    </div>
+      </div>
+      </div>
+      <Footer />
+    </main>
   );
 };
 

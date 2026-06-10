@@ -1,4 +1,24 @@
 import rateLimit from "express-rate-limit";
+import { RedisStore } from "rate-limit-redis";
+import redisClient from "../config/redis.js";
+
+/**
+ * Creates a RedisStore for express-rate-limit when the Redis client is ready,
+ * or returns undefined to fall back to the in-memory store (e.g. in development
+ * when Redis is unavailable). This keeps all rate limit counters shared across
+ * multiple Node.js instances in a horizontally-scaled deployment.
+ */
+const createRedisStore = (prefix) => {
+  try {
+    if (!redisClient || !redisClient.isOpen) return undefined;
+    return new RedisStore({
+      sendCommand: (...args) => redisClient.sendCommand(args),
+      prefix: `rl:${prefix}:`,
+    });
+  } catch {
+    return undefined;
+  }
+};
 
 const unifiedKeyGenerator = (req) => {
   if (req.user?._id) {
@@ -34,6 +54,7 @@ export const authRateLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  store: createRedisStore("auth"),
   keyGenerator: unifiedKeyGenerator,
   validate: commonValidateConfig,
   handler: (req, res, next, options) => {
@@ -56,6 +77,7 @@ export const jobCreationLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  store: createRedisStore("job_creation"),
   keyGenerator: unifiedKeyGenerator,
   validate: commonValidateConfig,
   handler: (req, res, next, options) => {
@@ -73,6 +95,7 @@ export const otpRateLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  store: createRedisStore("otp"),
   keyGenerator: unifiedKeyGenerator,
   validate: commonValidateConfig,
   handler: (req, res, next, options) => {
@@ -96,6 +119,7 @@ export const resumeAnalysisLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  store: createRedisStore("resume_analysis"),
   keyGenerator: unifiedKeyGenerator,
   validate: commonValidateConfig,
   handler: (req, res, next, options) => {
@@ -120,6 +144,7 @@ export const globalLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  store: createRedisStore("global"),
   keyGenerator: unifiedKeyGenerator,
   validate: commonValidateConfig,
   handler: (req, res, next, options) => {
@@ -144,6 +169,7 @@ export const aiActionLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  store: createRedisStore("ai_action"),
   keyGenerator: unifiedKeyGenerator,
   validate: commonValidateConfig,
   handler: (req, res, next, options) => {

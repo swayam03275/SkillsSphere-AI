@@ -115,6 +115,7 @@ const Login = () => {
               onChange={handleChange}
               error={errors.email}
               disabled={loading}
+              autoComplete="email"
             />
 
             <Input
@@ -126,6 +127,7 @@ const Login = () => {
               onChange={handleChange}
               error={errors.password}
               disabled={loading}
+              autoComplete="current-password"
             />
           </div>
 

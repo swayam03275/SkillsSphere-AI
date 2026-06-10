@@ -107,6 +107,7 @@ export const getNotifications = asyncHandler(async (req, res) => {
       "jobs",
       "interviews",
       "system",
+      "message",
       "info",
       "warning",
       "success",
@@ -116,6 +117,7 @@ export const getNotifications = asyncHandler(async (req, res) => {
       "application",
       "new_application",
       "skill_gap_alert",
+      "application_status",
     ];
     if (!validTypes.includes(type)) {
       throw new AppError(`Type filter must be one of: ${validTypes.join(", ")}`, 400);
@@ -176,6 +178,9 @@ export const createNotification = asyncHandler(async (req, res) => {
       "application",
       "new_application",
       "skill_gap_alert",
+      "application_status",
+      "system",
+      "message",
     ];
     if (!validTypes.includes(type)) {
       validationErrors.type = `Type must be one of: ${validTypes.join(", ")}`;

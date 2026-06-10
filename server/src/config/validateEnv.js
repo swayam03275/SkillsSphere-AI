@@ -1,7 +1,9 @@
 const REQUIRED_ENV_VARS = [
   { name: "JWT_SECRET", description: "Secret key for signing JWT tokens" },
+  { name: "OAUTH_STATE_SECRET", description: "Dedicated HMAC secret for signing Google OAuth state tokens" },
   { name: "GOOGLE_CLIENT_ID", description: "Google Client ID for OAuth authentication" },
   { name: "FILE_URL_SIGNING_SECRET", description: "Secret key for signing protected file URLs" },
+  { name: "ENCRYPTION_KEY", description: "AES-256 key for encrypting user PII at rest" },
 ];
 
 const WEAK_VALUES = new Set([
@@ -294,6 +296,134 @@ export const validateFileSigningSecret = (env = process.env) => {
   return { errors, warnings };
 };
 
+export const validateEncryptionKey = (env = process.env) => {
+  const errors = [];
+  const warnings = [];
+  const production = isProduction(env);
+  const value = env.ENCRYPTION_KEY;
+
+  if (isBlank(value)) {
+    // Already caught by REQUIRED_ENV_VARS; skip duplicate messaging.
+    return { errors, warnings };
+  }
+
+  const key = String(value);
+
+  if (hasPlaceholderValue(key)) {
+    addIssue(
+      production ? errors : warnings,
+      "ENCRYPTION_KEY",
+      "must not use a weak, default, or placeholder value.",
+    );
+  }
+
+  if (production && key.length < 32) {
+    addIssue(errors, "ENCRYPTION_KEY", "must be at least 32 characters in production for AES-256 security.");
+  } else if (!production && key.length < 16) {
+    addIssue(warnings, "ENCRYPTION_KEY", "is short. Use a value of at least 32 characters before deploying.");
+  }
+
+  if (key === env.JWT_SECRET) {
+    addIssue(
+      production ? errors : warnings,
+      "ENCRYPTION_KEY",
+      "must not be the same as JWT_SECRET. Use a separate dedicated key for field-level encryption.",
+    );
+  }
+
+  if (key === env.FILE_URL_SIGNING_SECRET) {
+    addIssue(
+      production ? errors : warnings,
+      "ENCRYPTION_KEY",
+      "must not be the same as FILE_URL_SIGNING_SECRET. Each secret must be unique.",
+    );
+  }
+
+  return { errors, warnings };
+};
+
+/**
+ * Validates OAUTH_STATE_SECRET — the dedicated HMAC key used exclusively
+ * for signing and verifying the Google OAuth state parameter.
+ *
+ * This must be a separate secret from JWT_SECRET to limit the blast radius
+ * if any single secret is compromised. Using JWT_SECRET for OAuth state
+ * signing means a stolen session key also allows forging OAuth redirects.
+ */
+export const validateOAuthStateSecret = (env = process.env) => {
+  const errors = [];
+  const warnings = [];
+  const production = isProduction(env);
+  const value = env.OAUTH_STATE_SECRET;
+
+  // Presence check — already enforced by REQUIRED_ENV_VARS, but we add
+  // context-aware messaging here for a better developer experience.
+  if (isBlank(value)) {
+    addIssue(
+      production ? errors : warnings,
+      "OAUTH_STATE_SECRET",
+      production
+        ? "is required in production for signing Google OAuth state tokens."
+        : "is not set. OAuth state tokens will not be signed — open-redirect CSRF is possible.",
+    );
+    return { errors, warnings };
+  }
+
+  const secret = String(value);
+
+  // Must not be a known weak/placeholder value.
+  if (hasPlaceholderValue(secret)) {
+    addIssue(
+      production ? errors : warnings,
+      "OAUTH_STATE_SECRET",
+      "must not use a weak, default, or placeholder value.",
+    );
+  }
+
+  // Enforce minimum length — at least 32 chars in production for SHA-256 HMAC.
+  if (production && secret.length < 32) {
+    addIssue(
+      errors,
+      "OAUTH_STATE_SECRET",
+      "must be at least 32 characters in production for secure HMAC-SHA256 signing.",
+    );
+  } else if (!production && secret.length < 16) {
+    addIssue(
+      warnings,
+      "OAUTH_STATE_SECRET",
+      "is short. Use at least 32 random characters before deploying to production.",
+    );
+  }
+
+  // Key isolation — OAUTH_STATE_SECRET must be unique from all other secrets.
+  // Reusing JWT_SECRET means compromising one key breaks both JWT auth AND OAuth flows.
+  if (secret === env.JWT_SECRET) {
+    addIssue(
+      production ? errors : warnings,
+      "OAUTH_STATE_SECRET",
+      "must not be the same as JWT_SECRET. Use a separate dedicated secret for OAuth state signing.",
+    );
+  }
+
+  if (secret === env.FILE_URL_SIGNING_SECRET) {
+    addIssue(
+      production ? errors : warnings,
+      "OAUTH_STATE_SECRET",
+      "must not be the same as FILE_URL_SIGNING_SECRET. Each secret must be cryptographically unique.",
+    );
+  }
+
+  if (secret === env.ENCRYPTION_KEY) {
+    addIssue(
+      production ? errors : warnings,
+      "OAUTH_STATE_SECRET",
+      "must not be the same as ENCRYPTION_KEY. Each secret must be cryptographically unique.",
+    );
+  }
+
+  return { errors, warnings };
+};
+
 export const validateExternalApiKeys = (env = process.env) => {
   const errors = [];
   const warnings = [];
@@ -373,6 +503,8 @@ export const collectEnvValidationIssues = (env = process.env) => {
   const checks = [
     validateRequiredEnv,
     validateJwtSecret,
+    validateOAuthStateSecret,
+    validateEncryptionKey,
     validateDatabaseUrl,
     validateEmailConfig,
     validateExternalApiKeys,

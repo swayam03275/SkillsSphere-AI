@@ -1,6 +1,6 @@
-import React, { useEffect, Suspense, lazy } from "react";
+import { useEffect, Suspense, lazy } from "react";
 import { Routes, Route } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
+import { useAppDispatch, useAppSelector } from "../types/redux";
 import { fetchCurrentUser, logoutUser } from "../features/auth/authSlice";
 const LandingPage = lazy(() => import("../modules/landing/LandingPage"));
 const PrivacyPolicyPage = lazy(() => import("../modules/landing/pages/PrivacyPolicyPage"));
@@ -52,8 +52,8 @@ import { LoadingState, ErrorBoundary } from "../shared/components";
 import CommandPalette from "../shared/components/CommandPalette";
 
 function App() {
-  const dispatch = useDispatch();
-  const { token } = useSelector((state) => state.auth);
+  const dispatch = useAppDispatch();
+  const { token } = useAppSelector((state) => state.auth);
 
   useEffect(() => {
     if (token) {
@@ -80,6 +80,7 @@ function App() {
       <CommandPalette />
 
       <ErrorBoundary>
+        {/* @ts-ignore */}
         <Suspense fallback={<LoadingState title="Loading module..." />}>
       <Routes>
         <Route path="/" element={<LandingPage />} />
@@ -241,7 +242,7 @@ function App() {
           }
         />
 
-        {/* Tutor Roadmap Lobby */}
+        {/* Student's Roadmap */}
         <Route
           path="/tutor/roadmaps"
           element={
@@ -303,7 +304,7 @@ function App() {
           }
         />
 
-        {/* Tutor Interview Console */}
+        {/* Student's Interview */}
         <Route
           path="/tutor/interviews"
           element={

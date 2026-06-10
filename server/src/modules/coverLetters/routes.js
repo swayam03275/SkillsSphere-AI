@@ -1,6 +1,8 @@
 import express from "express";
 import { getCoverLetters, getCoverLetterById, generateCoverLetter, deleteCoverLetter } from "./controller.js";
 import { protect, authorizeRoles } from "../../middleware/authMiddleware.js";
+import { validateBody } from "../../middleware/validation.js";
+import { generateCoverLetterSchema } from "../../validations/coverLetterValidation.js";
 
 const router = express.Router();
 
@@ -40,13 +42,14 @@ router.get("/", protect, authorizeRoles("student"), getCoverLetters);
  *                 type: string
  *               jobDescription:
  *                 type: string
+ *                 maxLength: 5000
  *     responses:
  *       201:
  *         description: Created
  *       400:
  *         description: Bad request
  */
-router.post("/generate", protect, authorizeRoles("student"), generateCoverLetter);
+router.post("/generate", protect, authorizeRoles("student"), validateBody(generateCoverLetterSchema), generateCoverLetter);
 
 /**
  * @openapi

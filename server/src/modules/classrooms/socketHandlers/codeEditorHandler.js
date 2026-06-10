@@ -1,4 +1,4 @@
-import { getOrCreateRoomState } from "../socket.js";
+import { getOrCreateRoomState, persistRoomState } from "../socket.js";
 import {
   executeCode,
   validateCodeExecutionRequest,
@@ -66,7 +66,7 @@ const emitExecutionResult = (io, roomId, socket, result) => {
 
 export default function registerCodeEditorHandler(io, socket) {
   // Code change event
-  socket.on("code-change", ({ roomId, code }) => {
+  socket.on("code-change", async ({ roomId, code }) => {
     if (!socket.data || socket.data.roomId !== roomId) {
       socket.emit("unauthorized", {
         message: "Cross-classroom action detected",
@@ -85,6 +85,7 @@ export default function registerCodeEditorHandler(io, socket) {
 
     const state = getOrCreateRoomState(roomId);
     state.code = code;
+    persistRoomState(roomId);
     socket.to(roomId).emit("code-change", { code });
   });
 

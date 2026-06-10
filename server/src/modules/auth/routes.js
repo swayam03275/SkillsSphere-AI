@@ -1,12 +1,15 @@
 import express from "express";
-import { getFrontendUrl } from "../../config/env.js";
-import {
-  buildGoogleAuthUrl,
-  GOOGLE_OAUTH_NOT_CONFIGURED_MESSAGE,
-  isGoogleOAuthConfigured,
-} from "../../config/googleOAuth.js";
 import { protect } from "../../middleware/authMiddleware.js";
-import logger from "../../utils/logger.js";
+import { validateBody } from "../../middleware/validation.js";
+import {
+  registerSchema,
+  verifyEmailSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  resendOtpSchema,
+  loginSchema,
+  googleAuthSchema,
+} from "../../validations/auth.validation.js";
 
 import {
   authRateLimiter,
@@ -14,14 +17,13 @@ import {
 } from "../../middleware/rateLimiter.js";
 import {
   exchangeOAuthCode,
-  DEFAULT_OAUTH_REDIRECT_PATH,
   forgotPassword,
   getMe,
   googleLogin,
   googleOAuthCallback,
+  initiateGoogleOAuth,
   login,
   logout,
-  normalizeOAuthRedirectPath,
   register,
   resendOTP,
   resetPassword,
@@ -46,37 +48,7 @@ const router = express.Router();
 router.get("/me", protect, getMe);
 
 // Initiate Google OAuth
-router.get("/google", (req, res) => {
-  const frontendOrigin = new URL(getFrontendUrl()).origin;
-  const requestedRedirect = req.query.redirect;
-  const role = req.query.role;
-  const redirectPath =
-    typeof requestedRedirect === "string" && requestedRedirect.length > 0
-      ? normalizeOAuthRedirectPath(requestedRedirect)
-      : DEFAULT_OAUTH_REDIRECT_PATH;
-  const redirectTarget = `${frontendOrigin}${redirectPath}`;
-
-  const stateObj = { redirect: redirectPath };
-  if (role) {
-    stateObj.role = role;
-  }
-  if (req.query.action) {
-    stateObj.action = req.query.action;
-  }
-
-  const state = encodeURIComponent(
-    Buffer.from(JSON.stringify(stateObj), "utf8").toString("base64"),
-  );
-
-  if (!isGoogleOAuthConfigured()) {
-    logger.error("[AUTH] Google OAuth env vars are missing in server/.env");
-    return res.redirect(
-      `${redirectTarget}?error=${encodeURIComponent(GOOGLE_OAUTH_NOT_CONFIGURED_MESSAGE)}`,
-    );
-  }
-
-  res.redirect(buildGoogleAuthUrl({ state }));
-});
+router.get("/google", initiateGoogleOAuth);
 
 // Callback from Google
 router.get("/google/callback", googleOAuthCallback);
@@ -112,11 +84,11 @@ router.get("/google/callback", googleOAuthCallback);
  *       201:
  *         description: User registered
  */
-router.post("/register", authRateLimiter, register);
-router.post("/verify-email", otpRateLimiter, authRateLimiter, verifyEmail);
-router.post("/forgot-password", authRateLimiter, forgotPassword);
-router.post("/reset-password", authRateLimiter, resetPassword);
-router.post("/resend-otp", authRateLimiter, resendOTP);
+router.post("/register", authRateLimiter, validateBody(registerSchema), register);
+router.post("/verify-email", otpRateLimiter, authRateLimiter, validateBody(verifyEmailSchema), verifyEmail);
+router.post("/forgot-password", authRateLimiter, validateBody(forgotPasswordSchema), forgotPassword);
+router.post("/reset-password", authRateLimiter, validateBody(resetPasswordSchema), resetPassword);
+router.post("/resend-otp", authRateLimiter, validateBody(resendOtpSchema), resendOTP);
 /**
  * @openapi
  * /api/auth/login:
@@ -141,13 +113,13 @@ router.post("/resend-otp", authRateLimiter, resendOTP);
  *       200:
  *         description: Login successful
  */
-router.post("/login", authRateLimiter, login);
+router.post("/login", authRateLimiter, validateBody(loginSchema), login);
 
 // 🚪 Logout
 router.post("/logout", protect, logout);
 
 // 🔐 Google Login
-router.post("/google", googleLogin);
+router.post("/google", validateBody(googleAuthSchema), googleLogin);
 
 // Exchange one-time auth code for JWT
 router.post("/exchange-code", authRateLimiter, exchangeOAuthCode);

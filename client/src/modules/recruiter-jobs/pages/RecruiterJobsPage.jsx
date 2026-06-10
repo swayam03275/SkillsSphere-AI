@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Plus, Briefcase, Search, ArrowLeft } from "lucide-react";
+import { Plus, Briefcase, Search, ArrowLeft, Target, Sparkles } from "lucide-react";
 import Navbar from "../../../shared/components/Navbar";
 import Footer from "../../../shared/components/Footer";
 
@@ -174,38 +174,58 @@ const RecruiterJobsPage = () => {
       {insightsJobId ? (
         <RecruiterInsightsPage jobId={insightsJobId} />
       ) : (
-        <div className="min-h-screen bg-slate-50 dark:bg-[#020617] text-slate-900 dark:text-white flex flex-col">
+        <div className="min-h-screen bg-gray-50/50 dark:bg-[#09090b] text-gray-900 dark:text-text-main font-sans pt-20 flex flex-col">
       <Navbar />
 
-      <div className="flex-1 w-full mx-auto max-w-5xl flex flex-col gap-6 pt-24 pb-16 px-4 sm:px-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
+      <main className="flex-grow flex flex-col items-center justify-start px-4 sm:px-6 lg:px-8 pb-12 animate-fade-in relative overflow-hidden w-full">
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+          <div className="absolute -top-[10%] -left-[5%] w-[40%] h-[40%] rounded-full bg-blue-100/40 dark:bg-blue-900/10 blur-[120px]" />
+          <div className="absolute top-[20%] -right-[5%] w-[35%] h-[35%] rounded-full bg-purple-100/40 dark:bg-purple-900/10 blur-[100px]" />
+          <div className="absolute top-[5%] right-[20%] w-[35%] h-[35%] rounded-full bg-teal-50/40 dark:bg-teal-900/10 blur-[100px]" />
+        </div>
+
+        <div className="w-full max-w-[1200px] relative z-10 flex flex-col gap-6">
+          <div className="py-6 flex justify-between items-center">
             <Link 
               to="/dashboard" 
-              className="inline-flex items-center gap-2 text-sm text-blue-500 hover:text-blue-400 mb-4 transition-colors"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
             >
               <ArrowLeft size={16} />
               Back to Dashboard
             </Link>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
-              Manage Job Postings
+            <Link to="/recruiter/jobs/new">
+              <Button
+                variant="primary"
+                leftIcon={<Plus size={18} />}
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 border-none shadow-[0_8px_20px_rgb(59,130,246,0.3)]"
+              >
+                Post New Job
+              </Button>
+            </Link>
+          </div>
+
+          <div className="text-center space-y-4 mb-6 relative">
+            <div className="hidden md:flex absolute top-4 left-4 xl:left-8 w-14 h-14 bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 rounded-2xl items-center justify-center shadow-sm transform -rotate-3 hover:rotate-0 transition-transform">
+               <Briefcase className="w-6 h-6 text-purple-600" />
+            </div>
+            <div className="hidden md:flex absolute top-8 right-4 xl:right-8 w-14 h-14 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-2xl items-center justify-center shadow-sm transform rotate-3 hover:rotate-0 transition-transform">
+               <Target className="w-6 h-6 text-emerald-600" />
+            </div>
+
+            <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 shadow-sm text-[11px] font-bold text-purple-600 dark:text-purple-400 mx-auto tracking-wide uppercase">
+              <Sparkles size={12} className="text-purple-500" /> RECRUITMENT COMMAND CENTER
+            </div>
+            
+            <h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight">
+              <span className="bg-gradient-to-r from-blue-600 via-purple-500 to-teal-400 bg-clip-text text-transparent">Manage</span> Job Postings
             </h1>
-            <p className="text-slate-600 dark:text-slate-400 mt-1">
+            
+            <p className="text-gray-500 dark:text-gray-400 text-[15px] max-w-2xl mx-auto font-medium">
               View and manage your active job listings and recommendations.
             </p>
           </div>
-          <Link to="/recruiter/jobs/new">
-            <Button
-              variant="primary"
-              leftIcon={<Plus size={18} />}
-              className="bg-blue-600 hover:bg-blue-500"
-            >
-              Post New Job
-            </Button>
-          </Link>
-        </div>
 
-        <div className="flex flex-col gap-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/60 p-4 shadow-lg shadow-black/10 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 rounded-3xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#121214] p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full sm:max-w-md">
             <Input
               id="search-jobs"
@@ -232,7 +252,7 @@ const RecruiterJobsPage = () => {
                   onClick={() => setStatusFilter(filter.value)}
                   className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
                     isActive
-                      ? "border-blue-400 bg-blue-500/20 text-blue-100"
+                      ? "border-blue-400 bg-blue-50 dark:bg-blue-500/20 text-blue-600 dark:text-blue-100"
                       : "border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800"
                   }`}
                 >
@@ -250,7 +270,7 @@ const RecruiterJobsPage = () => {
             ))}
           </div>
         ) : error ? (
-          <ErrorState message={error} onRetry={fetchJobs} />
+          <ErrorState description={error} onRetry={fetchJobs} />
         ) : filteredJobs.length === 0 ? (
           <EmptyState
             icon={<Briefcase size={48} className="text-slate-600" />}
@@ -300,6 +320,7 @@ const RecruiterJobsPage = () => {
           />
         )}
       </div>
+      </main>
           <Footer />
     </div>
       )}

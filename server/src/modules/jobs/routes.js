@@ -1,5 +1,13 @@
 import express from "express";
 import { protect, authorizeRoles } from "../../middleware/authMiddleware.js";
+import { validateBody } from "../../middleware/validation.js";
+import {
+  jobPostingSchema,
+  updateJobSchema,
+  applyToJobSchema,
+  updateApplicationStatusSchema,
+  updateStudentApplicationStatusSchema,
+} from "../../validations/jobs.validation.js";
 import { jobCreationLimiter } from "../../middleware/rateLimiter.js";
 import cacheMiddleware from "../../middleware/cacheMiddleware.js";
 import {
@@ -97,7 +105,7 @@ router.get("/recruiter/analytics", authorizeRoles("recruiter"), getRecruiterAnal
  *       201:
  *         description: Job created
  */
-router.post("/", authorizeRoles("recruiter"), jobCreationLimiter, createJobPosting);
+router.post("/", authorizeRoles("recruiter"), jobCreationLimiter, validateBody(jobPostingSchema), createJobPosting);
 
 // Student application routes (must be before /:id to avoid route conflict)
 router.get("/my-applications", authorizeRoles("student"), getMyApplications);
@@ -107,15 +115,15 @@ router.get("/my-applications/details", authorizeRoles("student"), getMyApplicati
 router
   .route("/:id")
   .get(authorizeRoles("recruiter"), getJobPostingById)
-  .put(authorizeRoles("recruiter"), updateJobPosting)
+  .put(authorizeRoles("recruiter"), validateBody(updateJobSchema), updateJobPosting)
   .delete(authorizeRoles("recruiter"), deleteJobPosting);
 
 // Application routes
-router.post("/:id/apply", authorizeRoles("student"), applyToJobPosting);
+router.post("/:id/apply", authorizeRoles("student"), validateBody(applyToJobSchema), applyToJobPosting);
 router.patch("/:id/withdraw", authorizeRoles("student"), withdrawJobApplication);
 router.get("/:id/applications", authorizeRoles("recruiter"), getApplications);
 router.get("/:id/applications/export", authorizeRoles("recruiter"), exportApplicationsToCSV);
-router.patch("/applications/:id/status", authorizeRoles("recruiter"), updateApplicationStatus);
-router.patch("/applications/:id/student-status", authorizeRoles("student"), updateStudentApplicationStatus);
+router.patch("/applications/:id/status", authorizeRoles("recruiter"), validateBody(updateApplicationStatusSchema), updateApplicationStatus);
+router.patch("/applications/:id/student-status", authorizeRoles("student"), validateBody(updateStudentApplicationStatusSchema), updateStudentApplicationStatus);
 
 export default router;

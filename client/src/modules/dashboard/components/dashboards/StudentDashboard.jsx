@@ -230,7 +230,7 @@ const StudentDashboard = ({ token }) => {
 
           {/* Latest Analysis Summary */}
           <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-slate-900/50 overflow-hidden backdrop-blur-md">
-            <div className="border-b border-white/5 bg-white/5 px-6 py-4 flex items-center justify-between">
+            <div className="border-b border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-white/5 px-6 py-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Activity className="text-emerald-400" size={20} />
                 <h2 className="text-lg font-bold">
@@ -394,7 +394,7 @@ const StudentDashboard = ({ token }) => {
                     history.map((item, idx) => (
                       <tr 
                         key={idx} 
-                        className={`hover:bg-slate-100 dark:hover:bg-white/5 transition-colors group cursor-pointer ${selectedVersions.includes(item._id) ? 'bg-blue-500/10 border-l-2 border-blue-500' : ''}`}
+                        className={`hover:bg-slate-100 dark:hover:bg-gray-50 dark:bg-white/5 transition-colors group cursor-pointer ${selectedVersions.includes(item._id) ? 'bg-blue-500/10 border-l-2 border-blue-500' : ''}`}
                         onClick={() => toggleVersionSelection(item._id)}
                       >
                         <td className="px-6 py-4 text-center">
@@ -451,7 +451,7 @@ const StudentDashboard = ({ token }) => {
         <div className="space-y-6">
           {/* Smart Suggestions Card */}
           <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-slate-900/50 overflow-hidden backdrop-blur-md">
-            <div className="border-b border-white/5 bg-white/5 px-6 py-4 flex items-center gap-2">
+            <div className="border-b border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-white/5 px-6 py-4 flex items-center gap-2">
               <Target className="text-emerald-400" size={20} />
               <h2 className="text-lg font-bold">Smart Insights</h2>
             </div>

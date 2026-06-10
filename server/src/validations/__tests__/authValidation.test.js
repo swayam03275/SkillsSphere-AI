@@ -261,11 +261,13 @@ describe("auth validation", () => {
       assert.ok(fieldMessages(result, "name").includes("Name must be at least 2 characters"));
     });
 
-    it("normalizes uppercase role values after trimming", () => {
-      const result = validateRegisterInput(validRegisterPayload({ role: "  RECRUITER  " }));
+    it("rejects privileged role values (recruiter, tutor) during self-registration", () => {
+      for (const role of ["recruiter", "tutor", "RECRUITER", "TUTOR", "  RECRUITER  "]) {
+        const result = validateRegisterInput(validRegisterPayload({ role }));
 
-      assert.equal(result.isValid, true);
-      assert.equal(result.data.role, "recruiter");
+        assert.equal(result.isValid, false);
+        assert.ok(fieldMessages(result, "role").length > 0);
+      }
     });
   });
 });

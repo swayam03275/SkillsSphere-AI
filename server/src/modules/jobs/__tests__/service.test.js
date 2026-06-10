@@ -5,9 +5,11 @@ import JobPosting from "../../../database/models/JobPosting.js";
 import JobApplication from "../../../database/models/JobApplication.js";
 import Resume from "../../../database/models/Resume.js";
 import AppError from "../../../utils/AppError.js";
+import Notification from "../../../database/models/Notification.js";
 import * as resumeService from "../../resumes/service.js";
 import matchingService from "../../matching/service.js";
 import mongoose from "mongoose";
+
 describe("Job Service", () => {
   afterEach(() => {
     mock.restoreAll();
@@ -93,8 +95,17 @@ describe("Job Service", () => {
       const mockExistingJob = { _id: mockJobId, recruiter: { toString: () => mockRecruiterId } };
 
       mock.method(JobPosting, "findById", () => mockExistingJob);
+      mock.method(JobApplication, "find", () => ({
+        select: async () => [{ applicant: "applicant123" }]
+      }));
       mock.method(JobApplication, "deleteMany", () => ({ deletedCount: 5 }));
+      const mockQuery = {
+        select: mock.fn(() => mockQuery),
+        then: function(resolve) { resolve([{ applicant: new mongoose.Types.ObjectId().toString() }]); }
+      };
+      mock.method(JobApplication, "find", () => mockQuery);
       mock.method(JobPosting, "findByIdAndDelete", () => mockExistingJob);
+      mock.method(Notification, "insertMany", async () => ([{}]));
 
       await jobService.deleteJob(mockJobId, mockRecruiterId);
 

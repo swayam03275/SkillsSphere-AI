@@ -174,6 +174,17 @@ const interviewSessionSchema = new mongoose.Schema(
 interviewSessionSchema.index({ userId: 1, createdAt: -1 });
 interviewSessionSchema.index({ status: 1 });
 
+// TTL index: automatically remove sessions older than INTERVIEW_RETENTION_DAYS
+// (default 90 days). Set INTERVIEW_RETENTION_DAYS=0 in .env to disable auto-expiry.
+// This satisfies GDPR Article 5(1)(e) storage limitation for audio/biometric data.
+const retentionDays = parseInt(process.env.INTERVIEW_RETENTION_DAYS ?? "90", 10);
+if (!Number.isNaN(retentionDays) && retentionDays > 0) {
+  interviewSessionSchema.index(
+    { createdAt: 1 },
+    { expireAfterSeconds: retentionDays * 24 * 60 * 60 }
+  );
+}
+
 const InterviewSession = mongoose.model(
   "InterviewSession",
   interviewSessionSchema

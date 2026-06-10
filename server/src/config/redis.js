@@ -20,14 +20,14 @@ redisClient.on("error", (err) => {
 });
 
 redisClient.on("connect", () => {
-  logger.log("Redis Client Connected");
+  logger.info("Redis Client Connected");
 });
 
 export const connectRedis = async () => {
   try {
     await redisClient.connect();
   } catch (error) {
-    logger.log("Redis connection skipped for local development");
+    logger.info("Redis connection skipped for local development");
   }
 };
 

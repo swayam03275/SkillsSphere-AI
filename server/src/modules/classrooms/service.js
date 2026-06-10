@@ -35,6 +35,7 @@ export const createSession = async (hostId, { title, subject, maxParticipants })
 export const getTutorSessions = async (hostId) => {
   return await ClassroomSession.find({ host: hostId })
     .sort({ createdAt: -1 })
+    .limit(50)
     .lean();
 };
 
@@ -78,7 +79,7 @@ export const endSession = async (roomId, hostId) => {
   }
 
   // Capture final artifacts from memory state
-  const finalState = getRoomState(roomId);
+  const finalState = await getRoomState(roomId);
   if (finalState) {
     session.chatHistory = finalState.chatHistory || [];
     session.codeSnapshot = finalState.code || "";
@@ -89,7 +90,7 @@ export const endSession = async (roomId, hostId) => {
   await session.save();
 
   // Clear in-memory room state to prevent memory leaks
-  clearRoomState(roomId);
+  await clearRoomState(roomId);
 
   return session;
 };
@@ -102,6 +103,7 @@ export const getActiveSessions = async () => {
   return await ClassroomSession.find({ status: "active" })
     .populate("host", "name profilePic role")
     .sort({ createdAt: -1 })
+    .limit(20)
     .lean();
 };
 

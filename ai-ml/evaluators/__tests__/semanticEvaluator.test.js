@@ -1,7 +1,48 @@
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert";
 
+// Ensure process.env.HF_API_TOKEN is set so offline tests can run
+if (!process.env.HF_API_TOKEN) {
+  process.env.HF_API_TOKEN = "mock_token_for_offline_testing";
+}
+
 const { semanticEvaluator } = await import("../semanticEvaluator.js");
+
+
+// Mock global fetch to prevent actual network calls to HuggingFace
+const originalFetch = globalThis.fetch;
+before(() => {
+  globalThis.fetch = async (url, options) => {
+    if (url && url.includes("sentence-similarity")) {
+      const body = JSON.parse(options.body);
+      const source = body.inputs.source_sentence.toLowerCase();
+      const compare = body.inputs.sentences[0].toLowerCase();
+
+      let score = 0.5; // default moderate score
+
+      if (source === compare) {
+        score = 0.99;
+      } else if (source.includes("pastry chef") && compare.includes("devops")) {
+        score = 0.1;
+      } else if (source.includes("chef") && compare.includes("machine learning")) {
+        score = 0.15;
+      } else if (source.includes("react") && compare.includes("react")) {
+        score = 0.85;
+      }
+
+      return {
+        ok: true,
+        status: 200,
+        json: async () => [score],
+      };
+    }
+    return originalFetch(url, options);
+  };
+});
+
+after(() => {
+  globalThis.fetch = originalFetch;
+});
 
 // --- Helpers ---
 function assertValidShape(result) {

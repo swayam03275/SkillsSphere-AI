@@ -6,13 +6,25 @@ import InterviewSession from "../../database/models/InterviewSession.js";
 import logger from "../../utils/logger.js";
 
 /**
- * Compile global/class-wide student skill data.
+ * Compile global/class-wide student skill data for a tutor.
  * This runs a MongoDB aggregation pipeline to count skill frequencies
- * and identify common skill gaps based on the candidate pool.
+ * and identify common skill gaps based on the tutor's specific candidate pool.
  */
 export const getSkillGapHeatmap = async (req, res) => {
   try {
+    // 1. Find the students this tutor is tracking
+    const trackedProgress = await LearningProgress.find({ tutorsTracking: req.user._id }).select("user");
+    const studentIds = trackedProgress.map(p => p.user);
+
+    // If the tutor has no tracked students, return an empty array for placeholders
+    if (studentIds.length === 0) {
+      return res.status(200).json({ success: true, data: [] });
+    }
+
     const pipeline = [
+      {
+        $match: { user: { $in: studentIds } }
+      },
       {
         $project: { skills: 1 }
       },
@@ -82,33 +94,56 @@ export const getDashboardAnalytics = async (req, res) => {
     } 
     
     if (role === "tutor") {
-  const [result, activeStudents] = await Promise.all([
-    InterviewSession.aggregate([
-      { $match: { status: "completed" } },
-      { $group: {
-        _id: null,
-        averagePlatformScore: { $avg: "$overallScore" },
-        totalMockInterviewsCompleted: { $sum: 1 }
-      }}
-    ]),
-    LearningProgress.countDocuments({ overallProgress: { $gt: 0 } })
-  ]);
+      // Find students tracked by this tutor
+      const trackedProgress = await LearningProgress.find(
+        { tutorsTracking: req.user._id },
+        { user: 1 }
+      ).lean();
+      const trackedStudentIds = trackedProgress.map((p) => p.user);
 
-  const averagePlatformScore = result[0]
-    ? Math.round(result[0].averagePlatformScore)
-    : 0;
-  const totalMockInterviewsCompleted = result[0]?.totalMockInterviewsCompleted || 0;
+      // If tutor has no tracked students, return zeroes immediately
+      if (trackedStudentIds.length === 0) {
+        return res.status(200).json({
+          success: true,
+          data: {
+            role,
+            averagePlatformScore: 0,
+            totalMockInterviewsCompleted: 0,
+            activeStudents: 0
+          }
+        });
+      }
 
-  return res.status(200).json({
-    success: true,
-    data: {
-      role,
-      averagePlatformScore,
-      totalMockInterviewsCompleted,
-      activeStudents
+      const [result, activeStudents] = await Promise.all([
+        InterviewSession.aggregate([
+          { $match: { status: "completed", userId: { $in: trackedStudentIds } } },
+          { $group: {
+            _id: null,
+            averagePlatformScore: { $avg: "$overallScore" },
+            totalMockInterviewsCompleted: { $sum: 1 }
+          }}
+        ]),
+        LearningProgress.countDocuments({
+          user: { $in: trackedStudentIds },
+          overallProgress: { $gt: 0 }
+        })
+      ]);
+
+      const averagePlatformScore = result[0]
+        ? Math.round(result[0].averagePlatformScore)
+        : 0;
+      const totalMockInterviewsCompleted = result[0]?.totalMockInterviewsCompleted || 0;
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          role,
+          averagePlatformScore,
+          totalMockInterviewsCompleted,
+          activeStudents
+        }
+      });
     }
-  });
-}
 
     if (role === "recruiter") {
       // Recruiter: Talent pool density map

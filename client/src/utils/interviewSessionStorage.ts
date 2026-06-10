@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @typedef {Object} InterviewMessage
  * @property {string} role - The role of the sender, e.g. "candidate", "ai", "system"

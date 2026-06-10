@@ -43,8 +43,8 @@ await describe("synonym normalization", async () => {
     assertNormalized("c#", "csharp");
     assertNormalized(".NET", "dotnet");
     assertNormalized(".net", "dotnet");
-    assertNormalized("C++", "cpp");
-    assertNormalized("c++", "cpp");
+    assertNormalized("C++", "c++");
+    assertNormalized("c++", "c++");
   });
 
   await it("normalizes database aliases", () => {
@@ -59,8 +59,8 @@ await describe("synonym normalization", async () => {
   await it("normalizes cloud/devops aliases", () => {
     assertNormalized("Amazon Web Services", "aws");
     assertNormalized("AWS", "aws");
-    assertNormalized("GCP", "googlecloud");
-    assertNormalized("Google Cloud", "googlecloud");
+    assertNormalized("GCP", "gcp");
+    assertNormalized("Google Cloud", "gcp");
     assertNormalized("K8s", "kubernetes");
     assertNormalized("Kubernetes", "kubernetes");
   });

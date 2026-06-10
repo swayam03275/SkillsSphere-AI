@@ -2,6 +2,7 @@
   "name": "skillsphere-ai-root",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "npm@11.4.2",
   "workspaces": [
     "client",
     "server",

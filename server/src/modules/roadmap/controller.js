@@ -193,12 +193,10 @@ export const updateTopicStatus = asyncHandler(async (req, res) => {
  * Get all active student roadmaps (Tutors only)
  */
 export const getStudentsRoadmaps = asyncHandler(async (req, res) => {
-  const roadmaps = await LearningProgress.find({ tutorsTracking: req.user._id })
-    .populate("user", "name email role")
-    .lean();
-
-  // Filter only those whose user role is "student"
-  const studentRoadmaps = roadmaps.filter(r => r.user && r.user.role === "student");
+    const roadmaps = await LearningProgress.find({ tutorsTracking: req.user._id })
+  .populate({ path: "user", match: { role: "student" }, select: "name email role" })
+  .lean();
+const studentRoadmaps = roadmaps.filter(r => r.user !== null);
 
   res.status(200).json({
     success: true,

@@ -124,6 +124,26 @@ describe("Notification Controller", () => {
       assert.equal(res.status.mock.calls[0].arguments[0], 200);
       assert.equal(res.json.mock.calls[0].arguments[0].success, true);
     });
+
+    it("should query for system and message types when system filter is requested", async () => {
+      let passedFilters;
+      mock.method(Notification, "find", (filters) => {
+        passedFilters = filters;
+        return {
+          sort: () => ({ skip: () => ({ limit: () => ({ populate: () => [] }) }) }),
+        };
+      });
+      mock.method(Notification, "countDocuments", () => 0);
+
+      req.query = { type: "system" };
+      getNotifications(req, res, next);
+      await flush();
+
+      assert.equal(res.status.mock.calls[0].arguments[0], 200);
+      assert.deepEqual(passedFilters.type, {
+        $in: ["info", "warning", "success", "error", "skill_gap_alert", "system", "message"],
+      });
+    });
   });
 
   describe("getUnreadCount", () => {
@@ -163,6 +183,22 @@ describe("Notification Controller", () => {
       assert.equal(res.status.mock.calls[0].arguments[0], 201);
       assert.equal(res.json.mock.calls[0].arguments[0].success, true);
       assert.deepEqual(res.json.mock.calls[0].arguments[0].data, mockCreated);
+    });
+
+    it("should validate and accept system, message, and application_status types", async () => {
+      for (const t of ["system", "message", "application_status"]) {
+        req.body = { ...validBody(), userId: req.user._id, type: t };
+        const mockCreated = { _id: "n1", ...req.body };
+        mock.method(Notification, "create", () => ({
+          populate: () => mockCreated,
+        }));
+
+        createNotification(req, res, next);
+        await flush();
+
+        assert.equal(res.status.mock.calls[res.status.mock.calls.length - 1].arguments[0], 201);
+        mock.restoreAll();
+      }
     });
 
     it("should throw AppError(403) when userId does not match authenticated user", async () => {
