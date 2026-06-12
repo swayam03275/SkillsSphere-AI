@@ -227,7 +227,7 @@ These endpoints are intentionally not exposed to the public internet. The Node.j
 | Method | Endpoint | Payload | Action |
 | :--- | :--- | :--- | :--- |
 | `POST` | `/api/evaluate` | `{ answer, ideal, concepts }` | Computes semantic similarity (SentenceTransformers) and extracts NLP concepts (spaCy). |
-| `POST` | `/api/transcribe`| `{ audio_base64 }` | Converts Base64 audio back to bytes and runs Faster-Whisper to transcribe speech to text. |
+| `POST` | `/api/transcribe` | `{ audio_base64 }` | Converts Base64 audio back to bytes and runs Faster-Whisper to transcribe speech to text. |
 
 ### React State Management (Custom Hook)
 To prevent massive Redux bloat for ephemeral interview data, the frontend manages session state using a specialized custom hook `useInterviewState.js` coupled with standard React context.
@@ -291,6 +291,7 @@ const evaluateAnswer = async (userAnswer, idealAnswer, keyConcepts) => {
   }
 };
 ```
+
 If the Python service times out, the `generateMockHeuristicScore` function kicks in. It performs a rapid, regex-based keyword density check in Node.js to provide an approximate score (e.g., 75%) and generic feedback, ensuring the student's interview is never interrupted by a server 500 error.
 
 ### Audio Blob Validation & Security

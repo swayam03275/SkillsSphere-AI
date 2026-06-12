@@ -100,9 +100,9 @@ SkillSphere AI aims to simplify the path from learning to hiring by giving users
    - One-click recruiter invitation triggers that deliver real-time Socket.IO notifications to candidate dashboards
 
 10. **Enterprise-Grade Infrastructure & Classrooms**
-   - **Live Classrooms**: Interactive environments featuring native Picture-in-Picture (PiP), synchronized whiteboard/code editors, real-time member sync, and host production teardown safeguards.
-   - **Performance Architecture**: Implements Database Connection Pooling, Redis Cache Eviction policies, and Gateway Query Complexity limits for high availability.
-   - **Security Enhancements**: Features a robust webhook signing framework, secure socket hardening, and comprehensive log rotation profiles.
+    - **Live Classrooms**: Interactive environments featuring native Picture-in-Picture (PiP), synchronized whiteboard/code editors, real-time member sync, and host production teardown safeguards.
+    - **Performance Architecture**: Implements Database Connection Pooling, Redis Cache Eviction policies, and Gateway Query Complexity limits for high availability.
+    - **Security Enhancements**: Features a robust webhook signing framework, secure socket hardening, and comprehensive log rotation profiles.
 ---
 
 ## Target Users

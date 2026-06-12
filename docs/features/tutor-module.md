@@ -36,21 +36,21 @@ sequenceDiagram
     participant UI as React Client (TutorDashboard.jsx)
     participant BE as Node.js Gateway
     participant DB as MongoDB
-    
+
     Tutor->>UI: Navigates to /tutor/dashboard
     UI->>BE: GET /api/tutor/cohorts/active
-    
+
     Note over BE, DB: Phase 1: Heavy Aggregation
     BE->>DB: Aggregate User data where role='student' and cohortId matches
     BE->>DB: Lookup embedded InterviewSessions & Resumes
     DB-->>BE: Return raw aggregated payload
-    
+
     Note over BE: Phase 2: Statistical Rollup
     BE->>BE: Calculate average ATS scores, identify lowest performing concepts
     BE-->>UI: Return Cohort Health DTO
-    
+
     UI->>UI: Renders Radar Charts and Weakness Lists
-    
+
     Tutor->>UI: Notices "System Design" is failing across cohort
     Tutor->>UI: Clicks "Schedule Intervention Session"
     UI->>BE: POST /api/classrooms/init { title: "System Design Review", target: cohortId }
@@ -95,28 +95,28 @@ Represents a logical grouping of students managed by one or more tutors.
 const mongoose = require('mongoose');
 
 const cohortSchema = new mongoose.Schema({
-  name: { 
-    type: String, 
+  name: {
+    type: String,
     required: true,
-    index: true 
+    index: true
   },
-  tutorIds: [{ 
-    type: mongoose.Schema.Types.ObjectId, 
+  tutorIds: [{
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
     index: true
   }],
-  studentIds: [{ 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User' 
+  studentIds: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   }],
-  curriculumTags: [{ 
-    type: String 
+  curriculumTags: [{
+    type: String
   }], // e.g., ['MERN', 'DataStructures', 'AWS']
-  status: { 
-    type: String, 
-    enum: ['active', 'archived', 'upcoming'], 
-    default: 'active' 
+  status: {
+    type: String,
+    enum: ['active', 'archived', 'upcoming'],
+    default: 'active'
   },
   metrics: {
     averageAtsScore: { type: Number, default: 0 },
@@ -234,7 +234,7 @@ Calculating the `averageAtsScore` and `conceptMastery` across 100 students (who 
 ## 6. Component-Level Implementation Specs
 
 ### `TutorDashboard.jsx` (The Command Center)
-The entry point for the tutor persona. 
+The entry point for the tutor persona.
 - **Layout**: Utilizes a persistent left-hand navigation sidebar (Cohorts, Students, Classrooms, Settings) and a main content area powered by `<Outlet />`.
 - **Initialization**: Dispatches `fetchCohortsThunk` on mount. If no cohorts exist, it renders an Empty State component with an illustrative SVG and a prominent "Create Your First Cohort" call to action.
 
@@ -242,20 +242,22 @@ The entry point for the tutor persona.
 This component is responsible for turning raw numbers into actionable insights.
 - **Charting Libraries**: Heavily utilizes `Recharts` for rendering.
 - **Radar Chart Implementation**:
+
   ```jsx
   <RadarChart cx="50%" cy="50%" outerRadius="80%" data={analytics.conceptMastery}>
     <PolarGrid stroke="#374151" />
     <PolarAngleAxis dataKey="concept" tick={{ fill: '#9CA3AF', fontSize: 12 }} />
-    <Radar 
-      name="Average Score" 
-      dataKey="averageScore" 
+    <Radar
+      name="Average Score"
+      dataKey="averageScore"
       stroke="#6366F1" // Indigo-500
-      fill="#6366F1" 
-      fillOpacity={0.4} 
+      fill="#6366F1"
+      fillOpacity={0.4}
     />
     <Tooltip content={<CustomTooltip />} />
   </RadarChart>
   ```
+
 - It maps over the `atRiskStudents` array, rendering warning banners that allow the tutor to click "View Profile" to initiate a direct intervention.
 
 ### `StudentProfileModal.jsx` (The Micro View)

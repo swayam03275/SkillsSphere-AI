@@ -38,31 +38,31 @@ sequenceDiagram
     participant BE as Node.js Gateway
     participant IdP as Identity Provider (Google)
     participant DB as MongoDB
-    
+
     User->>FE: Clicks "Continue with Google"
     FE->>BE: GET /api/auth/google/url
-    
+
     Note over BE: Generate CSRF State Token
     BE->>BE: crypto.randomBytes(32)
     BE->>BE: Set 'oauth_state' HttpOnly Cookie
     BE-->>FE: Return Google Auth URL
-    
+
     FE->>IdP: Redirect User to Google
     User->>IdP: Grants Permission
     IdP->>BE: Redirect to /api/auth/google/callback?code=XYZ&state=ABC
-    
+
     Note over BE: Strict State Validation
     BE->>BE: Compare req.query.state === req.cookies.oauth_state
-    
+
     BE->>IdP: Exchange 'code' for Access Token
     IdP-->>BE: Returns IdP Access Token
     BE->>IdP: Fetch User Profile (Email, Name, Avatar)
-    
+
     BE->>DB: Upsert User by Email
     Note over BE: Token Generation
     BE->>BE: Sign short-lived Access Token (JWT)
     BE->>BE: Sign long-lived Refresh Token (JWT)
-    
+
     BE->>BE: Set 'accessToken' & 'refreshToken' HttpOnly Cookies
     BE-->>FE: Redirect to /dashboard
 ```
@@ -115,24 +115,24 @@ The central identity document.
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
-  email: { 
-    type: String, 
-    required: true, 
-    unique: true, 
+  email: {
+    type: String,
+    required: true,
+    unique: true,
     lowercase: true,
     trim: true,
     index: true
   },
-  name: { 
-    type: String, 
-    required: true 
+  name: {
+    type: String,
+    required: true
   },
-  avatarUrl: { 
-    type: String 
+  avatarUrl: {
+    type: String
   },
-  role: { 
-    type: String, 
-    enum: ['student', 'tutor', 'recruiter', 'admin'], 
+  role: {
+    type: String,
+    enum: ['student', 'tutor', 'recruiter', 'admin'],
     default: 'student',
     index: true
   },
@@ -141,16 +141,16 @@ const userSchema = new mongoose.Schema({
     enum: ['google', 'github', 'email'],
     required: true
   },
-  providerId: { 
-    type: String 
+  providerId: {
+    type: String
   }, // The unique ID from Google/GitHub
-  
+
   // Refresh Token Rotation Tracking
-  refreshTokenVersion: { 
-    type: Number, 
-    default: 0 
+  refreshTokenVersion: {
+    type: Number,
+    default: 0
   },
-  
+
   settings: {
     isDiscoverable: { type: Boolean, default: true },
     theme: { type: String, enum: ['light', 'dark', 'system'], default: 'dark' },
@@ -241,8 +241,8 @@ The platform employs a deeply defense-in-depth approach to token storage.
 - **CSRF Immunity**: Because the tokens are stored in cookies, the browser automatically attaches them to cross-origin requests. To prevent CSRF attacks, the backend uses the `cors` middleware configured explicitly to the frontend's origin with `credentials: true`. Furthermore, state-changing endpoints (`POST`, `PATCH`, `DELETE`) require a custom header (e.g., `X-Requested-With`) or rely on SameSite cookie policies (`SameSite=Strict`).
 
 ### Refresh Token Rotation & Invalidation
-If a user's laptop is stolen, the attacker might extract the Refresh Token cookie. 
-- **Handling**: When a user clicks "Logout All Devices" or changes their password/settings, the backend increments the `refreshTokenVersion` integer on their MongoDB User document. 
+If a user's laptop is stolen, the attacker might extract the Refresh Token cookie.
+- **Handling**: When a user clicks "Logout All Devices" or changes their password/settings, the backend increments the `refreshTokenVersion` integer on their MongoDB User document.
 - **Validation**: When the `/api/auth/refresh` endpoint is hit, it decodes the JWT and compares the embedded `tokenVersion` against the DB's `refreshTokenVersion`. If they do not match, the token is instantly rejected, effectively killing all active sessions globally.
 
 ### OTP Brute-Force Protection
@@ -313,15 +313,15 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    
+
     // If we got a 401 TOKEN_EXPIRED and haven't retried yet
     if (error.response?.data?.code === 'TOKEN_EXPIRED' && !originalRequest._retry) {
       originalRequest._retry = true;
-      
+
       try {
         // Attempt to silently refresh the cookies
         await axios.post('/api/auth/refresh', {}, { withCredentials: true });
-        
+
         // Retry the original failing request
         return api(originalRequest);
       } catch (refreshError) {
@@ -335,4 +335,5 @@ api.interceptors.response.use(
   }
 );
 ```
+
 EOF

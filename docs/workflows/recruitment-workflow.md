@@ -249,7 +249,7 @@ const candidates = await Resume.aggregate([
 | `POST` | `/api/recruiter/match-candidate` | Recruiter | Triggers the heavy semantic pipeline to match a candidate against a specific job. | `{ candidateId, jobId }` | `{ score: 92, missingSkills: [...], strengths: [...] }` |
 | `POST` | `/api/recruiter/invite-candidate` | Recruiter | Creates an 'invited' application and triggers notifications. | `{ candidateId, jobId }` | `{ success: true, applicationId }` |
 | `GET` | `/api/recruiter/jobs/:jobId/applicants` | Recruiter | Lists all applications/invitations for a specific job posting. | `?status=applied` | `[{ applicationData, candidatePreview }]` |
-| `PATCH` | `/api/recruiter/applications/:id/status`| Recruiter | Advances a candidate through the hiring pipeline (e.g., 'reviewing' -> 'interviewing'). | `{ status: "interviewing", note: "Passed tech screen" }` | `{ success: true }` |
+| `PATCH` | `/api/recruiter/applications/:id/status` | Recruiter | Advances a candidate through the hiring pipeline (e.g., 'reviewing' -> 'interviewing'). | `{ status: "interviewing", note: "Passed tech screen" }` | `{ success: true }` |
 
 ### Redux State Management
 The recruiter dashboard relies heavily on Redux to cache search results and preserve filter states when navigating between candidate profiles and the main grid.

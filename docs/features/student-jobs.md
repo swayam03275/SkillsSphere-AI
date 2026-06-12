@@ -107,6 +107,7 @@ timeline: [{
   }
 }]
 ```
+
 Whenever a recruiter changes the status of an application, the backend does not just overwrite the `status` field. It pushes a new entry onto the `timeline` array. This allows the frontend to render a vertical progression tracker (similar to package tracking UIs), showing the student exactly when their application moved from 'applied' to 'reviewing'.
 
 ---
