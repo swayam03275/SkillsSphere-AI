@@ -149,7 +149,7 @@ class EvaluationResponse(BaseModel):
 | :--- | :--- | :--- | :--- |
 | `POST` | `/v1/evaluate` | The monolithic endpoint that handles STT, Semantic matching, and spaCy extraction in one pass. | Yes (if CUDA available) |
 | `GET` | `/v1/health` | Used by Node.js to determine if the ML service is ready to accept traffic or if it's currently OOM. | No |
-| `POST` | `/v1/transcribe-only`| Bypasses the evaluation pipeline. Used strictly for converting audio to text. | Yes |
+| `POST` | `/v1/transcribe-only` | Bypasses the evaluation pipeline. Used strictly for converting audio to text. | Yes |
 
 ### Node.js Heuristic Fallback Engine
 
@@ -262,4 +262,5 @@ async def evaluate_answer(request: EvaluationRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 ```
+
 EOF

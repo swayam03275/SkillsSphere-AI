@@ -4,6 +4,8 @@ const topicProgressSchema = new mongoose.Schema({
   topicName: {
     type: String,
     required: true,
+    trim: true,
+    maxlength: [200, "Topic name must not exceed 200 characters"],
   },
   type: {
     type: String,
@@ -31,8 +33,8 @@ const topicProgressSchema = new mongoose.Schema({
   },
   resources: [
     {
-      title: String,
-      url: String,
+      title: { type: String, trim: true, maxlength: [200, "Resource title must not exceed 200 characters"] },
+      url: { type: String, trim: true, maxlength: [2048, "Resource URL must not exceed 2048 characters"] },
       type: { type: String, enum: ["video", "article", "documentation"] },
       tutorAssigned: {
         type: Boolean,
@@ -61,6 +63,8 @@ const learningProgressSchema = new mongoose.Schema(
     targetRole: {
       type: String,
       required: true,
+      trim: true,
+      maxlength: [100, "Target role must not exceed 100 characters"],
     },
     roadmap: [topicProgressSchema],
     achievements: [

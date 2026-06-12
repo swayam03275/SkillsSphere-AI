@@ -39,8 +39,22 @@ export const syncRoadmap = asyncHandler(async (req, res) => {
     throw new AppError("Target role and topics are required", 400);
   }
 
+  if (typeof targetRole !== "string" || targetRole.trim().length === 0 || targetRole.trim().length > 100) {
+    throw new AppError("Target role must be between 1 and 100 characters", 400);
+  }
+
   if (topics.length > 50) {
     throw new AppError("Roadmap topics exceed the maximum allowed limit of 50", 413);
+  }
+
+  for (const topic of topics) {
+    const name = typeof topic === "string" ? topic : (topic?.text || topic?.topicName || "");
+    if (!name || name.trim().length === 0) {
+      throw new AppError("Each topic must have a non-empty name", 400);
+    }
+    if (name.trim().length > 200) {
+      throw new AppError("Each topic name must not exceed 200 characters", 400);
+    }
   }
 
   let progress = await LearningProgress.findOne({ user: req.user._id });
@@ -239,7 +253,14 @@ export const assignTutorResource = asyncHandler(async (req, res) => {
     throw new AppError("studentId, topicId, title, url, and type are required", 400);
   }
 
+  if (title.trim().length === 0 || title.trim().length > 200) {
+    throw new AppError("Resource title must be between 1 and 200 characters", 400);
+  }
+
   const trimmedUrl = url.trim();
+  if (trimmedUrl.length > 2048) {
+    throw new AppError("Resource URL must not exceed 2048 characters", 400);
+  }
   if (!/^https?:\/\//i.test(trimmedUrl)) {
     throw new AppError("Invalid URL: Must start with http:// or https://", 400);
   }
@@ -428,6 +449,10 @@ export const addTutorMilestone = asyncHandler(async (req, res) => {
 
   if (!studentId || !topicName) {
     throw new AppError("studentId and topicName are required", 400);
+  }
+
+  if (topicName.trim().length === 0 || topicName.trim().length > 200) {
+    throw new AppError("Topic name must be between 1 and 200 characters", 400);
   }
 
   const progress = await LearningProgress.findOne({ user: studentId });

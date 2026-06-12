@@ -188,14 +188,15 @@ export const KANBAN_COLUMNS = {
 
 | HTTP Method | API Endpoint | Responsibility | Security Level | Payload | Response Signature |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `GET` | `/api/recruiter/jobs` | Retrieves the global job grid. | `Recruiter JWT` | `None` | `[{ _id, title, status, metrics }]` |
-| `POST` | `/api/recruiter/jobs` | Drafts a new requisition. | `Recruiter JWT` | `{ title, description, skills }` | `{ success: true, jobId }` |
-| `PATCH` | `/api/recruiter/jobs/:id` | Modifies job properties. | `Recruiter + Owner` | `{ status: 'closed' }` | `{ success: true }` |
-| `GET` | `/api/recruiter/jobs/:id/applicants`| Streams applicant payloads. | `Recruiter + Owner` | `None` | `[{ application, candidatePreview }]` |
-| `PATCH` | `/api/recruiter/applications/:id/status`| Executes column transition logic. | `Recruiter + Owner` | `{ status, note }` | `{ success: true, timeline: [...] }` |
-| `GET` | `/api/recruiter/analytics` | Aggregates massive AI/ATS scores. | `Recruiter JWT` | `None` | `{ matchCategoryDistribution, totalApplicants }` |
+| `GET` | `/api/recruiter/jobs` | Recruiter | Lists all jobs created by the authenticated recruiter. | `None` | `[{ _id, title, status, metrics }]` |
+| `POST` | `/api/recruiter/jobs` | Recruiter | Creates a new job requisition. | `{ title, company, description, skills, salary }` | `{ success: true, jobId }` |
+| `PATCH` | `/api/recruiter/jobs/:id` | Recruiter | Updates an existing job (e.g., closing a filled role). | `{ status: 'closed' }` | `{ success: true }` |
+| `GET` | `/api/recruiter/jobs/:jobId/applicants` | Recruiter | Fetches all applications for the Kanban board. | `None` | `[{ application, candidatePreview }]` |
+| `PATCH` | `/api/recruiter/applications/:id/status` | Recruiter | Moves a candidate between Kanban columns. | `{ status: "interviewing", note: "Optional feedback" }` | `{ success: true, timeline: [...] }` |
+| `GET` | `/api/recruiter/analytics` | Recruiter | Aggregates AI/ATS match scores across all jobs. | `None` | `{ matchCategoryDistribution, totalApplicants }` |
 
 ### Websocket Notification Layer (Optional Extension)
+
 While the REST layer handles state mutation, the application is pre-architected to integrate with `Socket.io` for real-time collaboration.
 If Recruiter A is dragging candidates, Recruiter B receives a `CANDIDATE_MOVED` socket payload, invoking a passive Redux re-sync without a hard page reload.
 

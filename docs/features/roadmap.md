@@ -259,6 +259,7 @@ Configures the environment.
 
 ### `ResourceSidebar.jsx`
 Uses `<AnimatePresence>` from Framer Motion.
+
 ```jsx
 <AnimatePresence>
   {selectedNodeId && (
@@ -274,4 +275,5 @@ Uses `<AnimatePresence>` from Framer Motion.
   )}
 </AnimatePresence>
 ```
+
 EOF

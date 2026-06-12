@@ -38,25 +38,25 @@ sequenceDiagram
     participant Cache as Redis (Recommendation Cache)
     participant DB as MongoDB
     participant AI as Pipeline (runPipeline.js)
-    
+
     User->>FE: Uploads new Resume & Sets as Active
     FE->>BE: PATCH /api/resume/:id/active
-    
+
     Note over BE, DB: Asynchronous Recommendation Trigger
     BE->>DB: Update Active Resume Flag
     BE->>BE: triggerJobRecommendationSync(userId)
-    
+
     BE->>DB: Fetch Active Resume Text & Parsed Skills
     BE->>DB: Aggregate top 100 Active Job Postings (pre-filtered by basic criteria)
-    
+
     loop For each of the 100 Jobs
         BE->>AI: Evaluate(ResumeText, JobDescription)
         AI-->>BE: Return Scorecard (Score, Strengths, Gaps)
     end
-    
+
     BE->>BE: Sort Jobs by MatchScore Descending
     BE->>Cache: Save Top 20 Recommendations (TTL: 24h)
-    
+
     User->>FE: Navigates to Jobs Page
     FE->>BE: GET /api/jobs/recommendations
     BE->>Cache: Cache Hit
@@ -193,7 +193,7 @@ export const jobsSlice = createSlice({
 ## 5. Security, Edge Cases & Error Handling
 
 ### Stale Recommendations (The Ghost Job Problem)
-A common frustration in job hunting is applying to a job only to find out it was closed days ago. 
+A common frustration in job hunting is applying to a job only to find out it was closed days ago.
 - **Edge Case**: A job is cached in a student's `recs:user:{userId}` list for 24 hours. At hour 12, the recruiter deletes the job.
 - **Handling**: The `/api/jobs/recommendations` endpoint performs a rapid `$in` query against the MongoDB `JobPosting` collection for all job IDs in the cache array. If a job is returned with `status: 'closed'` or is entirely missing, it is dynamically pruned from the response array before being sent to the client, ensuring 100% active leads.
 

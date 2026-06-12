@@ -39,19 +39,19 @@ sequenceDiagram
     participant Roadmap as Roadmap Service
     participant DB as MongoDB
     participant UI as React Client (Roadmap.jsx)
-    
+
     User->>Resume: Uploads Resume
     Note over Resume: Evaluates skills, finds gaps
     Resume->>DB: Save Analysis Result
-    
+
     Resume->>EventBus: emit('analysis-completed', { userId, gaps: ['Docker', 'CI/CD'] })
-    
+
     Note over EventBus, Roadmap: Asynchronous decoupled processing
     EventBus->>Roadmap: handleAnalysisCompleted()
-    
+
     Roadmap->>DB: Fetch user's existing Active Roadmap
     Roadmap->>DB: Query Global Resource Bank for ['Docker', 'CI/CD']
-    
+
     alt Active Roadmap Exists
         Roadmap->>Roadmap: Merge new nodes into existing DAG
         Roadmap->>DB: Update Roadmap Nodes
@@ -59,7 +59,7 @@ sequenceDiagram
         Roadmap->>Roadmap: Generate entirely new curriculum DAG
         Roadmap->>DB: Create new Roadmap Document
     end
-    
+
     User->>UI: Navigates to /dashboard
     UI->>Roadmap: GET /api/roadmaps/active
     Roadmap-->>UI: Returns serialized DAG JSON
@@ -108,8 +108,8 @@ const mongoose = require('mongoose');
 
 const resourceSchema = new mongoose.Schema({
   title: { type: String, required: true },
-  type: { 
-    type: String, 
+  type: {
+    type: String,
     enum: ['video', 'article', 'course', 'documentation', 'platform_quiz'],
     required: true
   },
@@ -117,10 +117,10 @@ const resourceSchema = new mongoose.Schema({
   provider: { type: String, default: 'External' }, // e.g., 'YouTube', 'MDN'
   estimatedMinutes: { type: Number, default: 30 },
   difficulty: { type: String, enum: ['Beginner', 'Intermediate', 'Advanced'] },
-  
+
   // Tags mapped to AI Evaluator outputs
-  tags: [{ type: String, index: true }], 
-  
+  tags: [{ type: String, index: true }],
+
   metrics: {
     upvotes: { type: Number, default: 0 },
     completions: { type: Number, default: 0 }
@@ -144,13 +144,13 @@ const nodeSchema = new mongoose.Schema({
   concept: { type: String, required: true }, // e.g., 'React Hooks'
   type: { type: String, enum: ['core', 'elective', 'milestone'], default: 'core' },
   status: { type: String, enum: ['locked', 'available', 'in_progress', 'completed'], default: 'locked' },
-  
+
   // Positional metadata for React Flow rendering
   position: {
     x: { type: Number, required: true },
     y: { type: Number, required: true }
   },
-  
+
   // Embedded resources specific to this node
   resources: [{
     resourceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Resource' },
@@ -169,20 +169,20 @@ const edgeSchema = new mongoose.Schema({
 }, { _id: false });
 
 const roadmapSchema = new mongoose.Schema({
-  userId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User', 
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
     required: true,
     unique: true, // 1 Active Roadmap per user
     index: true
   },
   title: { type: String, default: 'My Personalized Path' },
   progressPercentage: { type: Number, default: 0 },
-  
+
   // The Graph Structure
   nodes: [nodeSchema],
   edges: [edgeSchema],
-  
+
   // Gamification tracking
   streak: {
     current: { type: Number, default: 0 },
@@ -217,17 +217,17 @@ const unlockChildNodes = async (roadmap, completedNodeId) => {
   // 1. Find all edges where this node is the source
   const outgoingEdges = roadmap.edges.filter(e => e.source === completedNodeId);
   const targetNodeIds = outgoingEdges.map(e => e.target);
-  
+
   let newlyUnlocked = [];
-  
+
   // 2. Evaluate each target node
   for (let targetId of targetNodeIds) {
     const targetNode = roadmap.nodes.find(n => n.id === targetId);
-    
+
     if (targetNode.status === 'locked') {
       // Check if ALL incoming dependencies for this target are completed
       const incomingEdges = roadmap.edges.filter(e => e.target === targetId);
-      
+
       let allDependenciesMet = true;
       for (let edge of incomingEdges) {
         const sourceNode = roadmap.nodes.find(n => n.id === edge.source);
@@ -236,14 +236,14 @@ const unlockChildNodes = async (roadmap, completedNodeId) => {
           break;
         }
       }
-      
+
       if (allDependenciesMet) {
         targetNode.status = 'available';
         newlyUnlocked.push(targetId);
       }
     }
   }
-  
+
   return newlyUnlocked;
 };
 ```
@@ -260,22 +260,22 @@ export const useRoadmapStore = create((set, get) => ({
   nodes: [],
   edges: [],
   progress: 0,
-  
-  setRoadmap: (data) => set({ 
-    nodes: data.nodes, 
+
+  setRoadmap: (data) => set({
+    nodes: data.nodes,
     edges: data.edges,
-    progress: data.progressPercentage 
+    progress: data.progressPercentage
   }),
-  
+
   // React Flow required handlers
   onNodesChange: (changes) => set({
     nodes: applyNodeChanges(changes, get().nodes),
   }),
-  
+
   onEdgesChange: (changes) => set({
     edges: applyEdgeChanges(changes, get().edges),
   }),
-  
+
   markNodeComplete: (nodeId) => {
     const nodes = get().nodes.map(n => {
       if (n.id === nodeId) return { ...n, data: { ...n.data, status: 'completed' } };
@@ -311,7 +311,7 @@ To prevent students from rapidly clicking "Complete" on 50 resources in one day 
 This component serves as the flexbox container that holds the interactive canvas and the side panel. It handles the initial data fetching logic (`useEffect`) and orchestrates the loading states (displaying a skeletal graph while fetching).
 
 ### `ReactFlowCanvas.jsx` (The Interactive Core)
-Wraps the `reactflow` library. 
+Wraps the `reactflow` library.
 - **Custom Nodes**: Instead of standard rectangles, the canvas registers a `nodeTypes = { custom: CustomNode }` object.
 - **Minimap & Controls**: Integrates the native React Flow `<MiniMap />` and `<Controls />` components to allow zooming and panning across massive skill trees (some containing 50+ nodes).
 - **Background**: Utilizes the `<Background color="#4f46e5" gap={16} />` to render the dot-grid aesthetic matching the "Gold Standard" dark mode theme.
