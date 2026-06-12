@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { 
@@ -22,7 +22,8 @@ import {
   Download,
   AlertTriangle,
   LayoutList,
-  KanbanSquare
+  KanbanSquare,
+  Search
 } from 'lucide-react';
 import Navbar from '../../../shared/components/Navbar';
 import Footer from "../../../shared/components/Footer";
@@ -105,6 +106,125 @@ const presets = [
   { id: 'readiness', label: 'High Readiness', icon: <Award size={14} /> }
 ];
 
+const normalizeText = (value) => String(value || '').trim().toLowerCase();
+
+const getApplicantSkills = (application) => {
+  const skillSources = [
+    application?.skills,
+    application?.resume?.skills,
+    application?.applicant?.skills,
+    application?.parsedResume?.skills,
+    application?.analysisData?.skills,
+  ];
+
+  return skillSources
+    .flatMap((skills) => {
+      if (Array.isArray(skills)) return skills;
+      if (typeof skills === 'string') return skills.split(',');
+      return [];
+    })
+    .map((skill) => normalizeText(skill))
+    .filter(Boolean);
+};
+
+const parseDateOnly = (value, endOfDay = false) => {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  if (endOfDay) {
+    date.setHours(23, 59, 59, 999);
+  } else {
+    date.setHours(0, 0, 0, 0);
+  }
+  return date;
+};
+
+export const filterApplicants = (applications = [], filters = {}) => {
+  const search = normalizeText(filters.searchTerm);
+  const skillTerms = String(filters.skillsFilter || '')
+    .split(',')
+    .map((skill) => normalizeText(skill))
+    .filter(Boolean);
+  const appliedFrom = parseDateOnly(filters.appliedFrom);
+  const appliedTo = parseDateOnly(filters.appliedTo, true);
+
+  return applications.filter((application) => {
+    if (search) {
+      const applicantSearchBlob = [
+        application?.applicant?.name,
+        application?.applicant?.email,
+      ].map(normalizeText).join(' ');
+
+      if (!applicantSearchBlob.includes(search)) {
+        return false;
+      }
+    }
+
+    if (filters.statusFilter && application?.status !== filters.statusFilter) {
+      return false;
+    }
+
+    if (Number(filters.minScore) > 0 && Number(application?.aiMatchScore || 0) < Number(filters.minScore)) {
+      return false;
+    }
+
+    if (
+      Number(filters.minAtsScore) > 0 &&
+      Number(application?.matchBreakdown?.atsCompatibility || 0) < Number(filters.minAtsScore)
+    ) {
+      return false;
+    }
+
+    if (
+      Array.isArray(filters.selectedCategories) &&
+      filters.selectedCategories.length > 0 &&
+      !filters.selectedCategories.includes(application?.matchCategory)
+    ) {
+      return false;
+    }
+
+    if (filters.contributorOnly) {
+      const contributionActivity = application?.matchBreakdown?.contributionActivity;
+      if (!['High', 'Medium'].includes(contributionActivity)) {
+        return false;
+      }
+    }
+
+    if (
+      filters.careerReadiness &&
+      application?.matchBreakdown?.careerReadiness !== filters.careerReadiness
+    ) {
+      return false;
+    }
+
+    if (skillTerms.length > 0) {
+      const applicantSkills = getApplicantSkills(application);
+      const hasMatchingSkill = skillTerms.some((term) =>
+        applicantSkills.some((skill) => skill.includes(term))
+      );
+
+      if (!hasMatchingSkill) {
+        return false;
+      }
+    }
+
+    if (appliedFrom || appliedTo) {
+      const appliedAt = new Date(application?.createdAt);
+      if (Number.isNaN(appliedAt.getTime())) {
+        return false;
+      }
+      if (appliedFrom && appliedAt < appliedFrom) {
+        return false;
+      }
+      if (appliedTo && appliedAt > appliedTo) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+};
+
 const RecruiterApplicantsPage = () => {
   useDocumentTitle("Recruiter Applicants");
   const { id: jobId } = useParams();
@@ -122,14 +242,18 @@ const RecruiterApplicantsPage = () => {
   const [viewMode, setViewMode] = useState("list"); // "list" | "board"
   
   // Filtering and Sorting States
+  const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [sortBy, setSortBy] = useState('matchScore');
   const [minScore, setMinScore] = useState(0);
   const [minAtsScore, setMinAtsScore] = useState(0);
+  const [skillsFilter, setSkillsFilter] = useState('');
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [specialization, setSpecialization] = useState('');
   const [contributorOnly, setContributorOnly] = useState(false);
   const [careerReadiness, setCareerReadiness] = useState('');
+  const [appliedFrom, setAppliedFrom] = useState('');
+  const [appliedTo, setAppliedTo] = useState('');
   
   // Smart Preset Tracker
   const [activePreset, setActivePreset] = useState('');
@@ -150,14 +274,18 @@ const RecruiterApplicantsPage = () => {
     setError(null);
     try {
       const filtersObj = {
+        q: searchTerm || undefined,
         status: statusFilter,
         sortBy,
         minScore: minScore > 0 ? minScore : undefined,
         minAtsScore: minAtsScore > 0 ? minAtsScore : undefined,
+        skills: skillsFilter || undefined,
         matchCategory: selectedCategories.length > 0 ? selectedCategories.join(',') : undefined,
         specialization: specialization || undefined,
         contributorOnly: contributorOnly ? 'true' : undefined,
         careerReadiness: careerReadiness || undefined,
+        appliedFrom: appliedFrom || undefined,
+        appliedTo: appliedTo || undefined,
         page,
         limit: 20
       };
@@ -178,14 +306,18 @@ const RecruiterApplicantsPage = () => {
   }, [
     jobId, 
     token, 
+    searchTerm,
     statusFilter, 
     sortBy, 
     minScore, 
     minAtsScore, 
+    skillsFilter,
     selectedCategories, 
     specialization, 
     contributorOnly, 
     careerReadiness,
+    appliedFrom,
+    appliedTo,
     page
   ]);
 
@@ -258,12 +390,16 @@ const RecruiterApplicantsPage = () => {
   };
 
   const handleResetFilters = () => {
+    setSearchTerm('');
     setMinScore(0);
     setMinAtsScore(0);
+    setSkillsFilter('');
     setSelectedCategories([]);
     setSpecialization('');
     setContributorOnly(false);
     setCareerReadiness('');
+    setAppliedFrom('');
+    setAppliedTo('');
     setStatusFilter('');
     setSortBy('matchScore');
     setActivePreset('');
@@ -274,18 +410,47 @@ const RecruiterApplicantsPage = () => {
   useEffect(() => {
     setPage(1);
   }, [
-    statusFilter, sortBy, minScore, minAtsScore, selectedCategories, 
-    specialization, contributorOnly, careerReadiness
+    searchTerm, statusFilter, sortBy, minScore, minAtsScore, skillsFilter, selectedCategories, 
+    specialization, contributorOnly, careerReadiness, appliedFrom, appliedTo
+  ]);
+
+  const filteredApplicants = useMemo(() => filterApplicants(applicants, {
+    searchTerm,
+    statusFilter,
+    minScore,
+    minAtsScore,
+    skillsFilter,
+    selectedCategories,
+    contributorOnly,
+    careerReadiness,
+    appliedFrom,
+    appliedTo,
+  }), [
+    applicants,
+    searchTerm,
+    statusFilter,
+    minScore,
+    minAtsScore,
+    skillsFilter,
+    selectedCategories,
+    contributorOnly,
+    careerReadiness,
+    appliedFrom,
+    appliedTo,
   ]);
 
   const isAnyFilterActive = 
+    searchTerm.trim() !== '' ||
     statusFilter !== '' ||
     minScore > 0 ||
     minAtsScore > 0 ||
+    skillsFilter.trim() !== '' ||
     selectedCategories.length > 0 ||
     specialization !== '' ||
     contributorOnly ||
-    careerReadiness !== '';
+    careerReadiness !== '' ||
+    appliedFrom !== '' ||
+    appliedTo !== '';
 
   return (
     <div className="min-h-screen bg-gray-50/50 dark:bg-[#09090b] text-gray-900 dark:text-text-main font-sans pt-20 flex flex-col">
@@ -361,7 +526,7 @@ const RecruiterApplicantsPage = () => {
           </div>
           <div className="flex items-center justify-center gap-4 text-gray-500 dark:text-slate-400 text-sm mt-4">
             <span className="flex items-center gap-1.5">
-              <Users size={16} /> {applicants.length} Matching Candidate{applicants.length !== 1 ? 's' : ''}
+              <Users size={16} /> {filteredApplicants.length} Matching Candidate{filteredApplicants.length !== 1 ? 's' : ''}
             </span>
             <span className="flex items-center gap-1.5 uppercase tracking-wider text-[10px] font-bold bg-white dark:bg-slate-900/40 px-2 py-0.5 rounded border border-gray-200 dark:border-white/5">
               Job ID: {jobId.slice(-6)}
@@ -422,6 +587,27 @@ const RecruiterApplicantsPage = () => {
                   <RefreshCw size={12} /> Reset
                 </button>
               )}
+            </div>
+
+            {/* Applicant Search */}
+            <div className="space-y-2">
+              <label htmlFor="applicantSearch" className="block text-xs uppercase font-extrabold tracking-wider text-slate-500">
+                Search Applicant
+              </label>
+              <div className="relative">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  id="applicantSearch"
+                  type="search"
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setActivePreset('');
+                    setSearchTerm(e.target.value);
+                  }}
+                  placeholder="Name or email"
+                  className="w-full bg-gray-50 dark:bg-slate-950/60 border border-gray-200 dark:border-white/5 rounded-xl pl-9 pr-3 py-2.5 text-sm text-gray-700 dark:text-slate-200 placeholder:text-slate-400 focus:border-blue-500/50 outline-none transition-colors"
+                />
+              </div>
             </div>
 
             {/* Workflow Status Filter */}
@@ -487,6 +673,24 @@ const RecruiterApplicantsPage = () => {
                   setMinAtsScore(Number(e.target.value));
                 }}
                 className="w-full h-1.5 bg-gray-200 dark:bg-slate-950 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+              />
+            </div>
+
+            {/* Skills Filter */}
+            <div className="space-y-2">
+              <label htmlFor="skillsFilter" className="block text-xs uppercase font-extrabold tracking-wider text-slate-500">
+                Skills
+              </label>
+              <input
+                id="skillsFilter"
+                type="text"
+                value={skillsFilter}
+                onChange={(e) => {
+                  setActivePreset('');
+                  setSkillsFilter(e.target.value);
+                }}
+                placeholder="React, Node.js"
+                className="w-full bg-gray-50 dark:bg-slate-950/60 border border-gray-200 dark:border-white/5 rounded-xl px-3 py-2.5 text-sm text-gray-700 dark:text-slate-200 placeholder:text-slate-400 focus:border-blue-500/50 outline-none transition-colors"
               />
             </div>
 
@@ -577,6 +781,45 @@ const RecruiterApplicantsPage = () => {
                 <option value="Low" className="bg-white dark:bg-slate-900">Entry / Growth Stage</option>
               </select>
             </div>
+
+            {/* Applied Date Range */}
+            <div className="space-y-3">
+              <label className="block text-xs uppercase font-extrabold tracking-wider text-slate-500">
+                Applied Date
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
+                <div className="space-y-1.5">
+                  <label htmlFor="appliedFrom" className="block text-[11px] font-semibold text-slate-500">
+                    From
+                  </label>
+                  <input
+                    id="appliedFrom"
+                    type="date"
+                    value={appliedFrom}
+                    onChange={(e) => {
+                      setActivePreset('');
+                      setAppliedFrom(e.target.value);
+                    }}
+                    className="w-full bg-gray-50 dark:bg-slate-950/60 border border-gray-200 dark:border-white/5 rounded-xl px-3 py-2.5 text-sm text-gray-700 dark:text-slate-200 focus:border-blue-500/50 outline-none transition-colors"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label htmlFor="appliedTo" className="block text-[11px] font-semibold text-slate-500">
+                    To
+                  </label>
+                  <input
+                    id="appliedTo"
+                    type="date"
+                    value={appliedTo}
+                    onChange={(e) => {
+                      setActivePreset('');
+                      setAppliedTo(e.target.value);
+                    }}
+                    className="w-full bg-gray-50 dark:bg-slate-950/60 border border-gray-200 dark:border-white/5 rounded-xl px-3 py-2.5 text-sm text-gray-700 dark:text-slate-200 focus:border-blue-500/50 outline-none transition-colors"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Right Column: Applicants List & Sort Controls */}
@@ -585,7 +828,7 @@ const RecruiterApplicantsPage = () => {
             {/* Sort & Quick Meta */}
               <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-white dark:bg-slate-900/20 border border-gray-200 dark:border-white/5 rounded-2xl p-4">
                 <div className="text-sm font-semibold text-gray-600 dark:text-slate-300">
-                  Showing {applicants.length} applicant{applicants.length !== 1 ? 's' : ''}
+                  Showing {filteredApplicants.length} applicant{filteredApplicants.length !== 1 ? 's' : ''}
                 </div>
                 
                 <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -636,7 +879,7 @@ const RecruiterApplicantsPage = () => {
               </div>
             ) : error ? (
               <ErrorState description={error} onRetry={fetchData} />
-            ) : applicants.length === 0 ? (
+            ) : filteredApplicants.length === 0 ? (
               <EmptyState 
                 icon={<Users size={48} className="text-slate-700 animate-pulse" />}
                 title="No Matching Candidates"
@@ -657,7 +900,7 @@ const RecruiterApplicantsPage = () => {
               </EmptyState>
             ) : viewMode === "board" ? (
               <ApplicantsKanbanBoard 
-                applications={applicants} 
+                applications={filteredApplicants} 
                 onStatusChange={async (appId, newStatus) => {
                   try {
                     await updateApplicationStatus(appId, newStatus, `Moved to ${newStatus} via Kanban board`, token);
@@ -675,7 +918,7 @@ const RecruiterApplicantsPage = () => {
               />
             ) : (
               <div id="applicants-container" className="grid grid-cols-1 gap-4">
-                {applicants.map((app, index) => {
+                {filteredApplicants.map((app, index) => {
                   const isTopCandidate = sortBy === 'matchScore' && app.aiMatchScore >= 85;
                   const rank = sortBy === 'matchScore' ? index + 1 : null;
                   
@@ -940,7 +1183,7 @@ const RecruiterApplicantsPage = () => {
             )}
             
             {/* Pagination Controls */}
-            {!loading && !error && applicants.length > 0 && totalPages > 1 && (
+            {!loading && !error && filteredApplicants.length > 0 && totalPages > 1 && (
               <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-900/40 border border-gray-100 dark:border-white/5 rounded-2xl p-4 mt-6">
                 <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">
                   Showing <span className="text-slate-900 dark:text-white">{(page - 1) * 20 + 1}</span> to <span className="text-slate-900 dark:text-white">{Math.min(page * 20, totalCount)}</span> of <span className="text-slate-900 dark:text-white">{totalCount}</span> candidates

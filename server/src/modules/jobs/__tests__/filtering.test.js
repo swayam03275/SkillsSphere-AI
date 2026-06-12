@@ -4,6 +4,7 @@ import * as jobService from "../service.js";
 import JobPosting from "../../../database/models/JobPosting.js";
 import JobApplication from "../../../database/models/JobApplication.js";
 import Resume from "../../../database/models/Resume.js";
+import User from "../../../database/models/User.js";
 import AppError from "../../../utils/AppError.js";
 import mongoose from "mongoose";
 describe("Job Service Filtering", () => {
@@ -166,6 +167,80 @@ describe("Job Service Filtering", () => {
     const findArgs = JobApplication.find.mock.calls[0].arguments[0];
     assert.equal(findArgs.job, mockJobId);
     assert.deepEqual(findArgs["matchBreakdown.careerReadiness"], { $in: ["High", "Medium"] });
+    assert.deepEqual(result.applications, mockApps);
+    assert.equal(result.totalCount, 1);
+  });
+
+  it("should filter applications by applicant name or email search", async () => {
+    const mockJob = { _id: mockJobId, recruiter: { toString: () => mockRecruiterId } };
+    const applicantId = new mongoose.Types.ObjectId();
+    const mockApps = [{ _id: "app1", job: mockJobId, applicant: applicantId }];
+
+    mock.method(JobPosting, "findById", async () => mockJob);
+    mock.method(User, "find", () => ({
+      select: mock.fn(() => ({
+        lean: mock.fn(async () => [{ _id: applicantId }])
+      }))
+    }));
+
+    const mockQuery = {
+      populate: mock.fn(() => mockQuery),
+      sort: mock.fn(() => mockQuery),
+      skip: mock.fn(() => mockQuery),
+      limit: mock.fn(() => mockQuery),
+      select: mock.fn(() => mockQuery),
+      lean: mock.fn(async () => mockApps),
+    };
+    mockQuery.then = function(resolve) { resolve(mockApps); };
+    mock.method(JobApplication, "find", () => mockQuery);
+    mock.method(JobApplication, "countDocuments", async () => 1);
+
+    const result = await jobService.getJobApplications(mockJobId, mockRecruiterId, { q: "asha@example.com" });
+
+    assert.equal(User.find.mock.calls.length, 1);
+    assert.equal(JobApplication.find.mock.calls.length, 1);
+
+    const findArgs = JobApplication.find.mock.calls[0].arguments[0];
+    assert.equal(findArgs.job, mockJobId);
+    assert.deepEqual(findArgs.applicant, { $in: [applicantId] });
+    assert.deepEqual(result.applications, mockApps);
+    assert.equal(result.totalCount, 1);
+  });
+
+  it("should filter applications by applied date range", async () => {
+    const mockJob = { _id: mockJobId, recruiter: { toString: () => mockRecruiterId } };
+    const mockApps = [{ _id: "app1", job: mockJobId, createdAt: new Date("2026-06-10T12:00:00Z") }];
+
+    mock.method(JobPosting, "findById", async () => mockJob);
+
+    const mockQuery = {
+      populate: mock.fn(() => mockQuery),
+      sort: mock.fn(() => mockQuery),
+      skip: mock.fn(() => mockQuery),
+      limit: mock.fn(() => mockQuery),
+      select: mock.fn(() => mockQuery),
+      lean: mock.fn(async () => mockApps),
+    };
+    mockQuery.then = function(resolve) { resolve(mockApps); };
+    mock.method(JobApplication, "find", () => mockQuery);
+    mock.method(JobApplication, "countDocuments", async () => 1);
+
+    const result = await jobService.getJobApplications(mockJobId, mockRecruiterId, {
+      appliedFrom: "2026-06-01",
+      appliedTo: "2026-06-30",
+    });
+
+    assert.equal(JobApplication.find.mock.calls.length, 1);
+
+    const findArgs = JobApplication.find.mock.calls[0].arguments[0];
+    const expectedFrom = new Date("2026-06-01");
+    expectedFrom.setHours(0, 0, 0, 0);
+    const expectedTo = new Date("2026-06-30");
+    expectedTo.setHours(23, 59, 59, 999);
+
+    assert.equal(findArgs.job, mockJobId);
+    assert.equal(findArgs.createdAt.$gte.getTime(), expectedFrom.getTime());
+    assert.equal(findArgs.createdAt.$lte.getTime(), expectedTo.getTime());
     assert.deepEqual(result.applications, mockApps);
     assert.equal(result.totalCount, 1);
   });

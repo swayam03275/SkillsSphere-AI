@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import JobPosting from "../../database/models/JobPosting.js";
 import JobApplication from "../../database/models/JobApplication.js";
 import Notification from "../../database/models/Notification.js";
+import User from "../../database/models/User.js";
 import * as resumeService from "../resumes/service.js";
 import matchingService from "../matching/service.js";
 import { generateRecommendations } from "../../../../ai-ml/pipeline/recommendationEngine.js";
@@ -821,6 +822,46 @@ export const getJobApplications = async (jobId, recruiterId, statusOrParams, sor
     query.status = status;
   }
 
+  if (filters.q && typeof filters.q === "string") {
+    const search = filters.q.trim();
+    if (search) {
+      const escapeRegex = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const applicantRegex = new RegExp(escapeRegex(search), "i");
+      const matchingApplicants = await User.find({
+        $or: [
+          { name: applicantRegex },
+          { email: applicantRegex },
+        ],
+      }).select("_id").lean();
+
+      query.applicant = { $in: matchingApplicants.map((applicant) => applicant._id) };
+    }
+  }
+
+  if (filters.appliedFrom || filters.appliedTo) {
+    query.createdAt = { ...query.createdAt };
+
+    if (filters.appliedFrom) {
+      const from = new Date(filters.appliedFrom);
+      if (!Number.isNaN(from.getTime())) {
+        from.setHours(0, 0, 0, 0);
+        query.createdAt.$gte = from;
+      }
+    }
+
+    if (filters.appliedTo) {
+      const to = new Date(filters.appliedTo);
+      if (!Number.isNaN(to.getTime())) {
+        to.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = to;
+      }
+    }
+
+    if (Object.keys(query.createdAt).length === 0) {
+      delete query.createdAt;
+    }
+  }
+
   // AI Match Score Range Filters
   if (filters.minScore !== undefined && filters.minScore !== "") {
     query.aiMatchScore = { ...query.aiMatchScore, $gte: Number(filters.minScore) };
@@ -962,7 +1003,7 @@ export const getJobApplications = async (jobId, recruiterId, statusOrParams, sor
   const [applications, totalCount] = await Promise.all([
     JobApplication.find(query)
       .populate("applicant", "name email")
-      .populate("resume", "fileName")
+      .populate("resume", "fileName skills")
       .sort(sortConfig)
       .skip(skip)
       .limit(limit),
