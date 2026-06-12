@@ -95,54 +95,71 @@ export function initClassroomSockets(io) {
       const activeSessions = await ClassroomSession.find({ status: "active" });
 
       for (const session of activeSessions) {
-        let activeSockets = [];
+        const lock = getRoomLock(session.roomId);
+        const release = await lock.acquire();
         try {
-          activeSockets = await io.in(session.roomId).fetchSockets();
-        } catch (fetchErr) {
-          logger.error(`Error fetching sockets for room ${session.roomId}:`, fetchErr);
-          continue;
-        }
+          // Fetch fresh db instance under lock to avoid overwriting concurrent socket updates
+          const freshSession = await ClassroomSession.findOne({
+            roomId: session.roomId,
+            status: "active",
+          });
+          if (!freshSession) {
+            continue;
+          }
 
-        if (activeSockets.length === 0) {
-          // If the room has no active socket connections, check/set emptySince
-          if (!session.emptySince) {
-            logger.log(`Background Sweeper: Room ${session.roomId} is empty. Starting 30-second teardown countdown...`);
-            session.emptySince = new Date();
-            await session.save();
+          let activeSockets = [];
+          try {
+            activeSockets = await io.in(freshSession.roomId).fetchSockets();
+          } catch (fetchErr) {
+            logger.error(`Error fetching sockets for room ${freshSession.roomId}:`, fetchErr);
+            continue;
+          }
+
+          if (activeSockets.length === 0) {
+            // If the room has no active socket connections, check/set emptySince
+            if (!freshSession.emptySince) {
+              logger.log(`Background Sweeper: Room ${freshSession.roomId} is empty. Starting 30-second teardown countdown...`);
+              freshSession.emptySince = new Date();
+              await freshSession.save();
+            } else {
+              const gracePeriodMs = 30000; // 30 seconds
+              const cutoffTime = new Date(Date.now() - gracePeriodMs);
+              if (freshSession.emptySince < cutoffTime) {
+                logger.log(`Background Sweeper: Ending empty classroom session ${freshSession.roomId}`);
+                freshSession.status = "ended";
+                freshSession.endedAt = new Date();
+                await freshSession.save();
+
+                await clearRoomState(freshSession.roomId);
+                clearRoomLock(freshSession.roomId);
+              }
+            }
           } else {
-            const gracePeriodMs = 30000; // 30 seconds
-            const cutoffTime = new Date(Date.now() - gracePeriodMs);
-            if (session.emptySince < cutoffTime) {
-              logger.log(`Background Sweeper: Ending empty classroom session ${session.roomId}`);
-              session.status = "ended";
-              session.endedAt = new Date();
-              await session.save();
+            // If there are active sockets, ensure emptySince is null and participants list in DB is updated/cleaned
+            let dbChanged = false;
+            if (freshSession.emptySince !== null) {
+              freshSession.emptySince = null;
+              dbChanged = true;
+            }
 
-              await clearRoomState(session.roomId);
-              clearRoomLock(session.roomId);
+            // Clean up participants in DB that are no longer active sockets
+            const activeSocketIds = new Set(activeSockets.map((s) => s.id));
+            const updatedParticipants = (freshSession.participants || []).filter((p) =>
+              activeSocketIds.has(p.socketId)
+            );
+            if (updatedParticipants.length !== (freshSession.participants || []).length) {
+              freshSession.participants = updatedParticipants;
+              dbChanged = true;
+            }
+
+            if (dbChanged) {
+              await freshSession.save();
             }
           }
-        } else {
-          // If there are active sockets, ensure emptySince is null and participants list in DB is updated/cleaned
-          let dbChanged = false;
-          if (session.emptySince !== null) {
-            session.emptySince = null;
-            dbChanged = true;
-          }
-
-          // Clean up participants in DB that are no longer active sockets
-          const activeSocketIds = new Set(activeSockets.map((s) => s.id));
-          const updatedParticipants = (session.participants || []).filter((p) =>
-            activeSocketIds.has(p.socketId)
-          );
-          if (updatedParticipants.length !== (session.participants || []).length) {
-            session.participants = updatedParticipants;
-            dbChanged = true;
-          }
-
-          if (dbChanged) {
-            await session.save();
-          }
+        } catch (err) {
+          logger.error(`Background Sweeper error for room ${session.roomId}:`, err);
+        } finally {
+          release();
         }
       }
     } catch (err) {
