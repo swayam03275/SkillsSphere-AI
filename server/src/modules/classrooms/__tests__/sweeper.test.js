@@ -1,6 +1,6 @@
 import { describe, it, afterEach, beforeEach, mock } from "node:test";
 import assert from "node:assert/strict";
-import { initClassroomSockets } from "../socket.js";
+import { initClassroomSockets, stopClassroomSweeper } from "../socket.js";
 import ClassroomSession from "../../../database/models/ClassroomSession.js";
 import { getRoomLock, Mutex } from "../../../utils/mutex.js";
 import redisClient from "../../../config/redis.js";
@@ -308,5 +308,45 @@ describe("Classroom Background Sweeper (Clustered & Single Node)", () => {
 
     assert.equal(ClassroomSession.findOne.mock.calls.length, 1);
     assert.equal(lockReleased, true);
+  });
+});
+
+describe("Classroom Sweeper Lifecycle", () => {
+  let mockIo;
+  let clearIntervalCalls;
+
+  beforeEach(() => {
+    mockIo = {
+      in: mock.fn(() => ({
+        fetchSockets: mock.fn(async () => [])
+      })),
+      on: mock.fn()
+    };
+
+    clearIntervalCalls = [];
+
+    // Mock setInterval and clearInterval
+    mock.method(globalThis, "setInterval", () => {
+      return "mock-timer-12345";
+    });
+
+    mock.method(globalThis, "clearInterval", (id) => {
+      clearIntervalCalls.push(id);
+    });
+  });
+
+  afterEach(() => {
+    mock.restoreAll();
+  });
+
+  it("should start interval on init and clear it on stop", () => {
+    // 1. Initialize classroom sockets (should start interval)
+    initClassroomSockets(mockIo);
+    assert.equal(globalThis.setInterval.mock.calls.length, 1);
+
+    // 2. Stop classroom sweeper (should clear the interval)
+    stopClassroomSweeper();
+    assert.equal(clearIntervalCalls.length, 1);
+    assert.equal(clearIntervalCalls[0], "mock-timer-12345");
   });
 });

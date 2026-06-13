@@ -92,9 +92,19 @@ export function getRoomState(roomId) {
   return roomStates.get(roomId);
 }
 
+let sweeperInterval = null;
+
+export function stopClassroomSweeper() {
+  if (sweeperInterval) {
+    clearInterval(sweeperInterval);
+    sweeperInterval = null;
+    logger.info("Classroom background sweeper stopped.");
+  }
+}
+
 export function initClassroomSockets(io) {
   // Start a periodic background sweeper to clean up empty classroom sessions across all instances
-  setInterval(async () => {
+  sweeperInterval = setInterval(async () => {
     try {
       const activeSessions = await ClassroomSession.find({ status: "active" });
 
