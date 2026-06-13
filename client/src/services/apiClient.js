@@ -16,14 +16,20 @@ const isPlainObject = (value) => {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 };
 
-const extractApiMessage = (value) => {
+const MAX_EXTRACT_DEPTH = 10;
+
+const extractApiMessage = (value, depth = 0) => {
+  if (depth >= MAX_EXTRACT_DEPTH) {
+    return null;
+  }
+
   if (typeof value === "string") {
     return value;
   }
 
   if (Array.isArray(value)) {
     for (const item of value) {
-      const message = extractApiMessage(item);
+      const message = extractApiMessage(item, depth + 1);
       if (message) {
         return message;
       }
@@ -36,11 +42,11 @@ const extractApiMessage = (value) => {
   }
 
   return (
-    extractApiMessage(value.message) ||
-    extractApiMessage(value.msg) ||
-    extractApiMessage(value.detail) ||
-    extractApiMessage(value.error) ||
-    extractApiMessage(value.details)
+    extractApiMessage(value.message, depth + 1) ||
+    extractApiMessage(value.msg, depth + 1) ||
+    extractApiMessage(value.detail, depth + 1) ||
+    extractApiMessage(value.error, depth + 1) ||
+    extractApiMessage(value.details, depth + 1)
   );
 };
 
