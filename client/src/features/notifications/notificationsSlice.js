@@ -240,11 +240,16 @@ const notificationsSlice = createSlice({
 
       // Mark all notifications as read (Optimistic Update)
       .addCase(markAllAsRead.pending, (state) => {
-        state._rollbackUnreadIds = state.items
-          .filter((item) => !item.isRead)
-          .map((item) => item._id);
+        if (!state._rollbackUnreadIds) {
+          state._rollbackUnreadIds = state.items
+            .filter((item) => !item.isRead)
+            .map((item) => item._id);
+        }
         state.items = state.items.map((item) => ({ ...item, isRead: true }));
         state.unreadCount = 0;
+      })
+      .addCase(markAllAsRead.fulfilled, (state) => {
+        state._rollbackUnreadIds = null;
       })
       .addCase(markAllAsRead.rejected, (state, action) => {
         const unreadIds = state._rollbackUnreadIds;
