@@ -243,6 +243,7 @@ const RecruiterApplicantsPage = () => {
   
   // Filtering and Sorting States
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [sortBy, setSortBy] = useState('matchScore');
   const [minScore, setMinScore] = useState(0);
@@ -264,17 +265,22 @@ const RecruiterApplicantsPage = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
 
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   const handleExportPDF = () => {
     setIsExportDropdownOpen(false);
     exportToPDF("applicants-container", `Candidate_List_${job?.title?.replace(/[^a-z0-9]/gi, '_') || 'Job'}.pdf`);
   };
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (ignoreRef = { current: false }) => {
     setLoading(true);
     setError(null);
     try {
       const filtersObj = {
-        q: searchTerm || undefined,
+        q: debouncedSearchTerm || undefined,
         status: statusFilter,
         sortBy,
         minScore: minScore > 0 ? minScore : undefined,
@@ -294,19 +300,25 @@ const RecruiterApplicantsPage = () => {
         getJobPostingById(jobId, token),
         getJobApplications(jobId, token, filtersObj)
       ]);
-      setJob(jobData.job);
-      setApplicants(appsData.applications || []);
-      setTotalPages(appsData.totalPages || 1);
-      setTotalCount(appsData.totalCount || 0);
+      if (!ignoreRef.current) {
+        setJob(jobData.job);
+        setApplicants(appsData.applications || []);
+        setTotalPages(appsData.totalPages || 1);
+        setTotalCount(appsData.totalCount || 0);
+      }
     } catch (err) {
-      setError(err.message || "Failed to load applicant data.");
+      if (!ignoreRef.current) {
+        setError(err.message || "Failed to load applicant data.");
+      }
     } finally {
-      setLoading(false);
+      if (!ignoreRef.current) {
+        setLoading(false);
+      }
     }
   }, [
-    jobId, 
-    token, 
-    searchTerm,
+    jobId,
+    token,
+    debouncedSearchTerm,
     statusFilter, 
     sortBy, 
     minScore, 
@@ -322,7 +334,9 @@ const RecruiterApplicantsPage = () => {
   ]);
 
   useEffect(() => {
-    fetchData();
+    const ignoreRef = { current: false };
+    fetchData(ignoreRef);
+    return () => { ignoreRef.current = true; };
   }, [fetchData]);
 
   const handleUpdateStatus = async (status, comment) => {
