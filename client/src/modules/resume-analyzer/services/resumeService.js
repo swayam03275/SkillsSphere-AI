@@ -1,10 +1,6 @@
 import { apiRequest } from "../../../services/apiClient";
-
+import { getToken } from "../../../utils/authToken";
 import logger from "../../../utils/logger";
-
-const TOKEN_KEY = "skillssphere.auth.token";
-const getToken = () =>
-  localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
 
 /**
  * Fetch the student's latest stored resume analysis from the database.

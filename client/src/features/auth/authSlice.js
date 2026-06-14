@@ -1,7 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import * as authService from "../../services/authService";
-
-const TOKEN_KEY = "skillssphere.auth.token";
+import { TOKEN_KEY } from "../../utils/authToken";
 const USER_KEY = "skillssphere.auth.user";
 const PENDING_EMAIL_KEY = "skillssphere.auth.pendingEmail";
 
@@ -264,8 +263,8 @@ const authSlice = createSlice({
       state.user = action.payload;
       
       // Update storage as well
-      const storage = window.localStorage.getItem("skillssphere.auth.token") 
-        ? window.localStorage 
+      const storage = window.localStorage.getItem(TOKEN_KEY)
+        ? window.localStorage
         : window.sessionStorage;
       
       try {

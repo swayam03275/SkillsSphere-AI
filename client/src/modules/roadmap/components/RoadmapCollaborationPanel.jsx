@@ -4,10 +4,8 @@ import { Send, X, MessageSquare, Clock, Loader2 } from "lucide-react";
 import { getRoadmapComments, postRoadmapComment } from "../services/roadmapService";
 import { SOCKET_URL } from "../../../config/env";
 import { useToast } from "../../../shared/components";
+import { getToken } from "../../../utils/authToken";
 import logger from "../../../utils/logger";
-
-const TOKEN_KEY = "skillssphere.auth.token";
-const getToken = () => localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
 
 export default function RoadmapCollaborationPanel({
   roadmapId,

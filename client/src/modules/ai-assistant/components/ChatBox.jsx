@@ -4,9 +4,7 @@ import { X, Send, Sparkles } from "lucide-react";
 import MessageBubble from "./MessageBubble";
 import { apiRequest } from "../../../services/apiClient";
 
-const TOKEN_KEY = "skillssphere.auth.token";
-const getToken = () => localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
-
+import { getToken } from "../../../utils/authToken";
 import logger from "../../../utils/logger";
 
 const ChatBox = ({ onClose }) => {

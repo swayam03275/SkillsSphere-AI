@@ -11,9 +11,9 @@ import {
   clearInterviewAnswerDraft,
 } from "../../../utils/interviewSessionStorage";
 import { analyzeText, debounce } from "../utils/sentiment";
+import { getToken } from "../../../utils/authToken";
 import logger from "../../../utils/logger";
 
-const TOKEN_KEY = "skillssphere.auth.token";
 const REQUEST_TIMEOUT_MS = 20000;
 const MAX_RETRY_ATTEMPTS = 3;
 
@@ -160,8 +160,7 @@ export const useInterviewState = (sessionId, isObserver) => {
 
     const fetchSession = async () => {
       try {
-        const token =
-          localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+        const token = getToken();
         setRequestStatus("Loading interview session...");
         const res = await retryRecoverable(
           () =>

@@ -1,7 +1,6 @@
-const TOKEN_KEY = "skillssphere.auth.token";
+import { getToken } from "./authToken";
 
-export const getAuthToken = () =>
-  localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || "";
+export const getAuthToken = () => getToken() || "";
 
 export const resolveProtectedFilePath = (url) => {
   if (!url || typeof url !== "string") return null;

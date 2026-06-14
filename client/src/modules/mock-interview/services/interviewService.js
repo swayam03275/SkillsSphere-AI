@@ -1,9 +1,5 @@
 import { apiRequest } from "../../../services/apiClient";
-
-const TOKEN_KEY = "skillssphere.auth.token";
-
-const getToken = () =>
-  localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+import { getToken } from "../../../utils/authToken";
 
 /**
  * Fetch available interview topics with question counts and difficulty levels.

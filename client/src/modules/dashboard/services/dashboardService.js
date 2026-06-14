@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { apiRequest, normalizeApiError } from "../../../services/apiClient";
-
-const TOKEN_KEY = "skillssphere.auth.token";
+import { TOKEN_KEY } from "../../../utils/authToken";
 const USER_KEY = "skillssphere.auth.user";
 const CACHE_TTL_MS = 60 * 1000;
 const REQUEST_TIMEOUT_MS = 10 * 1000;

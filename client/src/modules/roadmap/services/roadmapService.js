@@ -1,7 +1,5 @@
 import { apiRequest } from "../../../services/apiClient";
-
-const TOKEN_KEY = "skillssphere.auth.token";
-const getToken = () => localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+import { getToken } from "../../../utils/authToken";
 
 export const getMyRoadmap = async () => {
   return await apiRequest("/api/roadmap/me", {

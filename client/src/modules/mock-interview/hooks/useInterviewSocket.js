@@ -2,9 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
 import { SOCKET_URL } from "../../../config/env";
 import { loadInterviewSession } from "../../../utils/interviewSessionStorage";
+import { getToken } from "../../../utils/authToken";
 import logger from "../../../utils/logger";
-
-const TOKEN_KEY = "skillssphere.auth.token";
 
 export const useInterviewSocket = ({
   sessionId,
@@ -33,7 +32,7 @@ export const useInterviewSocket = ({
 
   useEffect(() => {
     if (!session || !user) return;
-    const token = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+    const token = getToken();
     
     const newSocket = io(SOCKET_URL, {
       auth: { token },
