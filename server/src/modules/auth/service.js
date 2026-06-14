@@ -141,14 +141,20 @@ if (user.isVerified) {
 
 // 🔑 Forgot password
 export const forgotPasswordRequest = async (email) => {
+  const GENERIC_RESPONSE = {
+    success: true,
+    message: "If an account exists with this email, a reset code has been sent.",
+  };
+
   const user = await User.findOne({ email });
 
   if (!user) {
-    return { success: true, message: "If an account exists with this email, a reset code has been sent." };
+    return GENERIC_RESPONSE;
   }
 
   if (user.resetPasswordExpires && user.resetPasswordExpires.getTime() > Date.now() + (OTP_EXPIRY_MINUTES - 1) * 60 * 1000) {
-    throw new AppError("Please wait a minute before requesting another reset code", 429);
+    // Avoid leaking account existence via a distinct rate-limit response.
+    return GENERIC_RESPONSE;
   }
 
   const otp = generateOTP();
@@ -166,7 +172,7 @@ export const forgotPasswordRequest = async (email) => {
     throw new AppError("Failed to send reset code. Please try again.", 500);
   }
 
-  return { success: true, message: "If an account exists with this email, a reset code has been sent." };
+  return GENERIC_RESPONSE;
 };
 
 // 🔄 Reset password
@@ -213,18 +219,25 @@ export const resetUserPassword = async (email, otp, newPassword) => {
 
 // 🔁 Resend OTP
 export const resendUserOTP = async (email) => {
+  const GENERIC_RESPONSE = {
+    success: true,
+    message: "If an account exists with this email, a verification code has been sent.",
+  };
+
   const user = await User.findOne({ email });
 
   if (!user) {
-    return { success: true, message: "If an account exists with this email, a verification code has been sent." };
+    return GENERIC_RESPONSE;
   }
 
   if (user.isVerified) {
-    throw new AppError("User is already verified", 400);
+    // Avoid leaking account existence/verification status via a distinct response.
+    return GENERIC_RESPONSE;
   }
 
   if (user.verificationTokenExpires && user.verificationTokenExpires.getTime() > Date.now() + (OTP_EXPIRY_MINUTES - 1) * 60 * 1000) {
-    throw new AppError("Please wait a minute before requesting another verification code", 429);
+    // Avoid leaking account existence via a distinct rate-limit response.
+    return GENERIC_RESPONSE;
   }
 
   const otp = generateOTP();
@@ -242,7 +255,7 @@ export const resendUserOTP = async (email) => {
     throw new AppError("Failed to resend verification code. Please try again.", 500);
   }
 
-  return { success: true, message: "If an account exists with this email, a verification code has been sent." };
+  return GENERIC_RESPONSE;
 };
 
 export const loginUser = async (email, password) => {
