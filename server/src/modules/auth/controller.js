@@ -8,6 +8,7 @@ import {
 } from "../../validations/authValidation.js";
 
 import {
+  buildAuthToken,
   exchangeAuthCodeForToken,
   forgotPasswordRequest,
   loginUser,
@@ -248,17 +249,7 @@ export const verifyEmail = asyncHandler(async (req, res, next) => {
     validation.data.otp,
   );
 
-  const token = jwt.sign(
-    {
-      userId: user._id.toString(),
-      role: user.role,
-      jti: crypto.randomUUID(),
-    },
-    process.env.JWT_SECRET,
-    {
-      expiresIn: process.env.JWT_EXPIRES_IN || "7d",
-    },
-  );
+  const token = buildAuthToken(user);
 
   return res.status(200).json({
     success: true,
@@ -346,18 +337,7 @@ export const googleLogin = asyncHandler(async (req, res, next) => {
   const googleUser = await verifyGoogleToken(token);
   const user = await findOrCreateGoogleUser(googleUser);
 
-  // 🔐 Generate JWT
-  const jwtToken = jwt.sign(
-    {
-      userId: user._id.toString(),
-      role: user.role,
-      jti: crypto.randomUUID(),
-    },
-    process.env.JWT_SECRET,
-    {
-      expiresIn: process.env.JWT_EXPIRES_IN || "7d",
-    },
-  );
+  const jwtToken = buildAuthToken(user);
 
   return res.status(200).json({
     success: true,

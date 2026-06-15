@@ -29,7 +29,7 @@ const getGoogleClient = () => {
 };
 
 // 🔐 JWT generator
-const buildAuthToken = (user) => {
+export const buildAuthToken = (user) => {
   if (!process.env.JWT_SECRET) {
     throw new AppError("Missing JWT_SECRET in environment variables", 500);
   }
