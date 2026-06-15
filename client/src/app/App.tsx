@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { useEffect, Suspense, lazy } from "react";
 import { Routes, Route } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../types/redux";

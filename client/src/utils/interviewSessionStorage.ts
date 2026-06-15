@@ -1,82 +1,176 @@
 // @ts-nocheck
-/**
- * @typedef {Object} InterviewMessage
- * @property {string} role - The role of the sender, e.g. "candidate", "ai", "system"
- * @property {string} content - The content of the message
- * @property {number} timestamp - The time the message was sent
- */
 
-/**
- * @typedef {Object} InterviewSession
- * @property {string} sessionId - The unique ID of the interview session
- * @property {number} currentIndex - The current question index
- * @property {InterviewMessage[]} messages - Chat history/messages exchanged
- * @property {string} [activeTopic] - The topic of the current interview question
- * @property {string} [lastAiResponse] - The last AI generated response for rehydration
- * @property {number} timestamp - The time the session context was last updated
- */
+const STORAGE_KEY = "skillssphere.mockInterview.backup";
+const DRAFT_STORAGE_KEY = "skillssphere.mockInterview.answerDrafts";
 
-/**
- * @typedef {Object} HydrationPayload
- * @property {string} sessionId
- * @property {number} currentIndex
- * @property {InterviewMessage[]} previousMessages
- * @property {string} [activeTopic]
- * @property {string} [lastAiResponse]
- */
+const canUseStorage = () => typeof window !== "undefined" && window.localStorage;
 
-const STORAGE_KEY = "mockInterviewSession";
-const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
-
-/**
- * Saves the interview session context to sessionStorage
- * @param {InterviewSession} session 
- */
-export function saveInterviewSession(session) {
-  try {
-    session.timestamp = Date.now();
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session));
-  } catch (error) {
-    logger.error("Error saving interview session:", error);
-  }
-}
-
-/**
- * Loads the interview session context from sessionStorage
- * @returns {InterviewSession | null}
- */
-export function loadInterviewSession() {
-  try {
-    const data = sessionStorage.getItem(STORAGE_KEY);
-    if (!data) return null;
-    
-    const session = JSON.parse(data);
-    if (isSessionExpired(session)) {
-      clearInterviewSession();
-      return null;
-    }
-    
-    return session;
-  } catch (error) {
-    logger.error("Error loading interview session (data might be corrupted):", error);
-    clearInterviewSession();
+const normalizeBackup = (backup) => {
+  if (!backup || typeof backup !== "object" || !backup.sessionId) {
     return null;
   }
-}
 
-/**
- * Clears the interview session context from sessionStorage
- */
-export function clearInterviewSession() {
-  sessionStorage.removeItem(STORAGE_KEY);
-}
+  return {
+    sessionId: String(backup.sessionId),
+    currentIndex: Math.max(0, Number(backup.currentIndex || 0)),
+    answer: typeof backup.answer === "string" ? backup.answer : "",
+    transcripts:
+      backup.transcripts && typeof backup.transcripts === "object"
+        ? backup.transcripts
+        : {},
+    messages: Array.isArray(backup.messages) ? backup.messages : [],
+    elapsedTime: Math.max(0, Number(backup.elapsedTime || 0)),
+    uploadStatus: backup.uploadStatus || "idle",
+    currentQuestion: backup.currentQuestion || null,
+    savedAt: Number(backup.savedAt || Date.now()),
+  };
+};
 
-/**
- * Checks if the loaded session has expired based on inactivity timeout
- * @param {InterviewSession} session 
- * @returns {boolean}
- */
-export function isSessionExpired(session) {
-  if (!session || !session.timestamp) return true;
-  return (Date.now() - session.timestamp) > SESSION_TIMEOUT_MS;
-}
+export const saveInterviewSession = (backup) => {
+  if (!canUseStorage()) return;
+
+  try {
+    const normalized = normalizeBackup({
+      ...backup,
+      savedAt: Date.now(),
+    });
+
+    if (normalized) {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+    }
+  } catch {
+    // Recovery backup is best-effort and must never interrupt the interview.
+  }
+};
+
+export const loadInterviewSession = () => {
+  if (!canUseStorage()) return null;
+
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return normalizeBackup(JSON.parse(raw));
+  } catch {
+    window.localStorage.removeItem(STORAGE_KEY);
+    return null;
+  }
+};
+
+export const clearInterviewSession = () => {
+  if (!canUseStorage()) return;
+
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Ignore cleanup failures.
+  }
+};
+
+const getDraftKey = ({ sessionId, currentIndex, questionId }) => {
+  if (!sessionId) return null;
+
+  const normalizedIndex = Math.max(0, Number(currentIndex || 0));
+  return [
+    String(sessionId),
+    String(questionId || "unknown-question"),
+    normalizedIndex,
+  ].join(":");
+};
+
+const readDrafts = () => {
+  if (!canUseStorage()) return {};
+
+  try {
+    const raw = window.localStorage.getItem(DRAFT_STORAGE_KEY);
+    if (!raw) return {};
+
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? parsed
+      : {};
+  } catch {
+    window.localStorage.removeItem(DRAFT_STORAGE_KEY);
+    return {};
+  }
+};
+
+const writeDrafts = (drafts) => {
+  if (!canUseStorage()) return;
+
+  try {
+    window.localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(drafts));
+  } catch {
+    // Draft persistence is best-effort and must not block typing.
+  }
+};
+
+export const saveInterviewAnswerDraft = ({
+  sessionId,
+  currentIndex,
+  questionId,
+  answer,
+}) => {
+  const draftKey = getDraftKey({ sessionId, currentIndex, questionId });
+  if (!draftKey) return;
+
+  const normalizedAnswer = typeof answer === "string" ? answer : "";
+  const drafts = readDrafts();
+
+  if (!normalizedAnswer.trim()) {
+    delete drafts[draftKey];
+  } else {
+    drafts[draftKey] = {
+      sessionId: String(sessionId),
+      currentIndex: Math.max(0, Number(currentIndex || 0)),
+      questionId: questionId ? String(questionId) : null,
+      answer: normalizedAnswer,
+      savedAt: Date.now(),
+    };
+  }
+
+  writeDrafts(drafts);
+};
+
+export const loadInterviewAnswerDraft = ({
+  sessionId,
+  currentIndex,
+  questionId,
+}) => {
+  const draftKey = getDraftKey({ sessionId, currentIndex, questionId });
+  if (!draftKey) return null;
+
+  const draft = readDrafts()[draftKey];
+  if (!draft || typeof draft.answer !== "string") return null;
+
+  return {
+    sessionId: String(draft.sessionId || sessionId),
+    currentIndex: Math.max(0, Number(draft.currentIndex || currentIndex || 0)),
+    questionId: draft.questionId ? String(draft.questionId) : null,
+    answer: draft.answer,
+    savedAt: Number(draft.savedAt || Date.now()),
+  };
+};
+
+export const clearInterviewAnswerDraft = ({
+  sessionId,
+  currentIndex,
+  questionId,
+} = {}) => {
+  if (!canUseStorage()) return;
+
+  if (!sessionId) {
+    try {
+      window.localStorage.removeItem(DRAFT_STORAGE_KEY);
+    } catch {
+      // Ignore cleanup failures.
+    }
+    return;
+  }
+
+  const draftKey = getDraftKey({ sessionId, currentIndex, questionId });
+  if (!draftKey) return;
+
+  const drafts = readDrafts();
+  delete drafts[draftKey];
+  writeDrafts(drafts);
+};
