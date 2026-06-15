@@ -598,6 +598,17 @@ export const applyToJob = async (jobId, applicantId, options = {}) => {
       existing.coverNote = options.coverNote?.trim() || "";
       existing.statusHistory.push({ status: "pending", comment: "Application re-submitted after withdrawal" });
       await existing.save();
+      await Notification.create({
+  userId: job.recruiter,
+  type: "new_application",
+  title: "Application Re-submitted",
+  message: `A candidate has re-submitted their application for "${job.title}".`,
+  metadata: { jobId: job._id, applicationId: existing._id }
+});
+const io = getIO();
+if (io) {
+  io.to(`user_${job.recruiter}`).emit("new-notification", {});
+}
 
       // Re-evaluate candidate match asynchronously
       recruiterIntelligenceService.evaluateCandidateMatch(existing._id).catch(err => {
