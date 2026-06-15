@@ -1,22 +1,25 @@
 import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
-  createClassroomSession,
-  getTutorClassroomSessions,
-  endClassroomSession,
-  getActiveClassroomSessions,
-} from "../services/classroomService";
+  fetchTutorSessions,
+  fetchActiveSessions as fetchActiveSessionsThunk,
+  createSession,
+  endSession,
+  clearClassroomsError,
+} from "../../../features/classrooms/classroomsSlice";
 import logger from "../../../utils/logger";
 
 export const useClassroomsDashboard = (token, isTutor, navigate) => {
+  const dispatch = useDispatch();
+  
+  // Local form state
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState("");
   const [maxParticipants, setMaxParticipants] = useState(30);
   const [joinRoomId, setJoinRoomId] = useState("");
   
-  const [sessions, setSessions] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isListLoading, setIsListLoading] = useState(false);
-  const [error, setError] = useState(null);
+  // Global Redux state
+  const { sessions, isLoading, isListLoading, error } = useSelector((state) => state.classrooms);
 
   useEffect(() => {
     if (token) {
@@ -26,38 +29,14 @@ export const useClassroomsDashboard = (token, isTutor, navigate) => {
         fetchActiveSessions();
       }
     }
-  }, [isTutor, token]);
+  }, [isTutor, token, dispatch]);
 
-  const fetchMySessions = async () => {
-    try {
-      setIsListLoading(true);
-      setError(null);
-      const res = await getTutorClassroomSessions(token);
-      if (res.success && res.data) {
-        setSessions(res.data);
-      }
-    } catch (err) {
-      logger.error("Failed to load sessions", err);
-      setError("Failed to load your classroom sessions. Please try again.");
-    } finally {
-      setIsListLoading(false);
-    }
+  const fetchMySessions = () => {
+    dispatch(fetchTutorSessions(token));
   };
 
-  const fetchActiveSessions = async () => {
-    try {
-      setIsListLoading(true);
-      setError(null);
-      const res = await getActiveClassroomSessions(token);
-      if (res.success && res.data) {
-        setSessions(res.data);
-      }
-    } catch (err) {
-      logger.error("Failed to load active sessions", err);
-      setError("Failed to load active classrooms. Please try again.");
-    } finally {
-      setIsListLoading(false);
-    }
+  const fetchActiveSessions = () => {
+    dispatch(fetchActiveSessionsThunk(token));
   };
 
   const handleStartSession = async (e) => {
@@ -65,25 +44,22 @@ export const useClassroomsDashboard = (token, isTutor, navigate) => {
     if (!title.trim()) return;
 
     try {
-      setIsLoading(true);
-      setError(null);
-      const res = await createClassroomSession(
-        {
-          title: title.trim(),
-          subject: subject.trim(),
-          maxParticipants: Number(maxParticipants),
-        },
-        token
-      );
+      const res = await dispatch(
+        createSession({
+          sessionData: {
+            title: title.trim(),
+            subject: subject.trim(),
+            maxParticipants: Number(maxParticipants),
+          },
+          token,
+        })
+      ).unwrap();
 
-      if (res.success && res.data?.roomId) {
-        navigate(`/classrooms/${res.data.roomId}`);
+      if (res?.roomId) {
+        navigate(`/classrooms/${res.roomId}`);
       }
     } catch (err) {
       logger.error("Failed to create room", err);
-      setError(err.message || "Failed to create live classroom session.");
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -93,14 +69,15 @@ export const useClassroomsDashboard = (token, isTutor, navigate) => {
     }
 
     try {
-      setError(null);
-      const res = await endClassroomSession(roomId, token);
-      if (res.success) {
+      await dispatch(endSession({ roomId, token })).unwrap();
+      // Optionally re-fetch after ending, or rely on Redux reducer to filter it out
+      if (isTutor) {
         fetchMySessions();
+      } else {
+        fetchActiveSessions();
       }
     } catch (err) {
       logger.error("Failed to end session", err);
-      setError(err.message || "Failed to end the session.");
     }
   };
 
@@ -108,6 +85,14 @@ export const useClassroomsDashboard = (token, isTutor, navigate) => {
     e.preventDefault();
     if (joinRoomId.trim()) {
       navigate(`/classrooms/${joinRoomId.trim()}`);
+    }
+  };
+
+  const setCustomError = (errMessage) => {
+    // We can simulate setError by creating a reducer action if we need to set local errors
+    // but typically we should clear it if errMessage is null
+    if (!errMessage) {
+      dispatch(clearClassroomsError());
     }
   };
 
@@ -124,7 +109,7 @@ export const useClassroomsDashboard = (token, isTutor, navigate) => {
     isLoading,
     isListLoading,
     error,
-    setError,
+    setError: setCustomError,
     fetchMySessions,
     fetchActiveSessions,
     handleStartSession,

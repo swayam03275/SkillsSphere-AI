@@ -1,5 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchInterviewHistory, clearInterviewsError } from "../../../features/interviews/interviewsSlice";
 import { getHistory } from "../services/interviewService";
 import Pagination from "../../../shared/components/Pagination";
 import {
@@ -406,35 +408,27 @@ const AnalyticsSummary = ({ analytics }) => {
 const InterviewHistory = () => {
   useDocumentTitle("Interview History");
   const navigate = useNavigate();
-  const [sessions, setSessions] = useState([]);
-  const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const dispatch = useDispatch();
+  
+  const { sessions, pagination, analytics: serverAnalytics, isLoading: loading, error } = useSelector((state) => state.interviews);
+  
   const [exportingType, setExportingType] = useState(null);
   const [exportError, setExportError] = useState(null);
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
-  const [analytics, setAnalytics] = useState(() => calculateInterviewAnalytics([]));
   const exportInProgressRef = useRef(false);
 
-  const fetchHistory = async (page = 1) => {
-    setLoading(true);
-    try {
-      const res = await getHistory(page, 10);
-      const nextSessions = res.data?.sessions || [];
-      setSessions(nextSessions);
-      setAnalytics(calculateInterviewAnalytics(nextSessions, res.data?.analytics));
-      setPagination(res.data?.pagination || { page: 1, pages: 1, total: 0 });
-    } catch (err) {
-      setError("Failed to load interview history.");
-      logger.error("[InterviewHistory] Error:", err);
-    } finally {
-      setLoading(false);
-    }
+  const analytics = calculateInterviewAnalytics(sessions, serverAnalytics);
+
+  const fetchHistory = (page = 1) => {
+    dispatch(fetchInterviewHistory({ page, limit: 10 }));
   };
 
   useEffect(() => {
     fetchHistory();
-  }, []);
+    return () => {
+      dispatch(clearInterviewsError());
+    };
+  }, [dispatch]);
 
   const formatDate = (dateStr) => {
     return new Date(dateStr).toLocaleDateString("en-US", {
