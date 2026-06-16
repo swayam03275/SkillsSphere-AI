@@ -13,6 +13,7 @@ const ApiStatusPage = lazy(() => import("../modules/landing/pages/ApiStatusPage"
 const DashboardPage = lazy(() => import("../modules/dashboard/DashboardPage"));
 const ResumeAnalyzerHistoryPage = lazy(() => import("../modules/dashboard/pages/ResumeAnalyzerHistoryPage"));
 const ResumeAnalyzerPage = lazy(() => import("../modules/resume-analyzer/pages/ResumeAnalyzerPage"));
+const ResumeComparisonPage = lazy(() => import("../modules/resume-analyzer/pages/ResumeComparisonPage"));
 const JobMatcherPage = lazy(() => import("../modules/job-matcher/pages/JobMatcherPage"));
 const ComponentDemo = lazy(() => import("../modules/auth/components/ComponentDemo"));
 const Login = lazy(() => import("../modules/auth/Login"));
@@ -126,6 +127,14 @@ function App() {
           element={
             <ProtectedRoute requiredRole="student">
               <ResumeAnalyzerHistoryPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/resume-analyzer/compare" 
+          element={
+            <ProtectedRoute requiredRole="student">
+              <ResumeComparisonPage />
             </ProtectedRoute>
           } 
         />

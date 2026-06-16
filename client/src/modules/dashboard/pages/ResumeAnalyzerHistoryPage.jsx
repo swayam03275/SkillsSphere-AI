@@ -24,7 +24,6 @@ import { useToast } from "../../../shared/components/toast/ToastProvider";
 import { Pagination } from "../../../shared/components";
 
 import logger from "../../../utils/logger";
-
 const ResumeAnalyzerHistoryPage = () => {
   useDocumentTitle("Resume Analyzer History");
   const toast = useToast();
@@ -33,7 +32,8 @@ const ResumeAnalyzerHistoryPage = () => {
   // Tabs
   const [activeTab, setActiveTab] = useState("analyses"); // "analyses" | "coverLetters"
 
-  // Cover Letters State
+  // Selected analyses for comparison
+  const [selectedAnalyses, setSelectedAnalyses] = useState([]);  // Cover Letters State
   const [clHistory, setClHistory] = useState([]);
   const [clLoading, setClLoading] = useState(true);
   const [clError, setClError] = useState(null);
@@ -93,12 +93,26 @@ const ResumeAnalyzerHistoryPage = () => {
 
   useEffect(() => {
     fetchAnalyses(raPage);
-  }, [raPage]);
-
-  useEffect(() => {
+  }, [raPage]);  useEffect(() => {
     fetchCoverLetters(clPage);
   }, [clPage]);
 
+  useEffect(() => {
+    setSelectedAnalyses([]);
+  }, [activeTab, raPage]);
+
+  const handleSelectAnalysis = (id) => {
+    setSelectedAnalyses((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((item) => item !== id);
+      }
+      if (prev.length >= 2) {
+        toast.warning("You can select up to 2 versions for comparison.");
+        return prev;
+      }
+      return [...prev, id];
+    });
+  };
   const openModal = (cl) => {
     setSelectedCl(cl);
     setIsModalOpen(true);
@@ -169,42 +183,56 @@ const ResumeAnalyzerHistoryPage = () => {
     return (
       <div className="flex flex-col gap-6">
         <div className="grid gap-4 sm:gap-6 animate-in slide-in-from-bottom-8 duration-700">
-          {raHistory.map((analysis) => (
-            <div 
-              key={analysis._id} 
-              className="group p-6 bg-white dark:bg-slate-900/50 border border-gray-200 dark:border-white/10 hover:border-blue-500/30 rounded-2xl shadow-sm hover:shadow-xl transition-all flex flex-col sm:flex-row gap-6 sm:items-center justify-between"
-            >
-              <div className="flex items-start gap-4 flex-1">
-                <div className="p-3 bg-purple-500/10 text-purple-500 rounded-xl flex items-center justify-center flex-col">
-                  <span className="text-sm font-black">{Math.round(analysis.score)}</span>
-                  <span className="text-[10px] uppercase font-bold tracking-wider">Score</span>
-                </div>
-                <div>
-                  <h3 className="font-bold text-lg mb-1 text-gray-900 dark:text-white group-hover:text-blue-400 transition-colors flex items-center gap-2">
-                    {analysis.classification || "General Resume"}
-                    {analysis.score >= 80 && (
-                      <span className="bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 px-2 py-0.5 rounded-full text-xs font-bold flex items-center gap-1">
-                        <Award size={12} /> Top Tier
+          {raHistory.map((analysis) => {
+            const isSelected = selectedAnalyses.includes(analysis._id);
+            return (
+              <div 
+                key={analysis._id} 
+                className={`group p-6 bg-white dark:bg-slate-900/50 border rounded-2xl shadow-sm hover:shadow-xl transition-all flex flex-col sm:flex-row gap-6 sm:items-center justify-between ${
+                  isSelected
+                    ? "border-blue-500/80 bg-blue-500/5 dark:border-blue-500/80"
+                    : "border-gray-200 dark:border-white/10 hover:border-blue-500/30"
+                }`}
+              >
+                <div className="flex items-start gap-4 flex-1">
+                  <div className="flex items-center self-center h-full mr-1">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => handleSelectAnalysis(analysis._id)}
+                      className="w-5 h-5 rounded border-gray-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500 cursor-pointer bg-transparent"
+                    />
+                  </div>
+                  <div className="p-3 bg-purple-500/10 text-purple-500 rounded-xl flex items-center justify-center flex-col">
+                    <span className="text-sm font-black">{Math.round(analysis.score)}</span>
+                    <span className="text-[10px] uppercase font-bold tracking-wider">Score</span>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg mb-1 text-gray-900 dark:text-white group-hover:text-blue-400 transition-colors flex items-center gap-2">
+                      {analysis.classification || "General Resume"}
+                      {analysis.score >= 80 && (
+                        <span className="bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 px-2 py-0.5 rounded-full text-xs font-bold flex items-center gap-1">
+                          <Award size={12} /> Top Tier
+                        </span>
+                      )}
+                    </h3>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs font-medium text-gray-500 dark:text-slate-400 mt-1">
+                      <span className="flex items-center gap-1.5">
+                        <Clock size={14} />
+                        {new Date(analysis.createdAt).toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
                       </span>
-                    )}
-                  </h3>
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs font-medium text-gray-500 dark:text-slate-400 mt-1">
-                    <span className="flex items-center gap-1.5">
-                      <Clock size={14} />
-                      {new Date(analysis.createdAt).toLocaleDateString(undefined, {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </span>
-                    <span className="hidden sm:inline-block w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600"></span>
-                    <span className="flex items-center gap-1.5">
-                      <FileCheck size={14} />
-                      {analysis.skills?.length || 0} Skills Detected
-                    </span>
+                      <span className="hidden sm:inline-block w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600"></span>
+                      <span className="flex items-center gap-1.5">
+                        <FileCheck size={14} />
+                        {analysis.skills?.length || 0} Skills Detected
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
               
               <button
                 onClick={() => navigate(`/resume-analyzer/results/${analysis._id}`)}
@@ -409,6 +437,50 @@ const ResumeAnalyzerHistoryPage = () => {
           {activeTab === "analyses" ? renderAnalysesTab() : renderCoverLettersTab()}
         </div>
       </main>
+
+      {/* Floating comparison drawer */}
+      {selectedAnalyses.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-2xl px-4 animate-in slide-in-from-bottom-8 duration-300">
+          <div className="bg-white/80 dark:bg-slate-950/85 backdrop-blur-md border border-gray-200 dark:border-slate-800 shadow-2xl rounded-2xl p-4 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-500">
+                <Sparkles size={20} />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-gray-900 dark:text-white">
+                  Resume Version Comparison
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                  {selectedAnalyses.length === 1
+                    ? "Select one more version to compare"
+                    : "Ready to compare 2 versions"}
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setSelectedAnalyses([])}
+                className="px-4 py-2 text-xs font-bold text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-white transition-colors"
+              >
+                Clear
+              </button>
+              <button
+                onClick={() => {
+                  if (selectedAnalyses.length === 2) {
+                    navigate(`/resume-analyzer/compare?id1=${selectedAnalyses[0]}&id2=${selectedAnalyses[1]}`);
+                  }
+                }}
+                disabled={selectedAnalyses.length !== 2}
+                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-300 dark:disabled:bg-slate-800 disabled:text-gray-500 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl shadow-lg shadow-blue-500/20 transition-all flex items-center gap-1.5"
+              >
+                Compare Selected (2)
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <CoverLetterModal 
         isOpen={isModalOpen}

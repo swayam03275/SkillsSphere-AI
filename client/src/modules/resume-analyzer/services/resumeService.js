@@ -172,3 +172,28 @@ export const deleteResume = async (id) => {
     throw error;
   }
 };
+
+/**
+ * Compare two resume analysis versions using AI.
+ */
+export const compareResumes = async (versionAId, versionBId) => {
+  try {
+    if (!versionAId || !versionBId) throw new Error("Two version IDs are required for comparison.");
+
+    const response = await apiRequest("/api/resume/compare", {
+      method: "POST",
+      body: { versionAId, versionBId },
+      token: getToken(),
+    });
+
+    if (!response || response.success === false) {
+      throw new Error(response?.message || "Failed to compare resume versions.");
+    }
+
+    return response.data; // contains v1, v2, and insights
+  } catch (error) {
+    logger.error("[resumeService] compareResumes Error:", error);
+    throw error;
+  }
+};
+
