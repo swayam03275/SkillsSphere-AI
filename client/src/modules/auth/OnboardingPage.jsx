@@ -2,8 +2,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { Check, Camera, Loader2, LogOut } from "lucide-react";
-import { API_URL } from "../../config/env";
 import { useToast } from "../../shared/components";
+import { apiRequest } from "../../services/apiClient";
 import { setOAuthData, logoutUser } from "../../features/auth/authSlice";
 import Navbar from "../../shared/components/Navbar";
 import Footer from "../../shared/components/Footer";
@@ -89,19 +89,15 @@ const OnboardingPage = () => {
     formData.append("avatar", file);
 
     try {
-      const response = await fetch(`${API_URL}/api/users/me/avatar`, {
+      const response = await apiRequest("/api/users/me/avatar", {
         method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
+        token,
         body: formData,
       });
       
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Failed to upload photo");
-      return data.user.profilePic;
+      return response.user.profilePic;
     } catch (err) {
-      error(err.message);
+      error(err.message || "Failed to upload photo");
       return null;
     } finally {
       setIsUploadingPhoto(false);
@@ -133,17 +129,11 @@ const OnboardingPage = () => {
       }
 
       // 2. Submit onboarding data
-      const response = await fetch(`${API_URL}/api/users/onboard`, {
+      const data = await apiRequest("/api/users/onboard", {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ name, role }),
+        token,
+        body: { name, role },
       });
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Onboarding failed");
 
       // Update Redux state
       dispatch(setOAuthData({ 
@@ -160,7 +150,7 @@ const OnboardingPage = () => {
         navigate("/dashboard", { replace: true });
       }
     } catch (err) {
-      error(err.message);
+      error(err.message || "Onboarding failed");
     } finally {
       setIsSubmitting(false);
     }

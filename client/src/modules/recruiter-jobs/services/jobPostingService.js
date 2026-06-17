@@ -270,15 +270,10 @@ export const exportJobApplicationsCSV = async (jobId, token, status = "", sortBy
     if (status) {
       url += `&status=${encodeURIComponent(status)}`;
     }
-    const response = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+    const blob = await apiRequest(url, {
+      token,
+      responseType: "blob"
     });
-    if (!response.ok) {
-      throw new Error("Failed to export candidates");
-    }
-    const blob = await response.blob();
     return blob;
   } catch (error) {
     const normalizedError = handleServiceError(error);

@@ -4,7 +4,7 @@ import Input from "../../shared/components/Input";
 import Button from "../../shared/components/Button";
 import { KeyRound, ArrowLeft, CheckCircle } from "lucide-react";
 import { useToast } from "../../shared/components";
-import { API_URL } from "../../config/env";
+import { apiRequest } from "../../services/apiClient";
 import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 import { reportError } from "../../utils/errorReporter";
 import { z } from "zod";
@@ -89,41 +89,26 @@ const ResetPassword = () => {
     if (Object.keys(newErrors).length === 0) {
       setLoading(true);
       try {
-        const response = await fetch(`${API_URL}/api/auth/reset-password`, {
+        await apiRequest("/api/auth/reset-password", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
+          body: {
             email: formData.email,
             otp: formData.otp,
             newPassword: formData.newPassword,
-          }),
+          },
         });
 
-        const data = await response.json();
-
-        if (response.ok) {
-          setSuccess(true);
-          showSuccessToast("Password reset successfully!");
-        } else {
-          const error = new Error("Password reset request failed");
-          reportError(error, {
-            source: "auth",
-            feature: "reset-password",
-            status: response.status,
-          }).catch(() => {});
-          showErrorToast(RESET_PASSWORD_ERROR_MESSAGE);
-          setErrors({ form: RESET_PASSWORD_ERROR_MESSAGE });
-        }
+        setSuccess(true);
+        showSuccessToast("Password reset successfully!");
       } catch (err) {
         reportError(new Error("Password reset request could not be completed"), {
           source: "auth",
           feature: "reset-password",
           reason: err?.name || "request-failed",
+          status: err?.status,
         }).catch(() => {});
-        showErrorToast(RESET_PASSWORD_CONNECTION_MESSAGE);
-        setErrors({ form: RESET_PASSWORD_CONNECTION_MESSAGE });
+        showErrorToast(err.message || RESET_PASSWORD_CONNECTION_MESSAGE);
+        setErrors({ form: err.message || RESET_PASSWORD_CONNECTION_MESSAGE });
       } finally {
         setLoading(false);
       }

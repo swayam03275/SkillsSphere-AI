@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Input from "../../shared/components/Input";
 import Button from "../../shared/components/Button";
 import { useToast } from "../../shared/components";
-import { API_URL } from "../../config/env";
+import { apiRequest } from "../../services/apiClient";
 import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 
 
@@ -30,23 +30,16 @@ const ForgotPassword = () => {
     setError("");
 
     try {
-      const response = await fetch(`${API_URL}/api/auth/forgot-password`, {
+      await apiRequest("/api/auth/forgot-password", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+        body: { email: email.trim().toLowerCase() },
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        success("OTP sent to your email!");
-        // Navigate to reset password and pass the email so they don't have to re-type it
-        navigate(`/reset-password?email=${encodeURIComponent(email)}`);
-      } else {
-        showError(data.message || "Failed to send OTP");
-      }
+      success("OTP sent to your email!");
+      // Navigate to reset password and pass the email so they don't have to re-type it
+      navigate(`/reset-password?email=${encodeURIComponent(email)}`);
     } catch (err) {
-      showError("Connection error. Please try again.");
+      showError(err.message || "Failed to send OTP. Please try again.");
     } finally {
       setLoading(false);
     }
