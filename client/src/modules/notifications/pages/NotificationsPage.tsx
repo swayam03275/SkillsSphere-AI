@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Navbar from "../../../shared/components/Navbar";
 import Footer from "../../../shared/components/Footer";
+import Button from "../../../shared/components/Button";
 
 import NotificationCard from "../components/NotificationCard";
 import useNotifications from "../hooks/useNotifications";
@@ -374,13 +375,14 @@ const NotificationsPage = () => {
 
             {hasMore && (
               <div className="flex justify-center pt-4">
-                <button
+                <Button
                   onClick={loadMore}
-                  disabled={loading}
-                  className="px-6 py-3 rounded-lg border border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-medium hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  loading={loading}
+                  variant="outline"
+                  className="px-6 py-3 rounded-lg border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50"
                 >
-                  {loading ? "Loading..." : "Load more"}
-                </button>
+                  Load more
+                </Button>
               </div>
             )}
           </div>

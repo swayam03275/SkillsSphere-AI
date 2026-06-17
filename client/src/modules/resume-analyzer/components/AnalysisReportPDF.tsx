@@ -145,8 +145,8 @@ const AnalysisReportPDF = ({ result, fileName }) => {
           </div>
           <div className="h-2 bg-slate-200 rounded-full overflow-hidden mb-3">
             <div
-              className={`h-full ${getScoreBg(result.impactMatch?.score)}`}
-              style={{ width: `${result.impactMatch?.score || 0}%` }}
+              className={`h-full w-[var(--tw-width)] ${getScoreBg(result.impactMatch?.score)}`}
+              style={{ '--tw-width': `${result.impactMatch?.score || 0}%` }}
             ></div>
           </div>
           <p className="text-[11px] text-slate-600 leading-relaxed">

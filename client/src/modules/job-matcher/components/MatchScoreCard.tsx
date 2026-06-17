@@ -15,8 +15,8 @@ export default function MatchScoreCard({ score }) {
       {/* Progress Bar */}
       <div className="w-full bg-gray-200 dark:bg-gray-700 h-2 rounded mt-4">
         <div
-          className="bg-gradient-to-r from-blue-500 to-indigo-500 h-2 rounded transition-all duration-500"
-          style={{ width: `${score}%` }}
+          className="bg-gradient-to-r from-blue-500 to-indigo-500 h-2 rounded transition-all duration-500 w-[var(--tw-width)]"
+          style={{ '--tw-width': `${score}%` }}
         />
       </div>
 

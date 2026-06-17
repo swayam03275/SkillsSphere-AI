@@ -28,11 +28,12 @@ const CustomizedContent = (props) => {
         y={y}
         width={width}
         height={height}
+        className="fill-[var(--tw-fill)] stroke-[var(--tw-stroke)] stroke-[width:var(--tw-stroke-width)] stroke-[opacity:var(--tw-stroke-opacity)]"
         style={{
-          fill: depth < 2 ? (colors ? colors[colorIndex] : "#8884d8") : "none",
-          stroke: "#fff",
-          strokeWidth: 2 / (depth + 1e-10),
-          strokeOpacity: 1 / (depth + 1e-10),
+          '--tw-fill': depth < 2 ? (colors ? colors[colorIndex] : "#8884d8") : "none",
+          '--tw-stroke': "#fff",
+          '--tw-stroke-width': 2 / (depth + 1e-10),
+          '--tw-stroke-opacity': 1 / (depth + 1e-10),
         }}
       />
       {depth === 1 && width > 40 && height > 30 ? (

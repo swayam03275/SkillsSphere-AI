@@ -142,7 +142,7 @@ const NotificationsDropdown = ({ isOpen, onClose }) => {
                   {loadMoreLoading ? (
                     <>
                       <Loader2 className="animate-spin" size={12} />
-                      Loading...
+                      <span className="sr-only">Loading...</span>
                     </>
                   ) : (
                     "Load More"

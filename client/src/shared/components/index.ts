@@ -15,3 +15,4 @@ export { default as StatusUpdateModal } from "./StatusUpdateModal";
 export { default as AuthLayout, AUTH_CARD_CLASS } from "./AuthLayout";
 export { default as GoogleOAuthButton } from "./GoogleOAuthButton";
 export { default as ErrorBoundary } from "./ErrorBoundary";
+export { default as Skeleton } from "./Skeleton";

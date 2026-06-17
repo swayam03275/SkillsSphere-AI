@@ -228,7 +228,7 @@ const RoadmapPage = () => {
             const glowColor = isContribution ? 'bg-amber-500/10' : 'bg-indigo-500/10';
 
             return (
-              <div key={topic._id} className={`relative flex items-center gap-8 ${isLeft ? "md:flex-row" : "md:flex-row-reverse"} animate-slide-up`} style={{ animationDelay: `${index * 100}ms` }}>
+              <div key={topic._id} className={`relative flex items-center gap-8 ${isLeft ? "md:flex-row" : "md:flex-row-reverse"} animate-slide-up [animation-delay:var(--tw-delay)]`} style={{ '--tw-delay': `${index * 100}ms` }}>
                 
                 {/* Visual Dot on the line */}
                  <div className={`absolute left-[19px] md:left-1/2 md:-ml-3 w-6 h-6 rounded-full border-4 ${isCompleted ? completedBorderColor : 'bg-white dark:bg-[#121214] border-gray-200 dark:border-white/10'} z-20 transition-all duration-500`}>
@@ -341,7 +341,7 @@ const RoadmapPage = () => {
                 "Complete this roadmap to reach top-tier competency for <span className="text-gray-900 dark:text-white font-bold">{roadmap.targetRole}</span> roles. Your progress is synced across recruiters and mentors."
               </p>
               <div className="h-2 w-full bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden max-w-md mx-auto">
-                <div className="h-full bg-indigo-500 transition-all duration-1000" style={{ width: `${roadmap.overallProgress}%` }}></div>
+                <div className="h-full bg-indigo-500 transition-all duration-1000 w-[var(--tw-width)]" style={{ '--tw-width': `${roadmap.overallProgress}%` }}></div>
               </div>
            </div>
         </div>

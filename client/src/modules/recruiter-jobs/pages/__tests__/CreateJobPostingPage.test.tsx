@@ -62,7 +62,7 @@ vi.mock('../../../../shared/components/Select', () => ({
 vi.mock('../../../../shared/components/Button', () => ({
   default: ({ children, loading, ...props }) => (
     <button disabled={loading} data-testid="submit-btn" {...props}>
-      {loading ? 'Loading...' : children}
+      {loading ? <span className="sr-only">Loading</span> : children}
     </button>
   ),
 }))

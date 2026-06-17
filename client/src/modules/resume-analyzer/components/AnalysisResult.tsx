@@ -354,8 +354,8 @@ const AnalysisResult = ({ result, file, jobDescription, onReset }) => {
               </div>
               <div className="w-full max-w-[200px] h-2 bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-yellow-400 transition-all duration-1000" 
-                  style={{ width: `${result.impactMatch?.score}%` }}
+                  className="h-full bg-yellow-400 transition-all duration-1000 w-[var(--tw-width)]" 
+                  style={{ '--tw-width': `${result.impactMatch?.score}%` }}
                 ></div>
               </div>
               <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -434,7 +434,7 @@ const AnalysisResult = ({ result, file, jobDescription, onReset }) => {
                 <span className={`text-sm font-black ${getScoreColor(category.score)}`}>{category.score}%</span>
               </div>
               <div className="h-2 bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden">
-                <div className={`h-full rounded-full transition-all duration-1000 ${getProgressColor(category.score)}`} style={{ width: `${category.score}%` }} />
+                <div className={`h-full rounded-full transition-all duration-1000 w-[var(--tw-width)] ${getProgressColor(category.score)}`} style={{ '--tw-width': `${category.score}%` }} />
               </div>
               <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 pt-1">
                 {category.feedback}
@@ -709,7 +709,6 @@ const AnalysisResult = ({ result, file, jobDescription, onReset }) => {
         <div 
           id="analysis-report-pdf" 
           className="w-[800px] bg-white text-slate-800"
-          style={{ width: "800px", backgroundColor: "#ffffff" }}
         >
           <AnalysisReportPDF result={result} fileName={file?.name} />
         </div>

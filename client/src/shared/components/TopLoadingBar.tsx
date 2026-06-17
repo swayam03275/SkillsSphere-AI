@@ -21,12 +21,7 @@ const TopLoadingBar = () => {
   return (
     <div className="fixed top-0 left-0 w-full h-1 z-[9999] overflow-hidden bg-brand-100/20">
       <div 
-        className="h-full bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 shadow-[0_0_10px_var(--primary)]"
-        style={{
-          width: '50%',
-          animation: 'route-progress 1.5s infinite ease-in-out',
-          transformOrigin: 'left'
-        }}
+        className="h-full bg-gradient-to-r from-brand-400 via-brand-500 to-brand-600 shadow-[0_0_10px_var(--primary)] w-1/2 [animation:route-progress_1.5s_infinite_ease-in-out] origin-left"
       />
       <style>{`
         @keyframes route-progress {

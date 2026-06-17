@@ -64,8 +64,8 @@ const ContributionSummaryCard = ({ roadmap }) => {
 
         <div className="h-1.5 w-full bg-amber-500/10 rounded-full overflow-hidden">
           <div 
-            className="h-full bg-amber-500 transition-all duration-1000 shadow-[0_0_10px_rgba(245,158,11,0.8)]" 
-            style={{ width: `${contributionProgress}%` }}
+            className="h-full bg-amber-500 transition-all duration-1000 shadow-[0_0_10px_rgba(245,158,11,0.8)] w-[var(--tw-width)]" 
+            style={{ '--tw-width': `${contributionProgress}%` }}
           ></div>
         </div>
       </div>

@@ -24,7 +24,11 @@ const LoadingState = ({
   className = ""
 }) => {
   return (
-    <div className={`flex flex-col items-center justify-center min-h-[80vh] w-full flex-1 animate-in fade-in duration-300 ${className}`}>
+    <div 
+      className={`flex flex-col items-center justify-center min-h-[80vh] w-full flex-1 animate-in fade-in duration-300 ${className}`}
+      role="status"
+      aria-live="polite"
+    >
       {icon}
       <p className="text-2xl font-heading font-medium text-text-main">
         {title}

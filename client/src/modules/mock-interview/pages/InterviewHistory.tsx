@@ -590,7 +590,7 @@ const InterviewHistory = () => {
       {error && <div className="bg-red-500/10 border border-red-500/30 text-red-400 p-4 rounded-xl text-center">{error}</div>}
       {exportError && (
         <div role="alert" className="bg-red-500/10 border border-red-500/30 text-red-400 p-4 rounded-xl text-center">
-          <AlertCircle size={16} style={{ display: "inline", marginRight: 6 }} />
+          <AlertCircle size={16} className="inline-block mr-1.5" />
           {exportError}
         </div>
       )}

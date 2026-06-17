@@ -36,16 +36,15 @@ const RealtimeSentimentIndicator = ({ analysis }) => {
             <Brain size={14} />
             <span>Confidence</span>
           </div>
-          <div className="text-xl font-bold" style={{ color: getConfidenceColor(confidence) }}>
+          <div className="text-xl font-bold text-[color:var(--tw-color)]" style={{ '--tw-color': getConfidenceColor(confidence) }}>
             {confidence}%
           </div>
           <div className="h-1 bg-gray-200 dark:bg-white/10 rounded-sm overflow-hidden">
             <div 
-              className="h-full rounded-sm" 
+              className="h-full rounded-sm w-[var(--tw-width)] bg-[color:var(--tw-bg)] transition-all duration-300" 
               style={{ 
-                width: `${confidence}%`, 
-                backgroundColor: getConfidenceColor(confidence),
-                transition: 'width 0.5s ease-out, background-color 0.5s ease'
+                '--tw-width': `${confidence}%`, 
+                '--tw-bg': getConfidenceColor(confidence),
               }}
             />
           </div>
@@ -56,16 +55,15 @@ const RealtimeSentimentIndicator = ({ analysis }) => {
             <Activity size={14} />
             <span>Tone</span>
           </div>
-          <div className="text-xl font-bold" style={{ color: getToneColor(tone) }}>
+          <div className="text-xl font-bold text-[color:var(--tw-color)]" style={{ '--tw-color': getToneColor(tone) }}>
             {getToneLabel(tone)}
           </div>
           <div className="h-1 bg-gray-200 dark:bg-white/10 rounded-sm overflow-hidden">
             <div 
-              className="h-full rounded-sm" 
+              className="h-full rounded-sm w-[var(--tw-width)] bg-[color:var(--tw-bg)] transition-all duration-300" 
               style={{ 
-                width: `${tone}%`, 
-                backgroundColor: getToneColor(tone),
-                transition: 'width 0.5s ease-out, background-color 0.5s ease'
+                '--tw-width': `${tone}%`, 
+                '--tw-bg': getToneColor(tone),
               }}
             />
           </div>
@@ -76,7 +74,7 @@ const RealtimeSentimentIndicator = ({ analysis }) => {
             <AlertCircle size={14} />
             <span>Hesitations</span>
           </div>
-          <div className="text-xl font-bold" style={{ color: hesitationCount > 5 ? '#ef4444' : '#94a3b8' }}>
+          <div className="text-xl font-bold text-[color:var(--tw-color)]" style={{ '--tw-color': hesitationCount > 5 ? '#ef4444' : '#94a3b8' }}>
             {hesitationCount}
           </div>
         </div>

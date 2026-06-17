@@ -118,8 +118,7 @@ const CameraCheck = ({ onStreamReady }) => {
             autoPlay
             muted
             playsInline
-            className={`w-full h-full object-cover transition-opacity duration-700 ${stream ? "opacity-100" : "opacity-0"}`}
-            style={{ transform: "rotateY(180deg)" }} // mirror effect for self view
+            className={`w-full h-full object-cover transition-opacity duration-700 [transform:rotateY(180deg)] ${stream ? "opacity-100" : "opacity-0"}`}
           />
           
           {/* Hardware status overlay */}

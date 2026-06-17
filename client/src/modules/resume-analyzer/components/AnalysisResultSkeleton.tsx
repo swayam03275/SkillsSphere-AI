@@ -12,7 +12,7 @@ const AnalysisResultSkeleton = () => {
           </p>
           <div className="flex items-center gap-4">
             {/* Circle ring placeholder */}
-            <div className="w-18 h-18 rounded-full bg-gray-200 flex-shrink-0" style={{ width: 72, height: 72 }} />
+            <div className="w-[72px] h-[72px] rounded-full bg-gray-200 flex-shrink-0" />
             <div className="flex-1 space-y-2">
               <div className="h-3.5 bg-gray-200 rounded w-3/5" />
               <div className="h-2.5 bg-gray-200 rounded w-2/5" />
@@ -26,7 +26,7 @@ const AnalysisResultSkeleton = () => {
             Match Score
           </p>
           <div className="flex items-center gap-4">
-            <div className="rounded-full bg-gray-200 flex-shrink-0" style={{ width: 72, height: 72 }} />
+            <div className="w-[72px] h-[72px] rounded-full bg-gray-200 flex-shrink-0" />
             <div className="flex-1 space-y-2">
               <div className="h-3.5 bg-gray-200 rounded w-3/5" />
               <div className="h-2.5 bg-gray-200 rounded w-2/5" />
@@ -45,8 +45,8 @@ const AnalysisResultSkeleton = () => {
           {[72, 96, 60, 88, 64, 80].map((w, i) => (
             <div
               key={i}
-              className="h-7 bg-gray-200 rounded-full"
-              style={{ width: w }}
+              className="h-7 bg-gray-200 rounded-full w-[var(--tw-width)]"
+              style={{ '--tw-width': w }}
             />
           ))}
         </div>
@@ -61,8 +61,8 @@ const AnalysisResultSkeleton = () => {
           {[80, 64, 104, 72, 56, 90].map((w, i) => (
             <div
               key={i}
-              className="h-6 bg-gray-200 rounded-full"
-              style={{ width: w }}
+              className="h-6 bg-gray-200 rounded-full w-[var(--tw-width)]"
+              style={{ '--tw-width': w }}
             />
           ))}
         </div>

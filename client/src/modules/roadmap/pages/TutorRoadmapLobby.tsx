@@ -226,8 +226,8 @@ export default function TutorRoadmapLobby() {
                       <div className="flex items-center gap-3">
                         <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                           <div 
-                            className="h-full bg-indigo-500 transition-all duration-500" 
-                            style={{ width: `${s.overallProgress}%` }}
+                            className="h-full bg-indigo-500 transition-all duration-500 w-[var(--tw-width)]" 
+                            style={{ '--tw-width': `${s.overallProgress}%` }}
                           />
                         </div>
                         <span className="text-[10px] font-black text-slate-700 dark:text-slate-300">{s.overallProgress}%</span>

@@ -275,8 +275,8 @@ const InterviewSession = () => {
             </div>
             <div className="h-2.5 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
               <div
-                className="h-full bg-blue-600 dark:bg-blue-500 rounded-full transition-all duration-500"
-                style={{ width: `${progressPercent}%` }}
+                className="h-full bg-blue-600 dark:bg-blue-500 rounded-full transition-all duration-500 w-[var(--tw-width)]"
+                style={{ '--tw-width': `${progressPercent}%` }}
               />
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5">

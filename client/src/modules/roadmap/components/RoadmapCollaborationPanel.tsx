@@ -306,9 +306,9 @@ export default function RoadmapCollaborationPanel({
         {typingUser && (
           <div className="flex items-center gap-2 text-xs text-[var(--text-muted)] pl-1 animate-pulse">
             <div className="flex space-x-1">
-              <span className="w-1.5 h-1.5 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
-              <span className="w-1.5 h-1.5 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>
-              <span className="w-1.5 h-1.5 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></span>
+              <span className="w-1.5 h-1.5 bg-[var(--text-muted)] rounded-full animate-bounce [animation-delay:var(--tw-delay)]" style={{ '--tw-delay': "0ms" }}></span>
+              <span className="w-1.5 h-1.5 bg-[var(--text-muted)] rounded-full animate-bounce [animation-delay:var(--tw-delay)]" style={{ '--tw-delay': "150ms" }}></span>
+              <span className="w-1.5 h-1.5 bg-[var(--text-muted)] rounded-full animate-bounce [animation-delay:var(--tw-delay)]" style={{ '--tw-delay': "300ms" }}></span>
             </div>
             <span className="italic font-semibold">{typingUser} is typing...</span>
           </div>

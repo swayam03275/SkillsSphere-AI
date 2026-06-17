@@ -170,11 +170,12 @@ const Navbar = () => {
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">Explore</p>
                 </div>
                 <div className="py-2">
-                  {overflowNavLinks.map((link) => (
+                  {overflowNavLinks.map((link, index) => (
                     <Link
                       key={link.path}
                       to={link.path}
                       onClick={() => setIsNavMenuOpen(false)}
+                      style={{ animationDelay: `${index * 0.05}s` }}
                       className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors duration-200 hover:bg-[var(--surface-hover)] ${
                         isActive(link.path)
                           ? 'text-[var(--text-main)] bg-[var(--surface-hover)]'
@@ -394,8 +395,7 @@ const Navbar = () => {
               <Link
                 key={link.path}
                 to={link.path}
-                style={{ animationDelay: `${index * 0.1}s` }}
-                className={`flex items-center gap-4 px-4 py-4 rounded-xl text-base font-medium
+                className={`flex items-center gap-4 px-4 py-4 rounded-xl text-base font-medium [animation-delay:var(--tw-delay)]
                   transition-all duration-300 min-h-[44px] cursor-pointer
                   max-sm:px-3 max-sm:py-3 max-sm:text-[0.95rem] max-sm:gap-3
                   ${isMenuOpen ? 'animate-[slideFadeIn_0.5s_ease_forwards]' : 'opacity-0 translate-y-5'}

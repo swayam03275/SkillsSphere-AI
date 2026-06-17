@@ -30,8 +30,8 @@ const AuthLayout = ({ children, maxWidth = "380px", footerContent }) => {
       <Navbar />
 
       <div
-        className="relative z-10 w-full"
-        style={{ maxWidth }}
+        className="relative z-10 w-full max-w-[var(--tw-max-w)]"
+        style={{ '--tw-max-w': maxWidth }}
       >
         {/* Background glow orbs */}
         <div className="hidden sm:block absolute w-[520px] h-[520px] bg-blue-400/45 dark:bg-blue-500/40 rounded-full blur-[140px] dark:blur-[120px] -top-[150px] -left-[150px] -z-10 animate-pulse" />

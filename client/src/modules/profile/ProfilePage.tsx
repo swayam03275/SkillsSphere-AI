@@ -161,8 +161,7 @@ const AvatarEditor = ({ user, roleConfig, onUpload, onRemove, uploading, avatarS
   return (
     <div className="flex w-full flex-col items-center gap-3">
       <div className="relative group">
-        <div className={`w-32 h-32 rounded-full bg-gradient-to-br ${roleConfig.avatar} flex items-center justify-center text-white text-3xl font-bold border-4 border-white dark:border-slate-900 shadow-xl overflow-hidden select-none`}
-          style={{ boxShadow: `0 4px 24px ${roleConfig.glow}` }}>
+        <div className={`w-32 h-32 rounded-full bg-gradient-to-br ${roleConfig.avatar} flex items-center justify-center text-white text-3xl font-bold border-4 border-white dark:border-slate-900 shadow-xl overflow-hidden select-none shadow-[0_4px_24px_var(--tw-glow)]`} style={{ '--tw-glow': roleConfig.glow }}>
           {displayPic ? (
             <img src={displayPic} alt={`${user.name || "User"} profile avatar`} className="w-full h-full object-cover" />
           ) : (
@@ -427,7 +426,7 @@ const ProfilePage = () => {
   return (
     <div className="min-h-screen transition-colors duration-300 relative bg-gradient-to-br from-[#f0eeff] via-[#f7f9fc] to-[#edfdf5] dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 pt-24">
       <Navbar />
-      <div className="relative" style={{ zIndex: 2 }}>
+      <div className="relative z-[2]">
         
         {/* ── Cover Banner ── */}
         <div className="relative w-full h-44 sm:h-36 overflow-hidden">
@@ -436,9 +435,9 @@ const ProfilePage = () => {
           <div className="absolute bottom-0 left-1/4 w-24 h-24 rounded-full bg-white/5" />
 
           {/* Animated Glassy Bubbles inside banner */}
-          <div className="absolute w-20 h-20 rounded-full" style={{ top: '10%', left: '8%', background: 'linear-gradient(135deg, rgba(255,255,255,0.25), rgba(255,255,255,0.08))', border: '1.5px solid rgba(255,255,255,0.3)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.4), 0 4px 16px rgba(0,0,0,0.1)', backdropFilter: 'blur(8px)' }} />
-          <div className="absolute w-12 h-12 rounded-full" style={{ bottom: '15%', left: '30%', background: 'linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.06))', border: '1.5px solid rgba(255,255,255,0.25)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35), 0 4px 12px rgba(0,0,0,0.08)', backdropFilter: 'blur(6px)' }} />
-          <div className="absolute w-16 h-16 rounded-full" style={{ top: '15%', right: '25%', background: 'linear-gradient(135deg, rgba(255,255,255,0.22), rgba(255,255,255,0.07))', border: '1.5px solid rgba(255,255,255,0.28)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.38), 0 4px 14px rgba(0,0,0,0.09)', backdropFilter: 'blur(7px)' }} />
+          <div className="absolute w-20 h-20 rounded-full top-[10%] left-[8%] bg-gradient-to-br from-white/25 to-white/10 border-[1.5px] border-white/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.4),0_4px_16px_rgba(0,0,0,0.1)] backdrop-blur-sm" />
+          <div className="absolute w-12 h-12 rounded-full bottom-[15%] left-[30%] bg-gradient-to-br from-white/20 to-white/5 border-[1.5px] border-white/25 shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_4px_12px_rgba(0,0,0,0.08)] backdrop-blur-[6px]" />
+          <div className="absolute w-16 h-16 rounded-full top-[15%] right-[25%] bg-gradient-to-br from-white/20 to-white/10 border-[1.5px] border-white/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.38),0_4px_14px_rgba(0,0,0,0.09)] backdrop-blur-[7px]" />
         </div>
 
         {/* ── Main Layout Grid ── */}
@@ -476,7 +475,7 @@ const ProfilePage = () => {
 
               {/* Contact Info */}
               <div className="px-5 py-4">
-                <h3 className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ background: 'linear-gradient(135deg,#7C3AED,#059669)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>
+                <h3 className="text-[10px] font-bold uppercase tracking-widest mb-3 bg-gradient-to-br from-[#7C3AED] to-[#059669] bg-clip-text text-transparent">
                   Contact Info
                 </h3>
                 <div className="flex flex-col gap-2.5">
@@ -500,7 +499,7 @@ const ProfilePage = () => {
 
               {/* Activity Metrics */}
               <div className="px-5 py-4">
-                <h3 className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ background: 'linear-gradient(135deg,#7C3AED,#059669)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>
+                <h3 className="text-[10px] font-bold uppercase tracking-widest mb-3 bg-gradient-to-br from-[#7C3AED] to-[#059669] bg-clip-text text-transparent">
                   Activity
                 </h3>
                 <div className="grid grid-cols-2 gap-2.5">
@@ -598,7 +597,7 @@ const ProfilePage = () => {
             {/* ═══ Section 1: Basic Information ═══ */}
             {activeTab === "info" && (
             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm p-6">
-              <h3 className="text-xs font-bold uppercase tracking-widest mb-5" style={{ background: 'linear-gradient(135deg,#7C3AED,#059669)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>
+              <h3 className="text-xs font-bold uppercase tracking-widest mb-5 bg-gradient-to-br from-[#7C3AED] to-[#059669] bg-clip-text text-transparent">
                 Basic Information
               </h3>
               {isEditing ? (
@@ -690,7 +689,7 @@ const ProfilePage = () => {
 
             {activeTab === "security" && (
               <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm p-6">
-                <h3 className="text-xs font-bold uppercase tracking-widest mb-5" style={{ background: 'linear-gradient(135deg,#7C3AED,#059669)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>
+                <h3 className="text-xs font-bold uppercase tracking-widest mb-5 bg-gradient-to-br from-[#7C3AED] to-[#059669] bg-clip-text text-transparent">
                   Password & Access
                 </h3>
                 {user.provider === "google" ? (
@@ -710,7 +709,7 @@ const ProfilePage = () => {
             {activeTab === "account" && (
               <div className="flex flex-col gap-5 min-w-0">
                 <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm p-6">
-                  <h3 className="text-xs font-bold uppercase tracking-widest mb-5" style={{ background: 'linear-gradient(135deg,#7C3AED,#059669)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>
+                  <h3 className="text-xs font-bold uppercase tracking-widest mb-5 bg-gradient-to-br from-[#7C3AED] to-[#059669] bg-clip-text text-transparent">
                     Account Details
                   </h3>
                   <div className="flex flex-col divide-y divide-slate-100 dark:divide-white/5">

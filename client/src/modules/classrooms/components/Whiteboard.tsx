@@ -504,8 +504,8 @@ export default function Whiteboard({ socket, roomId, userRole, initialStrokes })
             <button
               key={c.value}
               onClick={() => setColor(c.value)}
-              className={`w-6 h-6 rounded-full border-2 transition-transform duration-150 cursor-pointer ${color === c.value ? "scale-125 border-white" : "border-transparent"}`}
-              style={{ backgroundColor: c.value }}
+              className={`w-6 h-6 rounded-full border-2 transition-transform duration-150 cursor-pointer bg-[var(--tw-bg-color)] ${color === c.value ? "scale-125 border-white" : "border-transparent"}`}
+              style={{ '--tw-bg-color': c.value }}
               title={c.name}
             />
           ))}
@@ -622,10 +622,10 @@ export default function Whiteboard({ socket, roomId, userRole, initialStrokes })
           onChange={(e) => setTextInput((prev) => ({ ...prev, value: e.target.value }))}
           onKeyDown={handleTextSubmit}
           onBlur={() => setTextInput({ visible: false, x: 0, y: 0, normX: 0, normY: 0, value: "" })}
-          className="absolute bg-slate-900 border border-indigo-500 text-white rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 z-25"
+          className="absolute bg-slate-900 border border-indigo-500 text-white rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 z-25 top-[var(--tw-top)] left-[var(--tw-left)] -translate-y-full"
           style={{
-            left: `${textInput.x}px`,
-            top: `${textInput.y}px`,
+            '--tw-left': `${textInput.x}px`,
+            '--tw-top': `${textInput.y}px`,
             color: color,
             font: `${16 + lineWidth}px sans-serif`
           }}
