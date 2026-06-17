@@ -2,32 +2,6 @@ import multer from "multer";
 
 const AVATAR_MAX_SIZE = 5 * 1024 * 1024;
 const ALLOWED_AVATAR_TYPES = ["image/jpeg", "image/png", "image/webp"];
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const uploadDirectory = path.join(__dirname, "..", "uploads", "avatars");
-
-if (!fs.existsSync(uploadDirectory)) {
-  fs.mkdirSync(uploadDirectory, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadDirectory),
-  filename: (req, file, cb) => {
-    const extMap = {
-      "image/jpeg": ".jpg",
-      "image/png": ".png",
-      "image/webp": ".webp",
-      "image/gif": ".gif",
-    };
-    const extension = extMap[file.mimetype] || path.extname(file.originalname).toLowerCase() || ".jpg";
-    cb(null, `avatar-${req.user._id}${extension}`);
-  },
-});
 
 const fileFilter = (_req, file, cb) => {
   if (ALLOWED_AVATAR_TYPES.includes(file.mimetype)) {
@@ -40,12 +14,35 @@ const fileFilter = (_req, file, cb) => {
 };
 
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   fileFilter,
   limits: { fileSize: AVATAR_MAX_SIZE },
 });
 
-export const uploadAvatarMiddleware = (req, res, next) => {
+const isJpeg = (buf) =>
+  buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff;
+
+const isPng = (buf) =>
+  buf.length >= 4 &&
+  buf[0] === 0x89 &&
+  buf[1] === 0x50 &&
+  buf[2] === 0x4e &&
+  buf[3] === 0x47;
+
+const isWebp = (buf) =>
+  buf.length >= 12 &&
+  buf[0] === 0x52 &&
+  buf[1] === 0x49 &&
+  buf[2] === 0x46 &&
+  buf[3] === 0x46 &&
+  buf[8] === 0x57 &&
+  buf[9] === 0x45 &&
+  buf[10] === 0x42 &&
+  buf[11] === 0x50;
+
+const hasValidImageSignature = (buf) => isJpeg(buf) || isPng(buf) || isWebp(buf);
+
+const parseAvatarUpload = (req, res, next) => {
   upload.single("avatar")(req, res, (error) => {
     if (error instanceof multer.MulterError) {
       if (error.code === "LIMIT_FILE_SIZE") {
@@ -62,3 +59,18 @@ export const uploadAvatarMiddleware = (req, res, next) => {
     next();
   });
 };
+
+const validateAvatarSignature = (req, res, next) => {
+  if (!req.file) return next();
+
+  if (!hasValidImageSignature(req.file.buffer)) {
+    return res.status(415).json({
+      success: false,
+      message: "The uploaded file is not a valid image. Please upload a genuine JPEG, PNG, or WebP file.",
+    });
+  }
+
+  next();
+};
+
+export const uploadAvatarMiddleware = [parseAvatarUpload, validateAvatarSignature];
