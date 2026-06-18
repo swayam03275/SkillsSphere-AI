@@ -755,66 +755,134 @@ export const getRankedCandidatesForJob = async (jobId, recruiterId, filters = {}
     query.matchCategory = normalizedCategory;
   }
 
-  const applications = await JobApplication.find(query)
-    .populate("applicant", "name email role profilePic")
-    .populate("resume", "file fileName skills keywords")
-    .lean();
+  const pipeline = [
+    { $match: query },
+    {
+      $lookup: {
+        from: "users",
+        localField: "applicant",
+        foreignField: "_id",
+        as: "applicant"
+      }
+    },
+    { $unwind: { path: "$applicant", preserveNullAndEmptyArrays: true } },
+    {
+      $lookup: {
+        from: "resumes",
+        localField: "resume",
+        foreignField: "_id",
+        as: "resume"
+      }
+    },
+    { $unwind: { path: "$resume", preserveNullAndEmptyArrays: true } }
+  ];
 
-  const filteredApplications = search
-    ? applications.filter((application) => {
-        const searchBlob = [
-          application.applicant?.name,
-          application.applicant?.email,
-          application.coverNote,
-          ...(application.aiRecruiterInsights || []),
-          ...(application.aiWeaknesses || []),
-          ...(application.aiHiringSignals || []),
+  if (search) {
+    const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const searchRegex = new RegExp(escapeRegex(search), "i");
+
+    pipeline.push({
+      $match: {
+        $or: [
+          { "applicant.name": searchRegex },
+          { "applicant.email": searchRegex },
+          { coverNote: searchRegex },
+          { aiRecruiterInsights: searchRegex },
+          { aiWeaknesses: searchRegex },
+          { aiHiringSignals: searchRegex }
         ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
+      }
+    });
+  }
 
-        return searchBlob.includes(search);
-      })
-    : applications;
-
-  const statusPriority = {
-    shortlisted: 0,
-    reviewed: 1,
-    pending: 2,
-    rejected: 3,
-    withdrawn: 4,
-  };
-
-  filteredApplications.sort((a, b) => {
-    const scoreA = a.aiMatchScore ?? -1;
-    const scoreB = b.aiMatchScore ?? -1;
-
-    if (scoreB !== scoreA) {
-      return scoreB - scoreA;
+  pipeline.push({
+    $addFields: {
+      statusPriority: {
+        $switch: {
+          branches: [
+            { case: { $eq: ["$status", "shortlisted"] }, then: 0 },
+            { case: { $eq: ["$status", "reviewed"] }, then: 1 },
+            { case: { $eq: ["$status", "pending"] }, then: 2 },
+            { case: { $eq: ["$status", "rejected"] }, then: 3 },
+            { case: { $eq: ["$status", "withdrawn"] }, then: 4 }
+          ],
+          default: 99
+        }
+      },
+      sortMatchScore: { $ifNull: ["$aiMatchScore", -1] }
     }
-
-    const statusA = statusPriority[a.status] ?? 99;
-    const statusB = statusPriority[b.status] ?? 99;
-
-    if (statusA !== statusB) {
-      return statusA - statusB;
-    }
-
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
-  const totalCount = filteredApplications.length;
-  const totalPages = Math.ceil(totalCount / limit);
-  const paginatedCandidates = filteredApplications.slice(skip, skip + limit).map((candidate, index) => ({
-    ...candidate,
-    rank: skip + index + 1,
-  }));
+  pipeline.push({
+    $sort: {
+      sortMatchScore: -1,
+      statusPriority: 1,
+      createdAt: -1
+    }
+  });
 
-  const scoredCandidates = filteredApplications.filter((candidate) => typeof candidate.aiMatchScore === "number");
-  const averageScore = scoredCandidates.length > 0
-    ? Math.round(scoredCandidates.reduce((sum, candidate) => sum + candidate.aiMatchScore, 0) / scoredCandidates.length)
+  pipeline.push({
+    $facet: {
+      metadata: [
+        {
+          $group: {
+            _id: null,
+            totalCount: { $sum: 1 },
+            totalScore: { $sum: { $cond: [{ $isNumber: "$aiMatchScore" }, "$aiMatchScore", 0] } },
+            scoredCount: { $sum: { $cond: [{ $isNumber: "$aiMatchScore" }, 1, 0] } },
+            topCandidatesCount: { $sum: { $cond: [{ $gte: [{ $ifNull: ["$aiMatchScore", 0] }, 85] }, 1, 0] } }
+          }
+        }
+      ],
+      data: [
+        { $skip: skip },
+        { $limit: limit }
+      ]
+    }
+  });
+
+  const [result] = await JobApplication.aggregate(pipeline);
+
+  const metadata = result.metadata[0] || { totalCount: 0, totalScore: 0, scoredCount: 0, topCandidatesCount: 0 };
+  const totalCount = metadata.totalCount;
+  const totalPages = Math.ceil(totalCount / limit);
+
+  const averageScore = metadata.scoredCount > 0 
+    ? Math.round(metadata.totalScore / metadata.scoredCount) 
     : 0;
+
+  const paginatedCandidates = result.data.map((candidate, index) => {
+    let applicant = candidate.applicant;
+    if (applicant) {
+      applicant = {
+        _id: applicant._id,
+        name: applicant.name,
+        email: applicant.email,
+        role: applicant.role,
+        profilePic: applicant.profilePic
+      };
+    }
+
+    let resume = candidate.resume;
+    if (resume) {
+      resume = {
+        _id: resume._id,
+        file: resume.file,
+        fileName: resume.fileName,
+        skills: resume.skills,
+        keywords: resume.keywords
+      };
+    }
+
+    return {
+      ...candidate,
+      applicant,
+      resume,
+      statusPriority: undefined,
+      sortMatchScore: undefined,
+      rank: skip + index + 1,
+    };
+  });
 
   return {
     job,
@@ -824,7 +892,7 @@ export const getRankedCandidatesForJob = async (jobId, recruiterId, filters = {}
     currentPage: page,
     summary: {
       averageScore,
-      topCandidatesCount: filteredApplications.filter((candidate) => (candidate.aiMatchScore ?? 0) >= 85).length,
+      topCandidatesCount: metadata.topCandidatesCount,
     },
   };
 };
