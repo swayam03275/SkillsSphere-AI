@@ -15,8 +15,10 @@ import {
   Copy,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
+import { getSession, clearClassroomsError } from "../../../features/classrooms/classroomsSlice";
+import { ErrorState } from "../../../shared/components";
 import Peer from "simple-peer";
 import { io } from "socket.io-client";
 import SharedCodeEditor from "../components/SharedCodeEditor";
@@ -35,6 +37,8 @@ export default function ClassroomRoom() {
   const { roomId } = useParams();
   const navigate = useNavigate();
   const { user, token } = useSelector((state) => state.auth);
+  const { error: sessionError, isLoading: sessionLoading } = useSelector((state) => state.classrooms);
+  const dispatch = useDispatch();
   const toast = useToast();
 
   const [socket, setSocket] = useState(null);
@@ -73,219 +77,229 @@ export default function ClassroomRoom() {
 
     let mounted = true;
 
-    // Initialize Socket
-    const s = io(SOCKET_URL, { auth: { token } });
-    setSocket(s);
-    socketRef.current = s;
+    dispatch(getSession({ roomId, token }))
+      .unwrap()
+      .then(() => {
+        if (!mounted) return;
+        
+        // Initialize Socket
+        const s = io(SOCKET_URL, { auth: { token } });
+        setSocket(s);
+        socketRef.current = s;
 
-    // Get media permissions
-    navigator.mediaDevices
-      .getUserMedia({ video: true, audio: true })
-      .then((stream) => {
-        if (!mounted) {
-          stream.getTracks().forEach((t) => t.stop());
-          return;
-        }
+        // Get media permissions
+        navigator.mediaDevices
+          .getUserMedia({ video: true, audio: true })
+          .then((stream) => {
+            if (!mounted) {
+              stream.getTracks().forEach((t) => t.stop());
+              return;
+            }
 
-        setLocalStream(stream);
-        localStreamRef.current = stream;
+            setLocalStream(stream);
+            localStreamRef.current = stream;
 
-        // Join room once media is acquired
-        s.emit("join-room", {
-          roomId,
-          user: { id: user._id, name: user.name || user.email },
-        });
+            // Join room once media is acquired
+            s.emit("join-room", {
+              roomId,
+              user: { id: user._id, name: user.name || user.email },
+            });
 
-        // Listen for graceful session termination
-        s.on("session-ended", () => {
-          toast.error("The host has ended this live classroom session.");
-          navigate("/classrooms");
-        });
+            // Listen for graceful session termination
+            s.on("session-ended", () => {
+              toast.error("The host has ended this live classroom session.");
+              navigate("/classrooms");
+            });
 
-        // When we get the current participants list, we act as the "caller" and initiate peer connections
-        s.on("room-participants", (participants) => {
-          const peersArr = [];
-          participants.forEach((p) => {
-            if (p.socketId !== s.id) {
-              activeSocketIdsRef.current.add(p.socketId);
-              const peer = createPeer(p.socketId, s.id, stream, user);
-              peersRef.current.push({
-                peerId: p.socketId,
-                peer,
-                user: p.user,
-                isHandRaised: false,
-                isMuted: false,
+            // When we get the current participants list, we act as the "caller" and initiate peer connections
+            s.on("room-participants", (participants) => {
+              const peersArr = [];
+              participants.forEach((p) => {
+                if (p.socketId !== s.id) {
+                  activeSocketIdsRef.current.add(p.socketId);
+                  const peer = createPeer(p.socketId, s.id, stream, user);
+                  peersRef.current.push({
+                    peerId: p.socketId,
+                    peer,
+                    user: p.user,
+                    isHandRaised: false,
+                    isMuted: false,
+                  });
+                  peersArr.push({
+                    peerId: p.socketId,
+                    peer,
+                    user: p.user,
+                    stream: null,
+                    isHandRaised: false,
+                    isMuted: false,
+                    isVideoOff: false,
+                    isScreenShare: false,
+                  });
+                }
               });
-              peersArr.push({
-                peerId: p.socketId,
-                peer,
-                user: p.user,
+              setPeers(peersArr);
+            });
+
+            // Handle initial room state synchronization for late joiners
+            s.on("sync-state", (state) => {
+              if (state.chatHistory) setChatMessages(state.chatHistory);
+              if (state.code) setInitialCode(state.code);
+              if (state.whiteboard) setInitialWhiteboard(state.whiteboard);
+            });
+
+            // Handle incoming user (they just joined, they will initiate the call to us)
+            s.on("user-joined", (payload) => {
+              logger.debug("User joined", payload);
+              activeSocketIdsRef.current.add(payload.socketId);
+              
+              // Immediately add them to members list so they show up, even before WebRTC connects
+              const newPeerObj = {
+                peerId: payload.socketId,
+                peer: null,
+                user: payload.user,
                 stream: null,
                 isHandRaised: false,
                 isMuted: false,
                 isVideoOff: false,
                 isScreenShare: false,
-              });
-            }
+              };
+              peersRef.current.push(newPeerObj);
+              setPeers((prev) => [...prev, newPeerObj]);
+            });
+
+            // Receiving an offer
+            s.on("webrtc-offer", (payload) => {
+              // Security check: Verify that the caller is a registered participant in this room
+              if (!activeSocketIdsRef.current.has(payload.callerSocketId)) {
+                logger.warn(
+                  `Silently dropped unauthorized WebRTC stream injection from socket: ${payload.callerSocketId}`,
+                );
+                return;
+              }
+
+              const peer = addPeer(
+                payload.offer,
+                payload.callerSocketId,
+                stream,
+                s,
+              );
+
+              // Update existing placeholder or push new if missing
+              const existingIdx = peersRef.current.findIndex(p => p.peerId === payload.callerSocketId);
+              if (existingIdx >= 0) {
+                peersRef.current[existingIdx].peer = peer;
+                setPeers([...peersRef.current]);
+              } else {
+                const newPeerObj = {
+                  peerId: payload.callerSocketId,
+                  peer,
+                  user: payload.callerUser,
+                  stream: null,
+                  isHandRaised: false,
+                  isMuted: false,
+                  isVideoOff: false,
+                  isScreenShare: false,
+                };
+                peersRef.current.push(newPeerObj);
+                setPeers((prev) => [...prev, newPeerObj]);
+              }
+            });
+
+            // Receiving an answer
+            s.on("webrtc-answer", (payload) => {
+              if (!activeSocketIdsRef.current.has(payload.answererSocketId)) {
+                logger.warn(
+                  `Silently dropped unauthorized WebRTC signaling answer from socket: ${payload.answererSocketId}`,
+                );
+                return;
+              }
+              const item = peersRef.current.find(
+                (p) => p.peerId === payload.answererSocketId,
+              );
+              if (item) {
+                item.peer.signal(payload.answer);
+              }
+            });
+
+            // Socket security & error handling
+            s.on("unauthorized", (payload) => {
+              logger.error("Socket unauthorized action:", payload);
+              toast.error(
+                `Security Warning: ${payload.message || "Unauthorized action detected."}`,
+              );
+              navigate("/classrooms");
+            });
+
+            s.on("error", (payload) => {
+              logger.error("Socket error:", payload);
+              toast.error(
+                `Socket Error: ${payload.message || "An error occurred."}`,
+              );
+              navigate("/classrooms");
+            });
+
+            // Other socket events
+            s.on("chat-message", (msg) => {
+              setChatMessages((prev) => [...prev, msg]);
+            });
+
+            s.on("hand-raise-toggled", ({ socketId, isRaised }) => {
+              setPeers((prev) =>
+                prev.map((p) =>
+                  p.peerId === socketId ? { ...p, isHandRaised: isRaised } : p,
+                ),
+              );
+            });
+
+            s.on("mute-toggled", ({ socketId, isMuted }) => {
+              setPeers((prev) =>
+                prev.map((p) =>
+                  p.peerId === socketId ? { ...p, isMuted } : p,
+                ),
+              );
+            });
+
+            s.on("video-toggled", ({ socketId, isVideoOff }) => {
+              setPeers((prev) =>
+                prev.map((p) =>
+                  p.peerId === socketId ? { ...p, isVideoOff } : p,
+                ),
+              );
+            });
+
+            s.on("screen-share-toggled", ({ socketId, isScreenSharing }) => {
+              setPeers((prev) =>
+                prev.map((p) =>
+                  p.peerId === socketId ? { ...p, isScreenShare: isScreenSharing } : p,
+                ),
+              );
+            });
+
+            s.on("user-left", ({ socketId }) => {
+              activeSocketIdsRef.current.delete(socketId);
+              const item = peersRef.current.find((p) => p.peerId === socketId);
+              if (item) {
+                item.peer?.destroy();
+              }
+              peersRef.current = peersRef.current.filter(
+                (p) => p.peerId !== socketId,
+              );
+              setPeers((prev) => prev.filter((p) => p.peerId !== socketId));
+            });
+          })
+          .catch((err) => {
+            logger.error("Failed to get local stream", err);
+            toast.error("Failed to access camera and microphone.");
           });
-          setPeers(peersArr);
-        });
-
-        // Handle initial room state synchronization for late joiners
-        s.on("sync-state", (state) => {
-          if (state.chatHistory) setChatMessages(state.chatHistory);
-          if (state.code) setInitialCode(state.code);
-          if (state.whiteboard) setInitialWhiteboard(state.whiteboard);
-        });
-
-        // Handle incoming user (they just joined, they will initiate the call to us)
-        s.on("user-joined", (payload) => {
-          logger.debug("User joined", payload);
-          activeSocketIdsRef.current.add(payload.socketId);
-          
-          // Immediately add them to members list so they show up, even before WebRTC connects
-          const newPeerObj = {
-            peerId: payload.socketId,
-            peer: null,
-            user: payload.user,
-            stream: null,
-            isHandRaised: false,
-            isMuted: false,
-            isVideoOff: false,
-            isScreenShare: false,
-          };
-          peersRef.current.push(newPeerObj);
-          setPeers((prev) => [...prev, newPeerObj]);
-        });
-
-        // Receiving an offer
-        s.on("webrtc-offer", (payload) => {
-          // Security check: Verify that the caller is a registered participant in this room
-          if (!activeSocketIdsRef.current.has(payload.callerSocketId)) {
-            logger.warn(
-              `Silently dropped unauthorized WebRTC stream injection from socket: ${payload.callerSocketId}`,
-            );
-            return;
-          }
-
-          const peer = addPeer(
-            payload.offer,
-            payload.callerSocketId,
-            stream,
-            s,
-          );
-
-          // Update existing placeholder or push new if missing
-          const existingIdx = peersRef.current.findIndex(p => p.peerId === payload.callerSocketId);
-          if (existingIdx >= 0) {
-            peersRef.current[existingIdx].peer = peer;
-            setPeers([...peersRef.current]);
-          } else {
-            const newPeerObj = {
-              peerId: payload.callerSocketId,
-              peer,
-              user: payload.callerUser,
-              stream: null,
-              isHandRaised: false,
-              isMuted: false,
-              isVideoOff: false,
-              isScreenShare: false,
-            };
-            peersRef.current.push(newPeerObj);
-            setPeers((prev) => [...prev, newPeerObj]);
-          }
-        });
-
-        // Receiving an answer
-        s.on("webrtc-answer", (payload) => {
-          if (!activeSocketIdsRef.current.has(payload.answererSocketId)) {
-            logger.warn(
-              `Silently dropped unauthorized WebRTC signaling answer from socket: ${payload.answererSocketId}`,
-            );
-            return;
-          }
-          const item = peersRef.current.find(
-            (p) => p.peerId === payload.answererSocketId,
-          );
-          if (item) {
-            item.peer.signal(payload.answer);
-          }
-        });
-
-        // Socket security & error handling
-        s.on("unauthorized", (payload) => {
-          logger.error("Socket unauthorized action:", payload);
-          toast.error(
-            `Security Warning: ${payload.message || "Unauthorized action detected."}`,
-          );
-          navigate("/classrooms");
-        });
-
-        s.on("error", (payload) => {
-          logger.error("Socket error:", payload);
-          toast.error(
-            `Socket Error: ${payload.message || "An error occurred."}`,
-          );
-          navigate("/classrooms");
-        });
-
-        // Other socket events
-        s.on("chat-message", (msg) => {
-          setChatMessages((prev) => [...prev, msg]);
-        });
-
-        s.on("hand-raise-toggled", ({ socketId, isRaised }) => {
-          setPeers((prev) =>
-            prev.map((p) =>
-              p.peerId === socketId ? { ...p, isHandRaised: isRaised } : p,
-            ),
-          );
-        });
-
-        s.on("mute-toggled", ({ socketId, isMuted }) => {
-          setPeers((prev) =>
-            prev.map((p) =>
-              p.peerId === socketId ? { ...p, isMuted } : p,
-            ),
-          );
-        });
-
-        s.on("video-toggled", ({ socketId, isVideoOff }) => {
-          setPeers((prev) =>
-            prev.map((p) =>
-              p.peerId === socketId ? { ...p, isVideoOff } : p,
-            ),
-          );
-        });
-
-        s.on("screen-share-toggled", ({ socketId, isScreenSharing }) => {
-          setPeers((prev) =>
-            prev.map((p) =>
-              p.peerId === socketId ? { ...p, isScreenShare: isScreenSharing } : p,
-            ),
-          );
-        });
-
-        s.on("user-left", ({ socketId }) => {
-          activeSocketIdsRef.current.delete(socketId);
-          const item = peersRef.current.find((p) => p.peerId === socketId);
-          if (item) {
-            item.peer?.destroy();
-          }
-          peersRef.current = peersRef.current.filter(
-            (p) => p.peerId !== socketId,
-          );
-          setPeers((prev) => prev.filter((p) => p.peerId !== socketId));
-        });
       })
       .catch((err) => {
-        logger.error("Failed to get local stream", err);
-        toast.error("Failed to access camera and microphone.");
+        logger.error("Failed to fetch session details:", err);
       });
 
     return () => {
       mounted = false;
-      s.disconnect();
+      dispatch(clearClassroomsError());
+      if (s) s.disconnect();
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach((t) => t.stop());
       }
@@ -500,6 +514,41 @@ export default function ClassroomRoom() {
     navigator.clipboard.writeText(roomId);
     toast.success("Room ID copied to clipboard!");
   };
+
+  if (sessionLoading) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-[#0B0F19] text-slate-900 dark:text-white flex flex-col items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <p className="mt-4 text-slate-500 font-medium">Joining Classroom...</p>
+      </div>
+    );
+  }
+
+  if (sessionError) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-[#0B0F19] text-slate-900 dark:text-white flex flex-col items-center justify-center p-6">
+        <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 p-8 rounded-3xl shadow-xl">
+          <ErrorState
+            title="Unable to Join Classroom"
+            description={sessionError}
+            onRetry={() => {
+              dispatch(clearClassroomsError());
+              dispatch(getSession({ roomId, token }));
+            }}
+          />
+          <div className="mt-6 flex justify-center">
+            <button
+              onClick={() => navigate("/classrooms")}
+              className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center space-x-2"
+            >
+              <ArrowLeft size={16} />
+              <span>Back to Dashboard</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
