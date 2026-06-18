@@ -49,7 +49,8 @@ export default function readabilityEvaluator({ resumeText = "" }) {
   }
 
   function estimateSentenceComplexity(sentence) {
-    const words = sentence.split(/\s+/);
+    // Strip trailing punctuation so characters like '.' or ',' don't artificially increase word length
+    const words = sentence.split(/\s+/).map(word => word.replace(/^[.,;:()]+|[.,;:()]+$/g, ""));
     const wordCount = words.length;
     const longWords = words.filter(w => w.length > 8).length;
     const longWordRatio = longWords / Math.max(1, wordCount);
@@ -98,10 +99,11 @@ export default function readabilityEvaluator({ resumeText = "" }) {
   const complexSentences = [];
   const bulletLengthIssues = { too_short: 0, too_long: 0, optimal: 0 };
 
-  sentences.forEach(sentence => {
+ sentences.forEach(sentence => {
     const cleanedSentence = cleanSentenceStart(sentence);
     const lowerSentence = cleanedSentence.toLowerCase();
-    const words = lowerSentence.split(/\s+/);
+    // Split and cleanly strip trailing/leading structural punctuation from each word token
+    const words = lowerSentence.split(/\s+/).map(word => word.replace(/^[.,;:()]+|[.,;:()]+$/g, ""));
 
     const hasPowerVerb = allPowerVerbs.some(verb => words.slice(0, 4).includes(verb));
 
