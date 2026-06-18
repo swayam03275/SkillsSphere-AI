@@ -1,5 +1,6 @@
 import Resume from "../../database/models/Resume.js";
 import SemanticCache from "../../database/models/SemanticCache.js";
+import fsPromises from "fs/promises";
 
 /**
  * Upsert a resume for a user.
@@ -14,6 +15,7 @@ import SemanticCache from "../../database/models/SemanticCache.js";
 export const upsertResume = async (userId, resumeData, includeText = false) => {
   // If the payload specifies an existing resume ID, we update that document
   if (resumeData._id) {
+    const oldResume = await Resume.findById(resumeData._id).select("file");
     const query = Resume.findByIdAndUpdate(
       resumeData._id,
       resumeData,
@@ -22,7 +24,12 @@ export const upsertResume = async (userId, resumeData, includeText = false) => {
     if (includeText) {
       query.select("+resumeText");
     }
-    return await query;
+    const updated = await query;
+
+    if (oldResume?.file?.path && oldResume.file.path !== resumeData.file?.path) {
+      await fsPromises.unlink(oldResume.file.path).catch(() => {});
+    }
+    return updated;
   }
 
   // Otherwise, we are uploading a new resume version.
