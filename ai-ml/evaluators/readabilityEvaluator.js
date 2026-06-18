@@ -105,18 +105,11 @@ export default function readabilityEvaluator({ resumeText = "" }) {
 
     const hasPowerVerb = allPowerVerbs.some(verb => words.slice(0, 4).includes(verb));
 
+    // 1. STYLE & IMPACT EVALUATION
     if (hasPowerVerb) {
       powerVerbCount++;
       const matchedVerb = allPowerVerbs.find(verb => words.slice(0, 4).includes(verb));
       if (matchedVerb) verbsUsed.push(matchedVerb);
-
-      const complexity = estimateSentenceComplexity(cleanedSentence);
-      if (complexity === "complex") {
-        complexSentences.push({ sentence: cleanedSentence, complexity });
-      }
-
-      const lengthScore = scoreBulletLength(cleanedSentence);
-      bulletLengthIssues[lengthScore]++;
     } else {
       const category = getSentenceCategory(cleanedSentence);
       if (category === "bullet") {
@@ -132,6 +125,17 @@ export default function readabilityEvaluator({ resumeText = "" }) {
           suggestedRewrite: rewrite,
         });
       }
+    }
+
+    // 2. UNIVERSAL STRUCTURAL EVALUATION
+    const complexity = estimateSentenceComplexity(cleanedSentence);
+    if (complexity === "complex") {
+      complexSentences.push({ sentence: cleanedSentence, complexity });
+    }
+
+    const lengthScore = scoreBulletLength(cleanedSentence);
+    if (bulletLengthIssues[lengthScore] !== undefined) {
+      bulletLengthIssues[lengthScore]++;
     }
 
     // Reset lastIndex for global regex before each test
