@@ -9,9 +9,10 @@ import {
 } from "../../../features/classrooms/classroomsSlice";
 import logger from "../../../utils/logger";
 
-export const useClassroomsDashboard = (token, isTutor, navigate) => {
+export const useClassroomsDashboard = (isTutor, navigate) => {
   const dispatch = useDispatch();
-  
+  const token = useSelector((state) => state.auth.token);
+
   // Local form state
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState("");

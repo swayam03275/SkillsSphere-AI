@@ -17,12 +17,12 @@ import Footer from "../../../shared/components/Footer";
 
 export default function ClassroomsDashboard() {
   useDocumentTitle("Classrooms Dashboard");
-  const { user, token } = useSelector((state) => state.auth);
+  const { user } = useSelector((state) => state.auth);
   const navigate = useNavigate();
   const isTutor = user?.role === "tutor";
 
   // Delegate all dashboard actions and states to the custom container hook
-  const dashboard = useClassroomsDashboard(token, isTutor, navigate);
+  const dashboard = useClassroomsDashboard(isTutor, navigate);
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#020617] text-gray-900 dark:text-white flex flex-col">

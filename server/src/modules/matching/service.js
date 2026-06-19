@@ -118,19 +118,42 @@ export const evaluateMatches = async (user, resume, preFilteredJobs = null) => {
       }
     }
 
-    if (notificationDocs.length > 0) {
-      const createdNotifs = await Notification.insertMany(notificationDocs);
+    const dbSession = await mongoose.startSession();
+    dbSession.startTransaction();
+
+    let matchResult;
+    try {
+      let createdNotifs = [];
+      if (notificationDocs.length > 0) {
+        createdNotifs = await Notification.insertMany(notificationDocs, { session: dbSession });
+      }
+
+      // 4. Persist MatchResult for analytics and retrieval
+      const matchResultDocs = await MatchResult.create([{
+        user: user._id,
+        resume: resume._id,
+        recommendations,
+      }], { session: dbSession });
+      matchResult = matchResultDocs[0];
+
+      await dbSession.commitTransaction();
+
       createdNotifs.forEach(notif => {
         notificationsToEmit.push({ room: `user_${notif.userId}`, notif });
       });
+    } catch (error) {
+      await dbSession.abortTransaction();
+      logger.error("Transaction aborted in evaluateMatches:", error);
+      throw error;
+    } finally {
+      dbSession.endSession();
     }
 
-    // 4. Persist MatchResult for analytics and retrieval
-    const matchResultDocs = await MatchResult.create([{
-      user: user._id,
-      resume: resume._id,
-      recommendations,
-    }]);
+    // Now safe to emit socket events
+    if (io) {
+      for (const { room, notif } of notificationsToEmit) {
+        io.to(room).emit("new-notification", notif);
+      }
     const matchResult = matchResultDocs[0];
 
     // Now safe to emit socket events

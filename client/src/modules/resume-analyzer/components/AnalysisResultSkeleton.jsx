@@ -1,4 +1,18 @@
-const AnalysisResultSkeleton = () => {
+import { ErrorState } from "../../../shared/components";
+
+const AnalysisResultSkeleton = ({ error, onRetry }) => {
+  if (error) {
+    return (
+      <div className="w-full bg-white dark:bg-[#121214] rounded-3xl border border-red-200 dark:border-red-900/50 p-8 shadow-sm">
+        <ErrorState
+          title="Analysis Failed"
+          description={error}
+          onRetry={onRetry}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full space-y-4 animate-pulse">
 

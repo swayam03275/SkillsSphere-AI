@@ -46,9 +46,15 @@ export const generateCoverLetterForResume = async (req, res, next) => {
       });
     }
 
+    logger.debug("[cover-letter] Building prompt", {
+      resumeId: resume._id?.toString(),
+      userId: userId?.toString(),
+      jobDescriptionLength: jobDescription.length,
+      tone: tone || "default",
+      language: language || "default",
+    });
+
     // Build the dynamic prompt using the parsed resume data
-    logger.info("Resume:", resume);
-    logger.info("JD:", jobDescription);
     const prompt = buildCoverLetterPrompt({
       resumeData: resume,
       analysisData: {
@@ -60,12 +66,15 @@ export const generateCoverLetterForResume = async (req, res, next) => {
       language
     });
 
-    logger.info("Generated Prompt:", prompt);
-
     // Generate the cover letter using the Gemini service
     const aiResult = await generateCoverLetter(prompt);
 
-    logger.info("Gemini Response:", aiResult);
+    logger.debug("[cover-letter] Generation completed", {
+      resumeId: resume._id?.toString(),
+      userId: userId?.toString(),
+      success: Boolean(aiResult.success),
+      generatedTextLength: aiResult.text?.length || 0,
+    });
 
     if (!aiResult.success) {
       return res.status(500).json({ 

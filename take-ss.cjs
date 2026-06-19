@@ -41,6 +41,17 @@ function ensureDir(dir) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
+function attachNetworkLogger(page) {
+  page.on('requestfailed', req => {
+    console.warn(`[network] failed: ${req.method()} ${req.url()} — ${req.failure()?.errorText}`);
+  });
+  page.on('response', res => {
+    if (res.status() >= 400) {
+      console.warn(`[network] ${res.status()} ${res.url()}`);
+    }
+  });
+}
+
 async function tryClick(page, selectors, timeout = 5000) {
   for (const sel of selectors) {
     try {
@@ -63,6 +74,17 @@ async function waitForAny(page, selectors, timeout = 5000) {
   return null;
 }
 
+async function waitForNavigation(page, expectedPath, timeout = 5000) {
+  try {
+    await page.waitForURL(`**${expectedPath}**`, { timeout });
+    console.log(`[nav] reached: ${expectedPath}`);
+    return true;
+  } catch {
+    console.warn(`[warn] expected ${expectedPath} — current: ${page.url()}`);
+    return false;
+  }
+}
+
 async function capture(page, filename, label) {
   const filePath = path.join(CONFIG.screenshotDir, filename);
   await page.screenshot({ path: filePath, fullPage: true });
@@ -79,6 +101,15 @@ async function debugPageElements(page) {
   console.log('[debug] sentiment classes:', classes);
 }
 
+async function extractSentimentData(page, sel) {
+  return page.$eval(sel, el => ({
+    text: el.innerText ?? el.textContent ?? null,
+    ariaLabel: el.getAttribute('aria-label') ?? null,
+    dataset: { ...el.dataset },
+    className: el.className,
+  }));
+}
+
 (async () => {
   ensureDir(CONFIG.screenshotDir);
   ensureDir(CONFIG.videoDir);
@@ -90,6 +121,7 @@ async function debugPageElements(page) {
 
   try {
     const page = await context.newPage();
+    attachNetworkLogger(page);
 
     // --- Lobby ---
     console.log('[nav] loading lobby...');
@@ -113,8 +145,8 @@ async function debugPageElements(page) {
       );
       if (sentimentSel) {
         await capture(page, '03-sentiment-visible.png', 'sentiment visible');
-        const sentimentText = await page.$eval(sentimentSel, el => el.innerText ?? el.textContent);
-        console.log(`[sentiment] value: ${sentimentText}`);
+        const sentimentData = await extractSentimentData(page, sentimentSel);
+        console.log(`[sentiment] data:`, JSON.stringify(sentimentData, null, 2));
       } else {
         console.warn('[warn] sentiment indicator not found — check CONFIG.selectors.sentimentIndicator');
         await capture(page, '03-sentiment-missing.png', 'sentiment not found');
@@ -125,6 +157,8 @@ async function debugPageElements(page) {
       if (endSel) {
         await page.waitForTimeout(CONFIG.timeouts.pageLoad);
         await capture(page, '04-session-ended.png', 'session ended');
+        await waitForNavigation(page, '/mock-interview/results', 3000);
+        await capture(page, '05-post-session.png', 'post session state');
       } else {
         console.warn('[warn] end button not found — check CONFIG.selectors.endButton');
       }

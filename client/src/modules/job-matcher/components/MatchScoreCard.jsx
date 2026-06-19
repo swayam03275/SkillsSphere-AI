@@ -1,4 +1,28 @@
-export default function MatchScoreCard({ score }) {
+import { ErrorState } from "../../../shared/components";
+import { Loader2 } from "lucide-react";
+
+export default function MatchScoreCard({ score, error, isLoading, onRetry }) {
+  if (error) {
+    return (
+      <div className="bg-white dark:bg-white/10 backdrop-blur-lg border border-red-200 dark:border-red-900/50 p-6 rounded-2xl shadow-xl text-center">
+        <ErrorState
+          title="Score Unavailable"
+          description={error}
+          onRetry={onRetry}
+        />
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="bg-white dark:bg-white/10 backdrop-blur-lg border border-gray-200 dark:border-white/20 p-6 rounded-2xl shadow-xl flex flex-col items-center justify-center min-h-[160px]">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-500 mb-4" />
+        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Calculating Score...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white dark:bg-white/10 backdrop-blur-lg border border-gray-200 dark:border-white/20 p-6 rounded-2xl shadow-xl text-gray-900 dark:text-white text-center">
 
