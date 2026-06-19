@@ -16,6 +16,9 @@ export function initNotificationSockets(io) {
       // socket.user is guaranteed by io.use() — no client payload needed
       const roomName = `user_${socket.user._id}`;
       socket.join(roomName);
+      if (socket.user.role) {
+        socket.join(`role_${socket.user.role}`);
+      }
       socket.emit("notification-ready", { room: roomName });
     });
 

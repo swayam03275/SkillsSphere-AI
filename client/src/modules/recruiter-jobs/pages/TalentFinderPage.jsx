@@ -34,6 +34,7 @@ import {
 import Navbar from '../../../shared/components/Navbar';
 import Footer from "../../../shared/components/Footer";
 import { Button, LoadingState, ErrorState, EmptyState } from '../../../shared/components';
+import { useToast } from '../../../shared/components/toast/ToastProvider';
 
 // Infrastructure Integration Data Services
 import { getRecruiterJobs } from '../services/jobPostingService';
@@ -88,6 +89,7 @@ const getSignalStyle = (signal) => {
 const TalentFinderPage = () => {
   useDocumentTitle("Talent Finder | Recruiter Workspace");
   const navigate = useNavigate();
+  const toast = useToast();
   
   // Redux Authenticated Security Context State Extraction
   const { token, user } = useSelector((state) => state.auth);
@@ -223,7 +225,7 @@ const TalentFinderPage = () => {
   const handleCalculateMatch = async (event, candidateId) => {
     event.stopPropagation();
     if (!selectedJobId) {
-      alert("Please select a target job to match this candidate against.");
+      toast.warning("Please select a target job before matching this candidate.");
       return;
     }
 
@@ -234,8 +236,9 @@ const TalentFinderPage = () => {
       
       // Automatically toggle element frame visibility matrix to feature the analysis layout
       setExpandedCardId(candidateId);
+      toast.success("Candidate match analysis completed.");
     } catch (err) {
-      alert(err.message || "Match analysis failed. Please try again.");
+      toast.error(err.message || "We couldn't complete the match analysis. Please try again.");
     } finally {
       setMatchLoadingMap(prevMap => ({ ...prevMap, [candidateId]: false }));
     }
@@ -248,16 +251,17 @@ const TalentFinderPage = () => {
   const handleInviteCandidate = async (event, candidateId) => {
     event.stopPropagation();
     if (!selectedJobId) {
-      alert("Please select an active job to invite this candidate to.");
+      toast.warning("Please select an active job before inviting this candidate.");
       return;
     }
 
     setInviteLoadingMap(prevMap => ({ ...prevMap, [candidateId]: true }));
     try {
-      await inviteCandidate(candidateId, selectedJobId, token);
+      const response = await inviteCandidate(candidateId, selectedJobId, token);
       setInvitedMap(prevMap => ({ ...prevMap, [candidateId]: true }));
+      toast.success(response.message || "Invitation sent successfully.");
     } catch (err) {
-      alert(err.message || "Failed to send invitation.");
+      toast.error(err.message || "We couldn't send the invitation. Please try again.");
     } finally {
       setInviteLoadingMap(prevMap => ({ ...prevMap, [candidateId]: false }));
     }

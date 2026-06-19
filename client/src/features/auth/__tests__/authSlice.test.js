@@ -75,12 +75,10 @@ describe('authSlice Reducer', () => {
   it('should handle setPendingVerificationEmail', () => {
     const email = ' Test@Example.com ';
     const nextState = authReducer(initialState, setPendingVerificationEmail(email));
-    
+
     expect(nextState.pendingVerificationEmail).toBe('test@example.com');
-    expect(window.localStorage.setItem).toHaveBeenCalledWith(
-      'skillssphere.auth.pendingEmail',
-      'test@example.com'
-    );
+    // Reducer is pure — storage persistence is the caller's responsibility
+    expect(window.localStorage.setItem).not.toHaveBeenCalled();
   });
 
   it('should handle setOAuthData', () => {
@@ -89,30 +87,27 @@ describe('authSlice Reducer', () => {
       user: { id: 1, name: 'Alice' },
       rememberMe: true
     };
-    
+
     const nextState = authReducer(initialState, setOAuthData(payload));
-    
+
     expect(nextState.token).toBe('mock-token');
     expect(nextState.user).toEqual({ id: 1, name: 'Alice' });
     expect(nextState.isAuthenticated).toBe(true);
     expect(nextState.loading).toBe(false);
     expect(nextState.error).toBeNull();
-    
-    expect(window.localStorage.setItem).toHaveBeenCalledWith('skillssphere.auth.token', 'mock-token');
-    expect(window.localStorage.setItem).toHaveBeenCalledWith('skillssphere.auth.user', JSON.stringify(payload.user));
+    // Reducer is pure — storage persistence is the caller's responsibility
+    expect(window.localStorage.setItem).not.toHaveBeenCalled();
   });
 
   it('should handle updateUserProfile', () => {
     const state = { ...initialState, user: { id: 1, name: 'Alice' } };
     const payload = { id: 1, name: 'Alice Bob' };
-    
-    // Setup local storage to simulate logged in user
-    window.localStorage.setItem('skillssphere.auth.token', 'mock-token');
-    
+
     const nextState = authReducer(state, updateUserProfile(payload));
-    
+
     expect(nextState.user).toEqual(payload);
-    expect(window.localStorage.setItem).toHaveBeenCalledWith('skillssphere.auth.user', JSON.stringify(payload));
+    // Reducer is pure — storage persistence is the caller's responsibility
+    expect(window.localStorage.setItem).not.toHaveBeenCalled();
   });
 
   it('should handle logout.fulfilled', () => {

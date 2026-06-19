@@ -66,13 +66,21 @@ const readStoredAuth = () => {
   return { token: null, user: null };
 };
 
-const persistAuth = ({ token, user }, rememberMe) => {
+export const persistAuth = ({ token, user }, rememberMe) => {
   if (!canUseStorage()) return;
 
   clearStoredAuth();
 
   const storage = rememberMe ? window.localStorage : window.sessionStorage;
   safeSetItem(storage, TOKEN_KEY, token);
+  safeSetItem(storage, USER_KEY, JSON.stringify(user));
+};
+
+export const persistUser = (user) => {
+  if (!canUseStorage()) return;
+  const storage = safeGetItem(window.localStorage, TOKEN_KEY)
+    ? window.localStorage
+    : window.sessionStorage;
   safeSetItem(storage, USER_KEY, JSON.stringify(user));
 };
 
@@ -90,7 +98,7 @@ const readPendingEmail = () => {
   return safeGetItem(window.localStorage, PENDING_EMAIL_KEY) || "";
 };
 
-const persistPendingEmail = (email) => {
+export const persistPendingEmail = (email) => {
   if (!canUseStorage()) return;
   safeSetItem(window.localStorage, PENDING_EMAIL_KEY, normalizeEmail(email));
 };
@@ -245,14 +253,9 @@ const authSlice = createSlice({
     setPendingVerificationEmail: (state, action) => {
       const email = normalizeEmail(action.payload);
       state.pendingVerificationEmail = email;
-      persistPendingEmail(email);
     },
     setOAuthData: (state, action) => {
-      const { token, user, rememberMe = true } = action.payload;
-
-      const storage = rememberMe ? window.localStorage : window.sessionStorage;
-      safeSetItem(storage, TOKEN_KEY, token);
-      safeSetItem(storage, USER_KEY, JSON.stringify(user));
+      const { token, user } = action.payload;
 
       state.token = token;
       state.user = user;
@@ -262,14 +265,6 @@ const authSlice = createSlice({
     },
     updateUserProfile: (state, action) => {
       state.user = action.payload;
-
-      if (!canUseStorage()) return;
-
-      const storage = safeGetItem(window.localStorage, TOKEN_KEY)
-        ? window.localStorage
-        : window.sessionStorage;
-
-      safeSetItem(storage, USER_KEY, JSON.stringify(action.payload));
     },
   },
   extraReducers: (builder) => {

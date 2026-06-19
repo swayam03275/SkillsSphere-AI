@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchInterviewHistory, clearInterviewsError } from "../../../features/interviews/interviewsSlice";
 import { getHistory } from "../services/interviewService";
 import Pagination from "../../../shared/components/Pagination";
+import { ErrorState } from "../../../shared/components";
 import {
   Plus,
   Clock,
@@ -585,7 +586,18 @@ const InterviewHistory = () => {
           </div>
         </div>
 
-      {error && <div className="bg-red-500/10 border border-red-500/30 text-red-400 p-4 rounded-xl text-center">{error}</div>}
+      {error && (
+        <div className="w-full bg-white dark:bg-[#121214] rounded-3xl border border-red-200 dark:border-red-900/50 p-8 shadow-sm">
+          <ErrorState
+            title="Unable to load history"
+            description={error}
+            onRetry={() => {
+              dispatch(clearInterviewsError());
+              fetchHistory();
+            }}
+          />
+        </div>
+      )}
       {exportError && (
         <div role="alert" className="bg-red-500/10 border border-red-500/30 text-red-400 p-4 rounded-xl text-center">
           <AlertCircle size={16} className="inline-block mr-1.5" />

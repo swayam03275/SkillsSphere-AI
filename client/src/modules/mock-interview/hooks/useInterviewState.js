@@ -75,6 +75,7 @@ export const useInterviewState = (sessionId, isObserver) => {
   const [error, setError] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const elapsedTimeRef = useRef(0);
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [isLastQuestion, setIsLastQuestion] = useState(false);
   const [lastScores, setLastScores] = useState(null);
@@ -116,7 +117,7 @@ export const useInterviewState = (sessionId, isObserver) => {
         messages: answer
           ? [{ role: "candidate", content: answer, timestamp: Date.now() }]
           : [],
-        elapsedTime,
+        elapsedTime: elapsedTimeRef.current,
         uploadStatus,
         currentQuestion,
         ...overrides,
@@ -126,7 +127,6 @@ export const useInterviewState = (sessionId, isObserver) => {
       answer,
       currentIndex,
       currentQuestion,
-      elapsedTime,
       session,
       sessionId,
       uploadStatus,
@@ -136,7 +136,8 @@ export const useInterviewState = (sessionId, isObserver) => {
   // Timer progression
   useEffect(() => {
     const timer = setInterval(() => {
-      setElapsedTime((prev) => prev + 1);
+      elapsedTimeRef.current += 1;
+      setElapsedTime(elapsedTimeRef.current);
     }, 1000);
     return () => clearInterval(timer);
   }, []);
@@ -177,7 +178,8 @@ export const useInterviewState = (sessionId, isObserver) => {
         const savedSession = loadInterviewSession();
         if (savedSession && savedSession.sessionId === sessionId) {
           idx = Math.min(savedSession.currentIndex, data.answers.length - 1);
-          setElapsedTime(savedSession.elapsedTime || 0);
+          elapsedTimeRef.current = savedSession.elapsedTime || 0;
+          setElapsedTime(elapsedTimeRef.current);
           setUploadStatus(savedSession.uploadStatus || "idle");
           setAnswer(savedSession.answer || savedSession.messages?.at(-1)?.content || "");
           setRecoveryMessage("Recovered saved interview progress.");

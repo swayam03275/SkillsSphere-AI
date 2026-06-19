@@ -46,6 +46,11 @@ export const useInterviewAudio = ({
     [clearMediaTrackListeners, persistBackup, setMediaWarning, setUploadStatus],
   );
 
+  const getSupportedMimeType = () => {
+    const candidates = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg"];
+    return candidates.find((type) => MediaRecorder.isTypeSupported(type)) ?? "";
+  };
+
   const startRecording = useCallback(async () => {
     if (isStartingRef.current) return;
     isStartingRef.current = true;
@@ -55,7 +60,8 @@ export const useInterviewAudio = ({
       setFailedAction(null);
       setUploadStatus("starting");
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      const mimeType = getSupportedMimeType();
+      const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
       mediaRecorderRef.current = mediaRecorder;
       mediaStreamRef.current = stream;
       attachMediaTrackListeners(stream);
@@ -100,8 +106,17 @@ export const useInterviewAudio = ({
       setIsRecording(false);
       setUploadStatus("failed");
       setFailedAction("media");
-      setMediaWarning("Microphone access was denied or unavailable. Check your device and retry.");
-      setError("Microphone access denied or unavailable.");
+      const isCodecError = err.name === "NotSupportedError";
+      setMediaWarning(
+        isCodecError
+          ? "Audio recording is not supported in this browser. Please use Chrome or Firefox."
+          : "Microphone access was denied or unavailable. Check your device and retry.",
+      );
+      setError(
+        isCodecError
+          ? "Audio recording is not supported in this browser."
+          : "Microphone access denied or unavailable.",
+      );
       persistBackup({ uploadStatus: "failed" });
     } finally {
       isStartingRef.current = false;

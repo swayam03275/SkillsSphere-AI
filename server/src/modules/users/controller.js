@@ -215,6 +215,10 @@ export const updatePreferences = asyncHandler(async (req, res, next) => {
  * @access  Private
  */
 export const onboardUser = asyncHandler(async (req, res, next) => {
+  if (req.user.isOnboarded) {
+    return next(new AppError("User has already completed onboarding", 400));
+  }
+
   const { name, role } = req.body;
 
   const accessLevel = (role === "recruiter" || role === "tutor") ? "pending" : "full";

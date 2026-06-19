@@ -49,7 +49,8 @@ export default function readabilityEvaluator({ resumeText = "" }) {
   }
 
   function estimateSentenceComplexity(sentence) {
-    const words = sentence.split(/\s+/);
+    // Strip trailing punctuation so characters like '.' or ',' don't artificially increase word length
+    const words = sentence.split(/\s+/).map(word => word.replace(/^[.,;:()]+|[.,;:()]+$/g, ""));
     const wordCount = words.length;
     const longWords = words.filter(w => w.length > 8).length;
     const longWordRatio = longWords / Math.max(1, wordCount);
@@ -86,10 +87,10 @@ export default function readabilityEvaluator({ resumeText = "" }) {
 
   const weakBullets = [];
   const passiveVoicePatterns = [
-    /\b(?:is|are|was|were|be|been|being)\b\s+\b\w+ed\b/gi,
-    /\bresponsible for\b/gi,
-    /\bworked on\b/gi,
-    /\btasks included\b/gi
+    /\b(?:is|are|was|were|be|been|being)\b\s+\b\w+ed\b/i,
+    /\bresponsible for\b/i,
+    /\bworked on\b/i,
+    /\btasks included\b/i
   ];
 
   let powerVerbCount = 0;
@@ -98,25 +99,19 @@ export default function readabilityEvaluator({ resumeText = "" }) {
   const complexSentences = [];
   const bulletLengthIssues = { too_short: 0, too_long: 0, optimal: 0 };
 
-  sentences.forEach(sentence => {
+ sentences.forEach(sentence => {
     const cleanedSentence = cleanSentenceStart(sentence);
     const lowerSentence = cleanedSentence.toLowerCase();
-    const words = lowerSentence.split(/\s+/);
+    // Split and cleanly strip trailing/leading structural punctuation from each word token
+    const words = lowerSentence.split(/\s+/).map(word => word.replace(/^[.,;:()]+|[.,;:()]+$/g, ""));
 
     const hasPowerVerb = allPowerVerbs.some(verb => words.slice(0, 4).includes(verb));
 
+    // 1. STYLE & IMPACT EVALUATION
     if (hasPowerVerb) {
       powerVerbCount++;
       const matchedVerb = allPowerVerbs.find(verb => words.slice(0, 4).includes(verb));
       if (matchedVerb) verbsUsed.push(matchedVerb);
-
-      const complexity = estimateSentenceComplexity(cleanedSentence);
-      if (complexity === "complex") {
-        complexSentences.push({ sentence: cleanedSentence, complexity });
-      }
-
-      const lengthScore = scoreBulletLength(cleanedSentence);
-      bulletLengthIssues[lengthScore]++;
     } else {
       const category = getSentenceCategory(cleanedSentence);
       if (category === "bullet") {
@@ -132,6 +127,17 @@ export default function readabilityEvaluator({ resumeText = "" }) {
           suggestedRewrite: rewrite,
         });
       }
+    }
+
+    // 2. UNIVERSAL STRUCTURAL EVALUATION
+    const complexity = estimateSentenceComplexity(cleanedSentence);
+    if (complexity === "complex") {
+      complexSentences.push({ sentence: cleanedSentence, complexity });
+    }
+
+    const lengthScore = scoreBulletLength(cleanedSentence);
+    if (bulletLengthIssues[lengthScore] !== undefined) {
+      bulletLengthIssues[lengthScore]++;
     }
 
     // Reset lastIndex for global regex before each test

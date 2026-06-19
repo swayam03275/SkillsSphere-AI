@@ -90,6 +90,16 @@ async function createTestUser() {
   return { email, password };
 }
 
+// --- DB: verify test user exists ---
+async function verifyTestUser(email) {
+  await mongoose.connect(CONFIG.mongoUri);
+  const userSchema = new mongoose.Schema({}, { strict: false });
+  const User = mongoose.models.User || mongoose.model('User', userSchema, 'users');
+  const user = await User.findOne({ email });
+  await mongoose.disconnect();
+  return !!user;
+}
+
 // --- DB: cleanup test user ---
 async function deleteTestUser(email) {
   await mongoose.connect(CONFIG.mongoUri);
@@ -100,12 +110,43 @@ async function deleteTestUser(email) {
   await mongoose.disconnect();
 }
 
+// --- Page: wait for URL change ---
+async function waitForNavigation(page, expectedPath, timeout = 5000) {
+  try {
+    await page.waitForURL(`**${expectedPath}**`, { timeout });
+    console.log(`[nav] reached: ${expectedPath}`);
+    return true;
+  } catch {
+    console.warn(`[warn] expected nav to ${expectedPath} — current: ${page.url()}`);
+    return false;
+  }
+}
+
+// --- Page: log all network errors during run ---
+function attachNetworkLogger(page) {
+  page.on('requestfailed', req => {
+    console.warn(`[network] failed: ${req.method()} ${req.url()} — ${req.failure()?.errorText}`);
+  });
+  page.on('response', res => {
+    if (res.status() >= 400) {
+      console.warn(`[network] ${res.status()} ${res.url()}`);
+    }
+  });
+}
+
 // --- Main ---
 async function recordFeature() {
   ensureDir(CONFIG.videoDir);
   ensureDir(CONFIG.screenshotDir);
 
   const { email, password } = await createTestUser();
+
+  const userExists = await verifyTestUser(email);
+  if (!userExists) {
+    console.error('[fatal] test user not found in DB after creation');
+    process.exit(1);
+  }
+  console.log('[db] test user verified in DB');
 
   console.log('[browser] launching...');
   const browser = await chromium.launch({ headless: false });
@@ -114,6 +155,7 @@ async function recordFeature() {
   });
 
   const page = await context.newPage();
+  attachNetworkLogger(page);
 
   try {
     // --- Login ---
@@ -129,6 +171,12 @@ async function recordFeature() {
     if (!submitted) console.warn('[warn] submit button not found — check CONFIG.selectors.submitButton');
 
     await page.waitForTimeout(CONFIG.timeouts.login);
+
+    const loggedIn = await waitForNavigation(page, '/dashboard');
+    if (!loggedIn) {
+      console.warn('[warn] login may have failed — check credentials or email verification');
+    }
+
     await capture(page, '03-post-login.png', 'post login');
 
     // --- Mock interview lobby ---

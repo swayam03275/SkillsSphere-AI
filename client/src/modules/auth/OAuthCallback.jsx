@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, startTransition } from "react";
 import { useDispatch } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
 import { apiRequest } from "../../services/apiClient";
-import { setOAuthData } from "../../features/auth/authSlice";
+import { setOAuthData, persistAuth } from "../../features/auth/authSlice";
 import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 import { useToast } from "../../shared/components";
 import { reportError } from "../../utils/errorReporter";
@@ -94,6 +94,7 @@ const OAuthCallback = () => {
 
         const { token, user } = exchangeData;
 
+        persistAuth({ token, user }, true);
         dispatch(setOAuthData({ token, user, rememberMe: true }));
         success(`Welcome ${user.name}!`);
         const redirectTo = sanitizeOAuthRedirect(

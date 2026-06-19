@@ -16,8 +16,10 @@ function splitSentences(text) {
 }
 
 // Build frequency map of words in the text
+// Build frequency map of words in the text
 function getWordFrequency(text) {
-  const words = text.split(" ");
+  // Split using a regex that handles all whitespace variants (spaces, tabs, newlines) seamlessly
+  const words = text.split(/\s+/).filter(Boolean);
   const freq = {};
 
   words.forEach(word => {
@@ -85,9 +87,14 @@ function detectGeneric(text) {
 export default function consistencyEvaluator({
   resumeText = ""
 }) {
-  const clean = normalize(resumeText);
+  // 1. Split sentences using the raw text so punctuation delimiters still exist
+  const rawSentences = splitSentences(resumeText);
+  
+  // 2. Normalize individual sentences for clean structural comparison
+  const sentences = rawSentences.map(s => normalize(s));
 
-  const sentences = splitSentences(clean);
+  // 3. Keep global normalization intact for whole-text frequency maps and phrase analysis
+  const clean = normalize(resumeText);
   const freqMap = getWordFrequency(clean);
   
   // Calculate word count and dynamic threshold (fixes #230)

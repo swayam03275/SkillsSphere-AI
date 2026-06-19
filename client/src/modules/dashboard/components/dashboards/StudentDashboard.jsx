@@ -45,7 +45,15 @@ const StudentDashboard = ({ token }) => {
         setLoading(false);
       }
     };
+    
     if (token) fetchData();
+
+    const handleRefresh = () => {
+      fetchData();
+    };
+
+    window.addEventListener("dashboard:refresh", handleRefresh);
+    return () => window.removeEventListener("dashboard:refresh", handleRefresh);
   }, [token]);
 
   const chartData = useMemo(() => {

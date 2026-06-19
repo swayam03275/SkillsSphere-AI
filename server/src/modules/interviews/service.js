@@ -11,6 +11,7 @@ import {
 import redisClient from "../../config/redis.js";
 import Notification from "../../database/models/Notification.js";
 import { getIO } from "../../utils/socketIO.js";
+import { safeDeletePhysicalFile } from "../../utils/fileUtils.js";
 
 import logger from "../../utils/logger.js";
 
@@ -213,14 +214,23 @@ export const processAnswerSubmission = async ({
       evaluation.speakingSpeed || "normal";
     session.answers[currentIndex].answeredAt = new Date();
 
+    const previousAudioPath = session.answers[currentIndex].audioPath;
+    const nextAudioPath = audioFile?.path || null;
+
     if (audioFile) {
-      session.answers[currentIndex].audioPath = audioFile.path || null;
+if (audioFile) {
+        session.answers[currentIndex].audioPath = nextAudioPath;
+      }
     }
 
     // Move to next question
     session.currentQuestionIndex = currentIndex + 1;
     session.lastActivityAt = new Date();
     await session.save();
+
+    if (previousAudioPath && nextAudioPath && previousAudioPath !== nextAudioPath) {
+      safeDeletePhysicalFile(previousAudioPath);
+    }
 
     // Prepare response
     const isLastQuestion = currentIndex + 1 >= session.totalQuestions;
@@ -345,6 +355,30 @@ export const finalizeInterview = async (sessionId, userId) => {
     await session.save();
   }
 
+  // Trigger dashboard refresh events
+  try {
+    const io = getIO();
+    if (io) {
+      // 1. Notify student
+      io.to(`user_${userId}`).emit("dashboard-refresh");
+
+      // 2. Notify tracking tutors
+      const progress = await LearningProgress.findOne({ user: userId }).select("tutorsTracking").lean();
+      if (progress && Array.isArray(progress.tutorsTracking)) {
+        progress.tutorsTracking.forEach(tutorId => {
+          io.to(`user_${tutorId}`).emit("dashboard-refresh");
+        });
+      }
+
+      // 3. Notify recruiters if high score (>= 80)
+      if (overallScore >= 80) {
+        io.to("role_recruiter").emit("dashboard-refresh");
+      }
+    }
+  } catch (err) {
+    logger.error("Failed to emit dashboard-refresh in finalizeInterview:", err);
+  }
+
   return {
     overallScore,
     scores: {
@@ -375,7 +409,8 @@ export const getUserInterviewHistory = async (userId, page, limit) => {
     InterviewSession.countDocuments({ userId, status: { $ne: "abandoned" } }),
     InterviewSession.find({ userId, status: "completed" })
       .select("topic overallScore weakConcepts completedAt createdAt")
-      .sort({ completedAt: 1, createdAt: 1 })
+      .sort({ completedAt: -1, createdAt: -1 })
+      .limit(100)
       .lean(),
   ]);
 
@@ -511,6 +546,7 @@ export const getBookmarkedQuestions = async (userId) => {
   })
     .select("topic difficulty status overallScore createdAt completedAt answers")
     .sort({ createdAt: -1 })
+    .limit(50)
     .lean();
 
   return sessions.flatMap((session) =>
