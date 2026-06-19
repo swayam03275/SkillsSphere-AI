@@ -482,55 +482,70 @@ export const getRecruiterAnalytics = async (recruiterId) => {
     }
   }
 
-  // Get all jobs for this recruiter
-  const allJobs = await JobPosting.find({ recruiter: recruiterId })
-    .sort({ createdAt: -1 })
-    .lean();
+  const recruiterObjectId = new mongoose.Types.ObjectId(recruiterId);
 
-  // Status breakdown
-  const statusBreakdown = { open: 0, draft: 0, closed: 0 };
-  allJobs.forEach((job) => {
-    const status = job.status || "draft";
-    if (statusBreakdown[status] !== undefined) {
-      statusBreakdown[status] += 1;
-    }
-  });
-
-  // Jobs by month (last 6 months)
-  const sixMonthsAgo = new Date();
-  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-
-  const jobsByMonthAgg = await JobPosting.aggregate([
-    {
-      $match: {
-        recruiter: new mongoose.Types.ObjectId(recruiterId),
-        createdAt: { $gte: sixMonthsAgo },
-      },
-    },
-    {
-      $group: {
-        _id: {
-          year: { $year: "$createdAt" },
-          month: { $month: "$createdAt" },
+  const [statusAgg, recentJobsDocs, jobsByMonthAgg, topSkillsAgg] = await Promise.all([
+    // 1. Status breakdown & Total Jobs via aggregation
+    JobPosting.aggregate([
+      { $match: { recruiter: recruiterObjectId } },
+      {
+        $group: {
+          _id: { $ifNull: ["$status", "draft"] },
+          count: { $sum: 1 },
         },
-        count: { $sum: 1 },
       },
-    },
-    { $sort: { "_id.year": 1, "_id.month": 1 } },
+    ]),
+    // 2. Recent jobs (last 5) fetched selectively
+    JobPosting.find({ recruiter: recruiterId })
+      .sort({ createdAt: -1 })
+      .select("title status location salary createdAt")
+      .limit(5)
+      .lean(),
+    // 3. Jobs by month (last 6 months)
+    (async () => {
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+      return JobPosting.aggregate([
+        {
+          $match: {
+            recruiter: recruiterObjectId,
+            createdAt: { $gte: sixMonthsAgo },
+          },
+        },
+        {
+          $group: {
+            _id: {
+              year: { $year: "$createdAt" },
+              month: { $month: "$createdAt" },
+            },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { "_id.year": 1, "_id.month": 1 } },
+      ]);
+    })(),
+    // 4. Top skills
+    JobPosting.aggregate([
+      { $match: { recruiter: recruiterObjectId } },
+      { $unwind: "$skills" },
+      { $group: { _id: { $toLower: "$skills" }, count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 10 },
+      { $project: { skill: "$_id", count: 1, _id: 0 } }
+    ])
   ]);
 
-  const topSkillsAgg = await JobPosting.aggregate([
-  { $match: { recruiter: new mongoose.Types.ObjectId(recruiterId) } },
-  { $unwind: "$skills" },
-  { $group: { _id: { $toLower: "$skills" }, count: { $sum: 1 } } },
-  { $sort: { count: -1 } },
-  { $limit: 10 },
-  { $project: { skill: "$_id", count: 1, _id: 0 } }
-]);
-const topSkills = topSkillsAgg;
+  const statusBreakdown = { open: 0, draft: 0, closed: 0 };
+  let totalJobs = 0;
+  statusAgg.forEach((stat) => {
+    const status = stat._id;
+    if (statusBreakdown[status] !== undefined) {
+      statusBreakdown[status] = stat.count;
+    }
+    totalJobs += stat.count;
+  });
 
-  // Recent jobs (last 5)
-  const recentJobs = allJobs.slice(0, 5).map((job) => ({
+  const recentJobs = recentJobsDocs.map((job) => ({
     _id: job._id,
     title: job.title,
     status: job.status,
@@ -539,8 +554,10 @@ const topSkills = topSkillsAgg;
     createdAt: job.createdAt,
   }));
 
+  const topSkills = topSkillsAgg;
+
   const result = {
-    totalJobs: allJobs.length,
+    totalJobs,
     statusBreakdown,
     jobsByMonth: jobsByMonthAgg,
     topSkills,
