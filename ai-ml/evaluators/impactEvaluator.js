@@ -28,9 +28,10 @@ const POWER_VERBS = {
 
 // --- Context validator: checks metric appears in an achievement sentence ---
 function isInAchievementContext(match, text) {
-  const idx = text.toLowerCase().indexOf(match.toLowerCase());
+  const lower = text.toLowerCase();
+  const idx = lower.indexOf(match.toLowerCase());
   if (idx === -1) return false;
-  const surrounding = text.slice(Math.max(0, idx - 60), idx + match.length + 60).toLowerCase();
+  const surrounding = lower.slice(Math.max(0, idx - 60), idx + match.length + 60);
   return /(?:result|achiev|improv|reduc|increas|deliver|sav|generat|grew|surpass)/.test(surrounding);
 }
 
