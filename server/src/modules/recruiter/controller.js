@@ -9,6 +9,49 @@ import { getIO } from "../../utils/socketIO.js";
 import asyncHandler from "../../utils/asyncHandler.js";
 import AppError from "../../utils/AppError.js";
 
+const ALLOWED_RECRUITER_VISIBILITIES = ["public", "recruiters"];
+
+export const buildRecruiterPrivacyMatch = (userPath = "") => {
+  const field = (name) => userPath ? `${userPath}.${name}` : name;
+
+  return {
+    $and: [
+      {
+        $or: [
+          {
+            [field("preferences.privacy.profileVisibility")]: {
+              $in: ALLOWED_RECRUITER_VISIBILITIES
+            }
+          },
+          {
+            [field("preferences.privacy.profileVisibility")]: {
+              $exists: false
+            }
+          }
+        ]
+      },
+      {
+        $or: [
+          {
+            [field("preferences.privacy.showResumeToRecruiters")]: true
+          },
+          {
+            [field("preferences.privacy.showResumeToRecruiters")]: {
+              $exists: false
+            }
+          }
+        ]
+      }
+    ]
+  };
+};
+
+const findDiscoverableCandidate = (candidateId) => User.findOne({
+  _id: candidateId,
+  role: "student",
+  ...buildRecruiterPrivacyMatch()
+});
+
 /**
  * GET /api/recruiter/talent-finder
  * Direct talent search with pagination, text search, and key filters.
@@ -173,7 +216,12 @@ export const searchTalent = asyncHandler(async (req, res, next) => {
       }
     },
     { $unwind: "$userDoc" },
-    { $match: { "userDoc.role": "student" } }
+    {
+      $match: {
+        "userDoc.role": "student",
+        ...buildRecruiterPrivacyMatch("userDoc")
+      }
+    }
   );
 
   // Facet for pagination & metadata
@@ -233,6 +281,11 @@ export const matchCandidate = asyncHandler(async (req, res, next) => {
 
   if (job.recruiter.toString() !== req.user._id.toString()) {
     return next(new AppError("You are not authorized to access this job", 403));
+  }
+
+  const candidate = await findDiscoverableCandidate(candidateId);
+  if (!candidate) {
+    return next(new AppError("Candidate profile is not available to recruiters", 404));
   }
 
   let resume = await Resume.findOne({ user: candidateId, isActive: true }).select("+resumeText");
@@ -425,9 +478,9 @@ export const inviteCandidate = asyncHandler(async (req, res, next) => {
     return next(new AppError("You are not authorized to access this job", 403));
   }
 
-  const candidate = await User.findById(candidateId);
-  if (!candidate || candidate.role !== "student") {
-    return next(new AppError("Invalid candidate or user is not a student", 404));
+  const candidate = await findDiscoverableCandidate(candidateId);
+  if (!candidate) {
+    return next(new AppError("Candidate profile is not available to recruiters", 404));
   }
 
   // Check if student has already applied to prevent duplicate invitation/application

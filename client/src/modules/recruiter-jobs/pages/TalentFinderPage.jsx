@@ -498,7 +498,7 @@ const TalentFinderPage = () => {
               <EmptyState
                 icon={<User size={52} className="text-gray-300 dark:text-slate-700 animate-pulse" />}
                 title="No Candidates Found"
-                description="We couldn't find any candidates matching your criteria. Try adjusting your filters."
+                description="No recruiter-visible candidates match your criteria. Try adjusting your filters; private profiles and resumes not shared with recruiters are hidden."
               />
             ) : (
               <div className="grid grid-cols-1 gap-4">

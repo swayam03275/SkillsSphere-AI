@@ -154,13 +154,6 @@ export const evaluateMatches = async (user, resume, preFilteredJobs = null) => {
       for (const { room, notif } of notificationsToEmit) {
         io.to(room).emit("new-notification", notif);
       }
-    const matchResult = matchResultDocs[0];
-
-    // Now safe to emit socket events
-    if (io) {
-      for (const { room, notif } of notificationsToEmit) {
-        io.to(room).emit("new-notification", notif);
-      }
     }
 
     return matchResult;

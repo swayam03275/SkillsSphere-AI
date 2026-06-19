@@ -151,4 +151,18 @@ describe("TalentFinderPage toast feedback", () => {
       expect(screen.getByRole("button", { name: /^invite$/i })).toBeEnabled();
     });
   });
+
+  it("explains that privacy preferences can hide candidates from empty results", async () => {
+    searchTalent.mockResolvedValue({
+      candidates: [],
+      pagination: { pages: 0, total: 0 },
+    });
+
+    renderPage();
+
+    expect(await screen.findByText("No Candidates Found")).toBeInTheDocument();
+    expect(
+      screen.getByText(/private profiles and resumes not shared with recruiters are hidden/i),
+    ).toBeInTheDocument();
+  });
 });
