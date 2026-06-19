@@ -22,6 +22,10 @@ export const getJobs = async (filters = {}, token, page = 1, limit = 10) => {
   return apiRequest(path, { token });
 };
 
+export const getRecommendations = async (token, { sortBy = "score", limit = 20 } = {}) => {
+  return apiRequest(`/api/jobs/recommendations?sortBy=${sortBy}&limit=${limit}`, { token });
+};
+
 /**
  * Apply to a job posting
  * @param {string} jobId - Job ID

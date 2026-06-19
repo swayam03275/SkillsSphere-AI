@@ -1,7 +1,15 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
-import { Briefcase, Info, ArrowLeft, Sparkles, TrendingUp, Bookmark } from "lucide-react";
+import {
+  Briefcase,
+  Info,
+  ArrowLeft,
+  Sparkles,
+  TrendingUp,
+  Bookmark,
+  ArrowUpDown,
+} from "lucide-react";
 import Navbar from "../../../shared/components/Navbar";
 import Footer from "../../../shared/components/Footer";
 
@@ -17,6 +25,7 @@ import {
   getSavedJobs,
   saveJob,
   unsaveJob,
+  getRecommendations,
 } from "../services/jobService";
 import JobCardSkeleton from "../components/JobCardSkeleton";
 import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
@@ -39,6 +48,9 @@ const JobBoardPage = () => {
   const [view, setView] = useState("all");
   const [savedJobIds, setSavedJobIds] = useState(new Set());
   const [savingJobIds, setSavingJobIds] = useState(new Set());
+  const [recommendationSort, setRecommendationSort] = useState("score");
+  const [recommendationMessage, setRecommendationMessage] = useState("");
+  const [hasRecommendationResume, setHasRecommendationResume] = useState(true);
 
   const fetchJobs = useCallback(async (currentFilters, page = 1, currentView = view) => {
     setLoading(true);
@@ -46,11 +58,21 @@ const JobBoardPage = () => {
     try {
       const response = currentView === "saved"
         ? await getSavedJobs(token, page, 6)
-        : await getJobs(currentFilters, token, page, 6);
+        : currentView === "recommended"
+          ? await getRecommendations(token, { sortBy: recommendationSort, limit: 20 })
+          : await getJobs(currentFilters, token, page, 6);
       setJobs(response.jobs || []);
       setCurrentPage(response.currentPage || 1);
       setTotalPages(response.totalPages || 1);
-      setTotalCount(response.totalCount || 0);
+      setTotalCount(response.totalCount ?? response.jobs?.length ?? 0);
+
+      if (currentView === "recommended") {
+        setRecommendationMessage(response.message || "");
+        setHasRecommendationResume(response.hasResume !== false);
+      } else {
+        setRecommendationMessage("");
+        setHasRecommendationResume(true);
+      }
 
       if (currentView === "saved") {
         setSavedJobIds(new Set(response.savedJobIds || []));
@@ -75,7 +97,7 @@ const JobBoardPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [token, view]);
+  }, [token, view, recommendationSort]);
 
   useEffect(() => {
     fetchJobs(filters, 1, view);
@@ -206,10 +228,18 @@ const JobBoardPage = () => {
               <JobFilters onFilterChange={handleFilterChange} />
             ) : (
               <div className="sticky top-28 rounded-3xl border border-blue-200 bg-white p-6 shadow-sm dark:border-blue-500/20 dark:bg-slate-900/50">
-                <Bookmark className="mb-3 text-blue-600 dark:text-blue-400" size={28} />
-                <h2 className="font-bold text-gray-900 dark:text-white">Saved Jobs</h2>
+                {view === "saved" ? (
+                  <Bookmark className="mb-3 text-blue-600 dark:text-blue-400" size={28} />
+                ) : (
+                  <Sparkles className="mb-3 text-purple-600 dark:text-purple-400" size={28} />
+                )}
+                <h2 className="font-bold text-gray-900 dark:text-white">
+                  {view === "saved" ? "Saved Jobs" : "Recommended for you"}
+                </h2>
                 <p className="mt-2 text-sm text-gray-500 dark:text-slate-400">
-                  Your bookmarked opportunities stay here until you remove them.
+                  {view === "saved"
+                    ? "Your bookmarked opportunities stay here until you remove them."
+                    : "Personalized matches based on the skills and experience in your latest resume."}
                 </p>
               </div>
             )}
@@ -219,12 +249,17 @@ const JobBoardPage = () => {
           <div className="lg:col-span-3">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-3">
-                {view === "saved" ? "Saved Jobs" : "Available Jobs"}
+                {view === "saved"
+                  ? "Saved Jobs"
+                  : view === "recommended"
+                    ? "Recommended for you"
+                    : "Available Jobs"}
                 <span className="bg-gray-200 dark:bg-slate-800 text-gray-700 dark:text-gray-300 text-xs px-2.5 py-0.5 rounded-full">{totalCount}</span>
               </h3>
               <div className="flex rounded-xl border border-gray-200 bg-white p-1 dark:border-white/10 dark:bg-slate-900">
                 {[
                   ["all", "All Jobs"],
+                  ["recommended", "Recommended"],
                   ["saved", "Saved"],
                 ].map(([value, label]) => (
                   <button
@@ -246,6 +281,36 @@ const JobBoardPage = () => {
               </div>
             </div>
 
+            {view === "recommended" && (
+              <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-purple-200 bg-purple-50/70 p-4 dark:border-purple-500/20 dark:bg-purple-500/5 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="flex items-center gap-2 text-sm font-bold text-purple-800 dark:text-purple-300">
+                    <Sparkles size={16} />
+                    AI-ranked opportunities
+                  </p>
+                  <p className="mt-1 text-xs text-purple-700/80 dark:text-purple-300/70">
+                    {recommendationMessage || "Choose how you want your personalized matches ranked."}
+                  </p>
+                </div>
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-slate-300">
+                  <ArrowUpDown size={15} className="text-purple-500" />
+                  Sort by
+                  <select
+                    aria-label="Sort recommendations"
+                    value={recommendationSort}
+                    onChange={(event) => {
+                      setCurrentPage(1);
+                      setRecommendationSort(event.target.value);
+                    }}
+                    className="rounded-xl border border-purple-200 bg-white px-3 py-2 text-sm font-semibold text-gray-800 outline-none focus:ring-2 focus:ring-purple-500/30 dark:border-purple-500/20 dark:bg-slate-900 dark:text-slate-200"
+                  >
+                    <option value="score">Match score</option>
+                    <option value="salary">Salary</option>
+                    <option value="date">Date</option>
+                  </select>
+                </label>
+              </div>
+            )}
 
             {/* Display skeleton cards while jobs are loading */}
             {loading ? (
@@ -263,6 +328,10 @@ const JobBoardPage = () => {
                 description={
                   view === "saved"
                     ? "You haven't saved any jobs yet. Bookmark an opportunity to find it here."
+                    : view === "recommended" && !hasRecommendationResume
+                      ? "Upload and analyze a resume to unlock personalized job recommendations."
+                      : view === "recommended"
+                        ? "No personalized matches are available yet. Try again after updating your resume."
                     : Object.values(filters).some(v => v)
                     ? "Try adjusting your filters to see more opportunities."
                     : "There are currently no open job postings. Check back later!"
@@ -294,7 +363,7 @@ const JobBoardPage = () => {
             )}
 
             {/* Quick Note */}
-            {!loading && jobs.length > 0 && (
+            {!loading && jobs.length > 0 && view !== "recommended" && (
               <div className="mt-10 p-5 rounded-2xl bg-[#898F9C] dark:bg-slate-900/50 border-none dark:border-white/5 flex gap-4 items-center shadow-sm">
                 <div className="p-2 bg-white/20 dark:bg-blue-500/10 text-blue-100 dark:text-blue-400 rounded-lg shrink-0">
                   <Info size={20} />

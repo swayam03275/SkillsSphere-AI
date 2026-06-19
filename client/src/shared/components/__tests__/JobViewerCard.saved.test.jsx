@@ -41,4 +41,20 @@ describe("JobViewerCard saved state", () => {
       "true",
     );
   });
+
+  it("renders recommendation match score and explanation", () => {
+    render(
+      <JobViewerCard
+        job={{
+          ...job,
+          matchScore: 87.6,
+          relevanceInsights: "Strong alignment with your React experience.",
+        }}
+        viewerRole="student"
+      />,
+    );
+
+    expect(screen.getByText("88% match")).toBeInTheDocument();
+    expect(screen.getByText("Strong alignment with your React experience.")).toBeInTheDocument();
+  });
 });

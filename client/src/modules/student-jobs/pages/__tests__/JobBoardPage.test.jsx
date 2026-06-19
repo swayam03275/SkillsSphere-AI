@@ -11,6 +11,7 @@ import {
   getSavedJobs,
   saveJob,
   unsaveJob,
+  getRecommendations,
 } from "../../services/jobService";
 
 vi.mock("../../services/jobService", () => ({
@@ -18,6 +19,7 @@ vi.mock("../../services/jobService", () => ({
   getJobs: vi.fn(),
   getMyAppliedJobIds: vi.fn(),
   getSavedJobs: vi.fn(),
+  getRecommendations: vi.fn(),
   saveJob: vi.fn(),
   unsaveJob: vi.fn(),
 }));
@@ -49,6 +51,8 @@ vi.mock("../../../../shared/components", async () => {
     JobViewerCard: ({ job, isSaved, isSaving, onToggleSave }) => (
       <article>
         <span>{job.title}</span>
+        {job.matchScore != null && <span>{Math.round(job.matchScore)}% match</span>}
+        {job.relevanceInsights && <span>{job.relevanceInsights}</span>}
         <button
           type="button"
           disabled={isSaving}
@@ -105,6 +109,11 @@ describe("JobBoardPage saved jobs", () => {
       totalPages: 1,
       totalCount: 0,
     });
+    getRecommendations.mockResolvedValue({
+      jobs: [],
+      hasResume: true,
+      message: "Personalized matches found",
+    });
     saveJob.mockResolvedValue({ saved: true });
     unsaveJob.mockResolvedValue({ saved: false });
   });
@@ -145,5 +154,65 @@ describe("JobBoardPage saved jobs", () => {
     });
     expect(await screen.findByText("Backend Engineer")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Remove from saved jobs" })).toBeInTheDocument();
+  });
+
+  it("renders recommendation scores and explanations", async () => {
+    getRecommendations.mockResolvedValue({
+      jobs: [{
+        ...job,
+        matchScore: 91.4,
+        relevanceInsights: "Strong React and Node.js skill alignment.",
+      }],
+      hasResume: true,
+      message: "Personalized matches found by SkillSphere AI",
+    });
+
+    renderPage();
+    fireEvent.click(await screen.findByRole("button", { name: "Recommended" }));
+
+    expect(await screen.findByText("91% match")).toBeInTheDocument();
+    expect(screen.getByText("Strong React and Node.js skill alignment.")).toBeInTheDocument();
+    expect(getRecommendations).toHaveBeenCalledWith("student-token", {
+      sortBy: "score",
+      limit: 20,
+    });
+  });
+
+  it("refetches recommendations when the sort control changes", async () => {
+    renderPage();
+    fireEvent.click(await screen.findByRole("button", { name: "Recommended" }));
+
+    const sortControl = await screen.findByRole("combobox", { name: "Sort recommendations" });
+    fireEvent.change(sortControl, { target: { value: "salary" } });
+
+    await waitFor(() => {
+      expect(getRecommendations).toHaveBeenCalledWith("student-token", {
+        sortBy: "salary",
+        limit: 20,
+      });
+    });
+
+    fireEvent.change(sortControl, { target: { value: "date" } });
+    await waitFor(() => {
+      expect(getRecommendations).toHaveBeenCalledWith("student-token", {
+        sortBy: "date",
+        limit: 20,
+      });
+    });
+  });
+
+  it("shows the resume-specific empty state for recommendations", async () => {
+    getRecommendations.mockResolvedValue({
+      jobs: [],
+      hasResume: false,
+      message: "Please upload a resume to see personalized matches.",
+    });
+
+    renderPage();
+    fireEvent.click(await screen.findByRole("button", { name: "Recommended" }));
+
+    expect(
+      await screen.findByText(/upload and analyze a resume to unlock personalized job recommendations/i),
+    ).toBeInTheDocument();
   });
 });

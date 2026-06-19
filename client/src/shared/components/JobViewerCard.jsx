@@ -15,6 +15,7 @@ import {
   Globe,
   Users,
   Bookmark,
+  Sparkles,
 } from "lucide-react";
 import Button from "./Button";
 
@@ -300,6 +301,18 @@ const JobViewerCard = ({
                 </div>
               )}
             </div>
+
+            {viewerRole === "student" && job.matchScore != null && (
+              <div className="mt-4 flex flex-col gap-2 rounded-xl border border-emerald-200 bg-emerald-50/80 p-3 dark:border-emerald-500/20 dark:bg-emerald-500/10 sm:flex-row sm:items-center">
+                <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-600 px-2.5 py-1 text-xs font-bold text-white">
+                  <Sparkles size={13} />
+                  {Math.round(job.matchScore)}% match
+                </span>
+                <p className="text-xs font-medium leading-relaxed text-emerald-800 dark:text-emerald-200 sm:text-sm">
+                  {job.relevanceInsights || "Recommended based on the skills and experience in your resume."}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -623,6 +636,8 @@ JobViewerCard.propTypes = {
     companyWebsite: PropTypes.string,
     type: PropTypes.string,
     openings: PropTypes.number,
+    matchScore: PropTypes.number,
+    relevanceInsights: PropTypes.string,
   }).isRequired,
 
   /** Determines which action buttons to render. */
