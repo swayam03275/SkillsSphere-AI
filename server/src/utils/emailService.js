@@ -32,7 +32,7 @@ export const sendEmail = async (to, subject, text, html) => {
   const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST,
     port: parseInt(process.env.EMAIL_PORT, 10) || 587,
-    secure: process.env.EMAIL_PORT == 465, // true for 465, false for other ports
+    secure: process.env.EMAIL_PORT === 465, // true for 465, false for other ports
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
