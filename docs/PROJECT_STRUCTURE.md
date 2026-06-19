@@ -1,204 +1,389 @@
 # Project Structure
 
-This document reflects the current repository structure and progress implemented so far.
+This guide describes the current SkillsSphere AI repository and points contributors to the main routes, feature modules, services, models, and tests.
 
-## Top-Level Layout
+## Repository Layout
 
-- `client/`: React frontend application
-- `server/`: Node.js + Express backend
-- `ai-ml/`: AI and ML evaluators and domain placeholders
-- `interview-ai-service/`: Python AI microservice (FastAPI)
-- `docs/`: Architecture, API, feature, and quality documents
+```text
+SkillsSphere-AI/
+|-- client/                  React + Vite frontend
+|-- server/                  Express + MongoDB API and Socket.IO server
+|-- ai-ml/                   JavaScript resume evaluation and recommendation pipeline
+|-- interview-ai-service/    FastAPI interview transcription and evaluation service
+|-- docs/                    Architecture, API, feature, workflow, and quality guides
+|-- scripts/                 Workspace setup and development helpers
+|-- package.json             npm workspace and Turbo commands
+`-- turbo.json               Workspace task configuration
+```
 
-## Current Implementation Progress
+The npm workspace contains `client`, `server`, and `ai-ml`. The Python interview service is managed separately through its `requirements.txt` and Dockerfile.
 
-### Frontend (`client`)
+## Frontend (`client`)
 
-Implemented:
+### Application Entry Points
 
-- App shell and route configuration in `src/app/App.jsx`
-- Landing page module in `src/modules/landing/`
-- Auth UI and API integration:
-  - `src/modules/auth/Login.jsx`
-  - `src/modules/auth/Register.jsx`
-  - `src/modules/auth/VerifyEmail.jsx`
-  - `src/modules/auth/components/ComponentDemo.jsx`
-- Redux auth state in `src/features/auth/authSlice.js`
-- API client helpers:
-  - `src/services/apiClient.js`
-  - `src/services/authService.js`
-- Protected dashboard route:
-  - `src/modules/dashboard/DashboardPage.jsx`
-- Resume Analyzer UI flow:
-  - `src/modules/resume-analyzer/components/DragDropUpload.jsx`
-  - `src/modules/resume-analyzer/components/AnalysisResult.jsx`
-  - `src/modules/resume-analyzer/pages/ResumeAnalyzerPage.jsx` (Updated: integrated Job Description input)
-  - `src/modules/resume-analyzer/services/resumeService.js` (Updated: real API integration with JD support)
-- User Profile UI:
-  - `src/modules/profile/ProfilePage.jsx`
-  - `src/modules/profile/components/ProfileField.jsx`
-- Recruiter Job Management:
-  - `src/modules/recruiter-jobs/pages/RecruiterJobsPage.jsx`
-  - `src/modules/recruiter-jobs/pages/CreateJobPostingPage.jsx`
-  - `src/modules/recruiter-jobs/components/JobPostingForm.jsx`
-  - `src/modules/recruiter-jobs/components/JobPostingCard.jsx`
-  - `src/modules/recruiter-jobs/services/jobPostingService.js`
-- Shared UI primitives:
-  - `src/shared/components/Button.jsx`
-  - `src/shared/components/Input.jsx`
-  - `src/shared/components/Select.jsx`
-  - `src/shared/components/TextArea.jsx` (New: Multi-line text input)
-  - `src/shared/components/LoadingState.jsx`
-  - `src/shared/components/ErrorState.jsx`
-  - `src/shared/components/EmptyState.jsx`
-  - `src/shared/components/PageHeader.jsx`
-- Interactive Roadmap Module:
-  - `src/modules/roadmap/pages/RoadmapPage.jsx` — Visual skill-tree and progress tracking
-  - `src/modules/roadmap/services/roadmapService.js` — Roadmap API integration
+- `src/app/main.tsx`: React bootstrap.
+- `src/app/App.tsx`: lazy-loaded route definitions and global application components.
+- `src/store/index.ts`: Redux store configuration.
+- `src/features/`: shared Redux slices for authentication, classrooms, interviews, and notifications.
+- `src/services/apiClient.js`: common authenticated API request helper.
+- `src/shared/`: reusable components, contexts, and hooks.
 
-Scaffolded placeholders:
+### Frontend Routes
 
-- `classrooms/` — Live collaborative environment with whiteboard, code editor, and WebRTC
-- `job-matcher/` — AI-powered candidate-to-job matching pipeline
+Public routes:
 
-#### Mock Interview Module (`mock-interview/`)
+- `/`: landing page.
+- `/docs`, `/blog`, `/careers`, `/status`: informational pages.
+- `/privacy`, `/terms`, `/cookies`: policy pages.
+- `/login`, `/register`, `/auth/callback`: authentication and OAuth.
+- `/forgot-password`, `/reset-password`, `/verify-email`: account recovery and verification.
 
-Implemented:
+Authenticated shared routes:
 
-- `src/modules/mock-interview/pages/InterviewLobby.jsx` — Topic selection, difficulty, persona picker, camera preview
-- `src/modules/mock-interview/pages/InterviewSession.jsx` — Q&A flow with timer, progress bar, score feedback
-- `src/modules/mock-interview/pages/InterviewResults.jsx` — Score dashboard with ring chart, category breakdown, per-question accordion
-- `src/modules/mock-interview/pages/InterviewHistory.jsx` — Paginated history of past interviews
-- `src/modules/mock-interview/services/interviewService.js` — API service layer for all interview endpoints
-- `src/modules/mock-interview/components/CameraCheck.jsx` — Camera preview + mic level visualizer
-- `src/modules/mock-interview/components/PersonaSelector.jsx` — Interviewer persona selection
-- `src/modules/mock-interview/styles/mock-interview.css` — Glassmorphic styling for all interview pages
+- `/dashboard`: role-aware dashboard.
+- `/notifications`: notification center.
+- `/onboarding`: role onboarding.
+- `/profile`: profile and preference management.
 
-### Backend (`server`)
+Student routes:
 
-Implemented:
+- `/jobs`: job board with All Jobs, Recommended, and Saved views.
+- `/job-matcher`: resume-first AI job matching.
+- `/my-applications`: application tracking and student CRM status.
+- `/resume-analyzer`: upload and analyze resumes.
+- `/resume-history`: resume analysis history and comparisons.
+- `/roadmap`: learning roadmap and collaboration.
+- `/mock-interview`: interview setup.
+- `/mock-interview/history`: interview history and analytics.
+- `/mock-interview/bookmarks`: bookmarked interview questions.
+- `/mock-interview/:id`: active interview session.
+- `/mock-interview/:id/results`: interview results.
 
-- Express server bootstrap in `server/index.js`
-- MongoDB connection setup in `src/database/db.js`
-- Database Models:
-  - `src/database/models/User.js` — User model for authentication and role management
-  - `src/database/models/Resume.js` — Resume model for parsed resume data and skill matching
-  - `src/database/models/JobPosting.js` — Mongoose model for recruiter-owned job postings with status, location, skills, and salary constraints
-  - `src/database/models/LearningProgress.js` — Roadmap and skill completion tracking for students
-  - `src/database/models/JobApplication.js` — (Updated: supports re-applying after withdrawal)
-- Auth registration & Login flow:
-  - `src/modules/auth/routes.js`
-  - `src/modules/auth/controller.js`
-  - `src/modules/auth/service.js`
-  - `src/validations/authValidation.js`
-- Auth & RBAC Middleware:
-  - `src/middleware/authMiddleware.js` (JWT, Role verification, and strict OAuth state checking)
-  - `src/middleware/rateLimiter.js` (API Gateway Query Complexity and rate limits)
-  - `src/middleware/webhookMiddleware.js` (Robust webhook signing framework)
-- Resume upload and analysis flow:
-  - `src/modules/resumes/routes.js`
-  - `src/modules/resumes/controller.js`
-  - `src/modules/resumes/service.js` (New: Singleton resume logic and ownership enforcement)
-  - `src/middleware/uploadResume.js`
+Recruiter routes:
 
-  - `src/utils/parseResume.js`
+- `/recruiter/jobs`: recruiter job management.
+- `/recruiter/jobs/new`: create a job posting.
+- `/recruiter/jobs/edit/:id`: edit a job posting.
+- `/recruiter/jobs/:id/applicants`: applicant review and status management.
+- `/recruiter/analytics`: hiring analytics.
+- `/recruiter/talent-finder`: privacy-aware candidate discovery, matching, and invitations.
 
-- Evaluator configuration:
-  - `src/config/evaluatorConfig.js`
-- Static upload serving via `app.use("/uploads", ...)`
-- Recruiter Job Posting system:
-  - `src/modules/jobs/routes.js`
-  - `src/modules/jobs/controller.js`
-  - `src/modules/jobs/service.js`
-  - `src/database/models/JobPosting.js`
-- Interview Engine:
-  - `src/database/models/InterviewSession.js` — Session model with answers, scores, and concepts
-  - `src/database/models/QuestionBank.js` — Pre-stored questions by topic/difficulty
-  - `src/database/models/ConceptGraph.js` — Topic concept trees
-  - `src/modules/interviews/routes.js` — Interview API routes
-  - `src/modules/interviews/controller.js` — Request handling
-  - `src/modules/interviews/service.js` — Business logic (question selection, scoring, history)
-  - `src/modules/interviews/seed/questions.json` — 46 seed questions across 3 topics
-  - `src/modules/interviews/seed/seedInterviewData.js` — Database seeding script
-  - `src/integrations/aiInterviewService.js` — HTTP client for Python AI microservice
-- Roadmap & Learning Progress:
-  - `src/modules/roadmap/routes.js` — Progress API routes
-  - `src/modules/roadmap/controller.js` — Roadmap logic (sync, update, get)
+Tutor and classroom routes:
 
-Scaffolded placeholders:
+- `/tutor/analytics`: tutor analytics.
+- `/tutor/roadmaps`: tracked student roadmaps.
+- `/tutor/interviews`: assigned interview sessions.
+- `/tutor/interviews/:id`: interview review and feedback.
+- `/classrooms`: classroom dashboard.
+- `/classrooms/:roomId`: live classroom workspace.
 
-- `modules/analytics/`
-- `modules/classrooms/`
-- `modules/matching/`
-- `modules/users/`
+Routes are protected through `src/shared/components/ProtectedRoute.jsx`, including role-specific access where required.
 
-### Python AI Microservice (`interview-ai-service/`)
+### Feature Modules
 
-Implemented:
+Feature code is organized under `src/modules/`:
 
-- `main.py` — FastAPI application entry point
-- `routers/transcription.py` — Audio transcription endpoint
-- `routers/evaluation.py` — Answer evaluation endpoint
-- `services/whisper_service.py` — Speech-to-text using faster-whisper
-- `services/semantic_service.py` — Semantic similarity scoring (sentence-transformers)
-- `services/nlp_service.py` — Concept detection and communication analysis (spaCy)
-- `requirements.txt` — Python dependencies
+| Module | Current responsibility |
+| --- | --- |
+| `ai-assistant/` | In-app AI chat widget and message presentation. |
+| `analytics/` | Tutor analytics dashboard. |
+| `auth/` | Login, registration, OAuth callback, verification, password recovery, and onboarding. |
+| `classrooms/` | Classroom creation/joining, video tiles, WebRTC, whiteboard, chat, and shared code editor UI. |
+| `dashboard/` | Student, recruiter, and tutor dashboards plus resume history. |
+| `job-matcher/` | Personalized resume-based job recommendations and match presentation. |
+| `landing/` | Marketing, policy, documentation, status, and not-found pages. |
+| `mock-interview/` | Interview lobby, live session, audio/socket state, results, history, bookmarks, and tutor review. |
+| `notifications/` | Notification list, dropdown, hooks, and actions. |
+| `profile/` | Profile editing, avatar management, and privacy/notification preferences. |
+| `recruiter-jobs/` | Job posting management, applicants, analytics, insights, and Talent Finder. |
+| `resume-analyzer/` | Resume upload, analysis results, PDF export, comparisons, and job-description input. |
+| `roadmap/` | Student roadmap, tutor collaboration, milestones, resources, and contribution summaries. |
+| `student-jobs/` | Job discovery, recommendations, saved jobs, applications, filters, and application forms. |
 
-### AI/ML (`ai-ml`)
+### Frontend Services
 
-Implemented:
+Module-specific API adapters live beside their features:
 
-- Skill evaluator test coverage in `evaluators/__tests__/skillEvaluator.test.js`
-- Keyword evaluator test coverage in `evaluators/__tests__/keywordEvaluator.test.js`
-- Advanced ATS Evaluators:
-  - `evaluators/readabilityEvaluator.js` (Domain Scoring)
-  - `evaluators/formattingEvaluator.js` (Content Scoring)
-- Resume analysis pipeline helpers:
-  - `pipeline/evaluatorContract.js`: shared evaluator output schema
-  - `pipeline/runPipeline.js`: unified evaluator execution runner
-  - `pipeline/aggregator.js`: weighted scoring and breakdown aggregation
+- `modules/classrooms/services/classroomService.js`
+- `modules/dashboard/services/dashboardService.js`
+- `modules/job-matcher/services/matcherService.js`
+- `modules/mock-interview/services/interviewService.js`
+- `modules/profile/services/profileService.js`
+- `modules/recruiter-jobs/services/jobPostingService.js`
+- `modules/recruiter-jobs/services/talentFinderService.js`
+- `modules/resume-analyzer/services/resumeService.js`
+- `modules/roadmap/services/roadmapService.js`
+- `modules/student-jobs/services/jobService.js`
 
-Scaffolded placeholders:
+Cross-feature services live in `src/services/`, including authentication, file access, notifications, and the shared API client.
 
-- `resume-analysis/`
-- `jd-matching/`
-- `interview-feedback/`
-- `shared/`
+### Shared UI
 
-## API Surface (Implemented)
+`src/shared/components/` contains common controls and application infrastructure, including:
 
-- `GET /health`: server health check
-- `POST /api/auth/register`: user registration and initial token issuance
-- `POST /api/auth/login`: credential verification and JWT issuance
-- `POST /api/auth/verify-email`: verify user account via OTP
-- `POST /api/auth/resend-otp`: resend email verification OTP
-- `POST /api/resume/upload`: upload resume file
-- `POST /api/resume/analyze`: parse PDF resume, latest-only upsert flow, optional skill/keyword/experience match
-- `GET /api/resume/me/latest`: fetch user's latest parsed resume (no raw resumeText)
-- `GET /api/resume/result/:id`: fetch stored resume record by ID
+- form primitives and buttons;
+- loading, error, empty, skeleton, and pagination states;
+- `JobViewerCard` and job detail components;
+- navigation, footer, command palette, and protected routes;
+- notifications and Socket.IO listeners;
+- dialogs, status timelines, cover-letter modal, and toast provider.
 
-- `GET /uploads/:filename`: static file access for uploaded files
-- `POST /api/jobs`: create a new job (Recruiter only)
-- `GET /api/jobs`: list all published jobs
-- `GET /api/jobs/:id`: get job details
-- `PATCH /api/jobs/:id`: update a job (Owner Recruiter only)
-- `DELETE /api/jobs/:id`: delete a job (Owner Recruiter only)
+### Frontend Tests
 
-- `GET /api/interviews/topics`: list available interview topics
-- `GET /api/interviews/ai-status`: check Python AI service health
-- `POST /api/interviews/start`: start a new interview session
-- `GET /api/interviews/:id`: get session details
-- `POST /api/interviews/:id/answer`: submit an answer for AI evaluation
-- `POST /api/interviews/:id/complete`: end interview and calculate scores
-- `GET /api/interviews/:id/results`: get detailed results breakdown
-- `GET /api/interviews/history`: paginated interview history
-- `GET /api/roadmap/me`: fetch user's learning roadmap and progress
-- `POST /api/roadmap/sync`: sync roadmap with latest analysis suggestions
-- `PATCH /api/roadmap/update-topic`: update status of a specific roadmap milestone
+The frontend uses Vitest, React Testing Library, and Jest DOM.
 
-## Notes
+- Feature tests are colocated in `__tests__/` directories or as `*.test.jsx` / `*.test.js`.
+- Shared component tests live in `src/shared/components/__tests__/`.
+- Redux slice tests live under `src/features/**/__tests__/`.
+- API client and utility tests live under `src/services/__tests__/` and `src/utils/__tests__/`.
+- Accessibility coverage starts at `src/accessibility/accessibility.test.jsx`.
+- Playwright is available through `npm run test:e2e`.
 
-- Empty folders intentionally contain `.gitkeep` so structure is versioned.
-- As implementation begins, add module-level README files where needed.
+Useful commands:
 
-- `job-matcher/` module now includes the Resume-First Job Recommendation UI with components for resume selection, match score, missing skills, and recommended jobs, following a modular and scalable structure.
+```bash
+npm --workspace client run test:run
+npm --workspace client run lint
+npm --workspace client run build
+```
+
+## Backend (`server`)
+
+### Application Entry Points
+
+- `index.js`: Express bootstrap, security middleware, rate limiting, Swagger, API mounts, Socket.IO setup, and error handling.
+- `src/database/db.js`: MongoDB connection.
+- `src/config/`: environment, Redis, Cloudinary, OAuth, Swagger, evaluator, logging, and security configuration.
+- `src/middleware/`: authentication, RBAC, validation, uploads, rate limiting, caching, file authorization, and request logging.
+- `src/utils/`: shared errors, parsing, encryption, signed URLs, cache helpers, deletion cleanup, email, logging, and AI helpers.
+- `src/validations/`: Zod schemas for auth, users, jobs, recruiters, classrooms, and cover letters.
+
+### Mounted API Modules
+
+`server/index.js` mounts these route groups:
+
+| Base path | Module | Main capabilities |
+| --- | --- | --- |
+| `/api/auth` | `modules/auth/` | Registration, login/logout, email verification, password reset, Google OAuth, current user. |
+| `/api/resume` | `modules/resumes/` | Upload, analysis, resume library, active resume, rename/delete, comparison, cover letters. |
+| `/api/jobs` | `modules/jobs/` | Job discovery, recommendations, saved jobs, applications, recruiter jobs, analytics, CSV export. |
+| `/api/roadmap` | `modules/roadmap/` | Student progress, roadmap sync, tutor collaboration, recruiter tracking, comments. |
+| `/api/matching` | `modules/matching/` | Resume-to-job evaluation and stored recommendations. |
+| `/api/dashboard` | `modules/dashboard/` | User analysis history. |
+| `/api/cover-letters` | `modules/coverLetters/` | Generate, list, read, and delete cover letters. |
+| `/api/classrooms` | `modules/classrooms/` | Create, list, join, inspect, and end classroom sessions. |
+| `/api/users` | `modules/users/` | Onboarding, profile, avatar, preferences, privacy, and account deletion. |
+| `/api/interviews` | `modules/interviews/` | Topics, sessions, answers, results, history, bookmarks, tutor feedback. |
+| `/api/errors` | `modules/errors/` | Client error reporting. |
+| `/api/files` | `modules/files/` | Authorized resume/avatar access and signed file URLs. |
+| `/api/notifications` | `modules/notifications/` | Notification listing, counts, read state, creation, and deletion. |
+| `/api/analytics` | `modules/analytics/` | Role-aware dashboards and skill-gap analytics. |
+| `/api/recruiter` | `modules/recruiter/` | Talent Finder, candidate matching, and invitations. |
+| `/api/chat` | `modules/ai-assistant/` | Rate-limited AI assistant responses. |
+
+Swagger UI is available at `/api-docs`, and `/health` exposes server health.
+
+### Representative API Routes
+
+Authentication:
+
+- `GET /api/auth/me`
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+- `POST /api/auth/verify-email`
+- `POST /api/auth/forgot-password`
+- `POST /api/auth/reset-password`
+- `GET /api/auth/google`
+- `GET /api/auth/google/callback`
+
+Resume and matching:
+
+- `POST /api/resume/upload`
+- `POST /api/resume/analyze`
+- `GET /api/resume/me/latest`
+- `GET /api/resume/list`
+- `PATCH /api/resume/:id/active`
+- `PATCH /api/resume/:id/rename`
+- `DELETE /api/resume/:id`
+- `POST /api/resume/compare`
+- `POST /api/resume/:id/cover-letter`
+- `POST /api/matching/evaluate`
+- `GET /api/matching/recommended`
+
+Jobs and recruitment:
+
+- `GET /api/jobs`
+- `GET /api/jobs/recommendations?sortBy=score|salary|date`
+- `GET /api/jobs/saved`
+- `POST /api/jobs/:id/save`
+- `DELETE /api/jobs/:id/save`
+- `POST /api/jobs/:id/apply`
+- `PATCH /api/jobs/:id/withdraw`
+- `GET /api/jobs/my-applications/details`
+- `GET /api/jobs/recruiter`
+- `POST /api/jobs`
+- `GET /api/jobs/:id/applications`
+- `GET /api/jobs/:id/applications/export`
+- `GET /api/recruiter/talent-finder`
+- `POST /api/recruiter/match-candidate`
+- `POST /api/recruiter/invite-candidate`
+
+Interviews, classrooms, and roadmaps:
+
+- `POST /api/interviews/start`
+- `POST /api/interviews/:id/answer`
+- `POST /api/interviews/:id/complete`
+- `GET /api/interviews/:id/results`
+- `GET /api/interviews/history`
+- `GET /api/interviews/bookmarks`
+- `PATCH /api/interviews/:id/questions/:questionId/bookmark`
+- `POST /api/classrooms/create`
+- `GET /api/classrooms/active`
+- `GET /api/classrooms/:roomId`
+- `PATCH /api/classrooms/:roomId/end`
+- `GET /api/roadmap/me`
+- `POST /api/roadmap/sync`
+- `PATCH /api/roadmap/update-topic`
+- `GET /api/roadmap/tutor/students`
+- `GET /api/roadmap/recruiter/tracked`
+
+### Backend Modules and Services
+
+Most backend features follow:
+
+```text
+modules/<feature>/
+├── routes.js       Express routes and middleware
+├── controller.js   Request/response handling
+├── service.js      Business logic and persistence orchestration
+└── __tests__/      Focused module tests
+```
+
+Some modules intentionally differ:
+
+- `recruiter/` keeps Talent Finder logic in its controller.
+- `recruiterIntelligence/` evaluates applicant/job alignment for recruiter insights.
+- `classrooms/` and `interviews/` include Socket.IO handlers.
+- `resumes/` includes evaluator adapters and cover-letter handling.
+- `jobs/` includes seed data and extensive filtering, analytics, recommendations, applications, and saved-job logic.
+
+### Database Models
+
+Models live in `src/database/models/`:
+
+- `User`: roles, encrypted identity fields, onboarding, access level, and preferences.
+- `Resume`: parsed resumes, skills, analysis scores, files, and active-version state.
+- `AnalysisHistory`: persisted analysis history.
+- `JobPosting`: recruiter-owned jobs.
+- `JobApplication`: application lifecycle and student/recruiter statuses.
+- `SavedJob`: unique student/job bookmarks.
+- `MatchResult`: stored recommendation and matching output.
+- `LearningProgress`: roadmaps, milestones, tutor/recruiter tracking, and contribution progress.
+- `RoadmapComment`: roadmap collaboration comments.
+- `InterviewSession`, `QuestionBank`, `ConceptGraph`: mock interview sessions and question data.
+- `ClassroomSession`: live classroom state and collaboration history.
+- `Notification`: in-app notifications and metadata.
+- `CoverLetter`: generated cover-letter records.
+- `SemanticCache`: reusable AI evaluation cache.
+
+### Real-Time Features
+
+Socket.IO support includes:
+
+- classroom presence, chat, WebRTC signaling, whiteboard, and code editor events;
+- mock interview observers and tutor/conductor updates;
+- roadmap collaboration updates;
+- notification delivery and dashboard refresh events.
+
+Socket authentication and rate limiting live in `src/middleware/`, while feature socket handlers live beside their modules.
+
+### Backend Tests
+
+The backend uses the Node.js test runner with module mocks.
+
+- Module tests: `src/modules/**/__tests__/`
+- Model tests: `src/database/models/__tests__/`
+- Middleware tests: `src/middleware/__tests__/`
+- Validation tests: `src/validations/__tests__/`
+- Utility tests: `src/utils/__tests__/`
+- Import smoke test: `src/__tests__/module-load.test.js`
+
+Coverage includes authentication, privacy filtering, saved jobs, job filtering and recommendations, resume analysis, interview bookmarks/history/audio validation, classrooms and socket handlers, notifications, profile preferences, cascading deletion, signed files, and security utilities.
+
+Useful commands:
+
+```bash
+npm --workspace server test
+npm --workspace server run lint
+npm --workspace server run depcruise:validate
+```
+
+## AI/ML Package (`ai-ml`)
+
+The JavaScript AI/ML package is implemented and used by the server.
+
+Key areas:
+
+- `evaluators/`: ATS optimization, consistency, experience, impact, keywords, readability, semantics, skills, and technical standards.
+- `pipeline/runPipeline.js`: evaluator execution.
+- `pipeline/evaluatorContract.js`: normalized evaluator result contract.
+- `pipeline/aggregator.js`: weighted score aggregation.
+- `pipeline/recommendationEngine.js`: job recommendation scoring.
+- `pipeline/safeEval.js` and `withTimeout.js`: evaluator isolation and timeout handling.
+- `utils/gapAnalyzer.js`: missing-skill analysis.
+- `utils/resumeClassifier.js`: resume classification.
+- `utils/skillNormalizer.js`: normalized skill matching.
+- `config/`: scoring weights, benchmarks, and keyword configuration.
+- `data/`: technical keywords and power verbs.
+
+Tests are colocated under `evaluators/__tests__/`, `pipeline/__tests__/`, and the package-level `__tests__/`.
+
+```bash
+npm --workspace ai-ml test
+```
+
+## Interview AI Service (`interview-ai-service`)
+
+The FastAPI service provides interview-specific AI processing:
+
+- `main.py`: application entry point and router registration.
+- `routers/transcription.py`: audio transcription API.
+- `routers/evaluation.py`: answer evaluation API.
+- `services/whisper_service.py`: faster-whisper speech-to-text.
+- `services/semantic_service.py`: semantic similarity scoring.
+- `services/nlp_service.py`: NLP and concept analysis.
+- `services/communication_analyzer.py`: communication-quality signals.
+- `cors_config.py`: environment-aware CORS policy.
+- `tests/`: CORS and transcription-limit tests.
+- `Dockerfile`: container configuration.
+
+See `interview-ai-service/README.md` for service-specific setup.
+
+## Documentation
+
+The `docs/` directory includes:
+
+- `api/`: endpoint contracts.
+- `architecture/`: evaluator and system architecture.
+- `features/`: role and feature documentation.
+- `workflows/`: classroom, roadmap, interview, and recruitment workflows.
+- `API_NOTIFICATIONS.md`: notification API.
+- `QUALITY_GATES.md`: expected validation and quality checks.
+- `SECURITY_ENVIRONMENT.md`: environment and secret-handling guidance.
+
+## Contributor Guide
+
+When adding a feature:
+
+1. Add frontend code under the closest `client/src/modules/<feature>/` directory.
+2. Put feature API calls in that module's `services/` directory.
+3. Reuse `client/src/shared/` for genuinely cross-feature UI or hooks.
+4. Add backend routes/controllers/services under `server/src/modules/<feature>/`.
+5. Add or update Mongoose models in `server/src/database/models/`.
+6. Validate request bodies through `server/src/validations/` and `validateBody`.
+7. Protect routes with `protect`, `authorizeRoles`, and `requireFullAccess` as appropriate.
+8. Add tests next to the changed module and update relevant feature/workflow documentation.
+
+Prefer documenting stable responsibilities and public routes rather than listing every internal file. The source tree remains the final authority when implementation and documentation differ.
