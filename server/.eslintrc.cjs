@@ -7,5 +7,13 @@ module.exports = {
     'no-unused-vars': 'off',
     'no-undef': 'off',
     'no-console': ['error', { allow: ['time', 'timeEnd'] }]
-  }
+  },
+  overrides: [
+    {
+      files: ['**/__tests__/**/*.js', '**/__tests__/**/*.cjs', '**/*.test.js', '**/*.test.cjs'],
+      rules: {
+        'no-console': 'off'
+      }
+    }
+  ]
 };
