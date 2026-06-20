@@ -17,8 +17,8 @@ export const createSession = async (hostId, { title, subject, maxParticipants })
   const roomId = uuidv4();
   const session = await ClassroomSession.create({
     roomId,
-    title,
-    subject,
+    title: title.trim(),
+    subject: subject?.trim() || "",
     maxParticipants,
     host: hostId,
     status: "active",
