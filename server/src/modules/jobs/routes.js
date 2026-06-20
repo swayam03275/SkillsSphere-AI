@@ -62,9 +62,33 @@ router.get("/", cacheMiddleware("jobs", 300), getJobs);
  *         description: Recommended jobs
  */
 router.get("/recommendations", authorizeRoles("student"), getRecommendations);
+/**
+ * @openapi
+ * /api/jobs/trends/skills:
+ *   get:
+ *     summary: Get skill trends in job postings
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Skill trends data
+ */
 router.get("/trends/skills", getSkillTrends);
 
 // Recruiter-only routes
+/**
+ * @openapi
+ * /api/jobs/recruiter:
+ *   get:
+ *     summary: Get jobs posted by the recruiter
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of recruiter jobs
+ */
 router.get("/recruiter", authorizeRoles("recruiter"), getRecruiterJobs);
 /**
  * @openapi
@@ -108,10 +132,81 @@ router.get("/recruiter/analytics", authorizeRoles("recruiter"), getRecruiterAnal
 router.post("/", authorizeRoles("recruiter"), requireFullAccess, jobCreationLimiter, validateBody(jobPostingSchema), createJobPosting);
 
 // Student application routes (must be before /:id to avoid route conflict)
+/**
+ * @openapi
+ * /api/jobs/my-applications:
+ *   get:
+ *     summary: Get student's job applications
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of applications
+ */
 router.get("/my-applications", authorizeRoles("student"), getMyApplications);
+
+/**
+ * @openapi
+ * /api/jobs/my-applications/details:
+ *   get:
+ *     summary: Get detailed view of student applications
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Detailed applications
+ */
 router.get("/my-applications/details", authorizeRoles("student"), getMyApplicationsDetailed);
 
 // Job-specific routes
+/**
+ * @openapi
+ * /api/jobs/{id}:
+ *   get:
+ *     summary: Get a specific job posting
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Job posting retrieved
+ *   put:
+ *     summary: Update a job posting
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Job posting updated
+ *   delete:
+ *     summary: Delete a job posting
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Job posting deleted
+ */
 router
   .route("/:id")
   .get(authorizeRoles("recruiter"), getJobPostingById)
@@ -119,11 +214,124 @@ router
   .delete(authorizeRoles("recruiter"), deleteJobPosting);
 
 // Application routes
+/**
+ * @openapi
+ * /api/jobs/{id}/apply:
+ *   post:
+ *     summary: Apply to a job
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       201:
+ *         description: Application submitted
+ */
 router.post("/:id/apply", authorizeRoles("student"), validateBody(applyToJobSchema), applyToJobPosting);
+
+/**
+ * @openapi
+ * /api/jobs/{id}/withdraw:
+ *   patch:
+ *     summary: Withdraw an application
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Application withdrawn
+ */
 router.patch("/:id/withdraw", authorizeRoles("student"), withdrawJobApplication);
+
+/**
+ * @openapi
+ * /api/jobs/{id}/applications:
+ *   get:
+ *     summary: Get applications for a job
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List of applications
+ */
 router.get("/:id/applications", authorizeRoles("recruiter"), getApplications);
+
+/**
+ * @openapi
+ * /api/jobs/{id}/applications/export:
+ *   get:
+ *     summary: Export applications to CSV
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: CSV file downloaded
+ */
 router.get("/:id/applications/export", authorizeRoles("recruiter"), exportApplicationsToCSV);
+
+/**
+ * @openapi
+ * /api/jobs/applications/{id}/status:
+ *   patch:
+ *     summary: Update application status (recruiter)
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Status updated
+ */
 router.patch("/applications/:id/status", authorizeRoles("recruiter"), validateBody(updateApplicationStatusSchema), updateApplicationStatus);
+
+/**
+ * @openapi
+ * /api/jobs/applications/{id}/student-status:
+ *   patch:
+ *     summary: Update application status (student)
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Status updated
+ */
 router.patch("/applications/:id/student-status", authorizeRoles("student"), validateBody(updateStudentApplicationStatusSchema), updateStudentApplicationStatus);
 
 export default router;

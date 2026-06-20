@@ -33,6 +33,45 @@ const validateChatPayload = (req, _res, next) => {
 export const createChatRouter = ({ getGeminiModel }) => {
   const router = express.Router();
 
+  /**
+   * @openapi
+   * /api/chat:
+   *   post:
+   *     summary: Send a message to the AI career assistant
+   *     tags: [Chat]
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - message
+   *             properties:
+   *               message:
+   *                 type: string
+   *                 description: The chat message for the AI
+   *     responses:
+   *       200:
+   *         description: AI response generated successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 reply:
+   *                   type: string
+   *       400:
+   *         description: Bad request (missing or invalid message)
+   *       401:
+   *         description: Unauthorized
+   *       500:
+   *         description: Server error
+   *       503:
+   *         description: AI service unavailable
+   */
   router.post(
     "/",
     protect,

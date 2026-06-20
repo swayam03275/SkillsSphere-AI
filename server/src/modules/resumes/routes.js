@@ -198,9 +198,88 @@ router.post(
  *         description: Aggregate records locked down and calculated
  */
 router.get("/me/latest", protect, getLatestResume);
+
+/**
+ * @openapi
+ * /api/resume/list:
+ *   get:
+ *     summary: List all resumes for the user
+ *     tags: [Resumes]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of resumes
+ */
 router.get("/list", protect, authorizeRoles("student"), listResumes);
+
+/**
+ * @openapi
+ * /api/resume/{id}/active:
+ *   patch:
+ *     summary: Set a resume as active
+ *     tags: [Resumes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Resume set as active
+ */
 router.patch("/:id/active", protect, authorizeRoles("student"), setActiveResume);
+
+/**
+ * @openapi
+ * /api/resume/{id}/rename:
+ *   patch:
+ *     summary: Rename a resume
+ *     tags: [Resumes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Resume renamed
+ */
 router.patch("/:id/rename", protect, authorizeRoles("student"), renameResume);
+
+/**
+ * @openapi
+ * /api/resume/{id}:
+ *   delete:
+ *     summary: Delete a resume
+ *     tags: [Resumes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Resume deleted
+ */
 router.delete("/:id", protect, authorizeRoles("student"), deleteResume);
 
 /**

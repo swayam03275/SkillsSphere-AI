@@ -14,9 +14,32 @@ const router = express.Router();
 router.use(protect);
 
 /**
- * POST /api/matching/evaluate
- * Evaluates a resume against available jobs.
- * Supports optional file upload (field name: 'resume').
+ * @openapi
+ * /api/matching/evaluate:
+ *   post:
+ *     summary: Evaluate a resume against available jobs
+ *     tags: [Matching]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               resume:
+ *                 type: string
+ *                 format: binary
+ *                 description: Optional resume file upload
+ *     responses:
+ *       200:
+ *         description: Evaluation successful
+ *       400:
+ *         description: Bad request
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
  */
 router.post(
   "/evaluate",
@@ -26,8 +49,20 @@ router.post(
 );
 
 /**
- * GET /api/matching/recommended
- * Retrieves the latest match results/recommendations.
+ * @openapi
+ * /api/matching/recommended:
+ *   get:
+ *     summary: Retrieve recommended jobs based on latest evaluation
+ *     tags: [Matching]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Recommended jobs retrieved
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
  */
 router.get("/recommended", controller.getRecommended);
 

@@ -149,7 +149,18 @@ router.use(protect);
  */
 router.get("/topics", cacheMiddleware("topics", 600), getAvailableTopics);
 
-// AI service status (for debugging)
+/**
+ * @openapi
+ * /api/interviews/ai-status:
+ *   get:
+ *     summary: Get AI service status
+ *     tags: [Interviews]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: AI service status
+ */
 router.get("/ai-status", getAIServiceStatus);
 
 /**
@@ -193,19 +204,155 @@ router.post("/start", aiActionLimiter, startInterview);
  *         description: List of previous sessions
  */
 router.get("/history", getInterviewHistory);
+
+/**
+ * @openapi
+ * /api/interviews/bookmarks:
+ *   get:
+ *     summary: Get bookmarked questions
+ *     tags: [Interviews]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Bookmarked questions
+ */
 router.get("/bookmarks", getInterviewBookmarks);
 
 // Tutor routes (must be before /:id to avoid route conflict)
+/**
+ * @openapi
+ * /api/interviews/tutor/sessions:
+ *   get:
+ *     summary: Get sessions for tutor
+ *     tags: [Interviews]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Tutor sessions retrieved
+ */
 router.get("/tutor/sessions", authorizeRoles("tutor"), getTutorSessions);
+
+/**
+ * @openapi
+ * /api/interviews/tutor/sessions/{id}:
+ *   get:
+ *     summary: Get specific tutor session
+ *     tags: [Interviews]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Tutor session retrieved
+ */
 router.get("/tutor/sessions/:id", authorizeRoles("tutor"), getTutorSession);
+
+/**
+ * @openapi
+ * /api/interviews/tutor/sessions/{id}/feedback:
+ *   post:
+ *     summary: Submit feedback for a session
+ *     tags: [Interviews]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               feedback:
+ *                 type: string
+ *               score:
+ *                 type: number
+ *     responses:
+ *       200:
+ *         description: Feedback submitted
+ */
 router.post(
   "/tutor/sessions/:id/feedback",
   authorizeRoles("tutor"),
   submitTutorFeedback,
 );
 
+/**
+ * @openapi
+ * /api/interviews/{id}:
+ *   get:
+ *     summary: Get an interview session
+ *     tags: [Interviews]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Interview session retrieved
+ *   delete:
+ *     summary: Delete an interview session
+ *     tags: [Interviews]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Interview session deleted
+ */
 router.get("/:id", getSession);
 router.delete("/:id", deleteInterviewSession);
+
+/**
+ * @openapi
+ * /api/interviews/{id}/answer:
+ *   post:
+ *     summary: Submit an answer to a question
+ *     tags: [Interviews]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               audio:
+ *                 type: string
+ *                 format: binary
+ *               text:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Answer processed
+ */
 router.post(
   "/:id/answer",
   aiActionLimiter,
@@ -213,8 +360,70 @@ router.post(
   validateUploadedAudioFile,
   submitAnswer,
 );
+
+/**
+ * @openapi
+ * /api/interviews/{id}/complete:
+ *   post:
+ *     summary: Complete an interview session
+ *     tags: [Interviews]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Interview completed
+ */
 router.post("/:id/complete", completeInterview);
+
+/**
+ * @openapi
+ * /api/interviews/{id}/questions/{questionId}/bookmark:
+ *   patch:
+ *     summary: Bookmark a question
+ *     tags: [Interviews]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: questionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Question bookmarked
+ */
 router.patch("/:id/questions/:questionId/bookmark", bookmarkQuestion);
+
+/**
+ * @openapi
+ * /api/interviews/{id}/results:
+ *   get:
+ *     summary: Get session results
+ *     tags: [Interviews]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Session results retrieved
+ */
 router.get("/:id/results", getSessionResults);
 
 export default router;

@@ -15,8 +15,69 @@ router.use(protect);
 router.use(authorizeRoles("recruiter"));
 
 // Define routes
+
+/**
+ * @openapi
+ * /api/recruiter/talent-finder:
+ *   get:
+ *     summary: Search for talent
+ *     tags: [Recruiter]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Talent search results retrieved
+ */
 router.get("/talent-finder", requireFullAccess, searchTalent);
+
+/**
+ * @openapi
+ * /api/recruiter/match-candidate:
+ *   post:
+ *     summary: Match a candidate to a job
+ *     tags: [Recruiter]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               candidateId:
+ *                 type: string
+ *               jobId:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Candidate matched
+ */
 router.post("/match-candidate", requireFullAccess, validateBody(matchCandidateSchema), matchCandidate);
+
+/**
+ * @openapi
+ * /api/recruiter/invite-candidate:
+ *   post:
+ *     summary: Invite a candidate
+ *     tags: [Recruiter]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               candidateId:
+ *                 type: string
+ *               message:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Candidate invited
+ */
 router.post("/invite-candidate", requireFullAccess, validateBody(inviteCandidateSchema), inviteCandidate);
 
 export default router;

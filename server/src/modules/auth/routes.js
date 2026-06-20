@@ -47,10 +47,28 @@ const router = express.Router();
  */
 router.get("/me", protect, getMe);
 
-// Initiate Google OAuth
+/**
+ * @openapi
+ * /api/auth/google:
+ *   get:
+ *     summary: Initiate Google OAuth
+ *     tags: [Auth]
+ *     responses:
+ *       302:
+ *         description: Redirects to Google
+ */
 router.get("/google", initiateGoogleOAuth);
 
-// Callback from Google
+/**
+ * @openapi
+ * /api/auth/google/callback:
+ *   get:
+ *     summary: Callback from Google OAuth
+ *     tags: [Auth]
+ *     responses:
+ *       302:
+ *         description: Redirects to frontend with tokens
+ */
 router.get("/google/callback", googleOAuthCallback);
 
 /**
@@ -85,9 +103,92 @@ router.get("/google/callback", googleOAuthCallback);
  *         description: User registered
  */
 router.post("/register", authRateLimiter, validateBody(registerSchema), register);
+/**
+ * @openapi
+ * /api/auth/verify-email:
+ *   post:
+ *     summary: Verify user email using OTP
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               otp:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Email verified successfully
+ */
 router.post("/verify-email", otpRateLimiter, authRateLimiter, validateBody(verifyEmailSchema), verifyEmail);
+
+/**
+ * @openapi
+ * /api/auth/forgot-password:
+ *   post:
+ *     summary: Request password reset email
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Password reset email sent
+ */
 router.post("/forgot-password", authRateLimiter, validateBody(forgotPasswordSchema), forgotPassword);
+
+/**
+ * @openapi
+ * /api/auth/reset-password:
+ *   post:
+ *     summary: Reset password
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               token:
+ *                 type: string
+ *               newPassword:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Password reset successfully
+ */
 router.post("/reset-password", authRateLimiter, validateBody(resetPasswordSchema), resetPassword);
+
+/**
+ * @openapi
+ * /api/auth/resend-otp:
+ *   post:
+ *     summary: Resend OTP
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: OTP resent
+ */
 router.post("/resend-otp", authRateLimiter, validateBody(resendOtpSchema), resendOTP);
 /**
  * @openapi
@@ -115,13 +216,60 @@ router.post("/resend-otp", authRateLimiter, validateBody(resendOtpSchema), resen
  */
 router.post("/login", authRateLimiter, validateBody(loginSchema), login);
 
-// 🚪 Logout
+/**
+ * @openapi
+ * /api/auth/logout:
+ *   post:
+ *     summary: Logout user
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User logged out
+ */
 router.post("/logout", protect, logout);
 
-// 🔐 Google Login
+/**
+ * @openapi
+ * /api/auth/google:
+ *   post:
+ *     summary: Google login via token
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               token:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Login successful
+ */
 router.post("/google", validateBody(googleAuthSchema), googleLogin);
 
-// Exchange one-time auth code for JWT
+/**
+ * @openapi
+ * /api/auth/exchange-code:
+ *   post:
+ *     summary: Exchange one-time code for JWT
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               code:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Token exchange successful
+ */
 router.post("/exchange-code", authRateLimiter, exchangeOAuthCode);
 
 export default router;
