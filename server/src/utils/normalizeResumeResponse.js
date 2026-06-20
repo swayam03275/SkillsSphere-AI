@@ -1,4 +1,5 @@
-export function normalizeResumeData(data = {}) {
+export function normalizeResumeData(data) {
+  data = data || {};
   return {
     name: data.name || "",
     email: data.email || null,
@@ -22,7 +23,8 @@ export function normalizeResumeData(data = {}) {
   };
 }
 
-export function normalizePipelineResult(result = {}) {
+export function normalizePipelineResult(result) {
+  result = result || {};
   return {
     score: typeof result.score === "number" ? result.score : 0,
     breakdown:
