@@ -78,12 +78,14 @@ export const createJobPosting = asyncHandler(async (req, res) => {
     keywords,
   } = req.body;
 
-
+  if (!title?.trim() || !description?.trim()) {
+    throw new AppError("Title and description are required", 400);
+  }
 
   // Create job posting with recruiter from authenticated user
   const jobPosting = await JobPosting.create({
-    title,
-    description,
+    title: title.trim(),
+    description: description.trim(),
     requirements,
     responsibilities,
     skills,
