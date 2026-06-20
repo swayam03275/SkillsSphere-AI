@@ -18,6 +18,7 @@ import ObserverPanel from "../components/ObserverPanel";
 import RealtimeSentimentIndicator from "../components/RealtimeSentimentIndicator";
 import Navbar from "../../../shared/components/Navbar";
 import Footer from "../../../shared/components/Footer";
+import ErrorBoundary from "../../../shared/components/ErrorBoundary";
 
 // Icons & Utilities
 import {
@@ -353,23 +354,25 @@ const InterviewSession = () => {
 
           {/* Answer Input */}
           {!state.showScores && (
-            <AnswerInputSection
-              isObserver={isObserver}
-              textareaRef={textareaRef}
-              liveTyping={socketState.liveTyping}
-              answer={state.answer}
-              onChange={(e) => state.handleAnswerChange(e, socketState.socket)}
-              onKeyDown={handleKeyDown}
-              submitting={state.submitting}
-              error={state.error}
-              failedAction={state.failedAction}
-              onRetry={handleManualRetry}
-              isRecording={audioState.isRecording}
-              startRecording={audioState.startRecording}
-              stopRecording={audioState.stopRecording}
-              onSubmit={handleSubmit}
-              requestStatus={state.requestStatus}
-            />
+            <ErrorBoundary>
+              <AnswerInputSection
+                isObserver={isObserver}
+                textareaRef={textareaRef}
+                liveTyping={socketState.liveTyping}
+                answer={state.answer}
+                onChange={(e) => state.handleAnswerChange(e, socketState.socket)}
+                onKeyDown={handleKeyDown}
+                submitting={state.submitting}
+                error={state.error}
+                failedAction={state.failedAction}
+                onRetry={handleManualRetry}
+                isRecording={audioState.isRecording}
+                startRecording={audioState.startRecording}
+                stopRecording={audioState.stopRecording}
+                onSubmit={handleSubmit}
+                requestStatus={state.requestStatus}
+              />
+            </ErrorBoundary>
           )}
 
           {/* Completion State */}

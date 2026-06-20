@@ -9,6 +9,7 @@ import { logout } from "../../features/auth/authSlice";
 import Button from "../../shared/components/Button";
 import Navbar from "../../shared/components/Navbar";
 import Footer from "../../shared/components/Footer";
+import ErrorBoundary from "../../shared/components/ErrorBoundary";
 
 import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 
@@ -150,9 +151,11 @@ const DashboardPage = () => {
             </div>
 
             {/* Role Specific Sub-Dashboards */}
-            {isStudent && <StudentDashboard token={token} />}
-            {isTutor && <TutorDashboard token={token} />}
-            {isRecruiter && <RecruiterDashboard token={token} />}
+            <ErrorBoundary>
+              {isStudent && <StudentDashboard token={token} />}
+              {isTutor && <TutorDashboard token={token} />}
+              {isRecruiter && <RecruiterDashboard token={token} />}
+            </ErrorBoundary>
 
             {/* Account Status - Common for all roles */}
             <div className="mt-6 rounded-2xl border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-slate-900/50 p-6 backdrop-blur-md">

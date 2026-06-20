@@ -3,8 +3,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import Navbar from "../../shared/components/Navbar";
 import Footer from "../../shared/components/Footer";
-
 import { Link } from "react-router-dom";
+import ErrorBoundary from "../../shared/components/ErrorBoundary";
 import ProfileSkeleton from "./components/ProfileSkeleton";
 import {
   User, Mail, Shield, Calendar, Clock, Pencil, X, Check,
@@ -526,6 +526,7 @@ const ProfilePage = () => {
           </aside>
 
           {/* Right Column */}
+          <ErrorBoundary>
           <div className="flex flex-col gap-5 min-w-0">
 
             {/* Pending Access Banner */}
@@ -744,7 +745,8 @@ const ProfilePage = () => {
               </div>
             )}
 
-          </div> {/* Closes Right Column */}
+          </div>
+          </ErrorBoundary> {/* Closes Right Column */}
 
         </div> {/* Closes Main Layout Grid */}
       </div> {/* Closes Content Wrapper */}
