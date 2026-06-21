@@ -24,13 +24,13 @@ const jobApplicationSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["pending", "reviewed", "shortlisted", "rejected", "withdrawn"],
+      enum: ["pending", "reviewed", "shortlisted", "rejected", "withdrawn", "archived"],
       default: "pending",
     },
 
     studentStatus: {
       type: String,
-      enum: ["pending", "reviewed", "shortlisted", "rejected", "withdrawn", null],
+      enum: ["pending", "reviewed", "shortlisted", "rejected", "withdrawn", "archived", null],
       default: null,
     },
 
@@ -100,7 +100,7 @@ const jobApplicationSchema = new mongoose.Schema(
       {
         status: {
           type: String,
-          enum: ["pending", "reviewed", "shortlisted", "rejected", "withdrawn"],
+          enum: ["pending", "reviewed", "shortlisted", "rejected", "withdrawn", "archived"],
           required: true,
         },
         comment: {

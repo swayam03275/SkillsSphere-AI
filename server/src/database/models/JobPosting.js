@@ -57,7 +57,7 @@ const jobPostingSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["draft", "open", "closed"],
+      enum: ["draft", "open", "closed", "archived"],
       default: "draft",
       required: true,
     },
