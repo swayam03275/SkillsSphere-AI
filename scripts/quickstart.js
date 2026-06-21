@@ -5,7 +5,7 @@ function usage() {
   console.log("Usage: node scripts/quickstart.js");
   // eslint-disable-next-line no-console
   console.log(
-    "Installs all dependencies and starts client+server+python service.",
+    "Installs all dependencies and starts client + server + python service.",
   );
 }
 
