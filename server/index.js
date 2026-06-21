@@ -220,7 +220,7 @@ app.get("/health", (req, res) => {
   res.json({
     status: "OK",
     db: isConnected ? "connected" : "disconnected",
-    redis: globalThis.__REDIS_READY__ ? "connected" : "disconnected",
+    redis: redisClient?.isReady ? "connected" : "disconnected",
   });
 });
 
