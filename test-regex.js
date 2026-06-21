@@ -1,3 +1,4 @@
+// Utility script to test resume path matching regex
 const escapeRegex = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const filename = "victim.pdf";
 const escapedFilename = escapeRegex(filename);
