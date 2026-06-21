@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
 import { Activity, Users, FileText, LayoutDashboard } from "lucide-react";
 import Navbar from "../../../shared/components/Navbar";
 import Footer from "../../../shared/components/Footer";
@@ -6,6 +7,7 @@ import AuditChart from "../components/AuditChart";
 import { apiRequest } from "../../../services/apiClient";
 
 const AdminAnalyticsDashboard = () => {
+  const { token } = useSelector((state: any) => state.auth);
   const [data, setData] = useState({ chartData: [], actions: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -14,7 +16,7 @@ const AdminAnalyticsDashboard = () => {
   useEffect(() => {
     const fetchAuditLogs = async () => {
       try {
-        const response = await apiRequest("/api/analytics/admin-dashboard");
+        const response = await apiRequest("/api/analytics/admin-dashboard", { token });
         if (response && response.data) {
           setData(response.data);
         }
@@ -26,8 +28,10 @@ const AdminAnalyticsDashboard = () => {
       }
     };
 
-    fetchAuditLogs();
-  }, []);
+    if (token) {
+      fetchAuditLogs();
+    }
+  }, [token]);
 
   return (
     <div className="min-h-screen bg-[var(--background)] flex flex-col">
