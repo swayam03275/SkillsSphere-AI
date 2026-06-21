@@ -34,6 +34,9 @@ export const normalizeProtectedFilePath = (input) => {
   if (path.includes("/uploads/avatars/")) {
     const filename = path.split("/uploads/avatars/").pop();
     path = filename ? `/api/files/avatars/${filename}` : path;
+  } else if (path.includes("/uploads/resumes/")) {
+    const filename = path.split("/uploads/resumes/").pop();
+    path = filename ? `/api/files/resumes/${filename}` : path;
   } else if (path.includes("/uploads/")) {
     const filename = path.split("/uploads/").pop();
     path = filename ? `/api/files/resumes/${filename}` : path;
