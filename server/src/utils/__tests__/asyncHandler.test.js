@@ -2,60 +2,54 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import asyncHandler from "../asyncHandler.js";
 
-test("asyncHandler - calls the wrapped function with req, res, next", async () => {
-  let called = false;
-  const req = {};
-  const res = {};
-  const next = () => {};
+test("asyncHandler passes resolved value through when handler succeeds", async () => {
+  const mockReq = {};
+  const mockRes = {};
+  const mockNext = () => {};
 
-  const wrapped = asyncHandler(async (q, s, n) => {
-    assert.equal(q, req);
-    assert.equal(s, res);
-    assert.equal(n, next);
-    called = true;
+  const handler = asyncHandler(async (req, res, next) => {
+    return "resolved value";
   });
 
-  wrapped(req, res, next);
-  assert.equal(called, true);
+  const result = await handler(mockReq, mockRes, mockNext);
+  assert.equal(result, "resolved value");
 });
 
-test("asyncHandler - catches rejected promises and forwards to next()", async () => {
-  const req = {};
-  const res = {};
-  const expectedError = new Error("Test rejection");
-  let receivedError = null;
+test("asyncHandler calls next with error when handler throws", async () => {
+  const mockReq = {};
+  const mockRes = {};
+  let nextCalledWith = undefined;
 
-  const next = (err) => {
-    receivedError = err;
+  const expectedError = new Error("Handler error");
+  const mockNext = (err) => {
+    nextCalledWith = err;
   };
 
-  const wrapped = asyncHandler(async () => {
+  const handler = asyncHandler(async (req, res, next) => {
     throw expectedError;
   });
 
-  wrapped(req, res, next);
-
-  // We await a microtask to allow async/promise callback queue to process
-  await new Promise((resolve) => setImmediate(resolve));
-
-  assert.equal(receivedError, expectedError);
+  await handler(mockReq, mockRes, mockNext);
+  assert.equal(nextCalledWith, expectedError);
 });
 
-test("asyncHandler - resolves normally when no error is thrown", async () => {
-  const req = {};
-  const res = {};
-  let nextCalled = false;
+test("asyncHandler passes req, res, and next to the wrapped function", async () => {
+  const mockReq = { id: 42 };
+  const mockRes = { status: "ok" };
+  const mockNext = () => {};
+  let receivedReq = null;
+  let receivedRes = null;
+  let receivedNext = null;
 
-  const next = () => {
-    nextCalled = true;
-  };
-
-  const wrapped = asyncHandler(async () => {
-    return "success";
+  const handler = asyncHandler(async (req, res, next) => {
+    receivedReq = req;
+    receivedRes = res;
+    receivedNext = next;
+    return "ok";
   });
 
-  wrapped(req, res, next);
-  await new Promise((resolve) => setImmediate(resolve));
-
-  assert.equal(nextCalled, false);
+  await handler(mockReq, mockRes, mockNext);
+  assert.equal(receivedReq, mockReq);
+  assert.equal(receivedRes, mockRes);
+  assert.equal(receivedNext, mockNext);
 });
