@@ -3,6 +3,43 @@ import User from "../database/models/User.js";
 import AppError from "../utils/AppError.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import { isTokenBlacklisted } from "../utils/tokenBlacklist.js";
+import redisClient from "../config/redis.js";
+
+export const invalidateUserCache = async (userId) => {
+  if (redisClient && redisClient.isReady) {
+    try {
+      await redisClient.del(`user_cache:${userId}`);
+    } catch (err) {}
+  }
+};
+
+const getCachedUser = async (userId) => {
+  const cacheKey = `user_cache:${userId}`;
+  let currentUser = null;
+
+  if (redisClient && redisClient.isReady) {
+    try {
+      const cached = await redisClient.get(cacheKey);
+      if (cached) {
+        currentUser = JSON.parse(cached);
+        if (currentUser.passwordChangedAt) {
+          currentUser.passwordChangedAt = new Date(currentUser.passwordChangedAt);
+        }
+      }
+    } catch (err) {}
+  }
+
+  if (!currentUser) {
+    currentUser = await User.findById(userId).select("-password");
+    if (currentUser && redisClient && redisClient.isReady) {
+      try {
+        await redisClient.setEx(cacheKey, 3600, JSON.stringify(currentUser));
+      } catch (err) {}
+    }
+  }
+
+  return currentUser;
+};
 
 /**
  * Middleware to protect routes - checks if user is logged in
@@ -35,7 +72,7 @@ export const protect = asyncHandler(async (req, res, next) => {
     }
 
     // 4) Check if user still exists
-    const currentUser = await User.findById(decoded.userId).select("-password");
+    const currentUser = await getCachedUser(decoded.userId);
     if (!currentUser) {
       return next(
         new AppError("The user belonging to this token no longer exists.", 401)
@@ -116,7 +153,7 @@ export const verifySocketToken = async (token) => {
     throw new Error("Token has been revoked");
   }
 
-  const user = await User.findById(decoded.userId).select("-password");
+  const user = await getCachedUser(decoded.userId);
   if (!user) {
     throw new Error("User not found");
   }
