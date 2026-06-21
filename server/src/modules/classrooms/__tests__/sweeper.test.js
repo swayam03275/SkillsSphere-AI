@@ -80,6 +80,12 @@ describe("Classroom Background Sweeper (Clustered & Single Node)", () => {
       const regex = new RegExp("^" + pattern.replace(/\*/g, ".*") + "$");
       return Array.from(redisStore.keys()).filter((key) => regex.test(key));
     });
+    mock.method(redisClient, "scan", async (cursor, options) => {
+      const pattern = options?.MATCH || "*";
+      const regex = new RegExp("^" + pattern.replace(/\*/g, ".*") + "$");
+      const keys = Array.from(redisStore.keys()).filter((key) => regex.test(key));
+      return { cursor: 0, keys };
+    });
   });
 
   afterEach(() => {

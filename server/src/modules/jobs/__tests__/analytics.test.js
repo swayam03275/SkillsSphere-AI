@@ -27,7 +27,7 @@ describe("Job Service Analytics Aggregator", () => {
     // 2. Mock JobApplication countDocuments
     mock.method(JobApplication, "countDocuments", async () => 3);
 
-    // 3. Mock JobApplication aggregate for statuses
+    // 3. Mock JobApplication aggregate for statuses and metrics
     mock.method(JobApplication, "aggregate", async (args) => {
       // If doing status aggregation
       if (args[1] && args[1].$group && args[1].$group._id === "$status") {
@@ -35,6 +35,25 @@ describe("Job Service Analytics Aggregator", () => {
           { _id: "pending", count: 1 },
           { _id: "shortlisted", count: 2 }
         ];
+      }
+      // If doing metrics aggregation
+      if (args[1] && args[1].$group && args[1].$group._id === null) {
+        return [{
+          _id: null,
+          totalScored: 3,
+          totalScoreSum: 208,
+          topCandidatesCount: 1,
+          totalAtsScored: 3,
+          totalAtsSum: 195,
+          atsReadyCount: 1,
+          lowAtsCount: 1,
+          ossContributorCount: 2,
+          activeRoadmapCount: 2,
+          excellentMatchCount: 1,
+          moderateMatchCount: 1,
+          growthPotentialCount: 0,
+          weakAlignmentCount: 1
+        }];
       }
       // If doing per job aggregation
       return [

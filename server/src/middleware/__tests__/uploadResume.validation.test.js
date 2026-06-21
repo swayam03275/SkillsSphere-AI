@@ -74,11 +74,16 @@ describe("validateAndPersistResumeFile middleware", () => {
       },
     };
 
-    const result = await runMiddleware(validateAndPersistResumeFile, req);
+    let error;
+    try {
+      await runMiddleware(validateAndPersistResumeFile, req);
+    } catch (err) {
+      error = err;
+    }
 
-    assert.equal(result.statusCode, 415);
-    assert.equal(result.body.success, false);
-    assert.match(result.body.message, /not a valid PDF/i);
+    assert.ok(error, "Expected middleware to pass an error to next()");
+    assert.equal(error.statusCode, 400);
+    assert.match(error.message, /not a valid PDF/i);
     assert.equal(req.file, undefined);
 
     const after = new Set(await fs.readdir(uploadDirectory).catch(() => []));

@@ -20,6 +20,9 @@ const validBaseEnv = {
   MONGO_URI: "mongodb+srv://user:pass@cluster0.mongodb.net/skillssphere",
   FILE_URL_SIGNING_SECRET: "Str0ngFileSigningSecretValue32Chars!",
   ENCRYPTION_KEY: "Str0ngEncryptionKeyMustBe32Chars!",
+  FRONTEND_URL: "https://skillssphere.ai",
+  INTERVIEW_AI_URL: "https://ai.skillssphere.ai",
+  REDIS_URL: "redis://redis.internal:6379",
 };
 
 test("validateRequiredEnv reports missing required environment variables", () => {

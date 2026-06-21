@@ -191,7 +191,7 @@ export const validateAndPersistResumeFile = asyncHandler(async (req, res, next) 
     // Clear the memory reference to aid Garbage Collection
     req.file = undefined; 
     
-    return next(new AppError(signatureCheck.message || "The uploaded file failed content validation. Please upload a genuine PDF, DOC, DOCX, or TXT file.", 415));
+    return next(new AppError(signatureCheck.message || "The uploaded file failed content validation. Please upload a genuine PDF, DOC, DOCX, or TXT file.", 400));
   }
 
   // The file is authentic. Write it from RAM to the Disk.

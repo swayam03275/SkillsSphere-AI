@@ -134,7 +134,9 @@ test("getBookmarkedQuestions - returns flattened bookmarked answers", async () =
     return {
       select: () => ({
         sort: () => ({
-          lean: async () => sessions,
+          limit: () => ({
+            lean: async () => sessions,
+          }),
         }),
       }),
     };
