@@ -3,7 +3,7 @@ import { Activity, Users, FileText, LayoutDashboard } from "lucide-react";
 import Navbar from "../../../shared/components/Navbar";
 import Footer from "../../../shared/components/Footer";
 import AuditChart from "../components/AuditChart";
-import api from "../../../services/apiClient";
+import { apiRequest } from "../../../services/apiClient";
 
 const AdminAnalyticsDashboard = () => {
   const [data, setData] = useState({ chartData: [], actions: [] });
@@ -14,9 +14,9 @@ const AdminAnalyticsDashboard = () => {
   useEffect(() => {
     const fetchAuditLogs = async () => {
       try {
-        const response = await api.get("/analytics/admin-dashboard");
-        if (response.data && response.data.data) {
-          setData(response.data.data);
+        const response = await apiRequest("/api/analytics/admin-dashboard");
+        if (response && response.data) {
+          setData(response.data);
         }
       } catch (err) {
         console.error("Failed to fetch audit data:", err);
