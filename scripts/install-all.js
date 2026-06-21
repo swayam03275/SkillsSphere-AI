@@ -1,3 +1,4 @@
+// Utility script to install all repository dependencies
 import fs from "node:fs";
 import path from "node:path";
 import { npmCommand, printHeader, repoRoot, run } from "./_util.js";
