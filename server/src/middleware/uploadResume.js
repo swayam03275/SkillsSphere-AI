@@ -4,7 +4,7 @@ import fsPromises from "fs/promises";
 import path from "path";
 import AppError from "../utils/AppError.js";
 import { fileURLToPath } from "url";
-import { validateResumeBufferSignatureSync } from "../utils/validateFileSignature.js";
+import { validateResumeBufferSignature } from "../utils/validateFileSignature.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import logger from "../utils/logger.js";
 
@@ -181,8 +181,8 @@ export const validateAndPersistResumeFile = asyncHandler(async (req, res, next) 
     return next();
   }
 
-  // Synchronously validate the magic bytes of the memory buffer
-  const signatureCheck = validateResumeBufferSignatureSync(
+  // Asynchronously validate the magic bytes of the memory buffer
+  const signatureCheck = await validateResumeBufferSignature(
     req.file.buffer,
     req.file.originalname
   );

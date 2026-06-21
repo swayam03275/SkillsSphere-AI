@@ -110,6 +110,39 @@ const validateHeaderForExtension = (header, extension) => {
 };
 
 /**
+ * Validate magic bytes from an in-memory buffer asynchronously.
+ * Offloads validation to the next tick to prevent event loop blocking.
+ * @param {Buffer} buffer
+ * @param {string} originalName
+ * @returns {Promise<{ valid: boolean, message?: string }>}
+ */
+export const validateResumeBufferSignature = (buffer, originalName) => {
+  return new Promise((resolve) => {
+    setImmediate(() => {
+      const extension = getExtension(originalName);
+
+      if (!extension) {
+        return resolve({
+          valid: false,
+          message:
+            "Unsupported file type. Only PDF, DOC, DOCX, and TXT files are allowed.",
+        });
+      }
+
+      if (!buffer || !buffer.length) {
+        return resolve({
+          valid: false,
+          message: "The uploaded file is empty.",
+        });
+      }
+
+      resolve(validateHeaderForExtension(sampleHeader(buffer), extension));
+    });
+  });
+};
+
+/**
+ * @deprecated Use validateResumeBufferSignature instead
  * Validate magic bytes from an in-memory buffer (before any disk write).
  * @param {Buffer} buffer
  * @param {string} originalName
