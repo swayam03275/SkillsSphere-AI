@@ -181,7 +181,6 @@ app.use("/api", globalLimiter);
 
 // Safe startup: MongoDB/Redis may be temporarily unavailable.
 // Keep server running in degraded mode instead of crashing the process.
-let didConnectRedis = false;
 try {
   await connectDB();
   
@@ -203,7 +202,6 @@ try {
 
 try {
   await connectRedis();
-  didConnectRedis = true;
 } catch (err) {
   logger.error(
     "Redis startup error (degraded mode):",
@@ -211,8 +209,7 @@ try {
   );
 }
 
-// Expose a simple readiness signal for /health without relying on redisClient internals.
-globalThis.__REDIS_READY__ = didConnectRedis;
+
 
 logEvaluatorConfig();
 
