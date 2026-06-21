@@ -1,5 +1,6 @@
 import Notification from "../../database/models/Notification.js";
 import AppError from "../../utils/AppError.js";
+import { getIO } from "../../utils/socketIO.js";
 
 /**
  * Create a new notification
@@ -22,7 +23,16 @@ export const createNotification = async (notificationData) => {
     metadata: metadata || {},
   });
 
-  return notification.populate("userId", "name email");
+  const populatedNotification = await notification.populate("userId", "name email");
+
+  // Emit real-time notification event via Socket.IO
+  const io = getIO();
+  if (io) {
+    const targetUserId = populatedNotification.userId._id || populatedNotification.userId;
+    io.to(`user_${targetUserId.toString()}`).emit("new-notification", populatedNotification);
+  }
+
+  return populatedNotification;
 };
 
 /**
