@@ -177,7 +177,7 @@ export const getDashboardAnalytics = async (req, res, next) => {
  */
 export const getAuditStats = async (req, res, next) => {
   try {
-    const { AuditLog } = await import("../../database/models/AuditLog.js");
+    const { default: AuditLog } = await import("../../database/models/AuditLog.js");
     
     // Group by action and day (last 30 days)
     const thirtyDaysAgo = new Date();
