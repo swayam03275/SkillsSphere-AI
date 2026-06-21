@@ -3,7 +3,7 @@
 
 ![NSOC'26](https://img.shields.io/badge/NSOC-2026-orange?style=for-the-badge)
 
-**This project is officially registered under nexus spring of code 2026.**
+**This project is officially registered under Nexus Spring of Code 2026.**
 
 ![----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/rainbow.png)
 
