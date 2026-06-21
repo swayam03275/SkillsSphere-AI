@@ -48,6 +48,7 @@ const TutorAnalyticsDashboard = lazy(() => import("../modules/analytics/TutorAna
 const NotificationsPage = lazy(() => import("../modules/notifications/pages/NotificationsPage"));
 const ChatWidget = lazy(() => import("../modules/ai-assistant/components/ChatWidget"));
 const NotFoundPage = lazy(() => import("../modules/landing/pages/NotFoundPage"));
+const AdminAnalyticsDashboard = lazy(() => import("../modules/analytics/pages/AdminAnalyticsDashboard"));
 import ProtectedRoute from "../shared/components/ProtectedRoute";
 import SocketNotificationListener from "../shared/components/SocketNotificationListener";
 import ScrollToTop from "../shared/components/ScrollToTop";
@@ -241,6 +242,16 @@ function App() {
           element={
             <ProtectedRoute requiredRole="tutor">
               <TutorAnalyticsDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Admin/Recruiter Global Analytics */}
+        <Route
+          path="/admin/analytics"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminAnalyticsDashboard />
             </ProtectedRoute>
           }
         />

@@ -1,5 +1,5 @@
 import express from "express";
-import { getSkillGapHeatmap, getDashboardAnalytics } from "./controller.js";
+import { getSkillGapHeatmap, getDashboardAnalytics, getAuditStats } from "./controller.js";
 import { protect, authorizeRoles } from "../../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -15,17 +15,6 @@ const router = express.Router();
  *     responses:
  *       200:
  *         description: Skill gap data successfully retrieved
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: array
- *                   items:
- *                     type: object
  *       401:
  *         description: Unauthorized
  *       403:
@@ -46,20 +35,29 @@ router.get("/skill-gaps", protect, authorizeRoles("tutor", "recruiter"), getSkil
  *     responses:
  *       200:
  *         description: Dashboard analytics successfully retrieved
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: object
  *       401:
  *         description: Unauthorized
  *       500:
  *         description: Server error
  */
 router.get("/dashboard", protect, getDashboardAnalytics);
+
+/**
+ * @openapi
+ * /api/analytics/admin-dashboard:
+ *   get:
+ *     summary: Get admin dashboard analytics and audit logs
+ *     tags: [Analytics]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Admin dashboard analytics successfully retrieved
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.get("/admin-dashboard", protect, authorizeRoles("admin", "recruiter", "tutor"), getAuditStats);
 
 export default router;
