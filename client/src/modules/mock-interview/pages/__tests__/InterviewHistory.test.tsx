@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { act } from "react";
@@ -58,8 +57,11 @@ describe("InterviewHistory export", () => {
     vi.clearAllMocks();
     lastBlob = null;
     OriginalBlob = global.Blob;
+    // @ts-expect-error TODO: Fix pervasive types
     global.Blob = vi.fn(function Blob(parts, options) {
+      // @ts-expect-error TODO: Fix pervasive types
       this.parts = parts;
+      // @ts-expect-error TODO: Fix pervasive types
       this.type = options?.type;
     });
     URL.createObjectURL = vi.fn((blob) => {
@@ -80,6 +82,7 @@ describe("InterviewHistory export", () => {
   });
 
   it("renders export buttons only when history data exists", async () => {
+    // @ts-expect-error TODO: Fix pervasive types
     getHistory.mockResolvedValueOnce({
       data: { sessions: [], pagination: { page: 1, pages: 1, total: 0 } },
     });
@@ -90,6 +93,7 @@ describe("InterviewHistory export", () => {
     expect(screen.queryByRole("button", { name: /export interview history as csv/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /export interview history as json/i })).not.toBeInTheDocument();
 
+    // @ts-expect-error TODO: Fix pervasive types
     getHistory.mockResolvedValueOnce({
       data: { sessions: mockSessions, pagination: { page: 1, pages: 1, total: 1 } },
     });
@@ -101,6 +105,7 @@ describe("InterviewHistory export", () => {
   });
 
   it("exports CSV with the expected filename and performance metrics", async () => {
+    // @ts-expect-error TODO: Fix pervasive types
     getHistory.mockResolvedValueOnce({
       data: { sessions: mockSessions, pagination: { page: 1, pages: 1, total: 1 } },
     });
@@ -124,6 +129,7 @@ describe("InterviewHistory export", () => {
   });
 
   it("exports JSON with metadata and interview entries", async () => {
+    // @ts-expect-error TODO: Fix pervasive types
     getHistory.mockResolvedValueOnce({
       data: { sessions: mockSessions, pagination: { page: 1, pages: 1, total: 1 } },
     });
@@ -158,6 +164,7 @@ describe("InterviewHistory export", () => {
     });
 
     getHistory
+      // @ts-expect-error TODO: Fix pervasive types
       .mockResolvedValueOnce({
         data: { sessions: mockSessions, pagination: { page: 1, pages: 2, total: 2 } },
       })
@@ -186,9 +193,11 @@ describe("InterviewHistory export", () => {
   });
 
   it("shows a friendly export error message when download fails", async () => {
+    // @ts-expect-error TODO: Fix pervasive types
     getHistory.mockResolvedValueOnce({
       data: { sessions: mockSessions, pagination: { page: 1, pages: 1, total: 1 } },
     });
+    // @ts-expect-error TODO: Fix pervasive types
     URL.createObjectURL.mockImplementationOnce(() => {
       throw new Error("Download blocked");
     });
@@ -253,6 +262,7 @@ describe("InterviewHistory filtering", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // @ts-expect-error TODO: Fix pervasive types
     getHistory.mockResolvedValue({
       data: { sessions: filterSessions, pagination: { page: 1, pages: 1, total: 3 } },
     });

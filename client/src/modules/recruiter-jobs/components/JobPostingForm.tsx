@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useRef, useState } from "react";
 import Input from "../../../shared/components/Input";
@@ -64,11 +63,13 @@ const getSubmitErrorMessage = (error) => {
 
 const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldErrors = {} }) => {
   const { success, error: showError } = useToast();
+  // @ts-expect-error TODO: Fix pervasive types
   const isEditMode = Boolean(initialData?._id || initialData?.id);
   const submitButtonText = isEditMode ? "Update Job" : "Post Job";
   const loadingButtonText = isEditMode ? "Updating..." : "Posting...";
   
   // Unique draft key based on edit mode so we don't mix new drafts with edits
+  // @ts-expect-error TODO: Fix pervasive types
   const draftKey = isEditMode ? `job_draft_${initialData._id || initialData.id}` : "job_draft_new";
 
   const [formData, setFormData] = useState(() => {
@@ -83,25 +84,42 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
     }
 
     return {
+      // @ts-expect-error TODO: Fix pervasive types
       title: initialData.title || "",
+    // @ts-expect-error TODO: Fix pervasive types
     description: initialData.description || "",
+    // @ts-expect-error TODO: Fix pervasive types
     skills: arrayToString(initialData.skills),
+    // @ts-expect-error TODO: Fix pervasive types
     requirements: arrayToString(initialData.requirements),
+    // @ts-expect-error TODO: Fix pervasive types
     responsibilities: arrayToString(initialData.responsibilities),
+    // @ts-expect-error TODO: Fix pervasive types
     keywords: arrayToString(initialData.keywords),
+    // @ts-expect-error TODO: Fix pervasive types
     experienceRequired: initialData.experienceRequired ?? 0,
+    // @ts-expect-error TODO: Fix pervasive types
     jobLevel: initialData.jobLevel || "Entry Level",
+    // @ts-expect-error TODO: Fix pervasive types
     status: initialData.status || "draft",
     location: {
+      // @ts-expect-error TODO: Fix pervasive types
       city: initialData.location?.city || "",
+      // @ts-expect-error TODO: Fix pervasive types
       state: initialData.location?.state || "",
+      // @ts-expect-error TODO: Fix pervasive types
       country: initialData.location?.country || "India",
+      // @ts-expect-error TODO: Fix pervasive types
       remote: initialData.location?.remote || false,
     },
     salary: {
+      // @ts-expect-error TODO: Fix pervasive types
       min: initialData.salary?.min || "",
+      // @ts-expect-error TODO: Fix pervasive types
       max: initialData.salary?.max || "",
+      // @ts-expect-error TODO: Fix pervasive types
       currency: initialData.salary?.currency || "INR",
+      // @ts-expect-error TODO: Fix pervasive types
       isNegotiable: initialData.salary?.isNegotiable || false,
     },
   };
@@ -162,15 +180,21 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
 
   const validate = () => {
     const newErrors = {};
+    // @ts-expect-error TODO: Fix pervasive types
     if (!formData.title.trim()) newErrors.title = "Job title is required";
+    // @ts-expect-error TODO: Fix pervasive types
     if (!formData.description.trim()) newErrors.description = "Description is required";
     if (formData.description.trim().length < 20)
+      // @ts-expect-error TODO: Fix pervasive types
       newErrors.description = "Description must be at least 20 characters";
+    // @ts-expect-error TODO: Fix pervasive types
     if (!formData.skills.trim()) newErrors.skills = "At least one skill is required";
 
     // Required per schema
     if (formData.experienceRequired === "" || formData.experienceRequired === null || Number(formData.experienceRequired) < 0)
+      // @ts-expect-error TODO: Fix pervasive types
       newErrors.experienceRequired = "Years of experience is required";
+    // @ts-expect-error TODO: Fix pervasive types
     if (!formData.jobLevel) newErrors.jobLevel = "Job level is required";
 
     // Location
@@ -244,7 +268,7 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
       // Clear draft on successful submit
       localStorage.removeItem(draftKey);
       success("Job posted successfully.");
-    } catch (error) {
+    } catch (error: any) {
       const message = getSubmitErrorMessage(error);
       setSubmitError(message);
       showError(message);
@@ -275,22 +299,26 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* @ts-expect-error TODO: Fix pervasive types */}
         <Input
           id="title"
           label="Job Title"
           placeholder="e.g. Senior Software Engineer"
           value={formData.title}
           onChange={handleChange}
+          // @ts-expect-error TODO: Fix pervasive types
           error={allErrors.title}
           disabled={isFormSubmitting}
           required
         />
+        {/* @ts-expect-error TODO: Fix pervasive types */}
         <Select
           id="status"
           label="Status"
           options={STATUS_OPTIONS}
           value={formData.status}
           onChange={handleChange}
+          // @ts-expect-error TODO: Fix pervasive types
           error={allErrors.status}
           disabled={isFormSubmitting}
           required
@@ -298,16 +326,19 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* @ts-expect-error TODO: Fix pervasive types */}
         <Select
           id="jobLevel"
           label="Job Level"
           options={JOB_LEVEL_OPTIONS}
           value={formData.jobLevel}
           onChange={handleChange}
+          // @ts-expect-error TODO: Fix pervasive types
           error={allErrors.jobLevel}
           disabled={isFormSubmitting}
           required
         />
+        {/* @ts-expect-error TODO: Fix pervasive types */}
         <Input
           id="experienceRequired"
           label="Years of Experience Required"
@@ -316,6 +347,7 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
           placeholder="e.g. 3"
           value={formData.experienceRequired}
           onChange={handleChange}
+          // @ts-expect-error TODO: Fix pervasive types
           error={allErrors.experienceRequired}
           disabled={isFormSubmitting}
           required
@@ -331,6 +363,7 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
           id="description"
           rows={5}
           className={`w-full rounded-lg border bg-white dark:bg-[#121214] px-3.5 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-0 ${
+            // @ts-expect-error TODO: Fix pervasive types
             allErrors.description
               ? "border-red-400 focus:ring-red-400 focus:border-red-400"
               : "border-gray-200 dark:border-white/10 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-300 dark:hover:border-white/20"
@@ -340,11 +373,13 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
           onChange={handleChange}
           disabled={isFormSubmitting}
         />
+        {/* @ts-expect-error TODO: Fix pervasive types */}
         {allErrors.description && (
           <p data-testid="error-description" className="text-xs text-red-400 flex items-center gap-1 mt-1">
             <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M18 10A8 8 0 1 1 2 10a8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
             </svg>
+            {/* @ts-expect-error TODO: Fix pervasive types */}
             {allErrors.description}
           </p>
         )}
@@ -360,6 +395,7 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
           id="skills"
           rows={2}
           className={`w-full rounded-lg border bg-white dark:bg-[#121214] px-3.5 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-0 resize-y ${
+            // @ts-expect-error TODO: Fix pervasive types
             allErrors.skills
               ? "border-red-400 focus:ring-red-400 focus:border-red-400"
               : "border-gray-200 dark:border-white/10 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-300 dark:hover:border-white/20"
@@ -370,6 +406,7 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
           disabled={isFormSubmitting}
         />
         <p className="text-xs text-gray-500 dark:text-slate-400">Comma-separated. Stored in lowercase — used to match candidates.</p>
+        {/* @ts-expect-error TODO: Fix pervasive types */}
         {allErrors.skills && <p data-testid="error-skills" className="text-xs text-red-400">{allErrors.skills}</p>}
       </div>
 
@@ -424,6 +461,7 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
       <div className="border-t border-gray-200 dark:border-white/10 pt-6">
         <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-4">Location</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* @ts-expect-error TODO: Fix pervasive types */}
           <Input
             id="location.city"
             label="City"
@@ -434,6 +472,7 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
             disabled={isFormSubmitting}
             required
           />
+          {/* @ts-expect-error TODO: Fix pervasive types */}
           <Input
             id="location.state"
             label="State"
@@ -444,6 +483,7 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
             disabled={isFormSubmitting}
             required
           />
+          {/* @ts-expect-error TODO: Fix pervasive types */}
           <Input
             id="location.country"
             label="Country"
@@ -473,6 +513,7 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
       <div className="border-t border-gray-200 dark:border-white/10 pt-6">
         <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-4">Salary</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* @ts-expect-error TODO: Fix pervasive types */}
           <Input
             id="salary.min"
             label="Minimum"
@@ -484,6 +525,7 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
             disabled={isFormSubmitting}
             required
           />
+          {/* @ts-expect-error TODO: Fix pervasive types */}
           <Input
             id="salary.max"
             label="Maximum"
@@ -495,6 +537,7 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
             disabled={isFormSubmitting}
             required
           />
+          {/* @ts-expect-error TODO: Fix pervasive types */}
           <Select
             id="salary.currency"
             label="Currency"
@@ -521,6 +564,7 @@ const JobPostingForm = ({ onSubmit, initialData = {}, isLoading = false, fieldEr
       </div>
 
       <div className="flex justify-end pt-4">
+        {/* @ts-expect-error TODO: Fix pervasive types */}
         <Button
           type="submit"
           variant="primary"

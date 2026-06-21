@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
@@ -94,7 +93,7 @@ const TalentFinderPage = () => {
   const toast = useToast();
   
   // Redux Authenticated Security Context State Extraction
-  const { token, user } = useSelector((state) => state.auth);
+  const { token, user } = useSelector((state: any) => state.auth);
 
   // --------------------------------------------------------------------------
   // 1. STATE INITIALIZATION MATRIX
@@ -160,7 +159,7 @@ const TalentFinderPage = () => {
         if (openJobs.length > 0) {
           setSelectedJobId(openJobs[0]._id);
         }
-      } catch (err) {
+      } catch (err: any) {
         logger.error("Failed to load recruiter jobs:", err);
       } finally {
         setJobsLoading(false);
@@ -197,7 +196,7 @@ const TalentFinderPage = () => {
       setCandidates(response.candidates || []);
       setTotalPages(response.pagination?.pages || 1);
       setTotalCount(response.pagination?.total || 0);
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message || "Failed to search student directory database listings.");
     } finally {
       setLoading(false);
@@ -239,7 +238,7 @@ const TalentFinderPage = () => {
       // Automatically toggle element frame visibility matrix to feature the analysis layout
       setExpandedCardId(candidateId);
       toast.success("Candidate match analysis completed.");
-    } catch (err) {
+    } catch (err: any) {
       toast.error(err.message || "We couldn't complete the match analysis. Please try again.");
     } finally {
       setMatchLoadingMap(prevMap => ({ ...prevMap, [candidateId]: false }));
@@ -262,7 +261,7 @@ const TalentFinderPage = () => {
       const response = await inviteCandidate(candidateId, selectedJobId, token);
       setInvitedMap(prevMap => ({ ...prevMap, [candidateId]: true }));
       toast.success(response.message || "Invitation sent successfully.");
-    } catch (err) {
+    } catch (err: any) {
       toast.error(err.message || "We couldn't send the invitation. Please try again.");
     } finally {
       setInviteLoadingMap(prevMap => ({ ...prevMap, [candidateId]: false }));
@@ -492,11 +491,13 @@ const TalentFinderPage = () => {
             {/* Pipeline State Selector Branch */}
             {loading ? (
               <div className="py-24 bg-white dark:bg-slate-900/10 border border-gray-200 dark:border-white/5 rounded-3xl shadow-inner">
+                {/* @ts-expect-error TODO: Fix pervasive types */}
                 <LoadingState message="Searching candidates..." />
               </div>
             ) : error ? (
               <ErrorState description={error} onRetry={fetchCandidatesDirectory} />
             ) : candidates.length === 0 ? (
+              // @ts-expect-error TODO: Fix pervasive types
               <EmptyState
                 icon={<User size={52} className="text-gray-300 dark:text-slate-700 animate-pulse" />}
                 title="No Candidates Found"
@@ -844,6 +845,7 @@ const TalentFinderPage = () => {
             {/* Standard Pagination Foot Controls Panel */}
             {totalPages > 1 && (
               <div className="flex justify-center items-center gap-4 pt-6 pb-12">
+                {/* @ts-expect-error TODO: Fix pervasive types */}
                 <Button
                   disabled={page === 1}
                   onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
@@ -856,6 +858,7 @@ const TalentFinderPage = () => {
                 <span className="text-xs font-black text-gray-500 dark:text-slate-400 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-slate-900 border border-gray-200 dark:border-white/5 select-none shadow-inner">
                   Page {page} / {totalPages}
                 </span>
+                {/* @ts-expect-error TODO: Fix pervasive types */}
                 <Button
                   disabled={page === totalPages}
                   onClick={() => { setPage(p => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}

@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import * as authService from "../../services/authService";
@@ -118,8 +117,11 @@ export const registerUser = createAsyncThunk(
   async (userData, thunkAPI) => {
     try {
       const payload = {
+        // @ts-expect-error TODO: Fix pervasive types
         ...userData,
+        // @ts-expect-error TODO: Fix pervasive types
         email: normalizeEmail(userData.email),
+        // @ts-expect-error TODO: Fix pervasive types
         name: userData.name.trim(),
       };
       const data = await authService.register(payload);
@@ -128,7 +130,7 @@ export const registerUser = createAsyncThunk(
         ...data,
         pendingVerificationEmail: payload.email,
       };
-    } catch (error) {
+    } catch (error: any) {
       return thunkAPI.rejectWithValue(
         toErrorMessage(error, "Registration failed"),
       );
@@ -138,6 +140,7 @@ export const registerUser = createAsyncThunk(
 
 export const loginUser = createAsyncThunk(
   "auth/login",
+  // @ts-expect-error TODO: Fix pervasive types
   async ({ email, password, rememberMe = true }, thunkAPI) => {
     try {
       const data = await authService.login({
@@ -149,7 +152,7 @@ export const loginUser = createAsyncThunk(
         ...data,
         rememberMe,
       };
-    } catch (error) {
+    } catch (error: any) {
       return thunkAPI.rejectWithValue(toErrorMessage(error, "Login failed"));
     }
   },
@@ -157,6 +160,7 @@ export const loginUser = createAsyncThunk(
 
 export const verifyEmail = createAsyncThunk(
   "auth/verifyEmail",
+  // @ts-expect-error TODO: Fix pervasive types
   async ({ email, otp }, thunkAPI) => {
     try {
       const normalizedEmail = normalizeEmail(email);
@@ -169,7 +173,7 @@ export const verifyEmail = createAsyncThunk(
         ...data,
         email: normalizedEmail,
       };
-    } catch (error) {
+    } catch (error: any) {
       return thunkAPI.rejectWithValue(
         toErrorMessage(error, "Email verification failed"),
       );
@@ -179,6 +183,7 @@ export const verifyEmail = createAsyncThunk(
 
 export const resendOtp = createAsyncThunk(
   "auth/resendOtp",
+  // @ts-expect-error TODO: Fix pervasive types
   async ({ email }, thunkAPI) => {
     try {
       const normalizedEmail = normalizeEmail(email);
@@ -188,7 +193,7 @@ export const resendOtp = createAsyncThunk(
         ...data,
         email: normalizedEmail,
       };
-    } catch (error) {
+    } catch (error: any) {
       return thunkAPI.rejectWithValue(
         toErrorMessage(error, "Could not resend verification code"),
       );
@@ -200,6 +205,7 @@ export const fetchCurrentUser = createAsyncThunk(
   "auth/fetchCurrentUser",
   async (_, thunkAPI) => {
     try {
+      // @ts-expect-error TODO: Fix pervasive types
       const token = thunkAPI.getState()?.auth?.token;
 
       if (!token) {
@@ -208,7 +214,7 @@ export const fetchCurrentUser = createAsyncThunk(
 
       const data = await authService.getCurrentUser(token);
       return data;
-    } catch (error) {
+    } catch (error: any) {
       return thunkAPI.rejectWithValue(
         toErrorMessage(error, "Failed to fetch user"),
       );
@@ -219,6 +225,7 @@ export const fetchCurrentUser = createAsyncThunk(
 export const logoutUser = createAsyncThunk(
   "auth/logoutUser",
   async (_, thunkAPI) => {
+    // @ts-expect-error TODO: Fix pervasive types
     const token = thunkAPI.getState()?.auth?.token;
     if (token) {
       try {

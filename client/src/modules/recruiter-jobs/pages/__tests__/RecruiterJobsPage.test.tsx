@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { act, render, screen, waitFor } from '@testing-library/react'
@@ -65,6 +64,7 @@ vi.mock('../../../student-jobs/components/JobCardSkeleton', () => ({
 vi.mock('../../../../shared/components', async (importOriginal) => {
   const actual = await importOriginal()
   return {
+    // @ts-expect-error TODO: Fix pervasive types
     ...actual,
     JobViewerCard: ({ job, viewerRole, onEdit, onDelete, onViewStats, onViewApplicants }) => (
       <div data-testid={`job-card-${job._id || job.id}`}>
@@ -106,6 +106,7 @@ describe('RecruiterJobsPage', () => {
   })
 
   it('shows loading state while fetching jobs', () => {
+    // @ts-expect-error TODO: Fix pervasive types
     jobPostingService.getRecruiterJobs.mockImplementation(() => 
       new Promise(() => {}) // Never resolves
     )
@@ -120,6 +121,7 @@ describe('RecruiterJobsPage', () => {
       { _id: '1', title: 'Senior Engineer', location: { city: 'Mumbai' }, status: 'open', createdAt: new Date().toISOString() },
       { _id: '2', title: 'Junior Developer', location: { city: 'Delhi' }, status: 'draft', createdAt: new Date().toISOString() },
     ]
+    // @ts-expect-error TODO: Fix pervasive types
     jobPostingService.getRecruiterJobs.mockResolvedValue({ success: true, jobs: mockJobs })
 
     renderWithProviders(<RecruiterJobsPage />)
@@ -139,6 +141,7 @@ describe('RecruiterJobsPage', () => {
       { _id: '2', title: 'Closed Designer', location: { city: 'Delhi' }, status: 'closed', createdAt: new Date().toISOString() },
       { _id: '3', title: 'Archived Analyst', location: { city: 'Pune' }, status: 'archived', createdAt: new Date().toISOString() },
     ]
+    // @ts-expect-error TODO: Fix pervasive types
     jobPostingService.getRecruiterJobs.mockResolvedValue({ success: true, jobs: mockJobs })
 
     renderWithProviders(<RecruiterJobsPage />)
@@ -158,6 +161,7 @@ describe('RecruiterJobsPage', () => {
       { _id: '2', title: 'Closed Designer', location: { city: 'Delhi' }, status: 'closed', createdAt: new Date().toISOString() },
       { _id: '3', title: 'Archived Analyst', location: { city: 'Pune' }, status: 'archived', createdAt: new Date().toISOString() },
     ]
+    // @ts-expect-error TODO: Fix pervasive types
     jobPostingService.getRecruiterJobs.mockResolvedValue({ success: true, jobs: mockJobs })
 
     renderWithProviders(<RecruiterJobsPage />)
@@ -183,6 +187,7 @@ describe('RecruiterJobsPage', () => {
       { _id: '2', title: 'Closed Designer', location: { city: 'Delhi' }, status: 'closed', createdAt: new Date().toISOString() },
       { _id: '3', title: 'Archived Analyst', location: { city: 'Pune' }, status: 'archived', createdAt: new Date().toISOString() },
     ]
+    // @ts-expect-error TODO: Fix pervasive types
     jobPostingService.getRecruiterJobs.mockResolvedValue({ success: true, jobs: mockJobs })
 
     renderWithProviders(<RecruiterJobsPage />)
@@ -208,6 +213,7 @@ describe('RecruiterJobsPage', () => {
       { _id: '2', title: 'Closed Designer', location: { city: 'Delhi' }, status: 'closed', createdAt: new Date().toISOString() },
       { _id: '3', title: 'Archived Analyst', location: { city: 'Pune' }, status: 'archived', createdAt: new Date().toISOString() },
     ]
+    // @ts-expect-error TODO: Fix pervasive types
     jobPostingService.getRecruiterJobs.mockResolvedValue({ success: true, jobs: mockJobs })
 
     renderWithProviders(<RecruiterJobsPage />)
@@ -231,6 +237,7 @@ describe('RecruiterJobsPage', () => {
     const mockJobs = [
       { _id: '1', title: 'Open Engineer', location: { city: 'Mumbai' }, status: 'open', createdAt: new Date().toISOString() },
     ]
+    // @ts-expect-error TODO: Fix pervasive types
     jobPostingService.getRecruiterJobs.mockResolvedValue({ success: true, jobs: mockJobs })
 
     renderWithProviders(<RecruiterJobsPage />)
@@ -254,6 +261,7 @@ describe('RecruiterJobsPage', () => {
       { _id: '1', title: 'Open Engineer', location: { city: 'Mumbai' }, status: 'open', createdAt: new Date().toISOString() },
       { _id: '2', title: 'Closed Designer', location: { city: 'Delhi' }, status: 'closed', createdAt: new Date().toISOString() },
     ]
+    // @ts-expect-error TODO: Fix pervasive types
     jobPostingService.getRecruiterJobs.mockResolvedValue({ success: true, jobs: mockJobs })
 
     renderWithProviders(<RecruiterJobsPage />)
@@ -279,6 +287,7 @@ describe('RecruiterJobsPage', () => {
   })
 
   it('shows empty state when no jobs exist', async () => {
+    // @ts-expect-error TODO: Fix pervasive types
     jobPostingService.getRecruiterJobs.mockResolvedValue({ success: true, jobs: [] })
 
     renderWithProviders(<RecruiterJobsPage />)
@@ -294,6 +303,7 @@ describe('RecruiterJobsPage', () => {
     const mockJobs = [
       { _id: '1', title: 'Senior Engineer', location: { city: 'Mumbai', state: 'MH', country: 'India' }, status: 'open', createdAt: new Date().toISOString() },
     ]
+    // @ts-expect-error TODO: Fix pervasive types
     jobPostingService.getRecruiterJobs.mockResolvedValue({ success: true, jobs: mockJobs })
 
     renderWithProviders(<RecruiterJobsPage />)
@@ -315,6 +325,7 @@ describe('RecruiterJobsPage', () => {
   })
 
   it('shows error state when request fails', async () => {
+    // @ts-expect-error TODO: Fix pervasive types
     jobPostingService.getRecruiterJobs.mockRejectedValue({
       message: 'Failed to connect to server',
     })
@@ -329,6 +340,7 @@ describe('RecruiterJobsPage', () => {
 
   it('retries fetching when retry button clicked', async () => {
     jobPostingService.getRecruiterJobs
+      // @ts-expect-error TODO: Fix pervasive types
       .mockRejectedValueOnce({ message: 'Network error' })
       .mockResolvedValueOnce({ success: true, jobs: [{ _id: '1', title: 'Job', location: { city: 'Mumbai' }, status: 'open', createdAt: new Date().toISOString() }] })
 
@@ -354,6 +366,7 @@ describe('RecruiterJobsPage', () => {
       { _id: '1', title: 'Senior React Engineer', location: { city: 'Mumbai', state: 'MH', country: 'India' }, status: 'open', createdAt: new Date().toISOString() },
       { _id: '2', title: 'Node.js Developer', location: { city: 'Delhi', state: 'DL', country: 'India' }, status: 'open', createdAt: new Date().toISOString() },
     ]
+    // @ts-expect-error TODO: Fix pervasive types
     jobPostingService.getRecruiterJobs.mockResolvedValue({ success: true, jobs: mockJobs })
 
     renderWithProviders(<RecruiterJobsPage />)
@@ -380,6 +393,7 @@ describe('RecruiterJobsPage', () => {
       { _id: '1', title: 'Engineer', location: { city: 'Mumbai', state: 'Maharashtra', country: 'India' }, status: 'open', createdAt: new Date().toISOString() },
       { _id: '2', title: 'Developer', location: { city: 'Delhi', state: 'Delhi', country: 'India' }, status: 'open', createdAt: new Date().toISOString() },
     ]
+    // @ts-expect-error TODO: Fix pervasive types
     jobPostingService.getRecruiterJobs.mockResolvedValue({ success: true, jobs: mockJobs })
 
     renderWithProviders(<RecruiterJobsPage />)
@@ -406,6 +420,7 @@ describe('RecruiterJobsPage', () => {
       { _id: '1', title: 'Engineer', location: null, status: 'open', createdAt: new Date().toISOString() },
       { _id: '2', title: 'Developer', location: { city: 'Delhi', state: 'DL', country: 'India' }, status: 'open', createdAt: new Date().toISOString() },
     ]
+    // @ts-expect-error TODO: Fix pervasive types
     jobPostingService.getRecruiterJobs.mockResolvedValue({ success: true, jobs: mockJobs })
 
     renderWithProviders(<RecruiterJobsPage />)

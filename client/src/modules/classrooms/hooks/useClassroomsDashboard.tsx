@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -12,8 +11,8 @@ import {
 import logger from "../../../utils/logger";
 
 export const useClassroomsDashboard = (isTutor, navigate) => {
-  const dispatch = useDispatch();
-  const token = useSelector((state) => state.auth.token);
+  const dispatch = useDispatch<any>();
+  const token = useSelector((state: any) => state.auth.token);
 
   // Local form state
   const [title, setTitle] = useState("");
@@ -22,7 +21,7 @@ export const useClassroomsDashboard = (isTutor, navigate) => {
   const [joinRoomId, setJoinRoomId] = useState("");
   
   // Global Redux state
-  const { sessions, isLoading, isListLoading, error } = useSelector((state) => state.classrooms);
+  const { sessions, isLoading, isListLoading, error } = useSelector((state: any) => state.classrooms);
 
   useEffect(() => {
     if (token) {
@@ -48,6 +47,7 @@ export const useClassroomsDashboard = (isTutor, navigate) => {
 
     try {
       const res = await dispatch(
+        // @ts-expect-error TODO: Fix pervasive types
         createSession({
           sessionData: {
             title: title.trim(),
@@ -61,7 +61,7 @@ export const useClassroomsDashboard = (isTutor, navigate) => {
       if (res?.roomId) {
         navigate(`/classrooms/${res.roomId}`);
       }
-    } catch (err) {
+    } catch (err: any) {
       logger.error("Failed to create room", err);
     }
   };
@@ -72,6 +72,7 @@ export const useClassroomsDashboard = (isTutor, navigate) => {
     }
 
     try {
+      // @ts-expect-error TODO: Fix pervasive types
       await dispatch(endSession({ roomId, token })).unwrap();
       // Optionally re-fetch after ending, or rely on Redux reducer to filter it out
       if (isTutor) {
@@ -79,7 +80,7 @@ export const useClassroomsDashboard = (isTutor, navigate) => {
       } else {
         fetchActiveSessions();
       }
-    } catch (err) {
+    } catch (err: any) {
       logger.error("Failed to end session", err);
     }
   };

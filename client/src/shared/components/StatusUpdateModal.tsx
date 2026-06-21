@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { useState } from 'react';
 import { X, Send, AlertCircle } from 'lucide-react';
@@ -82,6 +81,7 @@ const StatusUpdateModal: React.FC<StatusUpdateModalProps> = ({ isOpen, onClose, 
             <label className="text-sm font-semibold text-slate-300 ml-1">
               New Status
             </label>
+            {/* @ts-expect-error TODO: Fix pervasive types */}
             <Select
               id="status-select"
               value={status}
@@ -94,6 +94,7 @@ const StatusUpdateModal: React.FC<StatusUpdateModalProps> = ({ isOpen, onClose, 
             <label className="text-sm font-semibold text-slate-300 ml-1">
               Feedback Comment
             </label>
+            {/* @ts-expect-error TODO: Fix pervasive types */}
             <TextArea
               id="status-comment"
               placeholder="e.g. Portfolio looks great, let's chat next week!"
@@ -107,6 +108,7 @@ const StatusUpdateModal: React.FC<StatusUpdateModalProps> = ({ isOpen, onClose, 
           </div>
 
           <div className="flex gap-3 pt-2">
+            {/* @ts-expect-error TODO: Fix pervasive types */}
             <Button
               type="button"
               variant="outline"
@@ -117,6 +119,7 @@ const StatusUpdateModal: React.FC<StatusUpdateModalProps> = ({ isOpen, onClose, 
             >
               Cancel
             </Button>
+            {/* @ts-expect-error TODO: Fix pervasive types */}
             <Button
               type="submit"
               fullWidth

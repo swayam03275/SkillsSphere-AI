@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { apiRequest } from "../../../../services/apiClient";
@@ -51,6 +50,7 @@ describe("jobPostingService", () => {
     };
 
     it("calls apiRequest with POST method and correct path", async () => {
+      // @ts-expect-error TODO: Fix pervasive types
       apiRequest.mockResolvedValue({
         success: true,
         job: { _id: "123", ...validJobData },
@@ -70,6 +70,7 @@ describe("jobPostingService", () => {
         ...validJobData,
         skills: "react, node.js, typescript",
       };
+      // @ts-expect-error TODO: Fix pervasive types
       apiRequest.mockResolvedValue({ success: true, job: { _id: "123" } });
 
       await createJobPosting(jobDataWithStringSkills, mockToken);
@@ -85,6 +86,7 @@ describe("jobPostingService", () => {
     });
 
     it("keeps skills array if already an array", async () => {
+      // @ts-expect-error TODO: Fix pervasive types
       apiRequest.mockResolvedValue({ success: true, job: { _id: "123" } });
 
       await createJobPosting(validJobData, mockToken);
@@ -104,6 +106,7 @@ describe("jobPostingService", () => {
         ...validJobData,
         skills: "react, , node, ,",
       };
+      // @ts-expect-error TODO: Fix pervasive types
       apiRequest.mockResolvedValue({ success: true, job: { _id: "123" } });
 
       await createJobPosting(jobDataWithEmptySkills, mockToken);
@@ -120,6 +123,7 @@ describe("jobPostingService", () => {
 
     it("returns success response with job data", async () => {
       const mockJob = { _id: "123", title: "Senior Engineer" };
+      // @ts-expect-error TODO: Fix pervasive types
       apiRequest.mockResolvedValue({ success: true, job: mockJob });
 
       const result = await createJobPosting(validJobData, mockToken);
@@ -129,8 +133,11 @@ describe("jobPostingService", () => {
 
     it("throws normalized error on API failure", async () => {
       const apiError = new Error("Validation failed");
+      // @ts-expect-error TODO: Fix pervasive types
       apiError.status = 400;
+      // @ts-expect-error TODO: Fix pervasive types
       apiError.errors = { title: "Title is required" };
+      // @ts-expect-error TODO: Fix pervasive types
       apiRequest.mockRejectedValue(apiError);
 
       await expect(
@@ -143,7 +150,9 @@ describe("jobPostingService", () => {
 
     it("provides user-friendly message for 401/403 errors", async () => {
       const authError = new Error("Unauthorized");
+      // @ts-expect-error TODO: Fix pervasive types
       authError.status = 401;
+      // @ts-expect-error TODO: Fix pervasive types
       apiRequest.mockRejectedValue(authError);
 
       await expect(
@@ -156,7 +165,9 @@ describe("jobPostingService", () => {
 
     it("provides user-friendly message for network errors", async () => {
       const networkError = new Error("Network error");
+      // @ts-expect-error TODO: Fix pervasive types
       networkError.status = 0;
+      // @ts-expect-error TODO: Fix pervasive types
       apiRequest.mockRejectedValue(networkError);
 
       await expect(
@@ -170,6 +181,7 @@ describe("jobPostingService", () => {
 
   describe("getRecruiterJobs", () => {
     it("calls apiRequest with GET method and correct path", async () => {
+      // @ts-expect-error TODO: Fix pervasive types
       apiRequest.mockResolvedValue({ success: true, jobs: [] });
 
       await getRecruiterJobs(mockToken);
@@ -184,6 +196,7 @@ describe("jobPostingService", () => {
         { _id: "1", title: "Job 1" },
         { _id: "2", title: "Job 2" },
       ];
+      // @ts-expect-error TODO: Fix pervasive types
       apiRequest.mockResolvedValue({ success: true, jobs: mockJobs });
 
       const result = await getRecruiterJobs(mockToken);
@@ -199,6 +212,7 @@ describe("jobPostingService", () => {
 
     it("handles response with data field instead of jobs", async () => {
       const mockJobs = [{ _id: "1", title: "Job 1" }];
+      // @ts-expect-error TODO: Fix pervasive types
       apiRequest.mockResolvedValue({ success: true, data: mockJobs });
 
       const result = await getRecruiterJobs(mockToken);
@@ -208,6 +222,7 @@ describe("jobPostingService", () => {
     });
 
     it("returns empty array when no jobs field in response", async () => {
+      // @ts-expect-error TODO: Fix pervasive types
       apiRequest.mockResolvedValue({ success: true });
 
       const result = await getRecruiterJobs(mockToken);
@@ -217,6 +232,7 @@ describe("jobPostingService", () => {
     });
 
     it("throws normalized error on failure", async () => {
+      // @ts-expect-error TODO: Fix pervasive types
       apiRequest.mockRejectedValue(new Error("Network error"));
 
       await expect(getRecruiterJobs(mockToken)).rejects.toBeDefined();
@@ -225,6 +241,7 @@ describe("jobPostingService", () => {
 
   describe("getJobPostingById", () => {
     it("calls apiRequest with correct path including id", async () => {
+      // @ts-expect-error TODO: Fix pervasive types
       apiRequest.mockResolvedValue({ success: true, job: { _id: "123" } });
 
       await getJobPostingById("123", mockToken);
@@ -236,6 +253,7 @@ describe("jobPostingService", () => {
 
     it("returns job data from response", async () => {
       const mockJob = { _id: "123", title: "Senior Engineer" };
+      // @ts-expect-error TODO: Fix pervasive types
       apiRequest.mockResolvedValue({ success: true, job: mockJob });
 
       const result = await getJobPostingById("123", mockToken);
@@ -245,6 +263,7 @@ describe("jobPostingService", () => {
 
     it("handles response with data field instead of job", async () => {
       const mockJob = { _id: "123", title: "Senior Engineer" };
+      // @ts-expect-error TODO: Fix pervasive types
       apiRequest.mockResolvedValue({ success: true, data: mockJob });
 
       const result = await getJobPostingById("123", mockToken);
@@ -254,7 +273,9 @@ describe("jobPostingService", () => {
 
     it("throws normalized error on 404", async () => {
       const notFoundError = new Error("Job posting not found");
+      // @ts-expect-error TODO: Fix pervasive types
       notFoundError.status = 404;
+      // @ts-expect-error TODO: Fix pervasive types
       apiRequest.mockRejectedValue(notFoundError);
 
       await expect(getJobPostingById("999", mockToken)).rejects.toMatchObject({

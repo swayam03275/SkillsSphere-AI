@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useState } from "react";
 import { useSelector } from "react-redux";
@@ -15,7 +14,7 @@ import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
 const CreateJobPostingPage = () => {
   useDocumentTitle("Create Job Posting");
   const navigate = useNavigate();
-  const { token } = useSelector((state) => state.auth);
+  const { token } = useSelector((state: any) => state.auth);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -29,7 +28,7 @@ const CreateJobPostingPage = () => {
     try {
       await createJobPosting(payload, token);
       navigate("/recruiter/jobs");
-    } catch (error) {
+    } catch (error: any) {
       setSubmitError(error.message || "Failed to create job posting. Please try again.");
       if (error.errors) {
         setFieldErrors(error.errors);

@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useRef, useEffect } from "react";
 import { Hand, MicOff, VideoOff, PictureInPicture2 } from "lucide-react";
@@ -7,10 +6,12 @@ export default function VideoTile({ stream, user, isMuted, isHandRaised, isScree
 
   useEffect(() => {
     if (videoRef.current && stream) {
+      // @ts-expect-error TODO: Fix pervasive types
       videoRef.current.srcObject = stream;
     }
     return () => {
       if (videoRef.current) {
+        // @ts-expect-error TODO: Fix pervasive types
         videoRef.current.srcObject = null;
       }
     };
@@ -23,9 +24,10 @@ export default function VideoTile({ stream, user, isMuted, isHandRaised, isScree
       if (document.pictureInPictureElement === videoRef.current) {
         await document.exitPictureInPicture();
       } else {
+        // @ts-expect-error TODO: Fix pervasive types
         await videoRef.current.requestPictureInPicture();
       }
-    } catch (err) {
+    } catch (err: any) {
       // Failed to enter PiP
     }
   };

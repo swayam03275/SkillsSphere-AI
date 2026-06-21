@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { apiRequest, normalizeApiError } from "../../../services/apiClient";
 
@@ -9,6 +8,7 @@ const handleServiceError = (error) => {
   let normalized = normalizeApiError(error);
 
   if (!normalized || typeof normalized !== "object") {
+    // @ts-expect-error TODO: Fix pervasive types
     normalized = {
       message: error?.message || "Something went wrong",
       status: error?.status || 500,
@@ -38,6 +38,7 @@ export const searchTalent = async (filters = {}, token) => {
     
     Object.entries(filters).forEach(([key, val]) => {
       if (val !== undefined && val !== null && val !== "") {
+        // @ts-expect-error TODO: Fix pervasive types
         params.append(key, val);
       }
     });
@@ -50,7 +51,7 @@ export const searchTalent = async (filters = {}, token) => {
       candidates: response.data || [],
       pagination: response.pagination || { page: 1, limit: 10, total: 0, pages: 1 }
     };
-  } catch (error) {
+  } catch (error: any) {
     throw handleServiceError(error);
   }
 };
@@ -74,7 +75,7 @@ export const matchCandidate = async (candidateId, jobId, token) => {
       success: true,
       matchResult: response.data
     };
-  } catch (error) {
+  } catch (error: any) {
     throw handleServiceError(error);
   }
 };
@@ -98,7 +99,7 @@ export const inviteCandidate = async (candidateId, jobId, token) => {
       success: true,
       message: response.message || "Invitation sent successfully."
     };
-  } catch (error) {
+  } catch (error: any) {
     throw handleServiceError(error);
   }
 };

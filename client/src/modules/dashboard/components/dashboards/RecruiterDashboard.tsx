@@ -22,7 +22,7 @@ const RecruiterDashboard = ({ token }) => {
 
         if (analyticsRes.success) setAnalytics(analyticsRes.data);
         if (jobsRes.success) setRecruiterJobs(jobsRes.jobs || []);
-      } catch (error) {
+      } catch (error: any) {
         logger.error("Failed to fetch recruiter dashboard data:", error);
       } finally {
         setLoading(false);

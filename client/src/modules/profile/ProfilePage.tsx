@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useState, useRef, useEffect } from "react";
 import Navbar from "../../shared/components/Navbar";
@@ -98,9 +97,11 @@ const DeleteModal = ({ onConfirm, onCancel, loading }) => (
         action <strong>cannot be undone</strong>.
       </p>
       <div className="flex gap-3">
+        {/* @ts-expect-error TODO: Fix pervasive types */}
         <Button variant="outline" fullWidth onClick={onCancel} disabled={loading}>
           Cancel
         </Button>
+        {/* @ts-expect-error TODO: Fix pervasive types */}
         <Button variant="danger" fullWidth onClick={onConfirm} loading={loading}>
           Yes, Delete
         </Button>
@@ -238,8 +239,8 @@ const AvatarEditor = ({ user, roleConfig, onUpload, onRemove, uploading, avatarS
 
 const ProfilePage = () => {
   useDocumentTitle("Profile");
-  const { user, token } = useSelector((state) => state.auth);
-  const dispatch = useDispatch();
+  const { user, token } = useSelector((state: any) => state.auth);
+  const dispatch = useDispatch<any>();
   const navigate = useNavigate();
   const toast = useToast();
 
@@ -295,7 +296,7 @@ const ProfilePage = () => {
       dispatch(updateUserProfile(response.user));
       setAvatarSrc(response.user?.profilePic ?? null);
       return true;
-    } catch (err) {
+    } catch (err: any) {
       setAvatarError(err.message || "Failed to upload photo");
       return false;
     } finally {
@@ -311,7 +312,7 @@ const ProfilePage = () => {
       persistUser(response.user);
       dispatch(updateUserProfile(response.user));
       setAvatarSrc(null);
-    } catch (err) {
+    } catch (err: any) {
       setAvatarError(err.message || "Failed to remove photo");
     } finally {
       setAvatarUploading(false);
@@ -367,11 +368,15 @@ const ProfilePage = () => {
         // Always include these fields so the backend receives them.
         // Trimmed empty string means user left the field blank — the backend
         // can then decide whether to accept that or keep the old value.
+        // @ts-expect-error TODO: Fix pervasive types
         payload.linkedinUrl  = formData.linkedinUrl.trim();
+        // @ts-expect-error TODO: Fix pervasive types
         payload.credentialUrl = formData.credentialUrl.trim();
       }
       if (user.role === "recruiter") {
+        // @ts-expect-error TODO: Fix pervasive types
         payload.company        = formData.company.trim();
+        // @ts-expect-error TODO: Fix pervasive types
         payload.companyWebsite = formData.companyWebsite.trim();
       }
       const response = await updateProfile(payload, token);
@@ -381,7 +386,7 @@ const ProfilePage = () => {
       setIsEditing(false);
       setErrors({});
       setTimeout(() => setSaveSuccess(false), 3500);
-    } catch (err) {
+    } catch (err: any) {
       setApiError(err.message || "Failed to update profile");
     } finally {
       setIsSaving(false);
@@ -394,7 +399,7 @@ const ProfilePage = () => {
       await deleteProfile(token);
       dispatch(logout());
       navigate("/login");
-    } catch (err) {
+    } catch (err: any) {
       toast.error(err.message || "Failed to delete account");
       setIsDeleting(false);
       setShowDeleteModal(false);
@@ -404,6 +409,7 @@ const ProfilePage = () => {
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        {/* @ts-expect-error TODO: Fix pervasive types */}
         <LoadingState message="Loading profile..." />
       </div>
     );
@@ -457,6 +463,7 @@ const ProfilePage = () => {
                   onUpload={handleAvatarUpload}
                   onRemove={handleAvatarRemove}
                   uploading={avatarUploading}
+                  // @ts-expect-error TODO: Fix pervasive types
                   isEditing={isEditing}
                   avatarSrc={avatarSrc}
                 />
@@ -551,10 +558,13 @@ const ProfilePage = () => {
               {/* Desktop Mode Action Buttons */}
               <div className="hidden sm:block">
                 {!isEditing ? (
+                  // @ts-expect-error TODO: Fix pervasive types
                   <Button variant="outline" size="sm" onClick={handleEditClick} leftIcon={<Pencil size={13} />}>Edit Profile</Button>
                 ) : (
                   <div className="flex gap-2">
+                    {/* @ts-expect-error TODO: Fix pervasive types */}
                     <Button size="sm" onClick={handleSave} loading={isSaving} leftIcon={<Check size={13} />} className="bg-gradient-to-r from-violet-500 to-indigo-500 border-none text-white hover:opacity-90">Save</Button>
+                    {/* @ts-expect-error TODO: Fix pervasive types */}
                     <Button variant="ghost" size="sm" onClick={handleCancel} leftIcon={<X size={13} />}>Cancel</Button>
                   </div>
                 )}
@@ -564,12 +574,15 @@ const ProfilePage = () => {
             {/* Mobile Mode Action Triggers */}
             {isEditing && (
               <div className="flex sm:hidden gap-2 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm justify-end">
+                {/* @ts-expect-error TODO: Fix pervasive types */}
                 <Button size="sm" onClick={handleSave} loading={isSaving} leftIcon={<Check size={13} />} className="bg-gradient-to-r from-violet-500 to-indigo-500 border-none text-white hover:opacity-90">Save</Button>
+                {/* @ts-expect-error TODO: Fix pervasive types */}
                 <Button variant="ghost" size="sm" onClick={handleCancel} leftIcon={<X size={13} />}>Cancel</Button>
               </div>
             )}
             {!isEditing && (
               <div className="flex sm:hidden bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm justify-end">
+                {/* @ts-expect-error TODO: Fix pervasive types */}
                 <Button variant="outline" size="sm" fullWidth onClick={handleEditClick} leftIcon={<Pencil size={13} />}>Edit Profile</Button>
               </div>
             )}
@@ -606,7 +619,9 @@ const ProfilePage = () => {
               </h3>
               {isEditing ? (
                 <form onSubmit={handleSave} noValidate className="flex flex-col gap-4">
+                  {/* @ts-expect-error TODO: Fix pervasive types */}
                   <Input id="name" label="Full Name" placeholder="Enter your full name" value={formData.name} onChange={handleChange} error={errors.name} required leftIcon={<User size={16} />} />
+                  {/* @ts-expect-error TODO: Fix pervasive types */}
                   <Input id="email-display" label="Email" type="email" value={user.email} disabled leftIcon={<Mail size={16} />} helperText="Email cannot be changed." />
                   <div className="flex flex-col gap-1.5">
                     <label className="text-sm font-medium text-slate-600 dark:text-gray-300">Role</label>
@@ -616,15 +631,21 @@ const ProfilePage = () => {
                   </div>
                   {user.role === "recruiter" && (
                     <>
+                      {/* @ts-expect-error TODO: Fix pervasive types */}
                       <Input id="company" name="company" label="Company Name" placeholder="Enter company name" value={formData.company} onChange={handleChange} leftIcon={<Briefcase size={16} />} />
+                      {/* @ts-expect-error TODO: Fix pervasive types */}
                       <Input id="companyWebsite" name="companyWebsite" label="Company Website" placeholder="e.g. www.mycompany.com" value={formData.companyWebsite} onChange={handleChange} leftIcon={<Globe size={16} />} helperText="Link to your company's official website." />
+                      {/* @ts-expect-error TODO: Fix pervasive types */}
                       <Input id="linkedinUrl" name="linkedinUrl" label="LinkedIn Company Page" placeholder="https://linkedin.com/company/..." value={formData.linkedinUrl} onChange={handleChange} leftIcon={<Link2 size={16} />} />
+                      {/* @ts-expect-error TODO: Fix pervasive types */}
                       <Input id="credentialUrl" name="credentialUrl" label="Proof Document Link" placeholder="https://drive.google.com/..." value={formData.credentialUrl} onChange={handleChange} leftIcon={<FileText size={16} />} helperText="Link to an offer letter, ID card, or company proof (e.g. Google Drive link)." />
                     </>
                   )}
                   {user.role === "tutor" && (
                     <>
+                      {/* @ts-expect-error TODO: Fix pervasive types */}
                       <Input id="linkedinUrl" name="linkedinUrl" label="LinkedIn Profile" placeholder="https://linkedin.com/in/..." value={formData.linkedinUrl} onChange={handleChange} leftIcon={<Link2 size={16} />} />
+                      {/* @ts-expect-error TODO: Fix pervasive types */}
                       <Input id="credentialUrl" name="credentialUrl" label="Qualification Proof" placeholder="https://drive.google.com/..." value={formData.credentialUrl} onChange={handleChange} leftIcon={<FileText size={16} />} helperText="Link to your degree/certification (e.g. Google Drive link)." />
                     </>
                   )}
@@ -704,6 +725,7 @@ const ProfilePage = () => {
                 ) : (
                   <div className="flex flex-col gap-3">
                     <p className="text-sm text-slate-500 dark:text-slate-400">To change your password, use the forgot password flow.</p>
+                    {/* @ts-expect-error TODO: Fix pervasive types */}
                     <Link to="/forgot-password"><Button variant="outline" size="sm" leftIcon={<Lock size={14} />}>Change Password</Button></Link>
                   </div>
                 )}
@@ -738,6 +760,7 @@ const ProfilePage = () => {
                 <div className="bg-red-50/60 dark:bg-red-950/20 rounded-2xl border border-red-200 dark:border-red-500/20 p-6">
                   <h3 className="text-xs font-bold text-red-500 uppercase tracking-widest mb-2">Danger Zone</h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Permanently delete your account and all associated data. This action cannot be undone.</p>
+                  {/* @ts-expect-error TODO: Fix pervasive types */}
                   <Button variant="danger" size="sm" leftIcon={<Trash2 size={13} />} onClick={() => setShowDeleteModal(true)}>
                     Delete Account
                   </Button>

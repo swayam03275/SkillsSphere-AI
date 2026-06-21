@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React from "react";
 import { AlertCircle } from "lucide-react";
@@ -32,6 +31,7 @@ const ErrorState: React.FC<ErrorStateProps> = ({
         {description && <p className="text-sm opacity-90">{description}</p>}
       </div>
       {onRetry && (
+        // @ts-expect-error TODO: Fix pervasive types
         <Button variant="primary" size="lg" onClick={onRetry}>
           {retryText}
         </Button>

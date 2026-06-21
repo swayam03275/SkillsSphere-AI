@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
@@ -17,7 +16,7 @@ const EditJobPostingPage = () => {
   useDocumentTitle("Edit Job Posting");
   const { id } = useParams();
   const navigate = useNavigate();
-  const { token } = useSelector((state) => state.auth);
+  const { token } = useSelector((state: any) => state.auth);
 
   const [jobData, setJobData] = useState(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
@@ -34,7 +33,7 @@ const EditJobPostingPage = () => {
         if (!ignore) {
           setJobData(response.job);
         }
-      } catch (err) {
+      } catch (err: any) {
         if (!ignore) {
           setSubmitError(err.message || "Failed to load job posting data.");
         }
@@ -56,7 +55,7 @@ const EditJobPostingPage = () => {
     try {
       await updateJobPosting(id, payload, token);
       navigate("/recruiter/jobs");
-    } catch (error) {
+    } catch (error: any) {
       setSubmitError(error.message || "Failed to update job posting. Please try again.");
       if (error.errors) {
         setFieldErrors(error.errors);
@@ -122,6 +121,7 @@ const EditJobPostingPage = () => {
         <div className="bg-white dark:bg-[#121214] border border-gray-100 dark:border-white/5 rounded-3xl p-6 sm:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)] max-w-3xl mx-auto w-full">
           {isLoadingData ? (
             <div className="py-12">
+              {/* @ts-expect-error TODO: Fix pervasive types */}
               <LoadingState message="Loading job details..." />
             </div>
           ) : jobData ? (

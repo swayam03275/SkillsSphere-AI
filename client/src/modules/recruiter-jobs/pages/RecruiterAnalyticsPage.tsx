@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useSelector } from "react-redux";
@@ -187,7 +186,7 @@ const SummaryMetricCard = ({ icon: Icon, color, bg, hoverBorder, label, value, s
 
 const RecruiterAnalyticsPage = () => {
   useDocumentTitle("Recruiter Analytics");
-  const { token } = useSelector((state) => state.auth);
+  const { token } = useSelector((state: any) => state.auth);
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -224,7 +223,7 @@ const RecruiterAnalyticsPage = () => {
     try {
       const response = await getRecruiterAnalytics(token);
       setAnalytics(response.analytics);
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message || "Failed to load analytics");
     } finally {
       setLoading(false);
@@ -301,7 +300,9 @@ const RecruiterAnalyticsPage = () => {
     let max = -1;
     let strongest = "None";
     Object.entries(specializationCounts).forEach(([name, count]) => {
+      // @ts-expect-error TODO: Fix pervasive types
       if (count > max) {
+        // @ts-expect-error TODO: Fix pervasive types
         max = count;
         strongest = name;
       }
@@ -329,6 +330,7 @@ const RecruiterAnalyticsPage = () => {
             <div className="absolute top-[5%] right-[20%] w-[35%] h-[35%] rounded-full bg-teal-50/40 dark:bg-teal-900/10 blur-[100px]" />
           </div>
           <div className="w-full max-w-[1200px] relative z-10 flex flex-col gap-6 pt-12">
+            {/* @ts-expect-error TODO: Fix pervasive types */}
             <LoadingState message="Aggregating hiring intelligence analytics..." />
           </div>
         </main>
@@ -599,6 +601,7 @@ const RecruiterAnalyticsPage = () => {
                                 <Cell key={`cell-${idx}`} fill={entry.fill} />
                               ))}
                             </Pie>
+                            {/* @ts-expect-error TODO: Fix pervasive types */}
                             <RechartsTooltip content={<CustomPieTooltip />} />
                           </PieChart>
                         </ResponsiveContainer>
@@ -647,6 +650,7 @@ const RecruiterAnalyticsPage = () => {
                           <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
                           <XAxis dataKey="month" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} dy={8} />
                           <YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} allowDecimals={false} />
+                          {/* @ts-expect-error TODO: Fix pervasive types */}
                           <RechartsTooltip content={<CustomBarTooltip />} />
                           <Bar dataKey="count" fill="url(#barGradient)" radius={[6, 6, 0, 0]} animationDuration={1000} maxBarSize={40} />
                         </BarChart>
@@ -827,6 +831,7 @@ const RecruiterAnalyticsPage = () => {
                                 <Cell key={`cell-${idx}`} fill={entry.fill} />
                               ))}
                             </Pie>
+                            {/* @ts-expect-error TODO: Fix pervasive types */}
                             <RechartsTooltip content={<CustomPieTooltip />} />
                           </PieChart>
                         </ResponsiveContainer>

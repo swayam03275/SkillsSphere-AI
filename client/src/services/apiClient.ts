@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { API_URL } from "../config/env";
 
@@ -145,6 +144,7 @@ const extractApiErrors = (value) => {
 };
 
 export const apiRequest = async (path, options = {}) => {
+  // @ts-expect-error TODO: Fix pervasive types
   const { method = "GET", body, token, headers = {}, signal, responseType = "json", keepalive } = options;
 
   const url = toUrl(path);
@@ -167,9 +167,11 @@ export const apiRequest = async (path, options = {}) => {
 
   if (body !== undefined && body !== null) {
     if (body instanceof FormData) {
+      // @ts-expect-error TODO: Fix pervasive types
       init.body = body;
     } else {
       requestHeaders["Content-Type"] = "application/json";
+      // @ts-expect-error TODO: Fix pervasive types
       init.body = JSON.stringify(body);
     }
   }
@@ -179,9 +181,13 @@ export const apiRequest = async (path, options = {}) => {
     response = await fetch(url, init);
   } catch (cause) {
     const networkError = new Error("Network error");
+    // @ts-expect-error TODO: Fix pervasive types
     networkError.status = 0;
+    // @ts-expect-error TODO: Fix pervasive types
     networkError.cause = cause;
+    // @ts-expect-error TODO: Fix pervasive types
     networkError.url = url;
+    // @ts-expect-error TODO: Fix pervasive types
     networkError.method = method;
     throw networkError;
   }
@@ -226,17 +232,23 @@ export const apiRequest = async (path, options = {}) => {
       "Request failed";
 
     const error = new Error(message);
+    // @ts-expect-error TODO: Fix pervasive types
     error.status = response.status;
+    // @ts-expect-error TODO: Fix pervasive types
     error.data = data;
+    // @ts-expect-error TODO: Fix pervasive types
     error.errors =
       (data &&
         typeof data === "object" &&
         (data.errors || data.error || data.details)) ||
       undefined;
+    // @ts-expect-error TODO: Fix pervasive types
     error.url = url;
+    // @ts-expect-error TODO: Fix pervasive types
     error.method = method;
 
     if (typeof window !== "undefined") {
+      // @ts-expect-error TODO: Fix pervasive types
       window.dispatchEvent(new CustomEvent("api:error", { detail: { message: error.message, status: error.status } }));
     }
 

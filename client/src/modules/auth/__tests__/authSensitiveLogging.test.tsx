@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 /* eslint-disable no-console */
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
@@ -71,6 +70,7 @@ const fillResetPasswordForm = () => {
 beforeEach(() => {
   vi.clearAllMocks();
   global.fetch = vi.fn();
+  // @ts-expect-error TODO: Fix pervasive types
   reportError.mockResolvedValue({ success: true });
   vi.spyOn(console, "error").mockImplementation(() => {});
   vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -84,6 +84,7 @@ afterEach(() => {
 describe("auth sensitive logging", () => {
   it("shows a sanitized reset password failure message and reports safely", async () => {
     const user = userEvent.setup();
+    // @ts-expect-error TODO: Fix pervasive types
     global.fetch.mockResolvedValue({
       ok: false,
       status: 400,
@@ -114,12 +115,14 @@ describe("auth sensitive logging", () => {
         status: 400,
       }),
     );
+    // @ts-expect-error TODO: Fix pervasive types
     expect(reportError.mock.calls[0][0].message).not.toContain("reset-token-123");
     expect(console.error).not.toHaveBeenCalledWith(expect.stringContaining("reset-token-123"));
   });
 
   it("preserves reset password success flow", async () => {
     const user = userEvent.setup();
+    // @ts-expect-error TODO: Fix pervasive types
     global.fetch.mockResolvedValue({
       ok: true,
       json: async () => ({ success: true }),
@@ -137,6 +140,7 @@ describe("auth sensitive logging", () => {
 
   it("shows sanitized OAuth failure message without logging raw token details", async () => {
     locationSearch = "?code=oauth-secret-code";
+    // @ts-expect-error TODO: Fix pervasive types
     global.fetch.mockResolvedValue({
       ok: false,
       json: async () => ({
@@ -158,6 +162,7 @@ describe("auth sensitive logging", () => {
         feature: "oauth-callback",
       }),
     );
+    // @ts-expect-error TODO: Fix pervasive types
     expect(reportError.mock.calls[0][0].message).not.toContain("secret-access-token");
     expect(toast.error).not.toHaveBeenCalledWith(expect.stringContaining("secret-access-token"));
     expect(console.error).not.toHaveBeenCalledWith(expect.stringContaining("secret-access-token"));
@@ -167,6 +172,7 @@ describe("auth sensitive logging", () => {
   it("preserves OAuth success flow", async () => {
     locationSearch = "?code=oauth-code";
     sessionStorage.setItem("oauth_redirect", "/dashboard");
+    // @ts-expect-error TODO: Fix pervasive types
     global.fetch.mockResolvedValue({
       ok: true,
       json: async () => ({

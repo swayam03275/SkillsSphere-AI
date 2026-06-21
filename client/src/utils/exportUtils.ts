@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import html2pdf from 'html2pdf.js';
 
@@ -65,43 +64,66 @@ const getNestedArray = (...values) => values.flatMap((value) => asArray(value));
 
 export const buildResumeAnalysisExportData = (result = {}) => {
   const matchedSkills = getNestedArray(
+    // @ts-expect-error TODO: Fix pervasive types
     result.skills,
+    // @ts-expect-error TODO: Fix pervasive types
     result.skillMatch?.matchedSkills,
+    // @ts-expect-error TODO: Fix pervasive types
     result.skillMatch?.details?.matchedSkills,
+    // @ts-expect-error TODO: Fix pervasive types
     result.skillsMatch?.matchedSkills,
+    // @ts-expect-error TODO: Fix pervasive types
     result.skillsMatch?.details?.matchedSkills,
   );
 
   const missingSkills = getNestedArray(
+    // @ts-expect-error TODO: Fix pervasive types
     result.missingSkills,
+    // @ts-expect-error TODO: Fix pervasive types
     result.skillMatch?.missingSkills,
+    // @ts-expect-error TODO: Fix pervasive types
     result.skillMatch?.details?.missingSkills,
+    // @ts-expect-error TODO: Fix pervasive types
     result.keywordMatch?.missingKeywords,
   );
 
   const suggestions = getNestedArray(
+    // @ts-expect-error TODO: Fix pervasive types
     result.suggestions,
+    // @ts-expect-error TODO: Fix pervasive types
     result.gapAnalysis?.suggestions,
+    // @ts-expect-error TODO: Fix pervasive types
     result.recommendations,
   );
 
   const strengths = getNestedArray(
+    // @ts-expect-error TODO: Fix pervasive types
     result.strengths,
+    // @ts-expect-error TODO: Fix pervasive types
     result.resumeStrengths,
+    // @ts-expect-error TODO: Fix pervasive types
     result.impactMatch?.feedback,
+    // @ts-expect-error TODO: Fix pervasive types
     result.keywordMatch?.matchedKeywords,
+    // @ts-expect-error TODO: Fix pervasive types
     result.aiRecruiterInsights,
   );
 
   const weaknesses = getNestedArray(
+    // @ts-expect-error TODO: Fix pervasive types
     result.weaknesses,
+    // @ts-expect-error TODO: Fix pervasive types
     result.resumeWeaknesses,
+    // @ts-expect-error TODO: Fix pervasive types
     result.aiWeaknesses,
+    // @ts-expect-error TODO: Fix pervasive types
     result.gapAnalysis?.weaknesses,
+    // @ts-expect-error TODO: Fix pervasive types
     result.atsOptimization?.issues,
   );
 
   return {
+    // @ts-expect-error TODO: Fix pervasive types
     score: Number.isFinite(Number(result.score)) ? Number(result.score) : 0,
     strengths: uniqueStrings(strengths),
     weaknesses: uniqueStrings(weaknesses),
@@ -202,5 +224,6 @@ export const exportToPDF = async (elementId, filename, options = {}) => {
     ...options,
   };
   
+  // @ts-expect-error TODO: Fix pervasive types
   return html2pdf().set(opt).from(element).save();
 };

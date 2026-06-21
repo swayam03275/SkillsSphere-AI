@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { CloudUpload, Loader2 } from "lucide-react";
 import { useCallback, useState } from "react";
@@ -131,6 +130,7 @@ const DragDropUpload = ({ onFileUpload, disabled = false, isUploading = false, u
 
   return (
     <div
+      // @ts-expect-error TODO: Fix pervasive types
       tabIndex="0"
       className={`relative w-full h-full min-h-[300px] py-16 px-6 border-[1.5px] border-dashed rounded-3xl transition-all duration-300 flex flex-col items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-500/40 outline-none ${
         isDragActive
@@ -198,6 +198,7 @@ const DragDropUpload = ({ onFileUpload, disabled = false, isUploading = false, u
               title="Browse file"
               aria-label="Browse resume file"
             />
+            {/* @ts-expect-error TODO: Fix pervasive types */}
             <Button
               type="button"
               variant="primary"

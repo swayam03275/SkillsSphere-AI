@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { Sparkles } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -42,6 +41,7 @@ const MessageBubble = ({ sender, text }) => {
                 ul: ({ node, ...props }) => <ul className="m-0 pl-4 mb-2 last:mb-0 list-disc" {...props} />,
                 ol: ({ node, ...props }) => <ol className="m-0 pl-4 mb-2 last:mb-0 list-decimal" {...props} />,
                 li: ({ node, ...props }) => <li className="m-0" {...props} />,
+                // @ts-expect-error TODO: Fix pervasive types
                 code: ({ node, inline, ...props }) =>
                   inline ? (
                     <code className="bg-slate-200 dark:bg-slate-700 px-1 py-0.5 rounded text-[13px]" {...props} />

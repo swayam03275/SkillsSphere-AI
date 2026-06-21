@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useMemo } from "react";
 import {
@@ -65,6 +64,7 @@ const getNotificationTypeConfig = (type) => {
 const formatRelativeTime = (date) => {
   const now = new Date();
   const notificationTime = new Date(date);
+  // @ts-expect-error TODO: Fix pervasive types
   const diffMs = now - notificationTime;
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMins / 60);

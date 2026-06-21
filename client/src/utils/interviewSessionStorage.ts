@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 const STORAGE_KEY = "skillssphere.mockInterview.backup";
 const DRAFT_STORAGE_KEY = "skillssphere.mockInterview.answerDrafts";
@@ -152,8 +151,11 @@ export const loadInterviewAnswerDraft = ({
 };
 
 export const clearInterviewAnswerDraft = ({
+  // @ts-expect-error TODO: Fix pervasive types
   sessionId,
+  // @ts-expect-error TODO: Fix pervasive types
   currentIndex,
+  // @ts-expect-error TODO: Fix pervasive types
   questionId,
 } = {}) => {
   if (!canUseStorage()) return;

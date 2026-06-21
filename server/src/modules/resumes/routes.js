@@ -105,6 +105,8 @@ router.post(
   uploadResume
 );
 
+import { logAction } from "../../middleware/auditLogger.js";
+
 /**
  * @openapi
  * /api/resume/analyze:
@@ -169,7 +171,8 @@ router.post(
   authorizeRoles("student"),
   parseResumeUpload,
   validateAndPersistResumeFile,
-  analyzeResume
+  analyzeResume,
+  logAction("RESUME_ANALYSIS")
 );
 
 /**

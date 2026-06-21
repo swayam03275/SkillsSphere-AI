@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
@@ -23,6 +22,7 @@ class ErrorBoundary extends React.Component {
   }
 
   render() {
+    // @ts-expect-error TODO: Fix pervasive types
     if (this.state.hasError) {
       return (
         <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-500">
@@ -63,10 +63,13 @@ class ErrorBoundary extends React.Component {
               </div>
 
               {/* Dev environment error trace */}
+              {/* @ts-expect-error TODO: Fix pervasive types */}
               {import.meta.env.DEV && this.state.error && (
                 <div className="mt-10 p-4 bg-red-500/5 border border-red-500/20 rounded-xl text-left w-full overflow-auto max-h-64 scrollbar-thin">
+                  {/* @ts-expect-error TODO: Fix pervasive types */}
                   <p className="text-red-500 font-bold text-sm mb-2">{this.state.error.toString()}</p>
                   <pre className="text-xs text-[var(--text-muted)] font-mono whitespace-pre-wrap">
+                    {/* @ts-expect-error TODO: Fix pervasive types */}
                     {this.state.errorInfo?.componentStack}
                   </pre>
                 </div>
@@ -77,6 +80,7 @@ class ErrorBoundary extends React.Component {
       );
     }
 
+    // @ts-expect-error TODO: Fix pervasive types
     return this.props.children;
   }
 }

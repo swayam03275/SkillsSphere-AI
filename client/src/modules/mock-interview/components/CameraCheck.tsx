@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useEffect, useRef, useState } from "react";
 import { Video, VideoOff, Mic } from "lucide-react";
@@ -30,6 +29,7 @@ const CameraCheck = ({ onStreamReady }) => {
         onStreamReady(true);
 
         // Audio Visualizer Logic
+        // @ts-expect-error TODO: Fix pervasive types
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
         analyser = audioContext.createAnalyser();
         microphone = audioContext.createMediaStreamSource(currentStream);
@@ -52,7 +52,7 @@ const CameraCheck = ({ onStreamReady }) => {
           const average = values / array.length;
           setMicLevel(Math.min(100, average * 2.5));
         };
-      } catch (err) {
+      } catch (err: any) {
         logger.error("Error accessing media devices:", err);
         setError("Camera or Microphone access denied. Please enable permissions to proceed.");
         onStreamReady(false);

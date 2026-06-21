@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { useEffect, useState, useRef, startTransition } from "react";
 import { useDispatch } from "react-redux";
@@ -33,7 +32,7 @@ export const sanitizeOAuthRedirect = (redirectTo) => {
 
 const OAuthCallback = () => {
   useDocumentTitle("OAuth Callback");
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<any>();
   const navigate = useNavigate();
   const location = useLocation();
   const { success, error: showError } = useToast();
@@ -106,7 +105,7 @@ const OAuthCallback = () => {
         startTransition(() => {
           navigate(redirectTo, { replace: true });
         });
-      } catch (err) {
+      } catch (err: any) {
         reportError(new Error("OAuth callback failed"), {
           source: "auth",
           feature: "oauth-callback",

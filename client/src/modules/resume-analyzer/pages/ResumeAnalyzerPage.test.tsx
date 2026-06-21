@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -92,8 +91,11 @@ const renderPage = async () => {
 describe("ResumeAnalyzerPage upload flow", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // @ts-expect-error TODO: Fix pervasive types
     getLatestResumeAnalysis.mockResolvedValue(null);
+    // @ts-expect-error TODO: Fix pervasive types
     getResumeList.mockResolvedValue([]);
+    // @ts-expect-error TODO: Fix pervasive types
     analyzeResume.mockResolvedValue({
       success: true,
       score: 88,
@@ -137,6 +139,7 @@ describe("ResumeAnalyzerPage upload flow", () => {
 
   it("shows upload progress and prevents duplicate submissions", async () => {
     let resolveUpload;
+    // @ts-expect-error TODO: Fix pervasive types
     analyzeResume.mockReturnValue(
       new Promise((resolve) => {
         resolveUpload = resolve;
@@ -162,6 +165,7 @@ describe("ResumeAnalyzerPage upload flow", () => {
   });
 
   it("shows a friendly corrupted-file parsing error without retry", async () => {
+    // @ts-expect-error TODO: Fix pervasive types
     analyzeResume.mockRejectedValue(
       Object.assign(new Error("parser could not read corrupt pdf"), { status: 400 }),
     );
@@ -180,6 +184,7 @@ describe("ResumeAnalyzerPage upload flow", () => {
   });
 
   it("keeps the selected file and shows retry after recoverable upload failure", async () => {
+    // @ts-expect-error TODO: Fix pervasive types
     analyzeResume.mockRejectedValue(
       Object.assign(new Error("Network error"), { status: 0 }),
     );

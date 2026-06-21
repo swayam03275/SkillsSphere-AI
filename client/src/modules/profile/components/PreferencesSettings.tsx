@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Bell, Check, RotateCcw, Save, ShieldCheck, SlidersHorizontal } from "lucide-react";
@@ -58,19 +57,28 @@ const PROFILE_VISIBILITIES = [
 ];
 
 const mergeNotificationDefaults = (notifications = {}) => ({
+  // @ts-expect-error TODO: Fix pervasive types
   emailNotifications: notifications.emailNotifications ?? DEFAULT_PREFERENCES.notifications.emailNotifications,
+  // @ts-expect-error TODO: Fix pervasive types
   inAppNotifications: notifications.inAppNotifications ?? DEFAULT_PREFERENCES.notifications.inAppNotifications,
+  // @ts-expect-error TODO: Fix pervasive types
   interviewReminders: notifications.interviewReminders ?? DEFAULT_PREFERENCES.notifications.interviewReminders,
+  // @ts-expect-error TODO: Fix pervasive types
   jobUpdates: notifications.jobUpdates ?? notifications.jobAlerts ?? DEFAULT_PREFERENCES.notifications.jobUpdates,
+  // @ts-expect-error TODO: Fix pervasive types
   resumeAnalysis: notifications.resumeAnalysis ?? DEFAULT_PREFERENCES.notifications.resumeAnalysis,
+  // @ts-expect-error TODO: Fix pervasive types
   systemAlerts: notifications.systemAlerts ?? notifications.platformUpdates ?? DEFAULT_PREFERENCES.notifications.systemAlerts,
 });
 
 const mergeWithDefaults = (preferences = {}) => ({
+  // @ts-expect-error TODO: Fix pervasive types
   notifications: mergeNotificationDefaults(preferences.notifications),
+  // @ts-expect-error TODO: Fix pervasive types
   emailFrequency: preferences.emailFrequency || DEFAULT_PREFERENCES.emailFrequency,
   privacy: {
     ...DEFAULT_PREFERENCES.privacy,
+    // @ts-expect-error TODO: Fix pervasive types
     ...(preferences.privacy || {}),
   },
 });
@@ -129,7 +137,7 @@ const PreferencesSettings = ({ token }) => {
         if (!isMounted) return;
         setPreferences(nextPreferences);
         setSavedPreferences(nextPreferences);
-      } catch (err) {
+      } catch (err: any) {
         if (isMounted) {
           setError(err.message || "Could not load your settings. Please try again.");
         }
@@ -180,7 +188,7 @@ const PreferencesSettings = ({ token }) => {
       setPreferences(nextPreferences);
       setSavedPreferences(nextPreferences);
       setMessage("Preferences saved successfully.");
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message || "Could not save your settings. Please try again.");
     } finally {
       setSaving(false);
@@ -223,6 +231,7 @@ const PreferencesSettings = ({ token }) => {
           </h3>
         </div>
         <div className="flex gap-2">
+          {/* @ts-expect-error TODO: Fix pervasive types */}
           <Button
             type="button"
             variant="outline"
@@ -233,6 +242,7 @@ const PreferencesSettings = ({ token }) => {
           >
             Reset
           </Button>
+          {/* @ts-expect-error TODO: Fix pervasive types */}
           <Button
             type="submit"
             size="sm"

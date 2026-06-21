@@ -171,3 +171,75 @@ export const getDashboardAnalytics = async (req, res, next) => {
     return next(new AppError("Failed to fetch analytics", 500));
   }
 };
+
+/**
+ * Fetch Audit Logs for Admin/Recruiter Analytics Dashboard
+ */
+export const getAuditStats = async (req, res, next) => {
+  try {
+    const { default: AuditLog } = await import("../../database/models/AuditLog.js");
+    
+    // Group by action and day (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const pipeline = [
+      {
+        $match: {
+          createdAt: { $gte: thirtyDaysAgo }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            action: "$action",
+            date: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { "_id.date": 1 }
+      }
+    ];
+
+    const results = await AuditLog.aggregate(pipeline);
+
+    // Transform into a format friendly for Recharts
+    // e.g. [ { date: '2026-06-01', LOGIN: 5, RESUME_UPLOAD: 2 }, ... ]
+    const formattedData = {};
+    const actions = new Set();
+
+    results.forEach((item) => {
+      const date = item._id.date;
+      const action = item._id.action;
+      
+      if (!formattedData[date]) {
+        formattedData[date] = { date };
+      }
+      formattedData[date][action] = item.count;
+      actions.add(action);
+    });
+
+    const chartData = Object.values(formattedData).sort((a, b) => a.date.localeCompare(b.date));
+
+    // Fill missing zeros for all actions on each date
+    const actionList = Array.from(actions);
+    chartData.forEach(day => {
+      actionList.forEach(act => {
+        if (day[act] === undefined) day[act] = 0;
+      });
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        chartData,
+        actions: actionList
+      }
+    });
+  } catch (error) {
+    logger.error("Error fetching audit stats:", error);
+    return next(new AppError("Failed to fetch audit stats", 500));
+  }
+};

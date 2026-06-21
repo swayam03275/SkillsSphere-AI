@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { apiRequest } from "../../../services/apiClient";
 import { getToken } from "../../../utils/authToken";
@@ -28,7 +27,7 @@ export const getLatestResumeAnalysis = async () => {
       // Derive isJDProvided from whether a jobDescription was saved
       isJDProvided: !!doc.jobDescription,
     };
-  } catch (err) {
+  } catch (err: any) {
     // 404 means no prior scan — treat as "no data", not an error
     if (err?.status === 404 || err?.message?.includes("404")) return null;
     logger.error("[resumeService] getLatestResumeAnalysis:", err);
@@ -58,7 +57,7 @@ export const analyzeResume = async (file, jobDescription = "") => {
     }
 
     return response;
-  } catch (error) {
+  } catch (error: any) {
     logger.error("[resumeService] Analysis Error:", error);
     throw error; // Let the caller (component) handle the UI toast/state
   }
@@ -84,7 +83,7 @@ export const generateCoverLetter = async (resumeId, jobDescription, tone = "Prof
     }
 
     return response;
-  } catch (error) {
+  } catch (error: any) {
     logger.error("[resumeService] Cover Letter Generation Error:", error);
     throw error;
   }
@@ -105,7 +104,7 @@ export const getResumeList = async () => {
     }
 
     return response.data || [];
-  } catch (error) {
+  } catch (error: any) {
     logger.error("[resumeService] getResumeList Error:", error);
     throw error;
   }
@@ -126,7 +125,7 @@ export const setActiveResume = async (id) => {
     }
 
     return response;
-  } catch (error) {
+  } catch (error: any) {
     logger.error("[resumeService] setActiveResume Error:", error);
     throw error;
   }
@@ -148,7 +147,7 @@ export const renameResume = async (id, title) => {
     }
 
     return response;
-  } catch (error) {
+  } catch (error: any) {
     logger.error("[resumeService] renameResume Error:", error);
     throw error;
   }
@@ -169,7 +168,7 @@ export const deleteResume = async (id) => {
     }
 
     return response;
-  } catch (error) {
+  } catch (error: any) {
     logger.error("[resumeService] deleteResume Error:", error);
     throw error;
   }

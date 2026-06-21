@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -63,8 +62,8 @@ const calculatePasswordStrength = (password) => {
 const Register = () => {
   useDocumentTitle("Register");
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const { loading } = useSelector((state) => state.auth);
+  const dispatch = useDispatch<any>();
+  const { loading } = useSelector((state: any) => state.auth);
   const { success, warning, error: showError } = useToast();
 
   const [formData, setFormData] = useState({
@@ -82,6 +81,7 @@ const Register = () => {
     const { id, value } = e.target;
     setFormData({ ...formData, [id]: value });
 
+    // @ts-expect-error TODO: Fix pervasive types
     if (errors[id] || errors.form) {
       setErrors({ ...errors, [id]: "", form: "" });
     }
@@ -100,6 +100,7 @@ const Register = () => {
     }
 
     if (formData.password && strength.score < 4) {
+      // @ts-expect-error TODO: Fix pervasive types
       newErrors.password = "Please create a stronger password (at least Good)";
     }
 
@@ -121,6 +122,7 @@ const Register = () => {
     const email = formData.email.trim().toLowerCase();
 
     const resultAction = await dispatch(
+      // @ts-expect-error TODO: Fix pervasive types
       registerUser({
         name: formData.name.trim(),
         email,
@@ -180,17 +182,20 @@ const Register = () => {
           </h2>
 
           <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-5">
+            {/* @ts-expect-error TODO: Fix pervasive types */}
             <Input
               id="name"
               label="Full Name"
               placeholder="Enter your full name"
               value={formData.name}
               onChange={handleChange}
+              // @ts-expect-error TODO: Fix pervasive types
               error={errors.name}
               disabled={loading}
               autoComplete="name"
             />
 
+            {/* @ts-expect-error TODO: Fix pervasive types */}
             <Input
               id="email"
               type="email"
@@ -198,12 +203,14 @@ const Register = () => {
               placeholder="Enter your email"
               value={formData.email}
               onChange={handleChange}
+              // @ts-expect-error TODO: Fix pervasive types
               error={errors.email}
               disabled={loading}
               autoComplete="email"
             />
 
             <div className="flex flex-col gap-1">
+              {/* @ts-expect-error TODO: Fix pervasive types */}
               <Input
                 id="password"
                 type="password"
@@ -211,6 +218,7 @@ const Register = () => {
                 placeholder="Create a password"
                 value={formData.password}
                 onChange={handleChange}
+                // @ts-expect-error TODO: Fix pervasive types
                 error={errors.password}
                 disabled={loading}
                 autoComplete="new-password"
@@ -250,6 +258,7 @@ const Register = () => {
               )}
             </div>
 
+            {/* @ts-expect-error TODO: Fix pervasive types */}
             <Input
               id="confirmPassword"
               type="password"
@@ -257,6 +266,7 @@ const Register = () => {
               placeholder="Confirm your password"
               value={formData.confirmPassword}
               onChange={handleChange}
+              // @ts-expect-error TODO: Fix pervasive types
               error={errors.confirmPassword}
               disabled={loading}
               autoComplete="new-password"
@@ -268,6 +278,7 @@ const Register = () => {
             )}
           </div>
 
+          {/* @ts-expect-error TODO: Fix pervasive types */}
           <Button
             type="submit"
             fullWidth
@@ -278,11 +289,14 @@ const Register = () => {
             {loading ? "Creating Account..." : "Sign Up"}
           </Button>
 
+          {/* @ts-expect-error TODO: Fix pervasive types */}
           {errors.form && (
             <p className="text-red-400 text-center mt-3 text-xs sm:text-sm">
+              {/* @ts-expect-error TODO: Fix pervasive types */}
               {errors.form}
             </p>
           )}
+          {/* @ts-expect-error TODO: Fix pervasive types */}
           <GoogleOAuthButton />
         </form>
         {/* Footer */}

@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -51,9 +50,9 @@ const getSidebarItems = (role) => {
 
 const DashboardPage = () => {
   useDocumentTitle("Dashboard");
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<any>();
   const navigate = useNavigate();
-  const { user, token } = useSelector((state) => state.auth);
+  const { user, token } = useSelector((state: any) => state.auth);
 
   const isStudent = user?.role === "student";
   const isRecruiter = user?.role === "recruiter";
@@ -138,6 +137,7 @@ const DashboardPage = () => {
                   <Menu size={18} />
                 </button>
 
+                {/* @ts-expect-error TODO: Fix pervasive types */}
                 <Button
                   variant="outline"
                   size="md"

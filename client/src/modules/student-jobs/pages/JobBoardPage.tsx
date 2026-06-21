@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useSelector } from "react-redux";
@@ -19,7 +18,7 @@ import { useToast } from "../../../shared/components/toast/ToastProvider";
 
 const JobBoardPage = () => {
   useDocumentTitle("Job Board");
-  const { token, user } = useSelector((state) => state.auth);
+  const { token, user } = useSelector((state: any) => state.auth);
   const toast = useToast();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -49,7 +48,7 @@ const JobBoardPage = () => {
       } catch {
         // Silently ignore — applied status will update after next apply
       }
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message || "Failed to fetch jobs. Please try again.");
     } finally {
       setLoading(false);
@@ -83,7 +82,7 @@ const JobBoardPage = () => {
       await applyToJob(jobId, token, { resumeLink, coverNote });
       setAppliedJobIds((prev) => new Set([...prev, jobId]));
       setApplyModalJob(null);
-    } catch (err) {
+    } catch (err: any) {
       const msg = err.message || err.data?.message || "Failed to apply";
       if (msg.includes("already applied")) {
         setAppliedJobIds((prev) => new Set([...prev, jobId]));
@@ -166,8 +165,10 @@ const JobBoardPage = () => {
                 ))}
               </div>
             ): error ? (
+              // @ts-expect-error TODO: Fix pervasive types
               <ErrorState message={error} onRetry={() => fetchJobs(filters)} />
             ) : jobs.length === 0 ? (
+              // @ts-expect-error TODO: Fix pervasive types
               <EmptyState
                 icon={<Briefcase size={64} className="text-slate-700 mb-4" />}
                 title="No Jobs Found"
@@ -180,6 +181,7 @@ const JobBoardPage = () => {
             ) : (
               <div className="grid grid-cols-1 gap-5">
                 {jobs.map((job) => (
+                  // @ts-expect-error TODO: Fix pervasive types
                   <JobViewerCard
                     key={job._id}
                     job={job}

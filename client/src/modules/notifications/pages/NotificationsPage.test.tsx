@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
@@ -62,15 +61,22 @@ const baseHookState = {
 };
 
 const notification = (overrides = {}) => ({
+  // @ts-expect-error TODO: Fix pervasive types
   _id: overrides._id || "notification-1",
+  // @ts-expect-error TODO: Fix pervasive types
   title: overrides.title || "Application update",
+  // @ts-expect-error TODO: Fix pervasive types
   message: overrides.message || "Your application moved forward.",
+  // @ts-expect-error TODO: Fix pervasive types
   type: overrides.type || "application-status-updated",
+  // @ts-expect-error TODO: Fix pervasive types
   isRead: overrides.isRead ?? false,
+  // @ts-expect-error TODO: Fix pervasive types
   createdAt: overrides.createdAt || new Date().toISOString(),
 });
 
 const renderPage = (hookState = {}) => {
+  // @ts-expect-error TODO: Fix pervasive types
   useNotifications.mockReturnValue({
     ...baseHookState,
     ...hookState,

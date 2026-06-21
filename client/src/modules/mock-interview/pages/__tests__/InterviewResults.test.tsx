@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -85,7 +84,9 @@ const renderResults = async () => {
 describe("InterviewResults bookmarks", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // @ts-expect-error TODO: Fix pervasive types
     getResults.mockResolvedValue(resultsPayload);
+    // @ts-expect-error TODO: Fix pervasive types
     toggleQuestionBookmark.mockResolvedValue({
       data: { questionId: "q1", bookmarked: false },
     });

@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
@@ -102,7 +101,7 @@ const ResetPassword = () => {
 
         setSuccess(true);
         showSuccessToast("Password reset successfully!");
-      } catch (err) {
+      } catch (err: any) {
         reportError(new Error("Password reset request could not be completed"), {
           source: "auth",
           feature: "reset-password",
@@ -138,6 +137,7 @@ const ResetPassword = () => {
               Your password has been updated successfully. You can now log in
               with your new password.
             </p>
+            {/* @ts-expect-error TODO: Fix pervasive types */}
             <Button
               fullWidth
               className="rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 border-none font-bold text-[15px] hover:scale-105 hover:shadow-[0_0_20px_rgba(59,130,246,0.6)] transition-all duration-300"
@@ -167,6 +167,7 @@ const ResetPassword = () => {
             </p>
 
             <div className="flex flex-col gap-4 mb-5">
+              {/* @ts-expect-error TODO: Fix pervasive types */}
               <Input
                 id="email"
                 type="email"
@@ -174,10 +175,12 @@ const ResetPassword = () => {
                 placeholder="Enter your registered email"
                 value={formData.email}
                 onChange={handleChange}
+                // @ts-expect-error TODO: Fix pervasive types
                 error={errors.email}
                 disabled={loading}
               />
 
+              {/* @ts-expect-error TODO: Fix pervasive types */}
               <Input
                 id="otp"
                 type="text"
@@ -185,12 +188,14 @@ const ResetPassword = () => {
                 placeholder="Enter 6-digit OTP"
                 value={formData.otp}
                 onChange={handleChange}
+                // @ts-expect-error TODO: Fix pervasive types
                 error={errors.otp}
                 helperText="Check your email for the verification code"
                 disabled={loading}
                 maxLength={6}
               />
 
+              {/* @ts-expect-error TODO: Fix pervasive types */}
               <Input
                 id="newPassword"
                 type="password"
@@ -198,12 +203,14 @@ const ResetPassword = () => {
                 placeholder="Create a new password"
                 value={formData.newPassword}
                 onChange={handleChange}
+                // @ts-expect-error TODO: Fix pervasive types
                 error={errors.newPassword}
                 helperText="Must be at least 8 characters"
                 disabled={loading}
                 autoComplete="new-password"
               />
 
+              {/* @ts-expect-error TODO: Fix pervasive types */}
               <Input
                 id="confirmPassword"
                 type="password"
@@ -211,6 +218,7 @@ const ResetPassword = () => {
                 placeholder="Confirm your new password"
                 value={formData.confirmPassword}
                 onChange={handleChange}
+                // @ts-expect-error TODO: Fix pervasive types
                 error={errors.confirmPassword}
                 disabled={loading}
                 autoComplete="new-password"
@@ -218,6 +226,7 @@ const ResetPassword = () => {
             </div>
 
             {/* Submit Button */}
+            {/* @ts-expect-error TODO: Fix pervasive types */}
             <Button
               type="submit"
               fullWidth

@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
@@ -12,12 +11,11 @@ import {
 } from "../../features/notifications/notificationsSlice";
 
 const NotificationsDropdown = ({ isOpen, onClose }) => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<any>();
   const dropdownRef = useRef(null);
   const [loadMoreLoading, setLoadMoreLoading] = useState(false);
 
-  const { items, unreadCount, loading, pagination } = useSelector(
-    (state) => state.notifications
+  const { items, unreadCount, loading, pagination } = useSelector((state: any) => state.notifications
   );
 
   // Close on clicking outside
@@ -40,6 +38,7 @@ const NotificationsDropdown = ({ isOpen, onClose }) => {
   // Fetch first page on mount or when opened
   useEffect(() => {
     if (isOpen) {
+      // @ts-expect-error TODO: Fix pervasive types
       dispatch(getNotifications({ page: 1, limit: 10 }));
     }
   }, [isOpen, dispatch]);
@@ -58,6 +57,7 @@ const NotificationsDropdown = ({ isOpen, onClose }) => {
     if (pagination.page < pagination.pages && !loadMoreLoading) {
       setLoadMoreLoading(true);
       await dispatch(
+        // @ts-expect-error TODO: Fix pervasive types
         getNotifications({ page: pagination.page + 1, limit: 10 })
       );
       setLoadMoreLoading(false);

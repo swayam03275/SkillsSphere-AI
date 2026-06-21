@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -112,6 +111,7 @@ describe("AnalysisResult PDF export", () => {
     vi.clearAllMocks();
     URL.createObjectURL = vi.fn(() => "blob:resume-preview");
     URL.revokeObjectURL = vi.fn();
+    // @ts-expect-error TODO: Fix pervasive types
     exportToPDF.mockResolvedValue(undefined);
   });
 
@@ -171,6 +171,7 @@ describe("AnalysisResult PDF export", () => {
   it("shows loading state and prevents duplicate export clicks", async () => {
     const user = userEvent.setup();
     let resolveExport;
+    // @ts-expect-error TODO: Fix pervasive types
     exportToPDF.mockReturnValue(
       new Promise((resolve) => {
         resolveExport = resolve;
@@ -201,6 +202,7 @@ describe("AnalysisResult PDF export", () => {
 
   it("shows a friendly error message when PDF generation fails", async () => {
     const user = userEvent.setup();
+    // @ts-expect-error TODO: Fix pervasive types
     exportToPDF.mockRejectedValueOnce(new Error("Canvas failed"));
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     renderAnalysis();

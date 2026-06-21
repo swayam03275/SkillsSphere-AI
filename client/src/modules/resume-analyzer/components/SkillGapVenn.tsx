@@ -1,10 +1,10 @@
-// @ts-nocheck
 
 import React from "react";
 import { User, Briefcase, Zap, AlertCircle, CheckCircle2 } from "lucide-react";
 const SkillGapVenn = ({ skillMatch = {}, isJDProvided = false, mode = "match" }) => {
   if (!isJDProvided && mode !== "benchmark") return null;
 
+  // @ts-expect-error TODO: Fix pervasive types
   const { matchedSkills = [], missingSkills = [], extraSkills = [] } = skillMatch.details || {};
   const matchedCount = matchedSkills.length;
   const missingCount = missingSkills.length;

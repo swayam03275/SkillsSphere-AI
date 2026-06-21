@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -83,7 +82,7 @@ const NotificationsEmptyState = ({ filter }) => {
 const NotificationsPage = () => {
   useDocumentTitle("Notifications");
   const navigate = useNavigate();
-  const { user } = useSelector((state) => state.auth);
+  const { user } = useSelector((state: any) => state.auth);
   const [filterRead, setFilterRead] = useState("all");
   const [filterType, setFilterType] = useState("all");
   const [expandedFilters, setExpandedFilters] = useState(false);
@@ -104,6 +103,7 @@ const NotificationsPage = () => {
     socketStatus,
   } = useNotifications({
     filter: filterRead,
+    // @ts-expect-error TODO: Fix pervasive types
     type: filterType === "all" ? undefined : filterType,
     limit: NOTIFICATIONS_PAGE_SIZE,
   });
@@ -375,6 +375,7 @@ const NotificationsPage = () => {
 
             {hasMore && (
               <div className="flex justify-center pt-4">
+                {/* @ts-expect-error TODO: Fix pervasive types */}
                 <Button
                   onClick={loadMore}
                   loading={loading}

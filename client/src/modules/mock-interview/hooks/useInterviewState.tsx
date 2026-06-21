@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -39,6 +38,7 @@ const withTimeout = async (operation, timeoutMs = REQUEST_TIMEOUT_MS) => {
       new Promise((_, reject) => {
         timeoutId = window.setTimeout(() => {
           const error = new Error("Request timeout");
+          // @ts-expect-error TODO: Fix pervasive types
           error.status = 0;
           reject(error);
         }, timeoutMs);
@@ -55,7 +55,7 @@ const retryRecoverable = async (operation, onRetry) => {
   for (let attempt = 1; attempt <= MAX_RETRY_ATTEMPTS; attempt += 1) {
     try {
       return await withTimeout(operation);
-    } catch (error) {
+    } catch (error: any) {
       lastError = error;
       if (!isRecoverableError(error) || attempt === MAX_RETRY_ATTEMPTS) {
         throw error;
@@ -228,7 +228,7 @@ export const useInterviewState = (sessionId, isObserver) => {
           currentQuestion: question,
           messages: savedSession?.messages || [],
         });
-      } catch (err) {
+      } catch (err: any) {
         setError(
           err.message === "Request timeout"
             ? "The interview session request timed out. Please check your connection and try again."
@@ -324,7 +324,7 @@ export const useInterviewState = (sessionId, isObserver) => {
           ),
         };
       });
-    } catch (err) {
+    } catch (err: any) {
       setCurrentQuestion(previousQuestion);
       setSession((currentSession) => {
         if (!currentSession?.answers) return currentSession;
@@ -385,7 +385,7 @@ export const useInterviewState = (sessionId, isObserver) => {
         (attempt) => setRequestStatus(`Retrying answer submission (${attempt}/${MAX_RETRY_ATTEMPTS})...`),
       );
       handleEvaluationResult(res.data, textareaRef);
-    } catch (err) {
+    } catch (err: any) {
       setUploadStatus("failed");
       setFailedAction("submit");
       setError(
@@ -413,7 +413,7 @@ export const useInterviewState = (sessionId, isObserver) => {
       clearInterviewSession();
       clearInterviewAnswerDraft();
       navigate(`/mock-interview/${sessionId}/results`, { replace: true });
-    } catch (err) {
+    } catch (err: any) {
       setFailedAction("complete");
       setError(
         err.message === "Request timeout"

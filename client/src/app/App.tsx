@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { useEffect, Suspense, lazy } from "react";
 import { Routes, Route } from "react-router-dom";
@@ -48,6 +47,7 @@ const TutorAnalyticsDashboard = lazy(() => import("../modules/analytics/TutorAna
 const NotificationsPage = lazy(() => import("../modules/notifications/pages/NotificationsPage"));
 const ChatWidget = lazy(() => import("../modules/ai-assistant/components/ChatWidget"));
 const NotFoundPage = lazy(() => import("../modules/landing/pages/NotFoundPage"));
+const AdminAnalyticsDashboard = lazy(() => import("../modules/analytics/pages/AdminAnalyticsDashboard"));
 import ProtectedRoute from "../shared/components/ProtectedRoute";
 import SocketNotificationListener from "../shared/components/SocketNotificationListener";
 import ScrollToTop from "../shared/components/ScrollToTop";
@@ -134,6 +134,7 @@ function App() {
         <Route
           path="/dashboard"
           element={
+            // @ts-expect-error TODO: Fix pervasive types
             <ProtectedRoute>
               <ErrorBoundary><DashboardPage /></ErrorBoundary>
             </ProtectedRoute>
@@ -142,6 +143,7 @@ function App() {
         <Route
           path="/notifications"
           element={
+            // @ts-expect-error TODO: Fix pervasive types
             <ProtectedRoute>
               {" "}
               <ErrorBoundary><NotificationsPage /></ErrorBoundary>
@@ -157,6 +159,7 @@ function App() {
         <Route 
           path="/onboarding" 
           element={
+            // @ts-expect-error TODO: Fix pervasive types
             <ProtectedRoute>
               <OnboardingPage />
             </ProtectedRoute>
@@ -213,6 +216,7 @@ function App() {
         <Route
           path="/jobs"
           element={
+            // @ts-expect-error TODO: Fix pervasive types
             <ProtectedRoute>
               <JobBoardPage />
             </ProtectedRoute>
@@ -229,6 +233,7 @@ function App() {
         <Route
           path="/profile"
           element={
+            // @ts-expect-error TODO: Fix pervasive types
             <ProtectedRoute>
               <ErrorBoundary><ProfilePage /></ErrorBoundary>
             </ProtectedRoute>
@@ -241,6 +246,16 @@ function App() {
           element={
             <ProtectedRoute requiredRole="tutor">
               <TutorAnalyticsDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Admin/Recruiter Global Analytics */}
+        <Route
+          path="/admin/analytics"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminAnalyticsDashboard />
             </ProtectedRoute>
           }
         />
@@ -259,6 +274,7 @@ function App() {
         <Route
           path="/classrooms"
           element={
+            // @ts-expect-error TODO: Fix pervasive types
             <ProtectedRoute>
               <ErrorBoundary><ClassroomsDashboard /></ErrorBoundary>
             </ProtectedRoute>
@@ -267,6 +283,7 @@ function App() {
         <Route
           path="/classrooms/:roomId"
           element={
+            // @ts-expect-error TODO: Fix pervasive types
             <ProtectedRoute>
               <ErrorBoundary><ClassroomRoom /></ErrorBoundary>
             </ProtectedRoute>

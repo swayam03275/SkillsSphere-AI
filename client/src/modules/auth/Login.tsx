@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -20,10 +19,10 @@ const loginSchema = z.object({
 
 const Login = () => {
   useDocumentTitle("Login");
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<any>();
   const navigate = useNavigate();
   const location = useLocation();
-  const { loading } = useSelector((state) => state.auth);
+  const { loading } = useSelector((state: any) => state.auth);
   const { success, warning, error: showError } = useToast();
 
   const [formData, setFormData] = useState({
@@ -38,6 +37,7 @@ const Login = () => {
     const { id, value } = e.target;
     setFormData({ ...formData, [id]: value });
 
+    // @ts-expect-error TODO: Fix pervasive types
     if (errors[id] || errors.form) {
       setErrors({ ...errors, [id]: "", form: "" });
     }
@@ -62,6 +62,7 @@ const Login = () => {
     setErrors({});
 
     const resultAction = await dispatch(
+      // @ts-expect-error TODO: Fix pervasive types
       loginUser({
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
@@ -108,6 +109,7 @@ const Login = () => {
           </h2>
 
           <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-5">
+            {/* @ts-expect-error TODO: Fix pervasive types */}
             <Input
               id="email"
               type="email"
@@ -115,11 +117,13 @@ const Login = () => {
               placeholder="Enter your email"
               value={formData.email}
               onChange={handleChange}
+              // @ts-expect-error TODO: Fix pervasive types
               error={errors.email}
               disabled={loading}
               autoComplete="email"
             />
 
+            {/* @ts-expect-error TODO: Fix pervasive types */}
             <Input
               id="password"
               type="password"
@@ -127,6 +131,7 @@ const Login = () => {
               placeholder="Enter your password"
               value={formData.password}
               onChange={handleChange}
+              // @ts-expect-error TODO: Fix pervasive types
               error={errors.password}
               disabled={loading}
               autoComplete="current-password"
@@ -151,6 +156,7 @@ const Login = () => {
           </div>
 
           {/* Button */}
+          {/* @ts-expect-error TODO: Fix pervasive types */}
           <Button
             type="submit"
             fullWidth
@@ -161,9 +167,12 @@ const Login = () => {
             Login
           </Button>
 
+          {/* @ts-expect-error TODO: Fix pervasive types */}
           {errors.form && (
             <div className="mt-3 text-center">
+              {/* @ts-expect-error TODO: Fix pervasive types */}
               <p className="text-red-400 text-xs sm:text-sm">{errors.form}</p>
+              {/* @ts-expect-error TODO: Fix pervasive types */}
               {errors.form.toLowerCase().includes("verify") && (
                 <button
                   type="button"

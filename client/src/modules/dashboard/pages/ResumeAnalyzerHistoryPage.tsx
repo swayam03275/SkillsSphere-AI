@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -65,7 +64,7 @@ const ResumeAnalyzerHistoryPage = () => {
       } else {
         setClError("Failed to load cover letter history.");
       }
-    } catch (err) {
+    } catch (err: any) {
       logger.error(err);
       setClError("An error occurred while fetching cover letters.");
     } finally {
@@ -85,7 +84,7 @@ const ResumeAnalyzerHistoryPage = () => {
       } else {
         setRaError("Failed to load resume analysis history.");
       }
-    } catch (err) {
+    } catch (err: any) {
       logger.error(err);
       setRaError("An error occurred while fetching analyses.");
     } finally {
@@ -117,7 +116,7 @@ const ResumeAnalyzerHistoryPage = () => {
         return response.coverLetter.generatedText;
       }
       throw new Error("Invalid response format from server.");
-    } catch (err) {
+    } catch (err: any) {
       toast.error("Failed to regenerate: " + err.message);
       return null;
     }

@@ -22,7 +22,7 @@ const BookmarkedQuestions = () => {
     try {
       const response = await getBookmarkedQuestions();
       setBookmarks(response.data || []);
-    } catch (err) {
+    } catch (err: any) {
       setError("Failed to load bookmarked questions.");
       logger.error("[BookmarkedQuestions] Load error:", err);
     } finally {
@@ -48,7 +48,7 @@ const BookmarkedQuestions = () => {
             item.questionId !== bookmark.questionId,
         ),
       );
-    } catch (err) {
+    } catch (err: any) {
       setError("Could not remove bookmark. Please try again.");
       logger.error("[BookmarkedQuestions] Remove error:", err);
     } finally {

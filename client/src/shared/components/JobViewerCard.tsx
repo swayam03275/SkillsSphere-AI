@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useState } from "react";
 import {
@@ -46,7 +45,9 @@ export interface JobViewerCardProps {
   recruiter?: { name?: string; email?: string; company?: string; companyWebsite?: string; linkedinUrl?: string };
   name?: string;
   email?: string;
+  // @ts-expect-error TODO: Fix pervasive types
   company?: string;
+  // @ts-expect-error TODO: Fix pervasive types
   companyWebsite?: string;
   linkedinUrl?: string;
   createdAt?: string;
@@ -500,6 +501,7 @@ const JobViewerCard: React.FC<JobViewerCardProps> = ({
                         Applied
                       </div>
                     ) : canApply ? (
+                      // @ts-expect-error TODO: Fix pervasive types
                       <Button
                         fullWidth
                         className="bg-blue-600 text-center hover:bg-blue-500"
@@ -525,6 +527,7 @@ const JobViewerCard: React.FC<JobViewerCardProps> = ({
                 {viewerRole === "recruiter" && (
                   <div className="mt-6 space-y-2">
                     {onViewStats && (
+                      // @ts-expect-error TODO: Fix pervasive types
                       <Button
                         fullWidth
                         className="flex items-center justify-center gap-2 whitespace-normal bg-blue-600 text-center hover:bg-blue-500"
@@ -538,6 +541,7 @@ const JobViewerCard: React.FC<JobViewerCardProps> = ({
                       </Button>
                     )}
                     {onViewApplicants && (
+                      // @ts-expect-error TODO: Fix pervasive types
                       <Button
                         fullWidth
                         className="flex items-center justify-center gap-2 whitespace-normal bg-purple-600 text-center hover:bg-purple-500"
@@ -552,6 +556,7 @@ const JobViewerCard: React.FC<JobViewerCardProps> = ({
                     )}
                     <div className="flex flex-col gap-2 sm:flex-row">
                       {onEdit && (
+                        // @ts-expect-error TODO: Fix pervasive types
                         <Button
                           variant="outline"
                           size="sm"
@@ -566,6 +571,7 @@ const JobViewerCard: React.FC<JobViewerCardProps> = ({
                         </Button>
                       )}
                       {onDelete && (
+                        // @ts-expect-error TODO: Fix pervasive types
                         <Button
                           variant="danger"
                           size="sm"

@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -40,6 +39,7 @@ beforeEach(() => {
 
 describe("PreferencesSettings", () => {
   it("renders the settings page and loads existing preferences", async () => {
+    // @ts-expect-error TODO: Fix pervasive types
     getUserPreferences.mockResolvedValue({ preferences: savedPreferences });
 
     renderSettings();
@@ -57,7 +57,9 @@ describe("PreferencesSettings", () => {
 
   it("updates fields and saves changed preferences", async () => {
     const user = userEvent.setup();
+    // @ts-expect-error TODO: Fix pervasive types
     getUserPreferences.mockResolvedValue({ preferences: savedPreferences });
+    // @ts-expect-error TODO: Fix pervasive types
     updateUserPreferences.mockResolvedValue({
       preferences: {
         ...savedPreferences,
@@ -92,6 +94,7 @@ describe("PreferencesSettings", () => {
 
   it("resets unsaved changes", async () => {
     const user = userEvent.setup();
+    // @ts-expect-error TODO: Fix pervasive types
     getUserPreferences.mockResolvedValue({ preferences: savedPreferences });
 
     renderSettings();
@@ -109,6 +112,7 @@ describe("PreferencesSettings", () => {
   });
 
   it("shows an error message when loading fails", async () => {
+    // @ts-expect-error TODO: Fix pervasive types
     getUserPreferences.mockRejectedValue(new Error("Unable to load preferences"));
 
     renderSettings();
@@ -118,7 +122,9 @@ describe("PreferencesSettings", () => {
 
   it("shows an error message when save fails", async () => {
     const user = userEvent.setup();
+    // @ts-expect-error TODO: Fix pervasive types
     getUserPreferences.mockResolvedValue({ preferences: savedPreferences });
+    // @ts-expect-error TODO: Fix pervasive types
     updateUserPreferences.mockRejectedValue(new Error("Save failed"));
 
     renderSettings();
@@ -139,7 +145,9 @@ describe("PreferencesSettings", () => {
       resolveSave = resolve;
     });
 
+    // @ts-expect-error TODO: Fix pervasive types
     getUserPreferences.mockResolvedValue({ preferences: savedPreferences });
+    // @ts-expect-error TODO: Fix pervasive types
     updateUserPreferences.mockReturnValue(savePromise);
 
     renderSettings();

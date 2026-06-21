@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import * as notificationService from "../../services/notificationService";
@@ -14,12 +13,14 @@ export const getNotifications = createAsyncThunk(
   "notifications/fetchAll",
   async (params, thunkAPI) => {
     try {
+      // @ts-expect-error TODO: Fix pervasive types
       const token = thunkAPI.getState()?.auth?.token;
       if (!token) return thunkAPI.rejectWithValue("No auth token available");
 
+      // @ts-expect-error TODO: Fix pervasive types
       const response = await notificationService.fetchNotifications(token, params);
       return response; // Contains data (notifications array) and pagination
-    } catch (error) {
+    } catch (error: any) {
       return thunkAPI.rejectWithValue(toErrorMessage(error, "Failed to load notifications"));
     }
   }
@@ -32,12 +33,13 @@ export const getUnreadCount = createAsyncThunk(
   "notifications/fetchUnreadCount",
   async (_, thunkAPI) => {
     try {
+      // @ts-expect-error TODO: Fix pervasive types
       const token = thunkAPI.getState()?.auth?.token;
       if (!token) return thunkAPI.rejectWithValue("No auth token available");
 
       const response = await notificationService.fetchUnreadCount(token);
       return response.data; // Contains { unreadCount: number }
-    } catch (error) {
+    } catch (error: any) {
       return thunkAPI.rejectWithValue(toErrorMessage(error, "Failed to load unread count"));
     }
   }
@@ -50,12 +52,13 @@ export const markAsRead = createAsyncThunk(
   "notifications/markRead",
   async (id, thunkAPI) => {
     try {
+      // @ts-expect-error TODO: Fix pervasive types
       const token = thunkAPI.getState()?.auth?.token;
       if (!token) return thunkAPI.rejectWithValue("No auth token available");
 
       const response = await notificationService.markNotificationRead(id, token);
       return response.data; // Contains updated notification
-    } catch (error) {
+    } catch (error: any) {
       return thunkAPI.rejectWithValue(toErrorMessage(error, "Failed to mark notification as read"));
     }
   }
@@ -68,12 +71,13 @@ export const markAllAsRead = createAsyncThunk(
   "notifications/markAllRead",
   async (_, thunkAPI) => {
     try {
+      // @ts-expect-error TODO: Fix pervasive types
       const token = thunkAPI.getState()?.auth?.token;
       if (!token) return thunkAPI.rejectWithValue("No auth token available");
 
       await notificationService.markAllNotificationsRead(token);
       return null;
-    } catch (error) {
+    } catch (error: any) {
       return thunkAPI.rejectWithValue(toErrorMessage(error, "Failed to mark all as read"));
     }
   }
@@ -86,12 +90,13 @@ export const deleteNotificationById = createAsyncThunk(
   "notifications/delete",
   async (id, thunkAPI) => {
     try {
+      // @ts-expect-error TODO: Fix pervasive types
       const token = thunkAPI.getState()?.auth?.token;
       if (!token) return thunkAPI.rejectWithValue("No auth token available");
 
       await notificationService.deleteNotification(id, token);
       return id;
-    } catch (error) {
+    } catch (error: any) {
       return thunkAPI.rejectWithValue(toErrorMessage(error, "Failed to delete notification"));
     }
   }
@@ -104,12 +109,13 @@ export const clearAllNotifications = createAsyncThunk(
   "notifications/clearAll",
   async (_, thunkAPI) => {
     try {
+      // @ts-expect-error TODO: Fix pervasive types
       const token = thunkAPI.getState()?.auth?.token;
       if (!token) return thunkAPI.rejectWithValue("No auth token available");
 
       await notificationService.deleteAllNotifications(token);
       return null;
-    } catch (error) {
+    } catch (error: any) {
       return thunkAPI.rejectWithValue(toErrorMessage(error, "Failed to clear notifications"));
     }
   }
@@ -122,12 +128,13 @@ export const deleteNotificationsBulk = createAsyncThunk(
   "notifications/deleteBulk",
   async (ids, thunkAPI) => {
     try {
+      // @ts-expect-error TODO: Fix pervasive types
       const token = thunkAPI.getState()?.auth?.token;
       if (!token) return thunkAPI.rejectWithValue("No auth token available");
 
       await notificationService.deleteNotificationsBulk(ids, token);
       return ids;
-    } catch (error) {
+    } catch (error: any) {
       return thunkAPI.rejectWithValue(toErrorMessage(error, "Failed to delete notifications in bulk"));
     }
   }
@@ -176,6 +183,7 @@ const notificationsSlice = createSlice({
       .addCase(getNotifications.pending, (state, action) => {
         state.loading = true;
         state.error = null;
+        // @ts-expect-error TODO: Fix pervasive types
         const requestedPage = Number(action.meta.arg?.page || 1);
         if (requestedPage === 1) {
           state.items = [];
@@ -242,7 +250,9 @@ const notificationsSlice = createSlice({
 
       // Mark all notifications as read (Optimistic Update)
       .addCase(markAllAsRead.pending, (state) => {
+        // @ts-expect-error TODO: Fix pervasive types
         if (!state._rollbackUnreadIds) {
+          // @ts-expect-error TODO: Fix pervasive types
           state._rollbackUnreadIds = state.items
             .filter((item) => !item.isRead)
             .map((item) => item._id);
@@ -251,9 +261,11 @@ const notificationsSlice = createSlice({
         state.unreadCount = 0;
       })
       .addCase(markAllAsRead.fulfilled, (state) => {
+        // @ts-expect-error TODO: Fix pervasive types
         state._rollbackUnreadIds = null;
       })
       .addCase(markAllAsRead.rejected, (state, action) => {
+        // @ts-expect-error TODO: Fix pervasive types
         const unreadIds = state._rollbackUnreadIds;
         if (unreadIds && unreadIds.length > 0) {
           state.items.forEach((item) => {
@@ -262,6 +274,7 @@ const notificationsSlice = createSlice({
             }
           });
           state.unreadCount = unreadIds.length;
+          // @ts-expect-error TODO: Fix pervasive types
           state._rollbackUnreadIds = null;
         }
         state.error = action.payload;
@@ -273,6 +286,7 @@ const notificationsSlice = createSlice({
           const itemToDelete = state.items.find((item) => item._id === id);
           
           if (itemToDelete) {
+            // @ts-expect-error TODO: Fix pervasive types
             state._rollbackDeletedItem = itemToDelete;
             if (!itemToDelete.isRead) {
               state.unreadCount = Math.max(0, state.unreadCount - 1);
@@ -282,6 +296,7 @@ const notificationsSlice = createSlice({
           }
         })
       .addCase(deleteNotificationById.rejected, (state, action) => {
+          // @ts-expect-error TODO: Fix pervasive types
           const deleted = state._rollbackDeletedItem;
           if (deleted) {
             state.items.push(deleted);
@@ -289,6 +304,7 @@ const notificationsSlice = createSlice({
               state.unreadCount += 1;
             }
             state.pagination.total += 1;
+            // @ts-expect-error TODO: Fix pervasive types
             state._rollbackDeletedItem = null;
           }
           state.error = action.payload;
@@ -296,6 +312,7 @@ const notificationsSlice = createSlice({
 
       // Clear all notifications (Optimistic Update)
       .addCase(clearAllNotifications.pending, (state) => {
+          // @ts-expect-error TODO: Fix pervasive types
           state._rollbackSnapshot = {
             items: state.items,
             unreadCount: state.unreadCount,
@@ -306,11 +323,13 @@ const notificationsSlice = createSlice({
           state.pagination = initialState.pagination;
         })
       .addCase(clearAllNotifications.rejected, (state, action) => {
+          // @ts-expect-error TODO: Fix pervasive types
           const snapshot = state._rollbackSnapshot;
           if (snapshot) {
             state.items = snapshot.items;
             state.unreadCount = snapshot.unreadCount;
             state.pagination = snapshot.pagination;
+            // @ts-expect-error TODO: Fix pervasive types
             state._rollbackSnapshot = null;
           }
           state.error = action.payload;
@@ -319,23 +338,28 @@ const notificationsSlice = createSlice({
       // Delete multiple notifications in bulk (Optimistic Update)
       .addCase(deleteNotificationsBulk.pending, (state, action) => {
           const ids = action.meta.arg;
+          // @ts-expect-error TODO: Fix pervasive types
           const itemsToDelete = state.items.filter((item) => ids.includes(item._id));
           
           if (itemsToDelete.length > 0) {
+            // @ts-expect-error TODO: Fix pervasive types
             state._rollbackBulkDeletedItems = itemsToDelete;
             const unreadDeletedCount = itemsToDelete.filter((item) => !item.isRead).length;
             state.unreadCount = Math.max(0, state.unreadCount - unreadDeletedCount);
+            // @ts-expect-error TODO: Fix pervasive types
             state.items = state.items.filter((item) => !ids.includes(item._id));
             state.pagination.total = Math.max(0, state.pagination.total - itemsToDelete.length);
           }
         })
       .addCase(deleteNotificationsBulk.rejected, (state, action) => {
+          // @ts-expect-error TODO: Fix pervasive types
           const deletedItems = state._rollbackBulkDeletedItems;
           if (deletedItems && deletedItems.length > 0) {
             state.items = [...state.items, ...deletedItems];
             const unreadDeletedCount = deletedItems.filter((item) => !item.isRead).length;
             state.unreadCount += unreadDeletedCount;
             state.pagination.total += deletedItems.length;
+            // @ts-expect-error TODO: Fix pervasive types
             state._rollbackBulkDeletedItems = null;
           }
           state.error = action.payload;

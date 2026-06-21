@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
@@ -124,13 +123,20 @@ const renderSession = async (questionText = "What is React?") => {
 
 class MockMediaRecorder {
   constructor(stream) {
+    // @ts-expect-error TODO: Fix pervasive types
     this.stream = stream;
+    // @ts-expect-error TODO: Fix pervasive types
     this.state = "inactive";
+    // @ts-expect-error TODO: Fix pervasive types
     this.start = vi.fn(() => {
+      // @ts-expect-error TODO: Fix pervasive types
       this.state = "recording";
     });
+    // @ts-expect-error TODO: Fix pervasive types
     this.stop = vi.fn(() => {
+      // @ts-expect-error TODO: Fix pervasive types
       this.state = "inactive";
+      // @ts-expect-error TODO: Fix pervasive types
       this.onstop?.();
     });
   }
@@ -143,7 +149,9 @@ describe("InterviewSession recovery", () => {
     localStorage.clear();
     sessionStorage.clear();
     localStorage.setItem("skillssphere.auth.token", "token-1");
+    // @ts-expect-error TODO: Fix pervasive types
     apiRequest.mockResolvedValue(sessionPayload);
+    // @ts-expect-error TODO: Fix pervasive types
     submitAnswer.mockResolvedValue({
       data: {
         scores: { technical: 80, communication: 75, relevance: 70 },
@@ -155,6 +163,7 @@ describe("InterviewSession recovery", () => {
         },
       },
     });
+    // @ts-expect-error TODO: Fix pervasive types
     toggleQuestionBookmark.mockResolvedValue({
       data: {
         sessionId: "session-1",
@@ -177,6 +186,7 @@ describe("InterviewSession recovery", () => {
     socket.close.mockImplementation(() => {});
     socket.connected = true;
     socket.disconnected = false;
+    // @ts-expect-error TODO: Fix pervasive types
     global.MediaRecorder = MockMediaRecorder;
     Object.defineProperty(navigator, "mediaDevices", {
       configurable: true,
@@ -194,14 +204,18 @@ describe("InterviewSession recovery", () => {
     await renderSession();
 
     await waitFor(() => {
+      // @ts-expect-error TODO: Fix pervasive types
       expect(socketHandlers.connect).toEqual(expect.any(Function));
     });
 
+    // @ts-expect-error TODO: Fix pervasive types
     act(() => socketHandlers.connect());
+    // @ts-expect-error TODO: Fix pervasive types
     act(() => socketHandlers.disconnect());
 
     expect(screen.getByText(/connection lost/i)).toBeInTheDocument();
 
+    // @ts-expect-error TODO: Fix pervasive types
     act(() => socketHandlers.connect());
 
     expect(screen.getByText(/reconnected and resynced/i)).toBeInTheDocument();
@@ -260,6 +274,7 @@ describe("InterviewSession recovery", () => {
 
   it("retries recoverable answer submission failures", async () => {
     submitAnswer
+      // @ts-expect-error TODO: Fix pervasive types
       .mockRejectedValueOnce(Object.assign(new Error("Network error"), { status: 0 }))
       .mockResolvedValueOnce({
         data: {
@@ -298,6 +313,7 @@ describe("InterviewSession recovery", () => {
   });
 
   it("keeps interview state intact when microphone access fails", async () => {
+    // @ts-expect-error TODO: Fix pervasive types
     navigator.mediaDevices.getUserMedia.mockRejectedValue(new Error("denied"));
     await renderSession();
 
@@ -323,6 +339,7 @@ describe("InterviewSession recovery", () => {
       }),
       removeEventListener,
     };
+    // @ts-expect-error TODO: Fix pervasive types
     navigator.mediaDevices.getUserMedia.mockResolvedValue({
       getTracks: () => [track],
     });

@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
@@ -75,6 +74,7 @@ describe("resume analysis export utilities", () => {
     exportResumeAnalysisToTXT(analysisResult, "analysis.txt");
 
     expect(URL.createObjectURL).toHaveBeenCalledTimes(1);
+    // @ts-expect-error TODO: Fix pervasive types
     const blob = URL.createObjectURL.mock.calls[0][0];
     expect(blob.type).toBe("text/plain;charset=utf-8;");
     await expect(readBlob(blob)).resolves.toContain("Score: 87%");
@@ -88,6 +88,7 @@ describe("resume analysis export utilities", () => {
     exportResumeAnalysisToJSON(analysisResult, "analysis.json");
 
     expect(URL.createObjectURL).toHaveBeenCalledTimes(1);
+    // @ts-expect-error TODO: Fix pervasive types
     const blob = URL.createObjectURL.mock.calls[0][0];
     expect(blob.type).toBe("application/json;charset=utf-8;");
     const content = await readBlob(blob);

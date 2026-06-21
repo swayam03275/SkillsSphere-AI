@@ -1,7 +1,7 @@
-// @ts-nocheck
 
 import { createContext, useContext, useEffect, useState } from "react";
 
+// @ts-expect-error TODO: Fix pervasive types
 const ThemeContext = createContext();
 
 const canUseStorage = () => typeof window !== "undefined";

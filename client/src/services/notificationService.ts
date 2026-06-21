@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { apiRequest } from "./apiClient";
 
@@ -12,6 +11,7 @@ import { apiRequest } from "./apiClient";
  * @returns {Promise<Object>} The API response containing notifications and pagination
  */
 export const fetchNotifications = async (token, params = {}) => {
+  // @ts-expect-error TODO: Fix pervasive types
   const { page = 1, limit = 10, isRead, type } = params;
   let queryString = `?page=${page}&limit=${limit}`;
   

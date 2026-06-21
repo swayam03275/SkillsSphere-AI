@@ -190,6 +190,8 @@ router.post("/reset-password", authRateLimiter, validateBody(resetPasswordSchema
  *         description: OTP resent
  */
 router.post("/resend-otp", authRateLimiter, validateBody(resendOtpSchema), resendOTP);
+import { logAction } from "../../middleware/auditLogger.js";
+
 /**
  * @openapi
  * /api/auth/login:
@@ -214,7 +216,7 @@ router.post("/resend-otp", authRateLimiter, validateBody(resendOtpSchema), resen
  *       200:
  *         description: Login successful
  */
-router.post("/login", authRateLimiter, validateBody(loginSchema), login);
+router.post("/login", authRateLimiter, validateBody(loginSchema), login, logAction("LOGIN"));
 
 /**
  * @openapi

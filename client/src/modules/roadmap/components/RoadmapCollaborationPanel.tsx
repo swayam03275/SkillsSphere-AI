@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useState, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
@@ -99,7 +98,7 @@ export default function RoadmapCollaborationPanel({
       if (res.success) {
         setComments(res.data);
       }
-    } catch (err) {
+    } catch (err: any) {
       logger.error("Failed to load comments:", err);
       toast.error("Failed to load conversation history.");
     } finally {
@@ -129,7 +128,7 @@ export default function RoadmapCollaborationPanel({
       if (res.success) {
         // Comment is appended via socket event listener
       }
-    } catch (err) {
+    } catch (err: any) {
       logger.error("Failed to post comment:", err);
       toast.error(err.message || "Failed to send comment.");
       setInputText(content);

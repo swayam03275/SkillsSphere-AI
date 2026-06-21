@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
@@ -15,7 +14,7 @@ import logger from "../../../utils/logger";
 
 const TutorInterviewsList = () => {
   useDocumentTitle("Tutor Interviews List");
-  const { token } = useSelector((state) => state.auth);
+  const { token } = useSelector((state: any) => state.auth);
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -26,7 +25,7 @@ const TutorInterviewsList = () => {
         if (result.success) {
           setSessions(result.data?.sessions || []);
         }
-      } catch (err) {
+      } catch (err: any) {
         logger.error(err);
       } finally {
         setLoading(false);

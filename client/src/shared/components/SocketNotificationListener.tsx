@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
@@ -18,10 +17,10 @@ import { clearDashboardCache } from "../../modules/dashboard/services/dashboardS
  * This component does not render any UI itself.
  */
 const SocketNotificationListener = () => {
-  const { user, token } = useSelector((state) => state.auth);
+  const { user, token } = useSelector((state: any) => state.auth);
   const toast = useToast();
   const socketRef = useRef(null);
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<any>();
 
   const toastRef = useRef(toast);
   const processedNotifs = useRef(new Set());
@@ -118,6 +117,7 @@ const SocketNotificationListener = () => {
     };
 
     const handleDashboardRefresh = () => {
+      // @ts-expect-error TODO: Fix pervasive types
       clearDashboardCache();
       window.dispatchEvent(new CustomEvent("dashboard:refresh"));
     };

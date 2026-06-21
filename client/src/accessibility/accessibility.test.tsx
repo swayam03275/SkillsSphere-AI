@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { axe } from "jest-axe";
 import { MemoryRouter } from "react-router-dom";
@@ -119,18 +118,21 @@ describe("accessibility regression tests", () => {
     it("has no axe violations on the login form", async () => {
       const { container } = renderWithRouter(<Login />);
 
+      // @ts-expect-error TODO: Fix pervasive types
       expect(await axe(container)).toHaveNoViolations();
     });
 
     it("has no axe violations on the registration form", async () => {
       const { container } = renderWithRouter(<Register />);
 
+      // @ts-expect-error TODO: Fix pervasive types
       expect(await axe(container)).toHaveNoViolations();
     });
 
     it("has no axe violations on the resume upload form", async () => {
       const { container } = render(<DragDropUpload onFileUpload={vi.fn()} />);
 
+      // @ts-expect-error TODO: Fix pervasive types
       expect(await axe(container)).toHaveNoViolations();
     });
 
@@ -142,6 +144,7 @@ describe("accessibility regression tests", () => {
 
       const { container } = renderWithRouter(<NotificationsPage />);
 
+      // @ts-expect-error TODO: Fix pervasive types
       expect(await axe(container)).toHaveNoViolations();
     });
   });
@@ -319,6 +322,7 @@ describe("accessibility regression tests", () => {
       // browser-rendered Tailwind colors. This still catches markup-level a11y
       // regressions around text, buttons, badges, roles, and names.
       const results = await axe(container);
+      // @ts-expect-error TODO: Fix pervasive types
       expect(results).toHaveNoViolations();
     });
   });

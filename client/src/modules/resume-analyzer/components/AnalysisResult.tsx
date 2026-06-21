@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import {
   AlertCircle,
@@ -202,8 +201,10 @@ const AnalysisResult = ({ result, file, jobDescription, onReset }) => {
   // --- Missing Tech Keywords (from techStandard evaluator) ---
   const techData = result.techStandard?.details?.domainMissing || {};
   const missingTechKeywords = Object.entries(techData)
+    // @ts-expect-error TODO: Fix pervasive types
     .filter(([, keywords]) => keywords.length > 0)
     .flatMap(([domain, keywords]) =>
+      // @ts-expect-error TODO: Fix pervasive types
       keywords.slice(0, 3).map(kw => ({ keyword: kw, domain }))
     )
     .slice(0, 12);
@@ -228,7 +229,7 @@ const AnalysisResult = ({ result, file, jobDescription, onReset }) => {
         jsPDF: { unit: "in", format: "letter", orientation: "portrait" }
       });
       success("Report exported to PDF successfully.");
-    } catch (err) {
+    } catch (err: any) {
       logger.error("PDF Export Error:", err);
       const message = "We couldn't export the PDF report. Please try again.";
       setExportError(message);
@@ -265,7 +266,7 @@ const AnalysisResult = ({ result, file, jobDescription, onReset }) => {
       } else {
         throw new Error("Invalid response format from server.");
       }
-    } catch (err) {
+    } catch (err: any) {
       setClError(err.message || "Failed to generate cover letter.");
       // Auto clear error after 5 seconds
       setTimeout(() => setClError(""), 5000);
@@ -282,7 +283,7 @@ const AnalysisResult = ({ result, file, jobDescription, onReset }) => {
         return response.coverLetter.generatedText;
       }
       throw new Error("Invalid response format from server.");
-    } catch (err) {
+    } catch (err: any) {
       showError("Failed to regenerate: " + err.message);
       return null;
     }
@@ -574,6 +575,7 @@ const AnalysisResult = ({ result, file, jobDescription, onReset }) => {
               )}
               <div className="absolute inset-0 bg-white/80 dark:bg-[#121214]/80 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center backdrop-blur-sm">
                  <a href={previewUrl} download={file?.name}>
+                    {/* @ts-expect-error TODO: Fix pervasive types */}
                     <Button variant="primary" className="shadow-lg rounded-full px-6">Download Resume</Button>
                  </a>
               </div>

@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { useCallback, useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -16,10 +15,10 @@ import {
  * Custom hook for managing notifications
  * Provides access to notifications state and dispatch functions
  */
+// @ts-expect-error TODO: Fix pervasive types
 export const useNotifications = ({ page = 1, limit = 10, filter = "all", type } = {}) => {
-  const dispatch = useDispatch();
-  const { items, unreadCount, loading, error, pagination, socketStatus } = useSelector(
-    (state) => state.notifications,
+  const dispatch = useDispatch<any>();
+  const { items, unreadCount, loading, error, pagination, socketStatus } = useSelector((state: any) => state.notifications,
   );
   const isRead = useMemo(() => {
     if (filter === "read") return true;
@@ -29,6 +28,7 @@ export const useNotifications = ({ page = 1, limit = 10, filter = "all", type } 
 
   // Fetch notifications on component mount
   useEffect(() => {
+    // @ts-expect-error TODO: Fix pervasive types
     dispatch(getNotifications({ page, limit, isRead, type }));
     dispatch(getUnreadCount());
   }, [dispatch, page, limit, isRead, type]);
@@ -71,6 +71,7 @@ export const useNotifications = ({ page = 1, limit = 10, filter = "all", type } 
   const handleLoadMore = useCallback(() => {
     const nextPage = pagination.page + 1;
     if (nextPage <= pagination.pages) {
+      // @ts-expect-error TODO: Fix pervasive types
       dispatch(getNotifications({ page: nextPage, limit, isRead, type }));
     }
   }, [dispatch, pagination, limit, isRead, type]);

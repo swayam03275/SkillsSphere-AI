@@ -79,7 +79,7 @@ export const useInterviewAudio = ({
             setUploadStatus("queued");
             setRecoveryMessage("Audio upload paused until the connection recovers.");
           }
-        } catch (err) {
+        } catch (err: any) {
           setUploadStatus("failed");
           setError("Audio upload failed. Your typed answer is still saved.");
           logger.error("[InterviewSessionAudio] Audio chunk error:", err);
@@ -101,7 +101,7 @@ export const useInterviewAudio = ({
       setIsRecording(true);
       setUploadStatus("uploading");
       persistBackup({ uploadStatus: "uploading" });
-    } catch (err) {
+    } catch (err: any) {
       logger.error("Error accessing microphone:", err);
       setIsRecording(false);
       setUploadStatus("failed");

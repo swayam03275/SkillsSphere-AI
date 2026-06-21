@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
@@ -36,7 +35,7 @@ const RecruiterJobsPage = () => {
   useDocumentTitle("Recruiter Jobs");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { token } = useSelector((state) => state.auth);
+  const { token } = useSelector((state: any) => state.auth);
   const toast = useToast();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -58,7 +57,7 @@ const RecruiterJobsPage = () => {
       setCurrentPage(response.currentPage || 1);
       setTotalPages(response.totalPages || 1);
       setTotalCount(response.totalCount || 0);
-    } catch (err) {
+    } catch (err: any) {
       setError(
         err.message || "Failed to load job postings. Please try again later.",
       );
@@ -83,7 +82,7 @@ const RecruiterJobsPage = () => {
           setTotalPages(response.totalPages || 1);
           setTotalCount(response.totalCount || 0);
         }
-      } catch (err) {
+      } catch (err: any) {
         if (!ignore) {
           setError(
             err.message ||
@@ -156,7 +155,7 @@ const RecruiterJobsPage = () => {
         // Refresh the jobs list
         setJobs(jobs.filter((j) => (j._id || j.id) !== (job._id || job.id)));
         toast.success("Job posting deleted successfully");
-      } catch (err) {
+      } catch (err: any) {
         toast.error(err.message || "Failed to delete job posting.");
       }
     }
@@ -196,6 +195,7 @@ const RecruiterJobsPage = () => {
               Back to Dashboard
             </Link>
             <Link to="/recruiter/jobs/new">
+              {/* @ts-expect-error TODO: Fix pervasive types */}
               <Button
                 variant="primary"
                 leftIcon={<Plus size={18} />}
@@ -229,6 +229,7 @@ const RecruiterJobsPage = () => {
 
         <div className="flex flex-col gap-4 rounded-3xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#121214] p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full sm:max-w-md">
+            {/* @ts-expect-error TODO: Fix pervasive types */}
             <Input
               id="search-jobs"
               placeholder="Search by title or location..."
@@ -280,6 +281,7 @@ const RecruiterJobsPage = () => {
             description={emptyDescription}
             action={
               hasActiveFilters ? (
+                // @ts-expect-error TODO: Fix pervasive types
                 <Button
                   variant="primary"
                   className="bg-blue-600 hover:bg-blue-500 mt-4"
@@ -289,6 +291,7 @@ const RecruiterJobsPage = () => {
                 </Button>
               ) : (
                 <Link to="/recruiter/jobs/new">
+                  {/* @ts-expect-error TODO: Fix pervasive types */}
                   <Button
                     variant="primary"
                     className="bg-blue-600 hover:bg-blue-500 mt-4"

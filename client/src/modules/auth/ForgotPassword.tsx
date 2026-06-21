@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -40,7 +39,7 @@ const ForgotPassword = () => {
       success("OTP sent to your email!");
       // Navigate to reset password and pass the email so they don't have to re-type it
       navigate(`/reset-password?email=${encodeURIComponent(email)}`);
-    } catch (err) {
+    } catch (err: any) {
       showError(err.message || "Connection error. Please try again.");
     } finally {
       setLoading(false);
@@ -75,6 +74,7 @@ const ForgotPassword = () => {
           </p>
 
           <div className="mb-6">
+            {/* @ts-expect-error TODO: Fix pervasive types */}
             <Input
               id="email"
               type="email"
@@ -90,6 +90,7 @@ const ForgotPassword = () => {
             />
           </div>
 
+          {/* @ts-expect-error TODO: Fix pervasive types */}
           <Button
             type="submit"
             fullWidth

@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
@@ -8,7 +7,7 @@ import MatchScoreCard from "./MatchScoreCard";
 import MissingSkillsList from "./MissingSkillsList";
 
 export default function CompareView({ jobId, resumeSource, onBack }) {
-  const { token } = useSelector((state) => state.auth);
+  const { token } = useSelector((state: any) => state.auth);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
@@ -23,7 +22,7 @@ export default function CompareView({ jobId, resumeSource, onBack }) {
           { token }
         );
         setData(response.data);
-      } catch (err) {
+      } catch (err: any) {
         setError(err.message || "Failed to load detailed match score.");
       } finally {
         setLoading(false);
@@ -52,6 +51,7 @@ export default function CompareView({ jobId, resumeSource, onBack }) {
         </div>
       ) : data ? (
         <>
+          {/* @ts-expect-error TODO: Fix pervasive types */}
           <MatchScoreCard score={data.matchScore} />
 
           <div className="bg-white dark:bg-white/10 backdrop-blur-lg border border-gray-200 dark:border-white/20 p-5 rounded-2xl shadow-xl text-gray-900 dark:text-white">

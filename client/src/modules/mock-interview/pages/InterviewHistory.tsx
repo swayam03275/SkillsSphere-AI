@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useRef, useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
@@ -123,6 +122,7 @@ const countItems = (items) =>
       return acc;
     }, {}),
   )
+    // @ts-expect-error TODO: Fix pervasive types
     .sort((a, b) => b[1] - a[1])
     .slice(0, 6)
     .map(([label, count]) => ({ label, count }));
@@ -411,9 +411,9 @@ const AnalyticsSummary = ({ analytics }) => {
 const InterviewHistory = () => {
   useDocumentTitle("Interview History");
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<any>();
   
-  const { sessions, pagination, analytics: serverAnalytics, isLoading: loading, error } = useSelector((state) => state.interviews);
+  const { sessions, pagination, analytics: serverAnalytics, isLoading: loading, error } = useSelector((state: any) => state.interviews);
   
   const [exportingType, setExportingType] = useState(null);
   const [exportError, setExportError] = useState(null);
@@ -423,6 +423,7 @@ const InterviewHistory = () => {
   const analytics = calculateInterviewAnalytics(sessions, serverAnalytics);
 
   const fetchHistory = (page = 1) => {
+    // @ts-expect-error TODO: Fix pervasive types
     dispatch(fetchInterviewHistory({ page, limit: 10 }));
   };
 
@@ -467,7 +468,7 @@ const InterviewHistory = () => {
       } else {
         exportInterviewHistoryAsJSON(exportSessions);
       }
-    } catch (err) {
+    } catch (err: any) {
       setExportError("Export failed. Please try again.");
       logger.error("[InterviewHistory] Export error:", err);
     } finally {

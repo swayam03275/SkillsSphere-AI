@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { apiRequest } from "../services/apiClient";
 import logger from "./logger";
@@ -63,6 +62,7 @@ const getBrowserInfo = () => {
 const buildErrorPayload = (error, errorInfo = {}) => ({
   message: redactSensitiveData(error?.message || "Unknown client error"),
   stack: redactSensitiveData(error?.stack),
+  // @ts-expect-error TODO: Fix pervasive types
   componentStack: redactSensitiveData(errorInfo?.componentStack),
   context: sanitizeMetadata(
     Object.fromEntries(
@@ -85,6 +85,7 @@ const reportToBackend = async (payload) => {
 const reportToSentry = (error, payload) => {
   if (!import.meta.env.VITE_SENTRY_DSN || typeof window === "undefined") return;
 
+  // @ts-expect-error TODO: Fix pervasive types
   const sentry = window.Sentry;
   if (!sentry?.captureException) return;
 

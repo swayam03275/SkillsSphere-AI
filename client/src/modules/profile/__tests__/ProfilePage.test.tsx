@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -77,7 +76,9 @@ describe("ProfilePage avatar upload", () => {
     let blobId = 0;
     URL.createObjectURL = vi.fn(() => `blob:avatar-${++blobId}`);
     URL.revokeObjectURL = vi.fn();
+    // @ts-expect-error TODO: Fix pervasive types
     fileService.getSignedFileUrl.mockResolvedValue("https://cdn.example.com/avatar.png");
+    // @ts-expect-error TODO: Fix pervasive types
     profileService.uploadAvatar.mockResolvedValue({
       success: true,
       user: {
@@ -86,6 +87,7 @@ describe("ProfilePage avatar upload", () => {
         profilePicPublicId: "skillssphere/avatars/avatar",
       },
     });
+    // @ts-expect-error TODO: Fix pervasive types
     profileService.removeAvatar.mockResolvedValue({
       success: true,
       user: { ...baseUser, profilePic: null, profilePicPublicId: null },
@@ -104,6 +106,7 @@ describe("ProfilePage avatar upload", () => {
   it("shows an uploaded image preview immediately", async () => {
     const user = userEvent.setup();
     let resolveUpload;
+    // @ts-expect-error TODO: Fix pervasive types
     profileService.uploadAvatar.mockReturnValue(
       new Promise((resolve) => {
         resolveUpload = resolve;
@@ -167,6 +170,7 @@ describe("ProfilePage avatar upload", () => {
   it("handles upload loading state and disables controls", async () => {
     const user = userEvent.setup();
     let resolveUpload;
+    // @ts-expect-error TODO: Fix pervasive types
     profileService.uploadAvatar.mockReturnValue(
       new Promise((resolve) => {
         resolveUpload = resolve;
@@ -210,6 +214,7 @@ describe("ProfilePage avatar upload", () => {
 
   it("shows a friendly alert when upload fails", async () => {
     const user = userEvent.setup();
+    // @ts-expect-error TODO: Fix pervasive types
     profileService.uploadAvatar.mockRejectedValue(new Error("Unable to upload avatar right now."));
     renderProfile();
 
@@ -223,6 +228,7 @@ describe("ProfilePage avatar upload", () => {
   it("loads an existing avatar and replaces it with a new preview", async () => {
     const user = userEvent.setup();
     let resolveUpload;
+    // @ts-expect-error TODO: Fix pervasive types
     profileService.uploadAvatar.mockReturnValue(
       new Promise((resolve) => {
         resolveUpload = resolve;
@@ -264,6 +270,7 @@ describe("ProfilePage avatar upload", () => {
     renderProfile({
       ...baseUser,
       profilePic: "https://res.cloudinary.com/demo/image/upload/v1/existing.png",
+      // @ts-expect-error TODO: Fix pervasive types
       profilePicPublicId: "skillssphere/avatars/existing",
     });
 

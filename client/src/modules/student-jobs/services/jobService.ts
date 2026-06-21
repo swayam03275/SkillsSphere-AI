@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { apiRequest } from "../../../services/apiClient";
 
@@ -11,11 +10,17 @@ import { apiRequest } from "../../../services/apiClient";
 export const getJobs = async (filters = {}, token, page = 1, limit = 10) => {
   const queryParams = new URLSearchParams();
   
+  // @ts-expect-error TODO: Fix pervasive types
   if (filters.designation) queryParams.append("designation", filters.designation);
+  // @ts-expect-error TODO: Fix pervasive types
   if (filters.minSalary) queryParams.append("minSalary", filters.minSalary);
+  // @ts-expect-error TODO: Fix pervasive types
   if (filters.maxSalary) queryParams.append("maxSalary", filters.maxSalary);
+  // @ts-expect-error TODO: Fix pervasive types
   if (filters.postedWithin) queryParams.append("postedWithin", filters.postedWithin);
+  // @ts-expect-error TODO: Fix pervasive types
   queryParams.append("page", page);
+  // @ts-expect-error TODO: Fix pervasive types
   queryParams.append("limit", limit);
 
   const queryString = queryParams.toString();

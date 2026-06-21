@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -25,7 +24,7 @@ const isValidEmail = (email) => /\S+@\S+\.\S+/.test(email);
 
 const VerifyEmail = () => {
   useDocumentTitle("Verify Email");
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<any>();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -34,7 +33,7 @@ const VerifyEmail = () => {
     pendingVerificationEmail,
     verificationLoading,
     resendLoading,
-  } = useSelector((state) => state.auth);
+  } = useSelector((state: any) => state.auth);
 
   const initialEmail =
     searchParams.get("email") ||
@@ -162,6 +161,7 @@ const VerifyEmail = () => {
     }
 
     const resultAction = await dispatch(
+      // @ts-expect-error TODO: Fix pervasive types
       verifyEmail({
         email: normalizedEmail,
         otp: otpValue,
@@ -184,6 +184,7 @@ const VerifyEmail = () => {
 
     if (!validateEmailField()) return;
 
+    // @ts-expect-error TODO: Fix pervasive types
     const resultAction = await dispatch(resendOtp({ email: normalizedEmail }));
 
     if (resendOtp.fulfilled.match(resultAction)) {
@@ -226,6 +227,7 @@ const VerifyEmail = () => {
             </p>
 
             <div className="mb-5">
+              {/* @ts-expect-error TODO: Fix pervasive types */}
               <Input
                 id="email"
                 type="email"
@@ -299,6 +301,7 @@ const VerifyEmail = () => {
               )}
             </div>
 
+            {/* @ts-expect-error TODO: Fix pervasive types */}
             <Button
               type="submit"
               fullWidth

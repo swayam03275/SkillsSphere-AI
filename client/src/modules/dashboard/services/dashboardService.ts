@@ -510,7 +510,7 @@ const requestDashboardResource = async (
     });
     const transformed = transform(response);
     return setCachedDashboardResponse(cacheKey, transformed);
-  } catch (error) {
+  } catch (error: any) {
     return createFallbackResponse(error, payloadKey, fallbackValue);
   } finally {
     cleanup();

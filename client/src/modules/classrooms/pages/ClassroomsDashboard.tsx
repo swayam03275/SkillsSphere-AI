@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React from "react";
 import { useNavigate, Link } from "react-router-dom";
@@ -19,7 +18,7 @@ import Footer from "../../../shared/components/Footer";
 
 export default function ClassroomsDashboard() {
   useDocumentTitle("Classrooms Dashboard");
-  const { user } = useSelector((state) => state.auth);
+  const { user } = useSelector((state: any) => state.auth);
   const navigate = useNavigate();
   const isTutor = user?.role === "tutor";
 

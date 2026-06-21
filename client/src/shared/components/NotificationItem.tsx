@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React from "react";
 import { useDispatch } from "react-redux";
@@ -61,6 +60,7 @@ const formatTimestamp = (dateString) => {
   if (!dateString) return "";
   const now = new Date();
   const past = new Date(dateString);
+  // @ts-expect-error TODO: Fix pervasive types
   const diffMs = now - past;
   
   if (diffMs < 0) return "Just now"; // Handle minor clock drift
@@ -146,7 +146,7 @@ const getNotificationConfig = (type) => {
 };
 
 const NotificationItem = ({ notification, onCloseDropdown }) => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<any>();
   const navigate = useNavigate();
   const { _id, title, message, type, isRead, createdAt, metadata } = notification;
 

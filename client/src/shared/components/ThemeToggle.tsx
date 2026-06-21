@@ -1,8 +1,8 @@
-// @ts-nocheck
 
 import { useTheme } from "../contexts/ThemeContext";
 
 const ThemeToggle = () => {
+  // @ts-expect-error TODO: Fix pervasive types
   const { theme, toggleTheme } = useTheme();
 
   return (

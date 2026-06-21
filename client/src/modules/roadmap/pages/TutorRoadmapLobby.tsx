@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
@@ -20,7 +19,7 @@ import logger from "../../../utils/logger";
 
 export default function TutorRoadmapLobby() {
   useDocumentTitle("Student's Roadmap");
-  const { user } = useSelector((state) => state.auth);
+  const { user } = useSelector((state: any) => state.auth);
   const { success: showSuccess, error: showError } = useToast();
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -47,7 +46,7 @@ export default function TutorRoadmapLobby() {
       if (response.success) {
         setStudents(response.data);
       }
-    } catch (err) {
+    } catch (err: any) {
       logger.error("Failed to load student roadmaps:", err);
     } finally {
       setLoading(false);
@@ -66,7 +65,7 @@ export default function TutorRoadmapLobby() {
       if (response.success) {
         setStudentDetails(response.data);
       }
-    } catch (err) {
+    } catch (err: any) {
       logger.error("Failed to load student roadmap details:", err);
     } finally {
       setDetailsLoading(false);
@@ -85,7 +84,7 @@ export default function TutorRoadmapLobby() {
         setStudents(prev => prev.map(s => s._id === studentDetails._id ? response.data : s));
         showSuccess(nextVerifyState ? "Milestone verified successfully!" : "Milestone verification removed.");
       }
-    } catch (err) {
+    } catch (err: any) {
       logger.error("Failed to toggle verification:", err);
       showError(err.message || "Failed to update milestone verification state.");
     }
@@ -113,7 +112,7 @@ export default function TutorRoadmapLobby() {
         setActiveTopicId(null);
         showSuccess("Custom resource link assigned successfully!");
       }
-    } catch (err) {
+    } catch (err: any) {
       logger.error("Failed to assign resource:", err);
       showError(err.message || "Failed to assign learning resource. Please verify input data.");
     } finally {
@@ -133,7 +132,7 @@ export default function TutorRoadmapLobby() {
         setShowAddMilestone(false);
         showSuccess("Custom milestone added successfully!");
       }
-    } catch (err) {
+    } catch (err: any) {
       logger.error("Failed to add milestone:", err);
       showError(err.message || "Failed to add milestone.");
     } finally {
@@ -141,6 +140,7 @@ export default function TutorRoadmapLobby() {
     }
   };
 
+  // @ts-expect-error TODO: Fix pervasive types
   if (loading) return <LoadingState message="Loading Student Progress Lobby..." />;
 
   return (

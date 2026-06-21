@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -13,12 +12,12 @@ import { getUnreadCount } from '../../features/notifications/notificationsSlice'
 import { useTheme } from '../contexts/ThemeContext';
 
 const Navbar = () => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<any>();
   const navigate = useNavigate();
-  const { isAuthenticated, user, token } = useSelector((state) => state.auth);
+  const { isAuthenticated, user, token } = useSelector((state: any) => state.auth);
   const [avatarSrc, setAvatarSrc] = useState(null);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const { unreadCount } = useSelector((state) => state.notifications);
+  const { unreadCount } = useSelector((state: any) => state.notifications);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -43,6 +42,7 @@ const Navbar = () => {
   const [isNavMenuOpen, setIsNavMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  // @ts-expect-error TODO: Fix pervasive types
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navMenuRef = useRef(null);
@@ -86,7 +86,11 @@ const Navbar = () => {
 
   const navLinks = [
     { name: 'Home', path: '/', icon: <Home size={20} /> },
-    ...(user?.role === 'recruiter' 
+    ...(user?.role === 'admin'
+      ? [
+          { name: 'Global Analytics', path: '/admin/analytics', icon: <LayoutDashboard size={20} /> },
+        ]
+      : user?.role === 'recruiter' 
       ? [
           { name: 'Manage Jobs', path: '/recruiter/jobs', icon: <Briefcase size={20} /> },
           { name: 'Talent Finder', path: '/recruiter/talent-finder', icon: <Search size={20} /> }
@@ -302,7 +306,9 @@ const Navbar = () => {
             </div>
           ) : (
             <>
+              {/* @ts-expect-error TODO: Fix pervasive types */}
               <Button variant="ghost" size="sm" to="/login">Login</Button>
+              {/* @ts-expect-error TODO: Fix pervasive types */}
               <Button variant="primary" size="sm" to="/register">Get Started</Button>
             </>
           )}
@@ -436,21 +442,26 @@ const Navbar = () => {
                     <p className="text-xs text-[var(--text-muted)] truncate">{user?.email}</p>
                   </div>
                 </div>
+                {/* @ts-expect-error TODO: Fix pervasive types */}
                 <Button variant="primary" size="lg" to="/dashboard" className="w-full justify-center">
                   Go to Dashboard
                 </Button>
+                {/* @ts-expect-error TODO: Fix pervasive types */}
                 <Button variant="outline" size="lg" to="/profile" className="w-full justify-center border-[var(--border)] text-[var(--text-main)] hover:bg-[var(--surface-hover)]">
                   <User size={20} /> View Profile
                 </Button>
+                {/* @ts-expect-error TODO: Fix pervasive types */}
                 <Button variant="ghost" size="lg" onClick={handleLogout} className="w-full justify-center text-red-400 hover:text-red-300 hover:bg-red-400/10">
                   <LogOut size={20} /> Logout
                 </Button>
               </div>
             ) : (
               <div className="flex flex-col gap-3">
+                {/* @ts-expect-error TODO: Fix pervasive types */}
                 <Button variant="secondary" size="lg" to="/login" className="w-full justify-center">
                   <LogIn size={20} /> Login
                 </Button>
+                {/* @ts-expect-error TODO: Fix pervasive types */}
                 <Button variant="primary" size="lg" to="/register" className="w-full justify-center">
                   <UserPlus size={20} /> Get Started
                 </Button>

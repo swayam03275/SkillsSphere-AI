@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React from 'react';
 import { CheckCircle2, Clock, XCircle, UserCheck, MessageSquare } from 'lucide-react';
@@ -38,6 +37,7 @@ const StatusTimeline: React.FC<StatusTimelineProps> = ({ history = [] }) => {
 
   // Sort history by date descending (newest at top)
   const sortedHistory = [...history].sort((a, b) => 
+    // @ts-expect-error TODO: Fix pervasive types
     new Date(b.updatedAt || b.date) - new Date(a.updatedAt || a.date)
   );
 

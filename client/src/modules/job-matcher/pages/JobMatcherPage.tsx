@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
@@ -19,7 +18,7 @@ import { useToast } from "../../../shared/components/toast/ToastProvider";
 
 export default function JobMatcherPage() {
   useDocumentTitle("Smart Job Matching");
-  const { token, user } = useSelector((state) => state.auth);
+  const { token, user } = useSelector((state: any) => state.auth);
   const navigate = useNavigate();
   const toast = useToast();
   const [loading, setLoading] = useState(false);
@@ -59,7 +58,7 @@ export default function JobMatcherPage() {
         } catch {
           // Silently ignore
         }
-      } catch (err) {
+      } catch (err: any) {
         setError(err.message || "Failed to fetch recommendations.");
       } finally {
         setLoading(false);
@@ -84,7 +83,7 @@ export default function JobMatcherPage() {
       await analyzeResume(file);
       toast.success("Resume uploaded and parsed successfully!");
       setRefreshTrigger(prev => prev + 1);
-    } catch (err) {
+    } catch (err: any) {
       toast.error(err.message || "Failed to upload and parse resume.");
       setLoading(false);
     } finally {
@@ -106,7 +105,7 @@ export default function JobMatcherPage() {
       await applyToJob(jobId, token, { resumeLink, coverNote });
       setAppliedJobIds((prev) => new Set([...prev, jobId]));
       setApplyModalJob(null);
-    } catch (err) {
+    } catch (err: any) {
       const msg = err.message || "Failed to apply";
       if (msg.includes("already applied")) {
         setAppliedJobIds((prev) => new Set([...prev, jobId]));
@@ -240,6 +239,7 @@ export default function JobMatcherPage() {
         {/* Results Section */}
         {!hasResume && !loading && !error ? null : loading ? (
           <div className="min-h-[400px] flex items-center justify-center bg-gray-100 dark:bg-slate-900/30 rounded-2xl border border-gray-200 dark:border-white/5 backdrop-blur-sm">
+            {/* @ts-expect-error TODO: Fix pervasive types */}
             <LoadingState message="Analyzing your profile for the best matches..." />
           </div>
         ) : error ? (
@@ -347,6 +347,7 @@ export default function JobMatcherPage() {
                       {Math.round(job.matchScore)}% Match
                     </div>
                   )}
+                  {/* @ts-expect-error TODO: Fix pervasive types */}
                   <JobViewerCard
                     job={job}
                     viewerRole="student"

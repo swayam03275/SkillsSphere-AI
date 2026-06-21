@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { useState, useEffect } from "react";
 import { X, Copy, Download, Check, Sparkles, FileText, Loader2, RefreshCw } from "lucide-react";
@@ -30,7 +29,7 @@ export default function CoverLetterModal({ isOpen, onClose, initialText, onRegen
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
       toast.success("Copied to clipboard!");
-    } catch (err) {
+    } catch (err: any) {
       logger.error("Failed to copy text:", err);
       toast.error("Failed to copy text. Please try manually.");
     }
@@ -64,9 +63,10 @@ export default function CoverLetterModal({ isOpen, onClose, initialText, onRegen
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
 
+      // @ts-expect-error TODO: Fix pervasive types
       await html2pdf().set(opt).from(htmlContent).save();
       toast.success("PDF downloaded successfully.");
-    } catch (err) {
+    } catch (err: any) {
       logger.error("Failed to generate PDF:", err);
       toast.error("Failed to generate PDF. Please try again.");
     } finally {
@@ -83,7 +83,7 @@ export default function CoverLetterModal({ isOpen, onClose, initialText, onRegen
         setText(newText);
         toast.success("Cover letter regenerated successfully!");
       }
-    } catch (err) {
+    } catch (err: any) {
       logger.error("Regeneration failed:", err);
       toast.error(err?.response?.data?.message || err.message || "Failed to regenerate cover letter. Please try again.");
     } finally {

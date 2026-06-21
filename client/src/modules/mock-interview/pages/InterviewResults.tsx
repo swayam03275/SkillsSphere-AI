@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
@@ -49,7 +48,7 @@ const InterviewResults = () => {
       try {
         const res = await getResults(sessionId);
         setResults(res.data);
-      } catch (err) {
+      } catch (err: any) {
         setError("Failed to load results.");
         logger.error("[InterviewResults] Error:", err);
       } finally {
@@ -89,7 +88,7 @@ const InterviewResults = () => {
             : item,
         ),
       }));
-    } catch (err) {
+    } catch (err: any) {
       setResults((currentResults) => ({
         ...currentResults,
         answers: currentResults.answers.map((item) =>
@@ -117,7 +116,7 @@ const InterviewResults = () => {
       await exportToPDF("mock-interview-pdf-target", filename, {
         html2canvas: { scale: 2, useCORS: true, backgroundColor: '#09090b' }
       });
-    } catch (err) {
+    } catch (err: any) {
       logger.error("[InterviewResults] PDF export failed:", err);
     }
   };

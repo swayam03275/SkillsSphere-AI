@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
@@ -32,6 +31,7 @@ const StudentDashboard = ({ token }) => {
       try {
         const [historyRes, trendsRes, roadmapRes, analyticsRes] = await Promise.all([
           getAnalysisHistory(token),
+          // @ts-expect-error TODO: Fix pervasive types
           getSkillTrends(),
           getMyRoadmap(),
           getRoleAnalytics(token)
@@ -41,7 +41,7 @@ const StudentDashboard = ({ token }) => {
         if (trendsRes.success) setSkillTrends(trendsRes.trends || []);
         if (roadmapRes.success) setRoadmap(roadmapRes.data || null);
         if (analyticsRes.success) setAnalytics(analyticsRes.data);
-      } catch (error) {
+      } catch (error: any) {
         logger.error("Failed to fetch student dashboard data:", error);
       } finally {
         setLoading(false);
@@ -447,6 +447,7 @@ const StudentDashboard = ({ token }) => {
                     ))
                   ) : (
                     <tr>
+                      {/* @ts-expect-error TODO: Fix pervasive types */}
                       <td colSpan="5" className="px-6 py-12 text-center text-gray-500 dark:text-slate-500 text-sm">
                         No history found
                       </td>

@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import {
@@ -16,7 +15,7 @@ export const fetchTutorSessions = createAsyncThunk(
       const res = await apiGetTutorSessions(token);
       if (!res.success) throw new Error(res.error || 'Failed to fetch sessions');
       return res.data;
-    } catch (error) {
+    } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to load your classroom sessions. Please try again.');
     }
   }
@@ -29,7 +28,7 @@ export const fetchActiveSessions = createAsyncThunk(
       const res = await apiGetActiveSessions(token);
       if (!res.success) throw new Error(res.error || 'Failed to fetch active sessions');
       return res.data;
-    } catch (error) {
+    } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to load active classrooms. Please try again.');
     }
   }
@@ -37,12 +36,13 @@ export const fetchActiveSessions = createAsyncThunk(
 
 export const createSession = createAsyncThunk(
   'classrooms/createSession',
+  // @ts-expect-error TODO: Fix pervasive types
   async ({ sessionData, token }, { rejectWithValue }) => {
     try {
       const res = await apiCreateSession(sessionData, token);
       if (!res.success) throw new Error(res.error || 'Failed to create room');
       return res.data;
-    } catch (error) {
+    } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to create live classroom session.');
     }
   }
@@ -50,12 +50,13 @@ export const createSession = createAsyncThunk(
 
 export const endSession = createAsyncThunk(
   'classrooms/endSession',
+  // @ts-expect-error TODO: Fix pervasive types
   async ({ roomId, token }, { rejectWithValue }) => {
     try {
       const res = await apiEndSession(roomId, token);
       if (!res.success) throw new Error(res.error || 'Failed to end session');
       return roomId;
-    } catch (error) {
+    } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to end the session.');
     }
   }
@@ -63,12 +64,13 @@ export const endSession = createAsyncThunk(
 
 export const getSession = createAsyncThunk(
   'classrooms/getSession',
+  // @ts-expect-error TODO: Fix pervasive types
   async ({ roomId, token }, { rejectWithValue }) => {
     try {
       const res = await apiGetSession(roomId, token);
       if (!res.success) throw new Error(res.error || 'Failed to get session');
       return res.data;
-    } catch (error) {
+    } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to get the session.');
     }
   }

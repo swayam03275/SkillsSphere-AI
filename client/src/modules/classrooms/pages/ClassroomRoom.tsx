@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import {
   Code2,
@@ -38,9 +37,9 @@ export default function ClassroomRoom() {
   useDocumentTitle("Classroom");
   const { roomId } = useParams();
   const navigate = useNavigate();
-  const { user, token } = useSelector((state) => state.auth);
-  const { error: sessionError, isLoading: sessionLoading } = useSelector((state) => state.classrooms);
-  const dispatch = useDispatch();
+  const { user, token } = useSelector((state: any) => state.auth);
+  const { error: sessionError, isLoading: sessionLoading } = useSelector((state: any) => state.classrooms);
+  const dispatch = useDispatch<any>();
   const toast = useToast();
 
   const [socket, setSocket] = useState(null);
@@ -79,6 +78,7 @@ export default function ClassroomRoom() {
 
     let mounted = true;
 
+    // @ts-expect-error TODO: Fix pervasive types
     dispatch(getSession({ roomId, token }))
       .unwrap()
       .then(() => {
@@ -87,6 +87,7 @@ export default function ClassroomRoom() {
         // Initialize Socket
         const s = io(SOCKET_URL, { auth: { token } });
         setSocket(s);
+        // @ts-expect-error TODO: Fix pervasive types
         socketRef.current = s;
 
         // Get media permissions
@@ -99,6 +100,7 @@ export default function ClassroomRoom() {
             }
 
             setLocalStream(stream);
+            // @ts-expect-error TODO: Fix pervasive types
             localStreamRef.current = stream;
 
             // Join room once media is acquired
@@ -301,8 +303,10 @@ export default function ClassroomRoom() {
     return () => {
       mounted = false;
       dispatch(clearClassroomsError());
+      // @ts-expect-error TODO: Fix pervasive types
       if (s) s.disconnect();
       if (localStreamRef.current) {
+        // @ts-expect-error TODO: Fix pervasive types
         localStreamRef.current.getTracks().forEach((t) => t.stop());
       }
       if (screenStreamRef.current) {
@@ -321,6 +325,7 @@ export default function ClassroomRoom() {
     });
 
     peer.on("signal", (signal) => {
+      // @ts-expect-error TODO: Fix pervasive types
       socketRef.current.emit("webrtc-offer", {
         targetSocketId: userToSignal,
         callerSocketId: callerId,
@@ -410,6 +415,7 @@ export default function ClassroomRoom() {
     if (!screenStreamRef.current) return;
 
     const screenTrack = screenStreamRef.current.getVideoTracks()[0];
+    // @ts-expect-error TODO: Fix pervasive types
     const cameraTrack = localStreamRef.current?.getVideoTracks()[0];
 
     if (screenTrack && cameraTrack) {
@@ -436,6 +442,7 @@ export default function ClassroomRoom() {
     if (!isScreenSharing) {
       try {
         const stream = await navigator.mediaDevices.getDisplayMedia({
+          // @ts-expect-error TODO: Fix pervasive types
           cursor: "always",
           video: true,
           audio: false,
@@ -443,6 +450,7 @@ export default function ClassroomRoom() {
         screenStreamRef.current = stream;
 
         const screenTrack = stream.getVideoTracks()[0];
+        // @ts-expect-error TODO: Fix pervasive types
         const cameraTrack = localStreamRef.current?.getVideoTracks()[0];
 
         screenTrack.onended = () => {
@@ -468,7 +476,7 @@ export default function ClassroomRoom() {
         if (socket) {
           socket.emit("toggle-screen-share", { roomId, isScreenSharing: true });
         }
-      } catch (err) {
+      } catch (err: any) {
         logger.error("Failed to share screen", err);
       }
     } else {
@@ -501,7 +509,7 @@ export default function ClassroomRoom() {
       await endClassroomSession(roomId, token);
       toast.success("Session ended successfully.");
       navigate("/classrooms");
-    } catch (err) {
+    } catch (err: any) {
       logger.error("Failed to end session", err);
       toast.error("Failed to end session.");
       setLeavingSession(false);
@@ -535,6 +543,7 @@ export default function ClassroomRoom() {
             description={sessionError}
             onRetry={() => {
               dispatch(clearClassroomsError());
+              // @ts-expect-error TODO: Fix pervasive types
               dispatch(getSession({ roomId, token }));
             }}
           />
@@ -626,6 +635,7 @@ export default function ClassroomRoom() {
             {activeWorkspace !== "video" && (
               <div className="flex space-x-3 overflow-x-auto mb-4 pb-2 max-h-[140px] scrollbar-thin scrollbar-thumb-slate-800">
                 <div className="w-[180px] flex-shrink-0">
+                  {/* @ts-expect-error TODO: Fix pervasive types */}
                   <VideoTile
                     stream={localStream}
                     user={{ name: user?.name || user?.email }}

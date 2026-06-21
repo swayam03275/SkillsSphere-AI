@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React from "react";
 import { 
@@ -18,6 +17,7 @@ const VersionComparisonModal = ({ isOpen, onClose, versions }) => {
   // versions[0] is the older one based on history array order (newest first)
   // But wait, the history is newest first, so history[0] is newer than history[1].
   // Let's sort them by date to be sure.
+  // @ts-expect-error TODO: Fix pervasive types
   const sorted = [...versions].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
   const v1 = sorted[0]; // Older
   const v2 = sorted[1]; // Newer
@@ -104,7 +104,9 @@ const VersionComparisonModal = ({ isOpen, onClose, versions }) => {
                 {addedSkills.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {addedSkills.map(skill => (
+                      // @ts-expect-error TODO: Fix pervasive types
                       <span key={skill} className="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20 uppercase">
+                        {/* @ts-expect-error TODO: Fix pervasive types */}
                         {skill}
                       </span>
                     ))}
@@ -127,8 +129,11 @@ const VersionComparisonModal = ({ isOpen, onClose, versions }) => {
                 {resolvedGaps.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {resolvedGaps.map(skill => (
+                      // @ts-expect-error TODO: Fix pervasive types
                       <span key={skill} className="px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-400 text-xs font-bold border border-blue-500/20 uppercase flex items-center gap-1.5">
                         <ArrowRight size={12} />
+                        {/* @ts-expect-error TODO: Fix pervasive types */}
+                        {/* @ts-expect-error TODO: Fix pervasive types */}
                         {skill}
                       </span>
                     ))}
@@ -204,6 +209,7 @@ const VersionComparisonModal = ({ isOpen, onClose, versions }) => {
 
         {/* Footer */}
         <div className="px-8 py-6 border-t border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-slate-950/50 flex justify-end">
+          {/* @ts-expect-error TODO: Fix pervasive types */}
           <Button variant="primary" onClick={onClose} className="px-10">
             Done Reviewing
           </Button>

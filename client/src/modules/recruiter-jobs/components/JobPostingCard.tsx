@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React from "react";
 import { JobViewerCard } from "../../../shared/components";
@@ -14,6 +13,7 @@ export interface JobPostingCardProps {
 
 
 const JobPostingCard = ({ className = "", ...props }) => (
+  // @ts-expect-error TODO: Fix pervasive types
   <JobViewerCard
     {...props}
     viewerRole="recruiter"

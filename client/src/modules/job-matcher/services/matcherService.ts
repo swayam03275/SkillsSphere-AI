@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { apiRequest } from "../../../services/apiClient";
 
@@ -9,6 +8,7 @@ import { apiRequest } from "../../../services/apiClient";
  * @returns {Promise<Object>} - { success, message, jobs, hasResume }
  */
 export const getRecommendations = async (token, options = {}) => {
+  // @ts-expect-error TODO: Fix pervasive types
   const { sortBy = "score", limit = 20 } = options;
   return apiRequest(`/api/jobs/recommendations?sortBy=${sortBy}&limit=${limit}`, { token });
 };

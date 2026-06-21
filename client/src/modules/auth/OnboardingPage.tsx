@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useState, useRef, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -39,8 +38,8 @@ const ROLES = [
 ];
 
 const OnboardingPage = () => {
-  const { user, token } = useSelector((state) => state.auth);
-  const dispatch = useDispatch();
+  const { user, token } = useSelector((state: any) => state.auth);
+  const dispatch = useDispatch<any>();
   const navigate = useNavigate();
   const { success, error } = useToast();
 
@@ -98,7 +97,7 @@ const OnboardingPage = () => {
       });
       
       return data.user.profilePic;
-    } catch (err) {
+    } catch (err: any) {
       error(err.message);
       return null;
     } finally {
@@ -148,7 +147,7 @@ const OnboardingPage = () => {
         success("Profile setup complete!");
         navigate("/dashboard", { replace: true });
       }
-    } catch (err) {
+    } catch (err: any) {
       error(err.message);
     } finally {
       setIsSubmitting(false);
@@ -210,6 +209,7 @@ const OnboardingPage = () => {
             </div>
 
             <div className="flex-1 space-y-4 w-full">
+              {/* @ts-expect-error TODO: Fix pervasive types */}
               <Input
                 id="name"
                 label="Full Name"
@@ -223,6 +223,7 @@ const OnboardingPage = () => {
                 disabled={isSubmitting || isUploadingPhoto}
               />
 
+              {/* @ts-expect-error TODO: Fix pervasive types */}
               <Input
                 id="email"
                 type="email"
@@ -268,6 +269,7 @@ const OnboardingPage = () => {
           </div>
 
           {/* Submit Action */}
+          {/* @ts-expect-error TODO: Fix pervasive types */}
           <Button
             type="submit"
             fullWidth

@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React from "react";
 import { BookOpen, Users, ArrowRight } from "lucide-react";
@@ -80,7 +79,9 @@ export const ActiveSessionsList = ({
                         alt={session.host.name} 
                         className="w-5 h-5 rounded-full object-cover border border-gray-200 dark:border-slate-800"
                         onError={(e) => {
+                          // @ts-expect-error TODO: Fix pervasive types
                           e.target.onerror = null;
+                          // @ts-expect-error TODO: Fix pervasive types
                           e.target.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(session.host.name)}`;
                         }}
                       />

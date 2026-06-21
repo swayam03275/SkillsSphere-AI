@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
@@ -42,7 +41,7 @@ const InterviewLobby = () => {
         if (topicList.length > 0) {
           setTopic(topicList[0].topic);
         }
-      } catch (err) {
+      } catch (err: any) {
         setError("Failed to load interview topics. Please try again.");
         logger.error("[InterviewLobby] Error fetching topics:", err);
       } finally {
@@ -63,7 +62,7 @@ const InterviewLobby = () => {
       if (sessionId) {
         navigate(`/mock-interview/${sessionId}`, { replace: true });
       }
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message || "Failed to start interview. Please try again.");
       logger.error("[InterviewLobby] Error starting session:", err);
     } finally {
@@ -155,6 +154,7 @@ const InterviewLobby = () => {
                     {loading ? (
                       <div className="h-[42px] bg-gray-100 dark:bg-slate-800 animate-pulse rounded-xl" />
                     ) : (
+                      // @ts-expect-error TODO: Fix pervasive types
                       <Select
                         options={topicOptions}
                         value={topic}
@@ -165,6 +165,7 @@ const InterviewLobby = () => {
                   </div>
                   <div className="flex flex-col gap-2">
                     <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Difficulty Base</label>
+                    {/* @ts-expect-error TODO: Fix pervasive types */}
                     <Select
                       options={DIFFICULTY_LEVELS}
                       value={difficulty}
@@ -203,6 +204,7 @@ const InterviewLobby = () => {
                   </div>
                 )}
                 
+                {/* @ts-expect-error TODO: Fix pervasive types */}
                 <Button
                   variant="primary"
                   size="lg"

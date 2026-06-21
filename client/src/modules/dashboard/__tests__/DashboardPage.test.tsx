@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
@@ -102,6 +101,7 @@ describe("DashboardPage", () => {
   });
 
   it("fetches and renders role analytics for tutor users", async () => {
+    // @ts-expect-error TODO: Fix pervasive types
     getRoleAnalytics.mockResolvedValue({
       success: true,
       data: {

@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { CheckCircle2, FileSearch, LineChart, MessageSquareText, Sparkles, Video } from "lucide-react";
 import Button from "../../../shared/components/Button";
@@ -20,6 +19,7 @@ const renderAnimatedChars = (text, startDelay = 0, stepDelay = 80) =>
         ...headingGradientStyle,
       }}
     >
+      {/* @ts-expect-error TODO: Fix pervasive types */}
       {character === " " ? "\u00A0" : character}
     </span>
   ));
@@ -123,6 +123,7 @@ const Hero = () => {
           </div>
 
           <div className="mt-8 flex gap-4 max-[1050px]:justify-center">
+            {/* @ts-expect-error TODO: Fix pervasive types */}
             <Button variant="primary" size="lg" to="/register">Get Started</Button>
           </div>
         </div>

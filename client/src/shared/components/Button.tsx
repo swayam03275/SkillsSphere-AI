@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React from "react";
 import { Link } from "react-router-dom";
@@ -155,6 +154,7 @@ const Button: React.FC<ButtonProps> = ({
 
   return (
     <button
+      // @ts-expect-error TODO: Fix pervasive types
       type={type}
       onClick={onClick}
       disabled={isDisabled}

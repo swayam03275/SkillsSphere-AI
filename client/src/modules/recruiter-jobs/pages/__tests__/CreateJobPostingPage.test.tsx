@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
@@ -159,6 +158,7 @@ describe('CreateJobPostingPage', () => {
   })
 
   it('submits transformed payload on valid form', async () => {
+    // @ts-expect-error TODO: Fix pervasive types
     jobPostingService.createJobPosting.mockResolvedValue({ success: true })
 
     renderWithProviders(<CreateJobPostingPage />)
@@ -204,6 +204,7 @@ describe('CreateJobPostingPage', () => {
   })
 
   it('disables submit button during submission', async () => {
+    // @ts-expect-error TODO: Fix pervasive types
     jobPostingService.createJobPosting.mockImplementation(() => 
       new Promise((resolve) => setTimeout(() => resolve({ success: true }), 100))
     )
@@ -238,6 +239,7 @@ describe('CreateJobPostingPage', () => {
         title: 'Title is too short',
       },
     }
+    // @ts-expect-error TODO: Fix pervasive types
     jobPostingService.createJobPosting.mockRejectedValue(backendError)
 
     renderWithProviders(<CreateJobPostingPage />)
@@ -263,6 +265,7 @@ describe('CreateJobPostingPage', () => {
   })
 
   it('displays generic error banner for API failures', async () => {
+    // @ts-expect-error TODO: Fix pervasive types
     jobPostingService.createJobPosting.mockRejectedValue({
       message: 'Unable to connect to server',
     })

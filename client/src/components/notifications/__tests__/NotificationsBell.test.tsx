@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
@@ -15,6 +14,7 @@ vi.mock("../../../modules/notifications/hooks/useNotifications", () => ({
 describe("NotificationsBell", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // @ts-expect-error TODO: Fix pervasive types
     useNotifications.mockReturnValue({
       notifications: [
         {

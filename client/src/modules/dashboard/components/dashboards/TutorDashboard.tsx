@@ -14,7 +14,7 @@ const TutorDashboard = ({ token }) => {
       try {
         const analyticsRes = await getRoleAnalytics(token);
         if (analyticsRes.success) setAnalytics(analyticsRes.data);
-      } catch (error) {
+      } catch (error: any) {
         logger.error("Failed to fetch tutor dashboard data:", error);
       } finally {
         setLoading(false);

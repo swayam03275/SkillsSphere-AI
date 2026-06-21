@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Treemap } from "recharts";
@@ -53,7 +52,7 @@ const CustomizedContent = (props) => {
 
 const TutorAnalyticsDashboard = () => {
   useDocumentTitle("Tutor Analytics");
-  const { token } = useSelector((state) => state.auth);
+  const { token } = useSelector((state: any) => state.auth);
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -71,7 +70,7 @@ const TutorAnalyticsDashboard = () => {
         } else {
           setError(result.message || "Failed to load data");
         }
-      } catch (err) {
+      } catch (err: any) {
         logger.error(err);
         setError("Network error occurred while fetching analytics");
       } finally {

@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiRequest } from "../../../../services/apiClient";
@@ -31,11 +30,13 @@ describe("dashboardService", () => {
   beforeEach(() => {
     vi.useRealTimers();
     vi.clearAllMocks();
+    // @ts-expect-error TODO: Fix pervasive types
     clearDashboardCache();
   });
 
   describe("getAnalysisHistory", () => {
     it("returns normalized analysis history for successful API responses", async () => {
+      // @ts-expect-error TODO: Fix pervasive types
       apiRequest.mockResolvedValue({
         success: true,
         message: "ok",
@@ -74,6 +75,7 @@ describe("dashboardService", () => {
     });
 
     it("falls back to an empty history array when validation fails", async () => {
+      // @ts-expect-error TODO: Fix pervasive types
       apiRequest.mockResolvedValue({ success: true, data: null });
 
       const result = await getAnalysisHistory(token);
@@ -92,6 +94,7 @@ describe("dashboardService", () => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date("2026-05-25T00:00:00.000Z"));
 
+      // @ts-expect-error TODO: Fix pervasive types
       apiRequest.mockResolvedValue({
         success: true,
         trends: [{ skill: "React", count: "12" }],
@@ -110,6 +113,7 @@ describe("dashboardService", () => {
       vi.setSystemTime(new Date("2026-05-25T00:00:00.000Z"));
 
       apiRequest
+        // @ts-expect-error TODO: Fix pervasive types
         .mockResolvedValueOnce({
           success: true,
           trends: [{ skill: "React", count: 1 }],
@@ -143,6 +147,7 @@ describe("dashboardService", () => {
 
   describe("getRoleAnalytics", () => {
     it("normalizes student, tutor, and recruiter analytics fields into one safe shape", async () => {
+      // @ts-expect-error TODO: Fix pervasive types
       apiRequest.mockResolvedValue({
         success: true,
         role: "recruiter",
@@ -181,7 +186,9 @@ describe("dashboardService", () => {
 
     it("returns fallback analytics for network failures", async () => {
       const networkError = new Error("Network error");
+      // @ts-expect-error TODO: Fix pervasive types
       networkError.status = 0;
+      // @ts-expect-error TODO: Fix pervasive types
       apiRequest.mockRejectedValue(networkError);
 
       const result = await getRoleAnalytics(token);
@@ -200,8 +207,11 @@ describe("dashboardService", () => {
 
     it("returns timeout fallback analytics for apiClient-wrapped abort errors", async () => {
       const timeoutError = new Error("Network error");
+      // @ts-expect-error TODO: Fix pervasive types
       timeoutError.status = 0;
+      // @ts-expect-error TODO: Fix pervasive types
       timeoutError.cause = new DOMException("The operation was aborted", "AbortError");
+      // @ts-expect-error TODO: Fix pervasive types
       apiRequest.mockRejectedValue(timeoutError);
 
       const result = await getRoleAnalytics(token);
@@ -217,6 +227,7 @@ describe("dashboardService", () => {
     });
 
     it("returns fallback analytics for invalid role analytics responses", async () => {
+      // @ts-expect-error TODO: Fix pervasive types
       apiRequest.mockResolvedValue({
         success: true,
         data: [],

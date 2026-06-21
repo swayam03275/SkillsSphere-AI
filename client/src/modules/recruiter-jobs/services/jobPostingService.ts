@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { apiRequest, normalizeApiError } from "../../../services/apiClient";
 
@@ -15,6 +14,7 @@ const handleServiceError = (error) => {
   let normalized = normalizeApiError(error);
 
   if (!normalized || typeof normalized !== "object") {
+    // @ts-expect-error TODO: Fix pervasive types
     normalized = {
       message: error?.message || "Something went wrong",
       status: error?.status || 500,
@@ -63,7 +63,7 @@ export const getRecruiterJobs = async (token, page = 1, limit = 10) => {
       totalPages: response.totalPages || 1,
       totalCount: response.totalCount || 0,
     };
-  } catch (error) {
+  } catch (error: any) {
     const normalizedError = handleServiceError(error);
     throw normalizedError;
   }
@@ -95,7 +95,7 @@ export const createJobPosting = async (jobData, token) => {
       success: true,
       job: response.job || response.data,
     };
-  } catch (error) {
+  } catch (error: any) {
     const normalizedError = handleServiceError(error);
     throw normalizedError;
   }
@@ -114,7 +114,7 @@ export const getJobPostingById = async (id, token) => {
       success: true,
       job: response.job || response.data,
     };
-  } catch (error) {
+  } catch (error: any) {
     const normalizedError = handleServiceError(error);
     throw normalizedError;
   }
@@ -132,7 +132,7 @@ export const getRecruiterAnalytics = async (token) => {
       success: true,
       analytics: response.analytics || {},
     };
-  } catch (error) {
+  } catch (error: any) {
     const normalizedError = handleServiceError(error);
     throw normalizedError;
   }
@@ -164,7 +164,7 @@ export const updateJobPosting = async (id, jobData, token) => {
       success: true,
       job: response.job || response.data,
     };
-  } catch (error) {
+  } catch (error: any) {
     const normalizedError = handleServiceError(error);
     throw normalizedError;
   }
@@ -186,7 +186,7 @@ export const deleteJobPosting = async (id, token) => {
     return {
       success: true,
     };
-  } catch (error) {
+  } catch (error: any) {
     const normalizedError = handleServiceError(error);
     throw normalizedError;
   }
@@ -208,6 +208,7 @@ export const getJobApplications = async (jobId, token, statusOrFilters = "", sor
       const filters = statusOrFilters;
       Object.entries(filters).forEach(([key, val]) => {
         if (val !== undefined && val !== null && val !== "") {
+          // @ts-expect-error TODO: Fix pervasive types
           params.append(key, val);
         }
       });
@@ -226,7 +227,7 @@ export const getJobApplications = async (jobId, token, statusOrFilters = "", sor
       success: true,
       applications: response.applications || [],
     };
-  } catch (error) {
+  } catch (error: any) {
     const normalizedError = handleServiceError(error);
     throw normalizedError;
   }
@@ -252,7 +253,7 @@ export const updateApplicationStatus = async (applicationId, status, comment, to
       success: true,
       application: response.application,
     };
-  } catch (error) {
+  } catch (error: any) {
     const normalizedError = handleServiceError(error);
     throw normalizedError;
   }
@@ -277,7 +278,7 @@ export const exportJobApplicationsCSV = async (jobId, token, status = "", sortBy
       responseType: "blob",
     });
     return blob;
-  } catch (error) {
+  } catch (error: any) {
     const normalizedError = handleServiceError(error);
     throw normalizedError;
   }

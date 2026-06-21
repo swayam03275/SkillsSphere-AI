@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { useState, useRef, useEffect } from "react";
 import { useSelector } from "react-redux";
@@ -10,7 +9,7 @@ import { getToken } from "../../../utils/authToken";
 import logger from "../../../utils/logger";
 
 const ChatBox = ({ onClose }) => {
-  const { token } = useSelector((state) => state.auth);
+  const { token } = useSelector((state: any) => state.auth);
   const [messages, setMessages] = useState([
     { sender: "bot", text: "Hi! 👋 I'm your SkillsSphere AI assistant. How can I help you today?" },
   ]);
@@ -37,7 +36,7 @@ const ChatBox = ({ onClose }) => {
         token: getToken(),
       });
       return data.reply;
-    } catch (error) {
+    } catch (error: any) {
       logger.error(error);
       return "Sorry, I couldn't process that. Please try again or check your internet connection.";
     }

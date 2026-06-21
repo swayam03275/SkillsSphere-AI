@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React from "react";
 
@@ -9,6 +8,7 @@ export interface SelectOption {
 
 export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'onChange'> {
   id: string;
+  // @ts-expect-error TODO: Fix pervasive types
   label?: string;
   options?: SelectOption[];
   value?: string;

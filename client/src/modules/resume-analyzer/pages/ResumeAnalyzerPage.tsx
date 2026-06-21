@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
@@ -84,13 +83,14 @@ const retryRecoverableUpload = async (operation, onRetry) => {
       const timeoutPromise = new Promise((_, reject) => {
         timeoutId = window.setTimeout(() => {
           const error = new Error("Upload timeout");
+          // @ts-expect-error TODO: Fix pervasive types
           error.status = 0;
           reject(error);
         }, UPLOAD_TIMEOUT_MS);
       });
       const result = await Promise.race([operation(), timeoutPromise]);
       return result;
-    } catch (err) {
+    } catch (err: any) {
       lastError = err;
       if (!isRecoverableUploadError(err) || attempt === MAX_UPLOAD_RETRY_ATTEMPTS) {
         throw err;
@@ -187,7 +187,7 @@ const ResumeAnalyzerPage = () => {
       success("Resume analyzed successfully.");
       setUploadStatus("complete");
       setUploadProgressLabel("");
-    } catch (err) {
+    } catch (err: any) {
       const msg = getResumeUploadErrorMessage(err);
       setError(msg);
       setUploadStatus("failed");
@@ -279,6 +279,7 @@ const ResumeAnalyzerPage = () => {
           {isLoadingLatest ? (
             <ResumeSkeleton />
           ) : loading && !result && !error ? (
+            // @ts-expect-error TODO: Fix pervasive types
             <AnalysisResultSkeleton />
           ) : error && !result ? (
             <div className="w-full max-w-4xl mx-auto space-y-6 mt-12 bg-white dark:bg-[#121214] p-8 md:p-12 rounded-3xl shadow-sm border border-gray-100 dark:border-white/5">

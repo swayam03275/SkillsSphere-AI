@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { useState, useEffect, useMemo } from "react";
 import { useSelector } from "react-redux";
@@ -50,7 +49,7 @@ const BOARD_COLUMNS = ["pending", "reviewed", "shortlisted", "rejected", "withdr
 
 const MyApplicationsPage = () => {
   useDocumentTitle("My Applications");
-  const { token } = useSelector((state) => state.auth);
+  const { token } = useSelector((state: any) => state.auth);
   const navigate = useNavigate();
   const toast = useToast();
   
@@ -87,7 +86,7 @@ const MyApplicationsPage = () => {
       setCurrentPage(data.currentPage || 1);
       setTotalPages(data.totalPages || 1);
       setTotalCount(data.totalCount || 0);
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message || "Failed to load applications.");
       toast.error(err.message || "Failed to load applications.");
     } finally {
@@ -121,7 +120,7 @@ const MyApplicationsPage = () => {
         })
       );
       toast.success("Application successfully withdrawn.");
-    } catch (err) {
+    } catch (err: any) {
       toast.error(err.message || "Failed to withdraw application.");
     } finally {
       setWithdrawingId(null);
@@ -194,7 +193,7 @@ const MyApplicationsPage = () => {
       // Sync to database
       await updateStudentApplicationStatus(appId, columnStatus, token);
       toast.success(`Stage updated in your CRM! Note: The official status with the recruiter remains ${statusConfig[app.status]?.label || app.status}`, "Premium Personal CRM");
-    } catch (error) {
+    } catch (error: any) {
       // Revert on failure
       setApplications(previousApplications);
       toast.error(error.message || "Failed to update status. Please try again.");
@@ -435,6 +434,7 @@ const MyApplicationsPage = () => {
         {/* Content */}
         {loading ? (
           <div className="min-h-[400px] flex items-center justify-center bg-white/50 dark:bg-slate-900/30 rounded-2xl border border-gray-200 dark:border-white/5">
+            {/* @ts-expect-error TODO: Fix pervasive types */}
             <LoadingState message="Loading your applications..." />
           </div>
         ) : error ? (

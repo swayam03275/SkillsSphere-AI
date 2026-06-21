@@ -146,7 +146,7 @@ export default function CollaborativeEditor({ socket, roomId, userRole, initialC
       const currentCode = docRef.current?.getText("monaco").toString() || code;
       await navigator.clipboard.writeText(currentCode);
       success("Code copied to clipboard!");
-    } catch (err) {
+    } catch (err: any) {
       logger.error("Failed to copy", err);
     }
   };

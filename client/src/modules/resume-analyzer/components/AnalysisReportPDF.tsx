@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React from "react";
 import {
@@ -53,8 +52,10 @@ const AnalysisReportPDF = ({ result, fileName }) => {
   // --- Missing Tech Keywords ---
   const techData = result.techStandard?.details?.domainMissing || {};
   const missingTechKeywords = Object.entries(techData)
+    // @ts-expect-error TODO: Fix pervasive types
     .filter(([, keywords]) => keywords.length > 0)
     .flatMap(([domain, keywords]) =>
+      // @ts-expect-error TODO: Fix pervasive types
       keywords.slice(0, 3).map((kw) => ({ keyword: kw, domain }))
     )
     .slice(0, 12);

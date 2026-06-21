@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -29,6 +28,7 @@ describe("ErrorBoundary", () => {
   });
 
   it("renders a user-friendly fallback when a child throws", async () => {
+    // @ts-expect-error TODO: Fix pervasive types
     reportError.mockResolvedValue({ success: true });
 
     render(
@@ -48,6 +48,7 @@ describe("ErrorBoundary", () => {
 
   it("resets error state and re-renders children when retry succeeds", async () => {
     const user = userEvent.setup();
+    // @ts-expect-error TODO: Fix pervasive types
     reportError.mockResolvedValue({ success: true });
 
     const { rerender } = render(
@@ -71,6 +72,7 @@ describe("ErrorBoundary", () => {
   });
 
   it("keeps the fallback stable when error reporting fails", async () => {
+    // @ts-expect-error TODO: Fix pervasive types
     reportError.mockRejectedValue(new Error("Reporter unavailable"));
 
     render(

@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { reportError, __testing } from "../errorReporter";
@@ -40,6 +39,7 @@ describe("errorReporter", () => {
   });
 
   it("reports errors to the backend without throwing", async () => {
+    // @ts-expect-error TODO: Fix pervasive types
     global.fetch.mockResolvedValue({ ok: true });
 
     const result = await reportError(
@@ -58,6 +58,7 @@ describe("errorReporter", () => {
   });
 
   it("fails safely when the reporting service is unavailable", async () => {
+    // @ts-expect-error TODO: Fix pervasive types
     global.fetch.mockRejectedValue(new Error("Network down"));
 
     const result = await reportError(

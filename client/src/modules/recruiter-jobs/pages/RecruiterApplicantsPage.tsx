@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
@@ -142,12 +141,16 @@ const parseDateOnly = (value, endOfDay = false) => {
 };
 
 export const filterApplicants = (applications = [], filters = {}) => {
+  // @ts-expect-error TODO: Fix pervasive types
   const search = normalizeText(filters.searchTerm);
+  // @ts-expect-error TODO: Fix pervasive types
   const skillTerms = String(filters.skillsFilter || '')
     .split(',')
     .map((skill) => normalizeText(skill))
     .filter(Boolean);
+  // @ts-expect-error TODO: Fix pervasive types
   const appliedFrom = parseDateOnly(filters.appliedFrom);
+  // @ts-expect-error TODO: Fix pervasive types
   const appliedTo = parseDateOnly(filters.appliedTo, true);
 
   return applications.filter((application) => {
@@ -162,29 +165,37 @@ export const filterApplicants = (applications = [], filters = {}) => {
       }
     }
 
+    // @ts-expect-error TODO: Fix pervasive types
     if (filters.statusFilter && application?.status !== filters.statusFilter) {
       return false;
     }
 
+    // @ts-expect-error TODO: Fix pervasive types
     if (Number(filters.minScore) > 0 && Number(application?.aiMatchScore || 0) < Number(filters.minScore)) {
       return false;
     }
 
     if (
+      // @ts-expect-error TODO: Fix pervasive types
       Number(filters.minAtsScore) > 0 &&
+      // @ts-expect-error TODO: Fix pervasive types
       Number(application?.matchBreakdown?.atsCompatibility || 0) < Number(filters.minAtsScore)
     ) {
       return false;
     }
 
     if (
+      // @ts-expect-error TODO: Fix pervasive types
       Array.isArray(filters.selectedCategories) &&
+      // @ts-expect-error TODO: Fix pervasive types
       filters.selectedCategories.length > 0 &&
+      // @ts-expect-error TODO: Fix pervasive types
       !filters.selectedCategories.includes(application?.matchCategory)
     ) {
       return false;
     }
 
+    // @ts-expect-error TODO: Fix pervasive types
     if (filters.contributorOnly) {
       const contributionActivity = application?.matchBreakdown?.contributionActivity;
       if (!['High', 'Medium'].includes(contributionActivity)) {
@@ -193,7 +204,9 @@ export const filterApplicants = (applications = [], filters = {}) => {
     }
 
     if (
+      // @ts-expect-error TODO: Fix pervasive types
       filters.careerReadiness &&
+      // @ts-expect-error TODO: Fix pervasive types
       application?.matchBreakdown?.careerReadiness !== filters.careerReadiness
     ) {
       return false;
@@ -231,7 +244,7 @@ const RecruiterApplicantsPage = () => {
   useDocumentTitle("Recruiter Applicants");
   const { id: jobId } = useParams();
   const navigate = useNavigate();
-  const { token } = useSelector((state) => state.auth);
+  const { token } = useSelector((state: any) => state.auth);
   const toast = useToast();
 
   const [job, setJob] = useState(null);
@@ -300,15 +313,18 @@ const RecruiterApplicantsPage = () => {
 
       const [jobData, appsData] = await Promise.all([
         getJobPostingById(jobId, token),
+        // @ts-expect-error TODO: Fix pervasive types
         getJobApplications(jobId, token, filtersObj)
       ]);
       if (!ignoreRef.current) {
         setJob(jobData.job);
         setApplicants(appsData.applications || []);
+        // @ts-expect-error TODO: Fix pervasive types
         setTotalPages(appsData.totalPages || 1);
+        // @ts-expect-error TODO: Fix pervasive types
         setTotalCount(appsData.totalCount || 0);
       }
-    } catch (err) {
+    } catch (err: any) {
       if (!ignoreRef.current) {
         setError(err.message || "Failed to load applicant data.");
       }
@@ -358,7 +374,7 @@ const RecruiterApplicantsPage = () => {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-    } catch (err) {
+    } catch (err: any) {
       toast.error(err.message || "Failed to export matches.");
     }
   };
@@ -891,11 +907,13 @@ const RecruiterApplicantsPage = () => {
             {/* List Content */}
             {loading ? (
               <div className="py-20 bg-white dark:bg-slate-900/10 border border-gray-200 dark:border-white/5 rounded-3xl">
+                {/* @ts-expect-error TODO: Fix pervasive types */}
                 <LoadingState message="Filtering candidates dynamically..." />
               </div>
             ) : error ? (
               <ErrorState description={error} onRetry={fetchData} />
             ) : filteredApplicants.length === 0 ? (
+              // @ts-expect-error TODO: Fix pervasive types
               <EmptyState 
                 icon={<Users size={48} className="text-slate-700 animate-pulse" />}
                 title="No Matching Candidates"
@@ -906,6 +924,7 @@ const RecruiterApplicantsPage = () => {
                 }
               >
                 {isAnyFilterActive && (
+                  // @ts-expect-error TODO: Fix pervasive types
                   <Button 
                     onClick={handleResetFilters}
                     className="mt-4 bg-blue-600 hover:bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]"
@@ -922,7 +941,7 @@ const RecruiterApplicantsPage = () => {
                     await updateApplicationStatus(appId, newStatus, `Moved to ${newStatus} via Kanban board`, token);
                     toast.success(`Applicant moved to ${newStatus}`);
                     fetchData();
-                  } catch (err) {
+                  } catch (err: any) {
                     toast.error("Failed to move applicant");
                     fetchData(); // refresh to revert optimistic update
                   }
@@ -1170,6 +1189,7 @@ const RecruiterApplicantsPage = () => {
                               )}
 
                               <div className="pt-4 flex gap-3">
+                                {/* @ts-expect-error TODO: Fix pervasive types */}
                                 <Button 
                                   className="bg-blue-600 hover:bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]"
                                   leftIcon={<MessageSquare size={18} />}
@@ -1205,6 +1225,7 @@ const RecruiterApplicantsPage = () => {
                   Showing <span className="text-slate-900 dark:text-white">{(page - 1) * 20 + 1}</span> to <span className="text-slate-900 dark:text-white">{Math.min(page * 20, totalCount)}</span> of <span className="text-slate-900 dark:text-white">{totalCount}</span> candidates
                 </div>
                 <div className="flex gap-2">
+                  {/* @ts-expect-error TODO: Fix pervasive types */}
                   <Button
                     variant="outline"
                     size="sm"
@@ -1214,6 +1235,7 @@ const RecruiterApplicantsPage = () => {
                   >
                     Previous
                   </Button>
+                  {/* @ts-expect-error TODO: Fix pervasive types */}
                   <Button
                     variant="outline"
                     size="sm"

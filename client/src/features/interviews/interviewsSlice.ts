@@ -1,16 +1,16 @@
-// @ts-nocheck
 
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { getHistory } from '../../modules/mock-interview/services/interviewService';
 
 export const fetchInterviewHistory = createAsyncThunk(
   'interviews/fetchInterviewHistory',
+  // @ts-expect-error TODO: Fix pervasive types
   async ({ page = 1, limit = 10 }, { rejectWithValue }) => {
     try {
       const res = await getHistory(page, limit);
       if (!res.success) throw new Error(res.error || 'Failed to fetch interview history');
       return res.data; // should contain { sessions, analytics, pagination }
-    } catch (error) {
+    } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to load interview history.');
     }
   }

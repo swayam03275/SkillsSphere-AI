@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
@@ -16,7 +15,7 @@ import logger from "../../../utils/logger";
 
 const RoadmapPage = () => {
   useDocumentTitle("Roadmap");
-  const { user } = useSelector((state) => state.auth);
+  const { user } = useSelector((state: any) => state.auth);
   const { success: showSuccess, error: showError } = useToast();
   const [roadmap, setRoadmap] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -30,7 +29,7 @@ const RoadmapPage = () => {
       if (response.success) {
         setRoadmap(response.data);
       }
-    } catch (err) {
+    } catch (err: any) {
       logger.error("Failed to fetch roadmap:", err);
     } finally {
       setLoading(false);
@@ -56,7 +55,7 @@ const RoadmapPage = () => {
           });
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       logger.error("Update failed:", err);
       showError(err.message || "Failed to update milestone status.");
     } finally {
@@ -64,6 +63,7 @@ const RoadmapPage = () => {
     }
   };
 
+  // @ts-expect-error TODO: Fix pervasive types
   if (loading) return <LoadingState message="Mapping your career path..." />;
 
   if (!roadmap) {

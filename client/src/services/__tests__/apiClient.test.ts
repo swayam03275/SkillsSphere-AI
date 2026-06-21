@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { describe, expect, it } from "vitest";
 import { normalizeApiError } from "../apiClient";
@@ -6,7 +5,9 @@ import { normalizeApiError } from "../apiClient";
 describe("normalizeApiError", () => {
   it("keeps plain-text error responses as the message", () => {
     const error = new Error("Request failed");
+    // @ts-expect-error TODO: Fix pervasive types
     error.status = 401;
+    // @ts-expect-error TODO: Fix pervasive types
     error.data = { message: "Unauthorized" };
 
     expect(normalizeApiError(error)).toMatchObject({

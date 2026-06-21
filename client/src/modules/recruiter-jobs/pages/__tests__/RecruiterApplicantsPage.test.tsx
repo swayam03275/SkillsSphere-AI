@@ -1,4 +1,3 @@
-// @ts-nocheck
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -47,6 +46,7 @@ vi.mock('../../components/ApplicantsKanbanBoard', () => ({
 
 vi.mock('../../../../shared/components', () => ({
   Button: ({ children, onClick, className, disabled, type = 'button' }) => (
+    // @ts-expect-error TODO: Fix pervasive types
     <button type={type} onClick={onClick} className={className} disabled={disabled}>
       {children}
     </button>
@@ -146,9 +146,11 @@ describe('filterApplicants', () => {
 
 describe('RecruiterApplicantsPage filters', () => {
   beforeEach(() => {
+    // @ts-expect-error TODO: Fix pervasive types
     jobPostingService.getJobPostingById.mockResolvedValue({
       job: { _id: 'job-123', title: 'Frontend Engineer' },
     });
+    // @ts-expect-error TODO: Fix pervasive types
     jobPostingService.getJobApplications.mockResolvedValue({
       applications: applicants,
       totalPages: 1,
@@ -215,6 +217,7 @@ describe('RecruiterApplicantsPage filters', () => {
     });
 
     await waitFor(() => {
+      // @ts-expect-error TODO: Fix pervasive types
       const lastCall = jobPostingService.getJobApplications.mock.calls.at(-1);
       expect(lastCall[0]).toBe('job-123');
       expect(lastCall[1]).toBe('test-token');
