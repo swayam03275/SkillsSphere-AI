@@ -12,6 +12,7 @@ import fsPromises from "fs/promises";
 import AppError from "../../utils/AppError.js";
 import asyncHandler from "../../utils/asyncHandler.js";
 import { cascadeDeleteUser } from "../../utils/cascadeDelete.js";
+import { invalidateUserCache } from "../../middleware/authMiddleware.js";
 
 import { safeDeleteAvatarByUrl } from "../../utils/fileUtils.js";
 import { deleteCloudinaryAsset, uploadAvatarBuffer } from "../../config/cloudinary.js";
@@ -202,6 +203,8 @@ export const updatePreferences = asyncHandler(async (req, res, next) => {
   user.preferences = preferences;
   await user.save({ validateModifiedOnly: true });
 
+  await invalidateUserCache(req.user._id);
+
   res.status(200).json({
     success: true,
     message: "Preferences updated successfully",
@@ -237,6 +240,8 @@ export const onboardUser = asyncHandler(async (req, res, next) => {
   if (!updatedUser) {
     return next(new AppError("User not found", 404));
   }
+
+  await invalidateUserCache(req.user._id);
 
   res.status(200).json({
     success: true,
@@ -319,6 +324,8 @@ const updatedUser = await User.findByIdAndUpdate(
         { new: true, runValidators: true }
       ).select("-password -__v");
 
+      await invalidateUserCache(req.user._id);
+
       return res.status(200).json({
         success: true,
         message: "Profile updated successfully",
@@ -326,6 +333,8 @@ const updatedUser = await User.findByIdAndUpdate(
       });
     }
   }
+
+  await invalidateUserCache(req.user._id);
 
   res.status(200).json({
     success: true,
@@ -373,6 +382,8 @@ export const uploadAvatar = asyncHandler(async (req, res, next) => {
       return next(new AppError("User not found", 404));
     }
 
+    await invalidateUserCache(req.user._id);
+
     if (previousPublicId) {
       await deleteCloudinaryAsset(previousPublicId).catch((error) => {
         logger.error("[uploadAvatar] Failed to delete previous Cloudinary avatar:", error.message);
@@ -417,6 +428,8 @@ export const removeAvatar = asyncHandler(async (req, res, next) => {
     safeDeleteAvatarByUrl(previousProfilePic);
   }
 
+  await invalidateUserCache(req.user._id);
+
   res.status(200).json({
     success: true,
     message: "Profile photo removed",
@@ -438,6 +451,7 @@ export const deleteProfile = asyncHandler(async (req, res, next) => {
   }
 
   await cascadeDeleteUser(userId);
+  await invalidateUserCache(userId);
 
   res.status(200).json({
     success: true,
