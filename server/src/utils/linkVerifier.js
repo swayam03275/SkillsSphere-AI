@@ -22,7 +22,7 @@ const isPrivateIP = (ip) => {
  * @returns {Promise<{url: string, isValid: boolean, status: number|null}>}
  */
 export const verifyLink = async (url) => {
-  if (!url) return { url, isValid: false, status: null };
+  if (!url) return { url: null, isValid: false, status: null };
 
   try {
     const parsedUrl = new URL(url);
