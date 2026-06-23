@@ -14,7 +14,7 @@ export const requestLogger = (req, res, next) => {
       url: sanitizeValue(req.originalUrl),
       status: res.statusCode,
       duration: `${duration}ms`,
-      ip: req.ip,
+      ip: sanitizeValue(req.ip),
       userAgent: sanitizeValue(req.get('user-agent'))
     };
 

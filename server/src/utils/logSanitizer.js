@@ -26,6 +26,10 @@ const PHONE_REGEX = /(?:\+?\d{1,4}[-.\s]?)?(?:\(?\d{2,4}\)?[-.\s]?)?\d{3,4}[-.\s
 export const sanitizeString = (str) => {
   if (typeof str !== "string") return str;
   let sanitized = str;
+  // Strip log-injection characters before masking PII to prevent
+  // crafted values (e.g., newlines in X-Forwarded-For) from injecting
+  // extra entries into structured log files.
+  sanitized = sanitized.replace(/[\n\r]+/g, "");
   sanitized = sanitized.replace(EMAIL_REGEX, "[MASKED_EMAIL]");
   sanitized = sanitized.replace(PHONE_REGEX, "[MASKED_PHONE]");
   return sanitized;
