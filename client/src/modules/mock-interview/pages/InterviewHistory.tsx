@@ -7,6 +7,20 @@ import { getHistory } from "../services/interviewService";
 import Pagination from "../../../shared/components/Pagination";
 import { ErrorState } from "../../../shared/components";
 import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+} from "recharts";
+import {
   Plus,
   Clock,
   BookOpen,
@@ -184,6 +198,27 @@ export const calculateInterviewAnalytics = (interviews = [], serverAnalytics = n
   const lastScore = trend.at(-1)?.score ?? 0;
   const trendDelta = trend.length > 1 ? lastScore - firstScore : 0;
 
+  const avgTechnical = scoredSessions.length
+    ? Math.round(scoredSessions.reduce((sum, session) => sum + (Number(getNestedScore(session, "technical")) || 0), 0) / scoredSessions.length)
+    : 0;
+  const avgCommunication = scoredSessions.length
+    ? Math.round(scoredSessions.reduce((sum, session) => sum + (Number(getNestedScore(session, "communication")) || 0), 0) / scoredSessions.length)
+    : 0;
+  const avgProblemSolving = scoredSessions.length
+    ? Math.round(scoredSessions.reduce((sum, session) => {
+        const ps = firstAvailable(
+          session?.problemSolvingScore,
+          session?.problem_solving_score,
+          session?.scores?.problemSolving,
+          session?.scores?.problem_solving,
+          session?.scores?.relevance,
+          session?.metrics?.problemSolving,
+          session?.performanceMetrics?.problemSolving,
+        );
+        return sum + (Number(ps) || 0);
+      }, 0) / scoredSessions.length)
+    : 0;
+
   return {
     averageScore,
     completedCount: serverAnalytics?.completedCount ?? scoredSessions.length,
@@ -191,6 +226,9 @@ export const calculateInterviewAnalytics = (interviews = [], serverAnalytics = n
     trendDelta,
     weakConcepts,
     weakTopics,
+    avgTechnical,
+    avgCommunication,
+    avgProblemSolving,
   };
 };
 
@@ -309,35 +347,78 @@ export const exportInterviewHistoryAsJSON = (interviews) => {
 };
 
 const TrendLine = ({ points }) => {
-  if (!points.length) {
+  if (!points || !points.length) {
     return (
-      <div className="flex h-28 items-center justify-center rounded-xl bg-gray-50 dark:bg-white/5 text-sm font-medium text-text-muted">
+      <div className="flex h-64 items-center justify-center rounded-xl bg-gray-50 dark:bg-white/5 text-sm font-medium text-text-muted">
         No completed interviews yet
       </div>
     );
   }
 
-  const width = 320;
-  const height = 112;
-  const padding = 12;
-  const maxScore = 100;
-  const coordinates = points.map((point, index) => {
-    const x = points.length === 1
-      ? width / 2
-      : padding + (index / (points.length - 1)) * (width - padding * 2);
-    const y = height - padding - (Math.max(0, Math.min(100, point.score)) / maxScore) * (height - padding * 2);
-    return { ...point, x, y };
-  });
-  const path = coordinates.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
+  const chartData = points.map((p) => ({
+    name: p.label,
+    score: p.score,
+    topic: p.topic,
+  }));
 
   return (
-    <div className="h-28 rounded-xl bg-gray-50 dark:bg-white/5 p-2">
-      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Interview score trend over time" className="h-full w-full">
-        <path d={path} fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" className="text-indigo-500" />
-        {coordinates.map((point) => (
-          <circle key={`${point.label}-${point.score}-${point.x}`} cx={point.x} cy={point.y} r="4.5" className="fill-white stroke-indigo-500 dark:fill-slate-900" strokeWidth="3" />
-        ))}
-      </svg>
+    <div className="h-64 w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <defs>
+            <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+              <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+          <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+          <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} domain={[0, 100]} />
+          <RechartsTooltip
+            content={({ active, payload }) => {
+              if (active && payload && payload.length) {
+                return (
+                  <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-white/10 p-3 rounded-xl shadow-xl">
+                    <p className="text-xs font-semibold text-indigo-500">{payload[0].payload.topic}</p>
+                    <p className="text-sm font-bold text-slate-800 dark:text-white mt-1">Score: {payload[0].value}%</p>
+                  </div>
+                );
+              }
+              return null;
+            }}
+          />
+          <Area type="monotone" dataKey="score" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorScore)" />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+const CompetencyRadar = ({ avgTechnical, avgCommunication, avgProblemSolving }) => {
+  const radarData = [
+    { subject: "Technical", value: avgTechnical, fullMark: 100 },
+    { subject: "Communication", value: avgCommunication, fullMark: 100 },
+    { subject: "Relevance", value: avgProblemSolving, fullMark: 100 },
+  ];
+
+  if (!avgTechnical && !avgCommunication && !avgProblemSolving) {
+    return (
+      <div className="flex h-64 items-center justify-center rounded-xl bg-gray-50 dark:bg-white/5 text-sm font-medium text-text-muted">
+        No evaluation metrics available
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-64 w-full flex items-center justify-center">
+      <ResponsiveContainer width="100%" height="100%">
+        <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+          <PolarGrid stroke="#ffffff10" />
+          <PolarAngleAxis dataKey="subject" stroke="#94a3b8" fontSize={11} />
+          <PolarRadiusAxis angle={30} domain={[0, 100]} stroke="#94a3b8" fontSize={9} />
+          <Radar name="Skills" dataKey="value" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.3} />
+        </RadarChart>
+      </ResponsiveContainer>
     </div>
   );
 };
@@ -349,61 +430,84 @@ const AnalyticsSummary = ({ analytics }) => {
   const trendTone = analytics.trendDelta >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400";
 
   return (
-    <section aria-label="Interview analytics" className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      <div className="rounded-2xl border border-border bg-white dark:bg-surface p-5 shadow-sm">
-        <div className="flex items-center justify-between gap-3">
+    <section aria-label="Interview analytics" className="space-y-6">
+      {/* Top Cards Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="rounded-2xl border border-border bg-white dark:bg-surface p-5 shadow-sm flex items-center justify-between gap-3">
           <div>
             <p className="text-xs font-bold uppercase tracking-wide text-text-muted">Average Score</p>
             <p className="mt-2 text-4xl font-black text-text-main">{analytics.averageScore}%</p>
+            <p className="mt-2 text-xs text-text-muted">
+              From {analytics.completedCount} finished {analytics.completedCount === 1 ? "interview" : "interviews"}.
+            </p>
           </div>
           <div className="rounded-xl bg-indigo-50 dark:bg-indigo-500/10 p-3 text-indigo-600 dark:text-indigo-300">
             <BarChart3 size={24} />
           </div>
         </div>
-        <p className="mt-3 text-sm font-medium text-text-muted">
-          Based on {analytics.completedCount} completed {analytics.completedCount === 1 ? "interview" : "interviews"}.
-        </p>
-      </div>
 
-      <div className="rounded-2xl border border-border bg-white dark:bg-surface p-5 shadow-sm">
-        <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="rounded-2xl border border-border bg-white dark:bg-surface p-5 shadow-sm flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-bold uppercase tracking-wide text-text-muted">Improvement Trend</p>
-            <p className={`mt-1 text-lg font-black ${trendTone}`}>{trendLabel}</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-text-muted">Improvement Delta</p>
+            <p className={`mt-2 text-4xl font-black ${trendTone}`}>{trendLabel}</p>
+            <p className="mt-2 text-xs text-text-muted">Overall progress variance.</p>
           </div>
           <div className="rounded-xl bg-emerald-50 dark:bg-emerald-500/10 p-3 text-emerald-600 dark:text-emerald-300">
             <TrendingUp size={24} />
           </div>
         </div>
-        <TrendLine points={analytics.trend} />
-      </div>
 
-      <div className="rounded-2xl border border-border bg-white dark:bg-surface p-5 shadow-sm">
-        <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="rounded-2xl border border-border bg-white dark:bg-surface p-5 shadow-sm flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-bold uppercase tracking-wide text-text-muted">Weak Areas</p>
-            <p className="mt-1 text-sm font-medium text-text-muted">Concepts and topics to review</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-text-muted">Gaps & Weaknesses</p>
+            <p className="mt-2 text-4xl font-black text-amber-500">{(analytics.weakConcepts?.length || 0) + (analytics.weakTopics?.length || 0)}</p>
+            <p className="mt-2 text-xs text-text-muted">Targeted concepts to review.</p>
           </div>
           <div className="rounded-xl bg-amber-50 dark:bg-amber-500/10 p-3 text-amber-600 dark:text-amber-300">
             <Target size={24} />
           </div>
         </div>
+      </div>
 
-        {analytics.weakConcepts.length === 0 && analytics.weakTopics.length === 0 ? (
-          <p className="rounded-xl bg-gray-50 dark:bg-white/5 px-3 py-4 text-sm font-medium text-text-muted">
-            No weak areas detected yet.
-          </p>
-        ) : (
-          <div className="space-y-3">
-            {[...analytics.weakConcepts, ...analytics.weakTopics.map((item) => ({ ...item, label: `Topic: ${item.label}` }))].slice(0, 6).map((item) => (
-              <div key={item.label} className="flex items-center justify-between gap-3 rounded-xl bg-gray-50 dark:bg-white/5 px-3 py-2">
-                <span className="text-sm font-semibold text-text-main capitalize">{item.label}</span>
-                <span className="text-xs font-bold text-text-muted">{item.count}x</span>
+      {/* Main Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Score Trend Chart */}
+        <div className="lg:col-span-2 rounded-2xl border border-border bg-white dark:bg-surface p-5 shadow-sm flex flex-col justify-between">
+          <div className="mb-4">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-text-main">Performance Over Time</h3>
+            <p className="text-xs text-text-muted mt-1">Area chart showing interview score trend progression</p>
+          </div>
+          <TrendLine points={analytics.trend} />
+        </div>
+
+        {/* Competency Radar Chart */}
+        <div className="rounded-2xl border border-border bg-white dark:bg-surface p-5 shadow-sm flex flex-col justify-between">
+          <div className="mb-4">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-text-main">Competency Breakdown</h3>
+            <p className="text-xs text-text-muted mt-1">Radar metrics mapping average technical, communication, and relevance scores</p>
+          </div>
+          <CompetencyRadar
+            avgTechnical={analytics.avgTechnical}
+            avgCommunication={analytics.avgCommunication}
+            avgProblemSolving={analytics.avgProblemSolving}
+          />
+        </div>
+      </div>
+
+      {/* Weak Areas List */}
+      {(analytics.weakConcepts.length > 0 || analytics.weakTopics.length > 0) && (
+        <div className="rounded-2xl border border-border bg-white dark:bg-surface p-5 shadow-sm">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-text-main mb-4">Detailed Weak Concepts & Topics</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+            {[...analytics.weakConcepts, ...analytics.weakTopics.map((item) => ({ ...item, label: `Topic: ${item.label}` }))].slice(0, 12).map((item) => (
+              <div key={item.label} className="flex flex-col justify-between gap-1 rounded-xl bg-gray-50 dark:bg-white/5 p-3 border border-border/40">
+                <span className="text-xs font-bold text-text-main capitalize truncate" title={item.label}>{item.label}</span>
+                <span className="text-[10px] font-black text-red-500 uppercase mt-1">{item.count} flagged</span>
               </div>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </section>
   );
 };
