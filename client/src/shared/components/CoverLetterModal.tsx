@@ -14,6 +14,7 @@ export default function CoverLetterModal({ isOpen, onClose, initialText, onRegen
   const [tone, setTone] = useState("Professional");
   const [language, setLanguage] = useState("English");
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [pdfTemplate, setPdfTemplate] = useState("Classic");
 
   useEffect(() => {
     if (isOpen) {
@@ -49,15 +50,42 @@ export default function CoverLetterModal({ isOpen, onClose, initialText, onRegen
     setIsExportingPDF(true);
     try {
       const paragraphs = text.split('\n').filter(p => p.trim() !== '');
-      const htmlContent = `
-        <div style="font-family: 'Inter', 'Helvetica', 'Arial', sans-serif; font-size: 11pt; color: #000; line-height: 1.7; padding: 20px; max-width: 700px; margin: 0 auto;">
-          ${paragraphs.map(p => `<p style="margin-bottom: 18px; text-align: justify;">${p}</p>`).join('')}
-        </div>
-      `;
+      let htmlContent = "";
+
+      if (pdfTemplate === "Classic") {
+        htmlContent = `
+          <div style="font-family: 'Georgia', 'Times New Roman', Times, serif; font-size: 12pt; color: #111; line-height: 1.6; padding: 30px; max-width: 700px; margin: 0 auto; border-top: 4px solid #1e293b;">
+            <div style="text-align: center; margin-bottom: 25px;">
+              <span style="font-size: 10pt; text-transform: uppercase; letter-spacing: 0.15em; color: #475569; font-weight: bold;">Professional Cover Letter</span>
+            </div>
+            ${paragraphs.map(p => `<p style="margin-bottom: 16px; text-align: justify; text-indent: 24px;">${p}</p>`).join('')}
+          </div>
+        `;
+      } else if (pdfTemplate === "Modern") {
+        htmlContent = `
+          <div style="font-family: 'Inter', 'Helvetica', 'Arial', sans-serif; font-size: 11pt; color: #1f2937; line-height: 1.7; padding: 25px 30px; max-width: 700px; margin: 0 auto;">
+            <div style="height: 6px; background: linear-gradient(90deg, #6366f1, #3b82f6); border-radius: 3px; margin-bottom: 25px;"></div>
+            <div style="margin-bottom: 30px; border-bottom: 1px solid #e5e7eb; padding-bottom: 15px;">
+              <span style="font-size: 11pt; font-weight: 800; text-transform: uppercase; tracking: 0.05em; color: #4f46e5;">SkillSphere AI Candidate Profile</span>
+            </div>
+            ${paragraphs.map(p => `<p style="margin-bottom: 18px; text-align: justify;">${p}</p>`).join('')}
+          </div>
+        `;
+      } else { // Minimalist
+        htmlContent = `
+          <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10pt; color: #334155; line-height: 1.8; padding: 30px; max-width: 700px; margin: 0 auto; letter-spacing: 0.02em;">
+            <div style="margin-bottom: 40px; text-align: left;">
+              <span style="font-size: 9pt; text-transform: uppercase; letter-spacing: 0.2em; color: #94a3b8;">Cover Letter Draft</span>
+              <div style="height: 1px; background: #e2e8f0; margin-top: 10px;"></div>
+            </div>
+            ${paragraphs.map(p => `<p style="margin-bottom: 20px; text-align: justify;">${p}</p>`).join('')}
+          </div>
+        `;
+      }
       
       const opt = {
         margin:       [20, 20, 20, 20], // top, left, bottom, right
-        filename:     'Professional_Cover_Letter.pdf',
+        filename:     `Cover_Letter_${pdfTemplate}.pdf`,
         image:        { type: 'jpeg', quality: 0.98 },
         html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
@@ -165,13 +193,26 @@ export default function CoverLetterModal({ isOpen, onClose, initialText, onRegen
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-border bg-gray-50 dark:bg-surface/50">
+        <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-border bg-gray-50 dark:bg-surface/50 flex-wrap">
           <button
             onClick={onClose}
             className="px-5 py-2.5 text-sm font-semibold text-gray-500 dark:text-text-muted hover:text-gray-900 dark:hover:text-text-main transition-colors mr-auto"
           >
             Close
           </button>
+          
+          <div className="flex items-center gap-2 mr-2">
+            <span className="text-xs font-bold text-gray-500 dark:text-text-muted">Template:</span>
+            <select
+              value={pdfTemplate}
+              onChange={(e) => setPdfTemplate(e.target.value)}
+              className="bg-gray-100 dark:bg-dark-bg border border-gray-200 dark:border-border text-gray-900 dark:text-text-main text-xs font-bold rounded-xl px-3 py-2 outline-none cursor-pointer hover:border-primary/50 hover:text-primary transition-colors"
+            >
+              <option value="Classic">Classic Serif</option>
+              <option value="Modern">Modern Accent</option>
+              <option value="Minimalist">Minimalist Sans</option>
+            </select>
+          </div>
           
           <button
             onClick={handleCopy}
