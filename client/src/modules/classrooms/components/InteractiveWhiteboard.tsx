@@ -5,7 +5,7 @@ import { useToast } from "../../../shared/components/toast/ToastProvider";
 import logger from "../../../utils/logger";
 
 export default function InteractiveWhiteboard({ socket, roomId, userRole, initialStrokes }) {
-  const { success } = useToast();
+  const toast = useToast();
   
   // Track if we are currently updating from a remote socket event to prevent echo loops
   const isUpdatingFromRemoteRef = useRef(false);
@@ -95,7 +95,7 @@ export default function InteractiveWhiteboard({ socket, roomId, userRole, initia
     try {
       const elements = excalidrawAPI.getSceneElements();
       if (!elements || !elements.length) {
-        success("Whiteboard is empty.");
+        toast.warning("Whiteboard is empty. Draw something before exporting.");
         return;
       }
       
@@ -109,12 +109,13 @@ export default function InteractiveWhiteboard({ socket, roomId, userRole, initia
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "skillssphere-whiteboard.png";
+      a.download = `skillssphere-whiteboard-${Date.now()}.png`;
       a.click();
       window.URL.revokeObjectURL(url);
-      success("Whiteboard exported successfully!");
+      toast.success("Whiteboard exported successfully!");
     } catch (err) {
       logger.error("Export failed", err);
+      toast.error("Failed to export whiteboard image. Please try again.");
     }
   };
 
