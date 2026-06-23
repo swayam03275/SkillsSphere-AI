@@ -103,3 +103,27 @@ export const inviteCandidate = async (candidateId, jobId, token) => {
     throw handleServiceError(error);
   }
 };
+
+/**
+ * Compare up to 3 candidates side-by-side
+ * @param {string[]} candidateIds - Array of candidate user IDs
+ * @param {string} jobId - Optional job posting ID
+ * @param {string} token - Auth bearer token
+ * @returns {Promise<Object>}
+ */
+export const compareCandidates = async (candidateIds, jobId, token) => {
+  try {
+    const response = await apiRequest("/api/recruiter/compare-candidates", {
+      method: "POST",
+      body: { candidateIds, jobId },
+      token
+    });
+
+    return {
+      success: true,
+      data: response.data || []
+    };
+  } catch (error: any) {
+    throw handleServiceError(error);
+  }
+};

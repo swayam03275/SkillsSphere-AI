@@ -7,6 +7,7 @@ import {
   matchCandidate,
   inviteCandidate
 } from "./controller.js";
+import { compareCandidates } from "./comparison.controller.js";
 
 const router = express.Router();
 
@@ -79,5 +80,32 @@ router.post("/match-candidate", requireFullAccess, validateBody(matchCandidateSc
  *         description: Candidate invited
  */
 router.post("/invite-candidate", requireFullAccess, validateBody(inviteCandidateSchema), inviteCandidate);
+
+/**
+ * @openapi
+ * /api/recruiter/compare-candidates:
+ *   post:
+ *     summary: Compare up to 3 candidates side-by-side
+ *     tags: [Recruiter]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               candidateIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               jobId:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Candidates comparison retrieved
+ */
+router.post("/compare-candidates", requireFullAccess, compareCandidates);
 
 export default router;

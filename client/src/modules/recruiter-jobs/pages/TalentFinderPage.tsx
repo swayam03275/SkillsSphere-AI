@@ -39,7 +39,7 @@ import { useToast } from '../../../shared/components/toast/ToastProvider';
 
 // Infrastructure Integration Data Services
 import { getRecruiterJobs } from '../services/jobPostingService';
-import { searchTalent, matchCandidate, inviteCandidate } from '../services/talentFinderService';
+import { searchTalent, matchCandidate, inviteCandidate, compareCandidates } from '../services/talentFinderService';
 
 // Reusable Utilities and Performance Hooks
 import { useDocumentTitle } from '../../../hooks/useDocumentTitle';
@@ -139,6 +139,42 @@ const TalentFinderPage = () => {
 
   // Collapsible Component Expansion Node Pointer
   const [expandedCardId, setExpandedCardId] = useState(null);
+
+  // Candidate Comparison State Block
+  const [selectedCompareIds, setSelectedCompareIds] = useState<string[]>([]);
+  const [selectedCompareCandidates, setSelectedCompareCandidates] = useState<any[]>([]);
+  const [isComparisonModalOpen, setIsComparisonModalOpen] = useState(false);
+  const [comparisonResults, setComparisonResults] = useState<any[]>([]);
+  const [isComparing, setIsComparing] = useState(false);
+
+  const handleToggleCompare = (candidate: any) => {
+    const candidateId = candidate.user?._id || candidate._id;
+    if (selectedCompareIds.includes(candidateId)) {
+      setSelectedCompareIds(prev => prev.filter(id => id !== candidateId));
+      setSelectedCompareCandidates(prev => prev.filter(c => (c.user?._id || c._id) !== candidateId));
+    } else {
+      if (selectedCompareIds.length >= 3) {
+        toast.warning("You can compare a maximum of 3 candidates at a time.");
+        return;
+      }
+      setSelectedCompareIds(prev => [...prev, candidateId]);
+      setSelectedCompareCandidates(prev => [...prev, candidate]);
+    }
+  };
+
+  const handleOpenComparisonModal = async () => {
+    setIsComparisonModalOpen(true);
+    setIsComparing(true);
+    try {
+      const response = await compareCandidates(selectedCompareIds, selectedJobId || null, token);
+      setComparisonResults(response.data);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to compare candidates.");
+      setIsComparisonModalOpen(false);
+    } finally {
+      setIsComparing(false);
+    }
+  };
 
   // --------------------------------------------------------------------------
   // 3. SECURE CORE BUSINESS LOGIC RUNNERS (NETWORK CALLS)
@@ -279,6 +315,8 @@ const TalentFinderPage = () => {
     setMinAtsScore(0);
     setSpecialization('');
     setPage(1);
+    setSelectedCompareIds([]);
+    setSelectedCompareCandidates([]);
   };
 
   const selectedJob = jobs.find(job => job._id === selectedJobId);
@@ -540,6 +578,16 @@ const TalentFinderPage = () => {
                       >
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                           <div className="flex items-center gap-4 min-w-0">
+                            {/* Compare Checkbox Selection */}
+                            <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+                              <input
+                                type="checkbox"
+                                checked={selectedCompareIds.includes(candidateId)}
+                                onChange={() => handleToggleCompare(candidate)}
+                                className="w-5 h-5 rounded border-gray-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:bg-slate-950 transition-colors cursor-pointer"
+                                title="Select candidate for side-by-side comparison"
+                              />
+                            </div>
                             
                             {/* Initials Vector Box Placeholder */}
                             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/10 to-indigo-500/10 dark:from-blue-500/20 dark:to-purple-500/20 border border-gray-200 dark:border-white/5 flex items-center justify-center shrink-0 shadow-sm">
@@ -872,7 +920,312 @@ const TalentFinderPage = () => {
             )}
           </div>
         </div>
-        </div>
+      </div>
+        {/* Floating Candidate Comparison Drawer */}
+        {selectedCompareIds.length > 0 && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-2xl bg-white/95 dark:bg-slate-900/95 border border-indigo-500/30 rounded-2xl p-4 shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex flex-col sm:flex-row items-center justify-between gap-4 animate-in slide-in-from-bottom-10 duration-300">
+            <div className="flex items-center gap-3">
+              <div className="bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 p-2 rounded-xl border border-indigo-500/20">
+                <Sparkles size={20} className="animate-pulse" />
+              </div>
+              <div className="min-w-0">
+                <h4 className="text-sm font-black text-gray-900 dark:text-white">
+                  Compare Candidates ({selectedCompareIds.length}/3)
+                </h4>
+                <p className="text-[11px] text-gray-500 dark:text-slate-400 font-medium truncate max-w-xs sm:max-w-md">
+                  {selectedCompareCandidates.map(c => c.name || "Candidate").join(", ")}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0 justify-end">
+              <button
+                onClick={() => {
+                  setSelectedCompareIds([]);
+                  setSelectedCompareCandidates([]);
+                }}
+                className="px-3 py-2 text-xs font-bold text-gray-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 transition-colors"
+              >
+                Clear Selection
+              </button>
+              <button
+                onClick={handleOpenComparisonModal}
+                disabled={selectedCompareIds.length < 2}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                <SlidersHorizontal size={14} />
+                <span>Compare Side-by-Side</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Candidates Comparison Side-by-Side Modal */}
+        {isComparisonModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+            <div className="bg-white dark:bg-[#0c0c0e] border border-gray-200 dark:border-white/10 rounded-3xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in scale-in duration-200">
+              
+              {/* Modal Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-slate-900/40">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={18} className="text-indigo-500" />
+                  <h3 className="text-lg font-black text-gray-900 dark:text-white">
+                    Candidate Side-by-Side Comparison
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setIsComparisonModalOpen(false)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 transition-colors p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="flex-grow overflow-auto p-6">
+                {isComparing ? (
+                  <div className="flex flex-col items-center justify-center py-20 gap-3">
+                    <Loader2 className="animate-spin text-indigo-500" size={36} />
+                    <p className="text-sm font-bold text-gray-500 dark:text-slate-400">
+                      Running AI semantic matching pipelines and compiling profile metrics...
+                    </p>
+                  </div>
+                ) : comparisonResults.length === 0 ? (
+                  <div className="text-center py-12 text-gray-500 dark:text-slate-400">
+                    No comparison data returned.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="border-b border-gray-100 dark:border-white/5">
+                          <th className="py-4 pr-4 text-left text-xs uppercase font-black text-gray-400 dark:text-slate-500 w-1/4">Metric</th>
+                          {comparisonResults.map((item, idx) => (
+                            <th key={idx} className="py-4 px-4 text-left w-1/4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500/10 to-indigo-500/10 dark:from-blue-500/20 dark:to-purple-500/20 border border-gray-200 dark:border-white/5 flex items-center justify-center shrink-0 shadow-sm">
+                                  <span className="text-sm font-black text-blue-600 dark:text-blue-400">
+                                    {item.user?.name?.charAt(0) || 'A'}
+                                  </span>
+                                </div>
+                                <div className="min-w-0">
+                                  <h4 className="text-sm font-black text-gray-900 dark:text-white truncate">
+                                    {item.user?.name || "Candidate"}
+                                  </h4>
+                                  <p className="text-[10px] text-gray-500 dark:text-slate-400 truncate">
+                                    {item.user?.email}
+                                  </p>
+                                </div>
+                              </div>
+                            </th>
+                          ))}
+                          {comparisonResults.length < 3 && Array.from({ length: 3 - comparisonResults.length }).map((_, idx) => (
+                            <th key={`empty-${idx}`} className="py-4 px-4 w-1/4 text-gray-300 dark:text-slate-800 italic text-xs font-medium">
+                              Slot available for comparison
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 dark:divide-white/5 text-sm">
+                        
+                        {/* AI Match Score */}
+                        <tr className="hover:bg-gray-50/50 dark:hover:bg-slate-900/20 transition-colors">
+                          <td className="py-4 pr-4 font-bold text-gray-500 dark:text-slate-400 flex items-center gap-1.5">
+                            <Sparkles size={14} className="text-indigo-500" />
+                            AI Match Score
+                          </td>
+                          {comparisonResults.map((item, idx) => (
+                            <td key={idx} className="py-4 px-4 font-bold">
+                              {item.matchMetrics?.jobMatched ? (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-base font-black text-gray-900 dark:text-white">
+                                    {item.matchMetrics.aiMatchScore}%
+                                  </span>
+                                  <span className={`text-[9px] uppercase font-black tracking-wider px-2 py-0.5 rounded border ${matchCategoryStyles[item.matchMetrics.matchCategory] || "text-slate-400 border-white/10"}`}>
+                                    {item.matchMetrics.matchCategory}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-gray-400 dark:text-slate-500 italic">No Active Match</span>
+                              )}
+                            </td>
+                          ))}
+                          {comparisonResults.length < 3 && Array.from({ length: 3 - comparisonResults.length }).map((_, idx) => (
+                            <td key={`empty-ats-${idx}`} className="py-4 px-4 text-gray-400 dark:text-slate-600">-</td>
+                          ))}
+                        </tr>
+
+                        {/* Resume Baseline Score */}
+                        <tr className="hover:bg-gray-50/50 dark:hover:bg-slate-900/20 transition-colors">
+                          <td className="py-4 pr-4 font-bold text-gray-500 dark:text-slate-400 flex items-center gap-1.5">
+                            <Award size={14} className="text-amber-500" />
+                            Resume Baseline Score
+                          </td>
+                          {comparisonResults.map((item, idx) => (
+                            <td key={idx} className="py-4 px-4 font-semibold text-gray-900 dark:text-slate-200">
+                              {item.baselineScore ? `${item.baselineScore}%` : "Not evaluated"}
+                            </td>
+                          ))}
+                          {comparisonResults.length < 3 && Array.from({ length: 3 - comparisonResults.length }).map((_, idx) => (
+                            <td key={`empty-baseline-${idx}`} className="py-4 px-4 text-gray-400 dark:text-slate-600">-</td>
+                          ))}
+                        </tr>
+
+                        {/* ATS Optimization Breakdown */}
+                        <tr className="hover:bg-gray-50/50 dark:hover:bg-slate-900/20 transition-colors">
+                          <td className="py-4 pr-4 font-bold text-gray-500 dark:text-slate-400 flex items-center gap-1.5">
+                            <SlidersHorizontal size={14} className="text-blue-500" />
+                            ATS Optimization
+                          </td>
+                          {comparisonResults.map((item, idx) => (
+                            <td key={idx} className="py-4 px-4">
+                              {item.matchMetrics?.jobMatched ? (
+                                <div>
+                                  <div className="w-full bg-gray-100 dark:bg-slate-800 rounded-full h-1.5 mb-1">
+                                    <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${item.matchMetrics.atsCompatibility}%` }} />
+                                  </div>
+                                  <span className="text-[10px] font-black text-gray-500 dark:text-slate-400">{item.matchMetrics.atsCompatibility}% optimization match</span>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-gray-400 dark:text-slate-500 italic">N/A</span>
+                              )}
+                            </td>
+                          ))}
+                          {comparisonResults.length < 3 && Array.from({ length: 3 - comparisonResults.length }).map((_, idx) => (
+                            <td key={`empty-ats-opt-${idx}`} className="py-4 px-4 text-gray-400 dark:text-slate-600">-</td>
+                          ))}
+                        </tr>
+
+                        {/* Skills Overlap */}
+                        <tr className="hover:bg-gray-50/50 dark:hover:bg-slate-900/20 transition-colors">
+                          <td className="py-4 pr-4 font-bold text-gray-500 dark:text-slate-400 flex items-center gap-1.5">
+                            <Code size={14} className="text-purple-500" />
+                            Key Skills Listed
+                          </td>
+                          {comparisonResults.map((item, idx) => (
+                            <td key={idx} className="py-4 px-4">
+                              <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto pr-1">
+                                {item.skills && item.skills.length > 0 ? (
+                                  item.skills.map((skill: string, sIdx: number) => (
+                                    <span key={sIdx} className="bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-300 text-[10px] px-2 py-0.5 rounded font-semibold border border-gray-200 dark:border-white/5">
+                                      {skill}
+                                    </span>
+                                  ))
+                                ) : (
+                                  <span className="text-xs text-gray-400 dark:text-slate-500 italic">No skills listed</span>
+                                )}
+                              </div>
+                            </td>
+                          ))}
+                          {comparisonResults.length < 3 && Array.from({ length: 3 - comparisonResults.length }).map((_, idx) => (
+                            <td key={`empty-skills-${idx}`} className="py-4 px-4 text-gray-400 dark:text-slate-600">-</td>
+                          ))}
+                        </tr>
+
+                        {/* Professional Experience Summary */}
+                        <tr className="hover:bg-gray-50/50 dark:hover:bg-slate-900/20 transition-colors">
+                          <td className="py-4 pr-4 font-bold text-gray-500 dark:text-slate-400 flex items-center gap-1.5">
+                            <Briefcase size={14} className="text-indigo-500" />
+                            Work Experience
+                          </td>
+                          {comparisonResults.map((item, idx) => (
+                            <td key={idx} className="py-4 px-4 text-xs font-medium text-gray-600 dark:text-slate-400 leading-relaxed max-w-xs">
+                              {item.experienceSummary || "No experience listed"}
+                            </td>
+                          ))}
+                          {comparisonResults.length < 3 && Array.from({ length: 3 - comparisonResults.length }).map((_, idx) => (
+                            <td key={`empty-exp-${idx}`} className="py-4 px-4 text-gray-400 dark:text-slate-600">-</td>
+                          ))}
+                        </tr>
+
+                        {/* Education Summary */}
+                        <tr className="hover:bg-gray-50/50 dark:hover:bg-slate-900/20 transition-colors">
+                          <td className="py-4 pr-4 font-bold text-gray-500 dark:text-slate-400 flex items-center gap-1.5">
+                            <GraduationCap size={14} className="text-teal-500" />
+                            Education
+                          </td>
+                          {comparisonResults.map((item, idx) => (
+                            <td key={idx} className="py-4 px-4 text-xs font-medium text-gray-600 dark:text-slate-400 leading-relaxed max-w-xs">
+                              {item.educationSummary || "No education listed"}
+                            </td>
+                          ))}
+                          {comparisonResults.length < 3 && Array.from({ length: 3 - comparisonResults.length }).map((_, idx) => (
+                            <td key={`empty-edu-${idx}`} className="py-4 px-4 text-gray-400 dark:text-slate-600">-</td>
+                          ))}
+                        </tr>
+
+                        {/* Career Readiness */}
+                        <tr className="hover:bg-gray-50/50 dark:hover:bg-slate-900/20 transition-colors">
+                          <td className="py-4 pr-4 font-bold text-gray-500 dark:text-slate-400 flex items-center gap-1.5">
+                            <CheckCircle size={14} className="text-emerald-500" />
+                            Learning Progress
+                          </td>
+                          {comparisonResults.map((item, idx) => (
+                            <td key={idx} className="py-4 px-4">
+                              <div>
+                                <div className="w-full bg-gray-100 dark:bg-slate-800 rounded-full h-1.5 mb-1">
+                                  <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${item.careerReadiness || 0}%` }} />
+                                </div>
+                                <span className="text-[10px] font-black text-gray-500 dark:text-slate-400">{item.careerReadiness || 0}% roadmap progress</span>
+                              </div>
+                            </td>
+                          ))}
+                          {comparisonResults.length < 3 && Array.from({ length: 3 - comparisonResults.length }).map((_, idx) => (
+                            <td key={`empty-readiness-${idx}`} className="py-4 px-4 text-gray-400 dark:text-slate-600">-</td>
+                          ))}
+                        </tr>
+
+                        {/* Action Row */}
+                        <tr className="hover:bg-gray-50/50 dark:hover:bg-slate-900/20 transition-colors">
+                          <td className="py-4 pr-4 font-bold text-gray-500 dark:text-slate-400">Actions</td>
+                          {comparisonResults.map((item, idx) => (
+                            <td key={idx} className="py-4 px-4">
+                              <div className="flex flex-col gap-2">
+                                {invitedMap[item.candidateId] ? (
+                                  <span className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 shadow-sm w-full">
+                                    <CheckCircle size={12} />
+                                    Invited
+                                  </span>
+                                ) : (
+                                  <button
+                                    disabled={inviteLoadingMap[item.candidateId]}
+                                    onClick={(e) => handleInviteCandidate(e, item.candidateId)}
+                                    className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-transparent bg-gray-900 dark:bg-slate-800 px-3.5 py-2 text-xs font-bold text-white dark:text-slate-200 hover:bg-gray-800 dark:hover:bg-slate-700 transition-all shadow-sm w-full"
+                                  >
+                                    {inviteLoadingMap[item.candidateId] ? (
+                                      <Loader2 className="animate-spin" size={12} />
+                                    ) : (
+                                      <Send size={12} />
+                                    )}
+                                    <span>Invite Candidate</span>
+                                  </button>
+                                )}
+                                {item.user?.linkedinUrl && (
+                                  <a
+                                    href={item.user.linkedinUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-xl text-xs font-bold text-gray-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-white/5 border border-gray-200 dark:border-white/5 transition-colors w-full"
+                                  >
+                                    <ExternalLink size={12} />
+                                    View LinkedIn
+                                  </a>
+                                )}
+                              </div>
+                            </td>
+                          ))}
+                          {comparisonResults.length < 3 && Array.from({ length: 3 - comparisonResults.length }).map((_, idx) => (
+                            <td key={`empty-actions-${idx}`} className="py-4 px-4 text-gray-400 dark:text-slate-600">-</td>
+                          ))}
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
       </main>
       <Footer />
     </div>
