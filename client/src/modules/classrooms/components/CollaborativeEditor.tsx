@@ -8,15 +8,22 @@ import { MonacoBinding } from "y-monaco";
 
 import logger from "../../../utils/logger";
 
-export default function CollaborativeEditor({ socket, roomId, userRole, initialCode }) {
+export default function CollaborativeEditor({ socket, roomId, userRole, initialCode, initialLanguage }) {
   const { success } = useToast();
   // Standard code state
   const [code, setCode] = useState(initialCode || `// Welcome to SkillSphere AI Live Coding Classroom!\n// Type your collaborative code here...\n\nfunction helloWorld() {\n  logger.log("Welcome to class!");\n}`);
-  const [language, setLanguage] = useState("javascript");
+  const [language, setLanguage] = useState(initialLanguage || "javascript");
   const [isExecuting, setIsExecuting] = useState(false);
   const [executionResult, setExecutionResult] = useState(null);
   const [isTerminalOpen, setIsTerminalOpen] = useState(false);
   const [lastEditorInfo, setLastEditorInfo] = useState("");
+
+  // Sync initial language if it changes externally
+  useEffect(() => {
+    if (initialLanguage) {
+      setLanguage(initialLanguage);
+    }
+  }, [initialLanguage]);
   
   const editorRef = useRef(null);
   const docRef = useRef(null);
@@ -77,11 +84,16 @@ export default function CollaborativeEditor({ socket, roomId, userRole, initialC
       setTimeout(() => setLastEditorInfo(""), 3000);
     });
 
+    socket.on("code-language-change", ({ language }) => {
+      setLanguage(language);
+    });
+
     return () => {
       socket.off("yjs-update", handleRemoteUpdate);
       socket.off("execution-started");
       socket.off("execution-result");
       socket.off("code-cursor");
+      socket.off("code-language-change");
       doc.destroy();
     };
   }, [socket, roomId]);
@@ -186,7 +198,13 @@ export default function CollaborativeEditor({ socket, roomId, userRole, initialC
           <label className="text-xs text-slate-400 font-medium hidden sm:block">Language</label>
           <select
             value={language}
-            onChange={(e) => setLanguage(e.target.value)}
+            onChange={(e) => {
+              const newLang = e.target.value;
+              setLanguage(newLang);
+              if (socket) {
+                socket.emit("code-language-change", { roomId, language: newLang });
+              }
+            }}
             className="bg-slate-800 border border-slate-700 text-slate-200 rounded-lg p-1.5 px-3 text-xs focus:outline-none focus:border-indigo-500 font-medium"
           >
             {languages.map((l) => (

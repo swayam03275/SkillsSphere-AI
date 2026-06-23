@@ -51,6 +51,7 @@ export default function ClassroomRoom() {
   const [activeWorkspace, setActiveWorkspace] = useState("video"); // 'video', 'whiteboard', or 'code'
 
   const [initialCode, setInitialCode] = useState("");
+  const [initialLanguage, setInitialLanguage] = useState("javascript");
   const [initialWhiteboard, setInitialWhiteboard] = useState([]);
 
   // Leave dialog state
@@ -148,6 +149,7 @@ export default function ClassroomRoom() {
             s.on("sync-state", (state) => {
               if (state.chatHistory) setChatMessages(state.chatHistory);
               if (state.code) setInitialCode(state.code);
+              if (state.language) setInitialLanguage(state.language);
               if (state.whiteboard) setInitialWhiteboard(state.whiteboard);
             });
 
@@ -704,6 +706,7 @@ export default function ClassroomRoom() {
                   roomId={roomId}
                   userRole={user?.role}
                   initialCode={initialCode}
+                  initialLanguage={initialLanguage}
                 />
               )}
             </div>

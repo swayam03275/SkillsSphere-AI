@@ -40,6 +40,7 @@ export async function loadRoomState(roomId, session = null) {
   const state = {
     chatHistory: activeSession ? activeSession.chatHistory || [] : [],
     code: activeSession ? activeSession.codeSnapshot || "" : "",
+    language: activeSession ? activeSession.codeLanguageSnapshot || "javascript" : "javascript",
     whiteboard: activeSession ? activeSession.whiteboardSnapshot || [] : []
   };
 
@@ -72,6 +73,7 @@ export function getOrCreateRoomState(roomId) {
     roomStates.set(roomId, {
       chatHistory: [],
       code: "",
+      language: "javascript",
       whiteboard: []
     });
   }
@@ -333,6 +335,7 @@ export function initClassroomSockets(io) {
         if (state.chatHistory.length === 0 && !state.code && state.whiteboard.length === 0) {
           state.chatHistory = session.chatHistory || [];
           state.code = session.codeSnapshot || "";
+          state.language = session.codeLanguageSnapshot || "javascript";
           state.whiteboard = session.whiteboardSnapshot || [];
         }
         socket.emit("sync-state", state);
@@ -386,6 +389,7 @@ export function initClassroomSockets(io) {
             if (finalState) {
               session.chatHistory = finalState.chatHistory || [];
               session.codeSnapshot = finalState.code || "";
+              session.codeLanguageSnapshot = finalState.language || "javascript";
               session.whiteboardSnapshot = finalState.whiteboard || [];
             }
 

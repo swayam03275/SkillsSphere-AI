@@ -174,4 +174,24 @@ export default function registerCodeEditorHandler(io, socket) {
     // Broadcast result
     emitExecutionResult(io, roomId, socket, result);
   });
+
+  // Language change event for real-time synchronization
+  socket.on("code-language-change", async ({ roomId, language }) => {
+    if (!socket.data || socket.data.roomId !== roomId) {
+      socket.emit("unauthorized", {
+        message: "Cross-classroom action detected",
+      });
+      return;
+    }
+
+    if (typeof language !== "string") {
+      socket.emit("error", { message: "Language must be a string" });
+      return;
+    }
+
+    const state = getOrCreateRoomState(roomId);
+    state.language = language;
+    persistRoomState(roomId);
+    socket.to(roomId).emit("code-language-change", { language });
+  });
 }

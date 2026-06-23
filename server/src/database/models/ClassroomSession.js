@@ -57,6 +57,11 @@ const classroomSessionSchema = new mongoose.Schema(
       default: "",
     },
 
+    codeLanguageSnapshot: {
+      type: String,
+      default: "javascript",
+    },
+
     whiteboardSnapshot: {
       type: Array,
       default: [],
