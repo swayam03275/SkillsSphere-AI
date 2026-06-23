@@ -22,6 +22,8 @@ const RoadmapPage = () => {
   const [updatingId, setUpdatingId] = useState(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [activeMilestoneId, setActiveMilestoneId] = useState(null);
+  const [viewMode, setViewMode] = useState<"timeline" | "graph">("timeline");
+  const [selectedNode, setSelectedNode] = useState<any>(null);
 
   const fetchRoadmap = async () => {
     try {
@@ -48,6 +50,11 @@ const RoadmapPage = () => {
       if (response.success) {
         setRoadmap(response.data);
         showSuccess(`Milestone marked as ${nextStatus === "completed" ? "Completed" : "In Progress"}.`);
+        
+        if (selectedNode && selectedNode._id === topicId) {
+          const updatedTopic = response.data.roadmap.find((t: any) => t._id === topicId);
+          setSelectedNode(updatedTopic);
+        }
         
         if (response.newBadges && response.newBadges.length > 0) {
           response.newBadges.forEach(badge => {
@@ -214,73 +221,291 @@ const RoadmapPage = () => {
           </div>
 
 
-          <div className="max-w-4xl mx-auto relative space-y-12 pl-4 md:pl-0">
-          {/* Vertical Line */}
-          <div className="absolute left-[23px] top-4 bottom-4 w-1 bg-gradient-to-b from-indigo-500 via-indigo-500/50 to-transparent rounded-full hidden md:block md:left-1/2 md:-ml-0.5 opacity-20"></div>
+          {/* View Mode Toggle Switcher */}
+          <div className="max-w-4xl mx-auto flex justify-center mb-8">
+            <div className="bg-white dark:bg-[#121214] border border-gray-100 dark:border-white/5 p-1 rounded-xl shadow-sm inline-flex gap-1">
+              <button
+                type="button"
+                onClick={() => setViewMode("timeline")}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                  viewMode === "timeline"
+                    ? "bg-indigo-500 text-white shadow-sm"
+                    : "text-gray-500 hover:text-indigo-500 dark:hover:text-indigo-400"
+                }`}
+              >
+                Timeline List
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("graph")}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                  viewMode === "graph"
+                    ? "bg-indigo-500 text-white shadow-sm"
+                    : "text-gray-500 hover:text-indigo-500 dark:hover:text-indigo-400"
+                }`}
+              >
+                Interactive Graph
+              </button>
+            </div>
+          </div>
 
-          {roadmap.roadmap.map((topic, index) => {
-            const isCompleted = topic.status === "completed";
-            const isLeft = index % 2 === 0;
-            const isContribution = topic.type === "contribution";
-            const completedBorderColor = isContribution ? 'bg-amber-500 border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.5)]' : 'bg-indigo-500 border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.5)]';
-            const cardBorderCompleted = isContribution ? 'border-amber-500/30' : 'border-indigo-500/30';
-            const cardHoverBorder = isContribution ? 'hover:border-amber-500/50' : 'hover:border-indigo-500/50';
-            const glowColor = isContribution ? 'bg-amber-500/10' : 'bg-indigo-500/10';
+          {viewMode === "timeline" ? (
+            <div className="max-w-4xl mx-auto relative space-y-12 pl-4 md:pl-0">
+              {/* Vertical Line */}
+              <div className="absolute left-[23px] top-4 bottom-4 w-1 bg-gradient-to-b from-indigo-500 via-indigo-500/50 to-transparent rounded-full hidden md:block md:left-1/2 md:-ml-0.5 opacity-20"></div>
 
-            return (
-              <div key={topic._id} className={`relative flex items-center gap-8 ${isLeft ? "md:flex-row" : "md:flex-row-reverse"} animate-slide-up [animation-delay:var(--tw-delay)]`} style={{ '--tw-delay': `${index * 100}ms` }}>
-                
-                {/* Visual Dot on the line */}
-                 <div className={`absolute left-[19px] md:left-1/2 md:-ml-3 w-6 h-6 rounded-full border-4 ${isCompleted ? completedBorderColor : 'bg-white dark:bg-[#121214] border-gray-200 dark:border-white/10'} z-20 transition-all duration-500`}>
-                   {isCompleted && (isContribution ? <Star className="w-full h-full text-white p-0.5" /> : <CheckCircle2 className="w-full h-full text-white p-0.5" />)}
-                </div>
+              {roadmap.roadmap.map((topic, index) => {
+                const isCompleted = topic.status === "completed";
+                const isLeft = index % 2 === 0;
+                const isContribution = topic.type === "contribution";
+                const completedBorderColor = isContribution ? 'bg-amber-500 border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.5)]' : 'bg-indigo-500 border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.5)]';
+                const cardBorderCompleted = isContribution ? 'border-amber-500/30' : 'border-indigo-500/30';
+                const cardHoverBorder = isContribution ? 'hover:border-amber-500/50' : 'hover:border-indigo-500/50';
+                const glowColor = isContribution ? 'bg-amber-500/10' : 'bg-indigo-500/10';
 
-                {/* Content Card */}
-                <div className={`w-full md:w-1/2 ${isLeft ? "md:pr-16" : "md:pl-16"}`}>
-                  <div className={`group p-6 bg-white dark:bg-[#121214] border ${isCompleted ? cardBorderCompleted : (isContribution ? 'border-amber-500/20' : 'border-gray-100 dark:border-white/5')} rounded-3xl ${cardHoverBorder} transition-all hover:bg-gray-50 dark:hover:bg-white/5 shadow-sm relative overflow-hidden`}>
+                return (
+                  <div key={topic._id} className={`relative flex items-center gap-8 ${isLeft ? "md:flex-row" : "md:flex-row-reverse"} animate-slide-up [animation-delay:var(--tw-delay)]`} style={{ '--tw-delay': `${index * 100}ms` }}>
                     
-                    {/* Background Glow */}
-                    {isCompleted && <div className={`absolute -top-12 -right-12 w-24 h-24 ${glowColor} rounded-full blur-[40px] pointer-events-none`}></div>}
-
-                    <div className="flex items-start justify-between mb-4">
-                       <span className={`text-[10px] font-black uppercase tracking-widest ${isContribution ? 'text-amber-500' : 'text-gray-500 dark:text-gray-400'} flex items-center gap-1`}>
-                         {isContribution ? <Star className="w-3 h-3" /> : null}
-                         {index + 1}. {isContribution ? "Contribution" : "Milestone"}
-                       </span>
-                       <div className="flex items-center gap-1.5">
-                         {topic.isVerified && (
-                           <div className="px-2 py-1 bg-indigo-500/10 text-indigo-400 rounded-lg text-[8px] font-black uppercase tracking-tighter border border-indigo-500/20 flex items-center gap-1 animate-pulse">
-                              <Award className="w-3 h-3 text-indigo-400" /> Verified
-                           </div>
-                         )}
-                         {isCompleted ? (
-                           <div className="px-2 py-1 bg-emerald-500/10 text-emerald-400 rounded-lg text-[8px] font-black uppercase tracking-tighter border border-emerald-500/20">
-                              Completed
-                           </div>
-                         ) : (
-                           <div className="px-2 py-1 bg-blue-500/10 text-blue-400 rounded-lg text-[8px] font-black uppercase tracking-tighter border border-blue-500/20">
-                              Active
-                           </div>
-                         )}
-                       </div>
+                    {/* Visual Dot on the line */}
+                     <div className={`absolute left-[19px] md:left-1/2 md:-ml-3 w-6 h-6 rounded-full border-4 ${isCompleted ? completedBorderColor : 'bg-white dark:bg-[#121214] border-gray-200 dark:border-white/10'} z-20 transition-all duration-500`}>
+                       {isCompleted && (isContribution ? <Star className="w-full h-full text-white p-0.5" /> : <CheckCircle2 className="w-full h-full text-white p-0.5" />)}
                     </div>
 
-                     <h3 className={`text-xl font-bold text-gray-900 dark:text-white mb-4 transition-colors ${isContribution ? 'group-hover:text-amber-500' : 'group-hover:text-indigo-500'}`}>
-                      {topic.topicName}
+                    {/* Content Card */}
+                    <div className={`w-full md:w-1/2 ${isLeft ? "md:pr-16" : "md:pl-16"}`}>
+                      <div className={`group p-6 bg-white dark:bg-[#121214] border ${isCompleted ? cardBorderCompleted : (isContribution ? 'border-amber-500/20' : 'border-gray-100 dark:border-white/5')} rounded-3xl ${cardHoverBorder} transition-all hover:bg-gray-50 dark:hover:bg-white/5 shadow-sm relative overflow-hidden`}>
+                        
+                        {/* Background Glow */}
+                        {isCompleted && <div className={`absolute -top-12 -right-12 w-24 h-24 ${glowColor} rounded-full blur-[40px] pointer-events-none`}></div>}
+
+                        <div className="flex items-start justify-between mb-4">
+                           <span className={`text-[10px] font-black uppercase tracking-widest ${isContribution ? 'text-amber-500' : 'text-gray-500 dark:text-gray-400'} flex items-center gap-1`}>
+                             {isContribution ? <Star className="w-3 h-3" /> : null}
+                             {index + 1}. {isContribution ? "Contribution" : "Milestone"}
+                           </span>
+                           <div className="flex items-center gap-1.5">
+                             {topic.isVerified && (
+                               <div className="px-2 py-1 bg-indigo-500/10 text-indigo-400 rounded-lg text-[8px] font-black uppercase tracking-tighter border border-indigo-500/20 flex items-center gap-1 animate-pulse">
+                                  <Award className="w-3 h-3 text-indigo-400" /> Verified
+                               </div>
+                             )}
+                             {isCompleted ? (
+                               <div className="px-2 py-1 bg-emerald-500/10 text-emerald-400 rounded-lg text-[8px] font-black uppercase tracking-tighter border border-emerald-500/20">
+                                  Completed
+                               </div>
+                             ) : (
+                               <div className="px-2 py-1 bg-blue-500/10 text-blue-400 rounded-lg text-[8px] font-black uppercase tracking-tighter border border-blue-500/20">
+                                  Active
+                               </div>
+                             )}
+                           </div>
+                        </div>
+
+                         <h3 className={`text-xl font-bold text-gray-900 dark:text-white mb-4 transition-colors ${isContribution ? 'group-hover:text-amber-500' : 'group-hover:text-indigo-500'}`}>
+                          {topic.topicName}
+                        </h3>
+
+                        {topic.resources && topic.resources.length > 0 && (
+                          <div className="mt-2 mb-4 space-y-2 border-t border-gray-100 dark:border-white/10 pt-3">
+                            <p className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Study Resources:</p>
+                            {topic.resources.map((res, rIdx) => (
+                              <a 
+                                key={res._id || rIdx} 
+                                href={res.url} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className={`flex items-center justify-between p-2 rounded-xl text-xs font-semibold transition-all border ${res.tutorAssigned ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/20' : 'bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-800 dark:text-gray-200'}`}
+                              >
+                                <span className="truncate max-w-[200px]">{res.title}</span>
+                                <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                                  {res.tutorAssigned && (
+                                    <span className="px-1.5 py-0.5 bg-indigo-500 text-white rounded text-[8px] font-black uppercase tracking-tighter">Tutor</span>
+                                  )}
+                                  <span className="text-[10px] uppercase tracking-tighter text-gray-500 dark:text-gray-400 opacity-80">{res.type}</span>
+                                </div>
+                              </a>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between">
+                           <button 
+                             onClick={() => handleStatusUpdate(topic._id, topic.status)}
+                             disabled={updatingId === topic._id || topic.isVerified}
+                             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${topic.isVerified ? 'bg-indigo-500/10 text-indigo-400 cursor-not-allowed' : isCompleted ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20' : isContribution ? 'bg-amber-500/10 text-amber-600 dark:text-amber-500 hover:bg-amber-500 hover:text-white' : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500 hover:text-white'}`}
+                           >
+                             {updatingId === topic._id ? (
+                               <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                             ) : topic.isVerified ? (
+                               <> <Award className="w-4 h-4" /> Verified Completed </>
+                             ) : isCompleted ? (
+                               <> {isContribution ? <Star className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />} Mastery Achieved </>
+                             ) : (
+                               <> <Award className="w-4 h-4" /> Mark as Completed </>
+                             )}
+                           </button>
+
+                           <button 
+                             onClick={() => {
+                               setActiveMilestoneId(topic._id);
+                               setPanelOpen(true);
+                             }}
+                             className="flex items-center gap-1.5 p-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all shadow-sm"
+                             title="Discuss Milestone"
+                           >
+                             <MessageSquare className="w-4 h-4" />
+                             <span>Discuss</span>
+                           </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Empty spacer for grid */}
+                    <div className="hidden md:block w-1/2"></div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="max-w-4xl mx-auto flex flex-col md:flex-row gap-8 items-start">
+              {/* SVG Graph map */}
+              <div className="w-full md:w-2/3 bg-white dark:bg-[#121214] border border-gray-100 dark:border-white/5 rounded-3xl p-6 shadow-sm overflow-x-auto">
+                <svg
+                  viewBox={`0 0 600 ${160 * roadmap.roadmap.length + 80}`}
+                  width="100%"
+                  height="100%"
+                  className="min-w-[500px]"
+                >
+                  {roadmap.roadmap.map((topic: any, idx: number) => {
+                    if (idx === 0) return null;
+                    const prevLeft = (idx - 1) % 2 === 0;
+                    const isLeft = idx % 2 === 0;
+                    const prevX = prevLeft ? 180 : 420;
+                    const prevY = 80 + (idx - 1) * 160;
+                    const cx = isLeft ? 180 : 420;
+                    const cy = 80 + idx * 160;
+                    const pathData = `M ${prevX} ${prevY} C ${prevX} ${(prevY + cy) / 2}, ${cx} ${(prevY + cy) / 2}, ${cx} ${cy}`;
+                    const isCompleted = topic.status === "completed";
+                    return (
+                      <path
+                        key={`link-${idx}`}
+                        d={pathData}
+                        fill="transparent"
+                        stroke={isCompleted ? "#6366f1" : "rgba(156, 163, 175, 0.2)"}
+                        strokeWidth="4"
+                        strokeDasharray={isCompleted ? "none" : "8 6"}
+                        className={isCompleted ? "animate-pulse" : ""}
+                      />
+                    );
+                  })}
+
+                  {roadmap.roadmap.map((topic: any, idx: number) => {
+                    const isLeft = idx % 2 === 0;
+                    const cx = isLeft ? 180 : 420;
+                    const cy = 80 + idx * 160;
+                    const isCompleted = topic.status === "completed";
+                    const isContribution = topic.type === "contribution";
+                    
+                    const isSelected = selectedNode && selectedNode._id === topic._id;
+                    const color = isCompleted
+                      ? (isContribution ? "amber" : "indigo")
+                      : "gray";
+
+                    return (
+                      <g key={topic._id} className="cursor-pointer group" onClick={() => setSelectedNode(topic)}>
+                        {/* Selected highlight ring */}
+                        {isSelected && (
+                          <circle cx={cx} cy={cy} r="40" className="fill-transparent stroke-indigo-500/40 stroke-2 animate-ping" />
+                        )}
+                        {/* Glow highlight */}
+                        <circle cx={cx} cy={cy} r="34" className={`fill-current opacity-0 group-hover:opacity-10 transition-all duration-300 ${color === "indigo" ? "text-indigo-500" : color === "amber" ? "text-amber-500" : "text-gray-400"}`} />
+                        {/* Outer circle */}
+                        <circle
+                          cx={cx}
+                          cy={cy}
+                          r="28"
+                          className={`stroke-current fill-white dark:fill-[#09090b] transition-all duration-300 ${
+                            isCompleted
+                              ? (isContribution ? "stroke-amber-500 text-amber-500" : "stroke-indigo-500 text-indigo-500")
+                              : "stroke-gray-300 dark:stroke-white/10 text-gray-400"
+                          }`}
+                          strokeWidth="4"
+                        />
+                        {/* Inner status symbol */}
+                        {isCompleted ? (
+                          isContribution ? (
+                            <path d={`M ${cx} ${cy - 8} L ${cx + 2.5} ${cy - 2} L ${cx + 9} ${cy - 2} L ${cx + 4} ${cy + 2} L ${cx + 6} ${cy + 8} L ${cx} ${cy + 4} L ${cx - 6} ${cy + 8} L ${cx - 4} ${cy + 2} L ${cx - 9} ${cy - 2} L ${cx - 2.5} ${cy - 2} Z`} className="fill-amber-500" />
+                          ) : (
+                            <path d={`M ${cx - 6} ${cy} L ${cx - 2} ${cy + 4} L ${cx + 6} ${cy - 4}`} fill="transparent" stroke="#6366f1" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                          )
+                        ) : (
+                          <circle cx={cx} cy={cy} r="6" className="fill-gray-300 dark:fill-white/10" />
+                        )}
+                        {/* Text label */}
+                        <text
+                          x={cx}
+                          y={cy + 46}
+                          textAnchor="middle"
+                          className="font-bold text-xs fill-gray-900 dark:fill-white select-none transition-colors group-hover:fill-indigo-500"
+                        >
+                          {topic.topicName.length > 25 ? `${topic.topicName.substring(0, 22)}...` : topic.topicName}
+                        </text>
+                      </g>
+                    );
+                  })}
+                </svg>
+              </div>
+
+              {/* Node Details Overlay Panel */}
+              <div className="w-full md:w-1/3 min-h-[300px] bg-white dark:bg-[#121214] border border-gray-100 dark:border-white/5 rounded-3xl p-6 shadow-sm sticky top-24">
+                {selectedNode ? (
+                  <div className="space-y-6">
+                    <div className="flex justify-between items-start">
+                      <span className={`text-[10px] font-black uppercase tracking-widest ${selectedNode.type === "contribution" ? 'text-amber-500' : 'text-gray-500 dark:text-gray-400'} flex items-center gap-1`}>
+                        {selectedNode.type === "contribution" ? <Star className="w-3 h-3" /> : null}
+                        {selectedNode.type === "contribution" ? "Contribution" : "Milestone"}
+                      </span>
+                      <button
+                        onClick={() => setSelectedNode(null)}
+                        className="text-gray-400 hover:text-gray-600 dark:hover:text-white text-xs font-bold"
+                      >
+                        Close
+                      </button>
+                    </div>
+
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                      {selectedNode.topicName}
                     </h3>
 
-                    {topic.resources && topic.resources.length > 0 && (
-                      <div className="mt-2 mb-4 space-y-2 border-t border-gray-100 dark:border-white/10 pt-3">
+                    <div className="flex items-center gap-2">
+                      {selectedNode.isVerified && (
+                        <span className="px-2 py-1 bg-indigo-500/10 text-indigo-400 rounded-lg text-[8px] font-black uppercase tracking-tighter border border-indigo-500/20 flex items-center gap-1">
+                          <Award className="w-3 h-3 text-indigo-400" /> Verified
+                        </span>
+                      )}
+                      {selectedNode.status === "completed" ? (
+                        <span className="px-2 py-1 bg-emerald-500/10 text-emerald-400 rounded-lg text-[8px] font-black uppercase tracking-tighter border border-emerald-500/20">
+                          Completed
+                        </span>
+                      ) : (
+                        <span className="px-2 py-1 bg-blue-500/10 text-blue-400 rounded-lg text-[8px] font-black uppercase tracking-tighter border border-blue-500/20">
+                          Active
+                        </span>
+                      )}
+                    </div>
+
+                    {selectedNode.resources && selectedNode.resources.length > 0 ? (
+                      <div className="space-y-2 border-t border-gray-100 dark:border-white/10 pt-4">
                         <p className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Study Resources:</p>
-                        {topic.resources.map((res, rIdx) => (
-                          <a 
-                            key={res._id || rIdx} 
-                            href={res.url} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
+                        {selectedNode.resources.map((res: any, rIdx: number) => (
+                          <a
+                            key={res._id || rIdx}
+                            href={res.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className={`flex items-center justify-between p-2 rounded-xl text-xs font-semibold transition-all border ${res.tutorAssigned ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/20' : 'bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-800 dark:text-gray-200'}`}
                           >
-                            <span className="truncate max-w-[200px]">{res.title}</span>
+                            <span className="truncate max-w-[150px]">{res.title}</span>
                             <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
                               {res.tutorAssigned && (
                                 <span className="px-1.5 py-0.5 bg-indigo-500 text-white rounded text-[8px] font-black uppercase tracking-tighter">Tutor</span>
@@ -290,46 +515,49 @@ const RoadmapPage = () => {
                           </a>
                         ))}
                       </div>
+                    ) : (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 italic">No resources attached to this milestone.</p>
                     )}
 
-                    <div className="flex items-center justify-between">
-                       <button 
-                         onClick={() => handleStatusUpdate(topic._id, topic.status)}
-                         disabled={updatingId === topic._id || topic.isVerified}
-                         className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${topic.isVerified ? 'bg-indigo-500/10 text-indigo-400 cursor-not-allowed' : isCompleted ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20' : isContribution ? 'bg-amber-500/10 text-amber-600 dark:text-amber-500 hover:bg-amber-500 hover:text-white' : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500 hover:text-white'}`}
-                       >
-                         {updatingId === topic._id ? (
-                           <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                         ) : topic.isVerified ? (
-                           <> <Award className="w-4 h-4" /> Verified Completed </>
-                         ) : isCompleted ? (
-                           <> {isContribution ? <Star className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />} Mastery Achieved </>
-                         ) : (
-                           <> <Award className="w-4 h-4" /> Mark as Completed </>
-                         )}
-                       </button>
+                    <div className="pt-4 border-t border-gray-100 dark:border-white/10 flex flex-col gap-2">
+                      <button
+                        onClick={() => handleStatusUpdate(selectedNode._id, selectedNode.status)}
+                        disabled={updatingId === selectedNode._id || selectedNode.isVerified}
+                        className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${selectedNode.isVerified ? 'bg-indigo-500/10 text-indigo-400 cursor-not-allowed' : selectedNode.status === "completed" ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20' : selectedNode.type === "contribution" ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-indigo-500 text-white hover:bg-indigo-600'}`}
+                      >
+                        {updatingId === selectedNode._id ? (
+                          <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                        ) : selectedNode.isVerified ? (
+                          <> <Award className="w-4 h-4" /> Verified Completed </>
+                        ) : selectedNode.status === "completed" ? (
+                          <> {selectedNode.type === "contribution" ? <Star className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />} Mastery Achieved </>
+                        ) : (
+                          <> <Award className="w-4 h-4" /> Mark as Completed </>
+                        )}
+                      </button>
 
-                       <button 
-                         onClick={() => {
-                           setActiveMilestoneId(topic._id);
-                           setPanelOpen(true);
-                         }}
-                         className="flex items-center gap-1.5 p-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all shadow-sm"
-                         title="Discuss Milestone"
-                       >
-                         <MessageSquare className="w-4 h-4" />
-                         <span>Discuss</span>
-                       </button>
+                      <button
+                        onClick={() => {
+                          setActiveMilestoneId(selectedNode._id);
+                          setPanelOpen(true);
+                        }}
+                        className="w-full flex items-center justify-center gap-1.5 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all shadow-sm"
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                        <span>Discuss Milestone</span>
+                      </button>
                     </div>
                   </div>
-                </div>
-
-                {/* Empty spacer for grid */}
-                <div className="hidden md:block w-1/2"></div>
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center text-center text-gray-500 dark:text-gray-400 gap-3 pt-12">
+                    <Target className="w-12 h-12 text-indigo-500 animate-bounce" />
+                    <p className="font-bold text-sm">Select a Milestone</p>
+                    <p className="text-xs max-w-[200px]">Click any node on the graph to view study materials, complete tasks, and join discussion threads.</p>
+                  </div>
+                )}
               </div>
-            );
-          })}
-        </div>
+            </div>
+          )}
 
         {/* Graduation / Job Ready Note */}
         <div className="max-w-4xl mx-auto mt-20 p-12 bg-gradient-to-br from-indigo-500/20 to-teal-500/10 border border-indigo-500/20 rounded-3xl text-center relative overflow-hidden group shadow-lg">
