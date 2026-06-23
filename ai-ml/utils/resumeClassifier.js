@@ -50,6 +50,7 @@ export function classifyResume({ score, skillMatch, experienceMatch }) {
     level,
     label,
     color,
+    highlights,
   };
 }
 
