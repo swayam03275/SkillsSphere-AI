@@ -28,6 +28,7 @@ import {
   getSkillTrends,
   updateApplicationStatus,
   updateStudentApplicationStatus,
+  getJobRecommendationsForRecruiter,
 } from "./controller.js";
 
 const router = express.Router();
@@ -273,6 +274,26 @@ router.patch("/:id/withdraw", authorizeRoles("student"), withdrawJobApplication)
  *         description: List of applications
  */
 router.get("/:id/applications", authorizeRoles("recruiter"), getApplications);
+
+/**
+ * @openapi
+ * /api/jobs/{id}/recommendations:
+ *   get:
+ *     summary: Get AI recommended talent match candidates for recruiter job posting
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List of recommended candidates
+ */
+router.get("/:id/recommendations", authorizeRoles("recruiter"), getJobRecommendationsForRecruiter);
 
 /**
  * @openapi

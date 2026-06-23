@@ -46,6 +46,52 @@ const RecruiterInsightsPage = ({ jobId: propJobId }) => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
 
+  const [activeSubTab, setActiveSubTab] = useState<"applicants" | "recommendations">("applicants");
+  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [loadingRecs, setLoadingRecs] = useState(false);
+  const [invitingIds, setInvitingIds] = useState<string[]>([]);
+
+  const fetchRecommendations = async () => {
+    if (!jobId) return;
+    setLoadingRecs(true);
+    try {
+      const response = await apiRequest(`/api/jobs/${jobId}/recommendations`, {
+        token,
+      });
+      setRecommendations(response.recommendations || []);
+    } catch (err: any) {
+      console.error("Failed to load recommendations:", err);
+    } finally {
+      setLoadingRecs(false);
+    }
+  };
+
+  const handleInviteCandidate = async (candidateId: string) => {
+    setInvitingIds((prev) => [...prev, candidateId]);
+    try {
+      await apiRequest(`/api/recruiter/invite-candidate`, {
+        method: "POST",
+        body: { candidateId, jobId },
+        token,
+      });
+      setRecommendations((prev) =>
+        prev.map((rec: any) =>
+          rec.applicant._id === candidateId ? { ...rec, hasApplied: true } : rec
+        )
+      );
+    } catch (err: any) {
+      console.error("Failed to invite candidate:", err);
+    } finally {
+      setInvitingIds((prev) => prev.filter((id) => id !== candidateId));
+    }
+  };
+
+  useEffect(() => {
+    if (activeSubTab === "recommendations") {
+      fetchRecommendations();
+    }
+  }, [activeSubTab, jobId]);
+
   const jobId = propJobId;
 
   const fetchInsights = async (page = 1) => {
@@ -223,10 +269,38 @@ const RecruiterInsightsPage = ({ jobId: propJobId }) => {
               </div>
             </div>
 
-            <form
-              onSubmit={handleApplyFilters}
-              className="flex flex-col gap-4 rounded-3xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#121214] p-4 shadow-sm lg:flex-row lg:flex-wrap lg:items-end"
-            >
+            {/* Recommendations / Applicants Subtabs */}
+            <div className="flex gap-4 border-b border-gray-100 dark:border-white/5 pb-2 mb-6">
+              <button
+                type="button"
+                onClick={() => setActiveSubTab("applicants")}
+                className={`pb-2 px-1 text-sm font-bold border-b-2 transition-all ${
+                  activeSubTab === "applicants"
+                    ? "border-indigo-500 text-indigo-500"
+                    : "border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-white"
+                }`}
+              >
+                Applicants ({totalCount})
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveSubTab("recommendations")}
+                className={`pb-2 px-1 text-sm font-bold border-b-2 transition-all ${
+                  activeSubTab === "recommendations"
+                    ? "border-indigo-500 text-indigo-500"
+                    : "border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-white"
+                }`}
+              >
+                AI Talent Match Suggestions
+              </button>
+            </div>
+
+            {activeSubTab === "applicants" ? (
+              <>
+                <form
+                  onSubmit={handleApplyFilters}
+                  className="flex flex-col gap-4 rounded-3xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#121214] p-4 shadow-sm lg:flex-row lg:flex-wrap lg:items-end mb-6"
+                >
               <div className="relative w-full lg:max-w-sm">
                 {/* @ts-expect-error TODO: Fix pervasive types */}
                 <Input
@@ -417,7 +491,108 @@ const RecruiterInsightsPage = ({ jobId: propJobId }) => {
               />
             )}
           </>
+        ) : (
+          loadingRecs ? (
+            <div className="rounded-3xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#121214] p-6 shadow-sm">
+              {/* @ts-expect-error TODO: Fix pervasive types */}
+              <LoadingState message="AI is scanning Talent Pool..." />
+            </div>
+          ) : recommendations.length === 0 ? (
+            <EmptyState
+              icon={<Users size={48} className="text-slate-600" />}
+              title="No Talent matches found"
+              description="We couldn't match candidates to the skills required for this job posting."
+            />
+          ) : (
+            <div className="grid grid-cols-1 gap-4">
+              {recommendations.map((candidate: any) => {
+                const isInviting = invitingIds.includes(candidate.applicant._id);
+                return (
+                  <article
+                    key={candidate.applicant._id}
+                    className="rounded-3xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#121214] p-5 shadow-sm"
+                  >
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="space-y-3">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <div>
+                            <h3 className="text-lg font-bold text-white">
+                              {candidate.applicant?.name || "Unknown Candidate"}
+                            </h3>
+                            <p className="text-sm text-slate-400">
+                              {candidate.applicant?.email || "No email available"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2 text-xs font-semibold">
+                          <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-emerald-300">
+                            {candidate.aiMatchScore}% Skill Overlap
+                          </span>
+                          <span className="rounded-full bg-blue-500/10 px-3 py-1 text-blue-300">
+                            {candidate.matchCategory}
+                          </span>
+                        </div>
+
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div className="rounded-xl border border-white/10 bg-slate-950/30 p-3">
+                            <p className="text-xs uppercase tracking-widest text-slate-500">Matching Skills</p>
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {candidate.matchingSkills.map((s: string, i: number) => (
+                                <span key={i} className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded text-[10px] font-bold">
+                                  {s}
+                                </span>
+                              ))}
+                              {candidate.matchingSkills.length === 0 && (
+                                <span className="text-xs text-slate-500">No overlapping skills</span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="rounded-xl border border-white/10 bg-slate-950/30 p-3">
+                            <p className="text-xs uppercase tracking-widest text-slate-500">Missing Skills</p>
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {candidate.missingSkills.map((s: string, i: number) => (
+                                <span key={i} className="px-2 py-0.5 bg-red-500/10 text-red-400 rounded text-[10px] font-bold">
+                                  {s}
+                                </span>
+                              ))}
+                              {candidate.missingSkills.length === 0 && (
+                                <span className="text-xs text-slate-500">None</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="min-w-[180px] rounded-2xl border border-white/10 bg-gray-50 dark:bg-slate-950/40 p-4 text-center flex flex-col items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs uppercase tracking-widest text-slate-500">Match Rank Score</p>
+                          <p className="mt-2 text-3xl font-black text-white">{candidate.aiMatchScore}</p>
+                        </div>
+                        
+                        <button
+                          type="button"
+                          disabled={candidate.hasApplied || isInviting}
+                          onClick={() => handleInviteCandidate(candidate.applicant._id)}
+                          className={`w-full py-2 px-4 rounded-xl text-xs font-bold transition-all ${
+                            candidate.hasApplied
+                              ? "bg-slate-800 text-slate-400 border border-white/5 cursor-default"
+                              : "bg-indigo-500 hover:bg-indigo-600 text-white shadow-sm hover:shadow-indigo-500/20"
+                          }`}
+                        >
+                          {isInviting ? "Sending..." : candidate.hasApplied ? "Invited / Applied" : "Invite to Apply"}
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )
         )}
+      </>
+    )}
       </div>
       </main>
       <Footer />

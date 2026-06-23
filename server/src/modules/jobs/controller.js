@@ -527,3 +527,76 @@ export const updateStudentApplicationStatus = asyncHandler(async (req, res) => {
     application,
   });
 });
+
+/**
+ * @desc    Get matching student recommendations for a recruiter's job posting
+ * @route   GET /api/jobs/:id/recommendations
+ * @access  Private (Recruiters only)
+ */
+export const getJobRecommendationsForRecruiter = asyncHandler(async (req, res) => {
+  const Resume = (await import("../../database/models/Resume.js")).default;
+  const JobApplication = (await import("../../database/models/JobApplication.js")).default;
+
+  const jobId = req.params.id;
+  const job = await JobPosting.findById(jobId);
+  if (!job) {
+    throw new AppError("Job posting not found", 404);
+  }
+
+  if (job.recruiter.toString() !== req.user._id.toString()) {
+    throw new AppError("You do not have permission to view recommendations for this job", 403);
+  }
+
+  // Fetch all resumes in the system with populated user details
+  const resumes = await Resume.find().populate("user", "name email").lean();
+
+  const recommendations = [];
+  const jobSkills = (job.skills || []).map(s => s.toLowerCase().trim());
+
+  for (const resume of resumes) {
+    if (!resume.user) continue;
+
+    // Check if candidate has already applied
+    const hasApplied = await JobApplication.exists({ job: jobId, applicant: resume.user._id });
+
+    const resumeSkills = (resume.skills || []).map(s => s.toLowerCase().trim());
+    const matchingSkills = jobSkills.filter(s => resumeSkills.includes(s));
+    
+    // Compute simple match percentage based on skill overlap
+    const score = jobSkills.length > 0
+      ? Math.round((matchingSkills.length / jobSkills.length) * 100)
+      : 0;
+
+    let matchCategory = "Weak Alignment";
+    if (score >= 80) matchCategory = "Excellent Match";
+    else if (score >= 50) matchCategory = "Moderate Match";
+    else if (score >= 25) matchCategory = "Growth Potential";
+
+    recommendations.push({
+      _id: resume.user._id.toString(),
+      applicant: {
+        _id: resume.user._id,
+        name: resume.user.name,
+        email: resume.user.email,
+      },
+      resume: {
+        _id: resume._id,
+        fileName: resume.fileName,
+        skills: resume.skills,
+      },
+      aiMatchScore: score,
+      matchCategory,
+      hasApplied: !!hasApplied,
+      matchingSkills,
+      missingSkills: jobSkills.filter(s => !resumeSkills.includes(s))
+    });
+  }
+
+  // Sort by score descending (highest match first)
+  recommendations.sort((a, b) => b.aiMatchScore - a.aiMatchScore);
+
+  res.status(200).json({
+    success: true,
+    recommendations: recommendations.slice(0, 15), // Top 15 matching candidates
+  });
+});
