@@ -12,12 +12,16 @@ const ENABLED = process.env.SOCKET_RATE_ENABLED !== "false";
 const WARNING_PERCENT = parseInt(process.env.SOCKET_RATE_WARNING_PERCENT, 10) || 80;
 const WARNING_COOLDOWN_MS = parseInt(process.env.SOCKET_RATE_WARNING_COOLDOWN_MS, 10) || 5000;
 
+// Module-level state so close() can access it
+let _state = null;
+let _cleanupTimer = null;
+
 export function attachSocketRateLimiter(io) {
   if (!ENABLED) {
     logger.info("Socket rate limiter disabled via SOCKET_RATE_ENABLED=false");
     return;
   }
-  const state = new Map();
+  const state = (_state = new Map());
   const maxEvents = DEFAULT_MAX_EVENTS;
   const windowMs = DEFAULT_WINDOW_MS;
   const refillRatePerMs = maxEvents / windowMs;
@@ -75,6 +79,20 @@ export function attachSocketRateLimiter(io) {
 
     socket.on("disconnect", () => state.delete(socket.id));
   });
+}
+
+/**
+ * Stop the cleanup timer and clear the in-memory state.
+ * Idempotent — safe to call multiple times.
+ */
+export function close() {
+  if (_cleanupTimer !== null) {
+    clearInterval(_cleanupTimer);
+    _cleanupTimer = null;
+  }
+  if (_state !== null) {
+    _state.clear();
+  }
 }
 
 export default attachSocketRateLimiter;
