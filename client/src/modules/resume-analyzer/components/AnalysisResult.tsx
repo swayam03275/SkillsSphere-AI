@@ -159,6 +159,7 @@ const AnalysisResult = ({ result, file, jobDescription, onReset }) => {
   const { success, error: showError } = useToast();
   const [isExportingPDF, setIsExportingPDF] = useState(false);
   const [exportError, setExportError] = useState("");
+  const [selectedOptimizerKeywords, setSelectedOptimizerKeywords] = useState<string[]>([]);
 
   useEffect(() => {
     if (
@@ -212,6 +213,10 @@ const AnalysisResult = ({ result, file, jobDescription, onReset }) => {
   // --- Action Words ---
   const actionWords = result.readabilityMatch?.relevantVerbs || ["Spearheaded", "Orchestrated", "Transformed", "Optimized", "Architected", "Launched", "Pioneered", "Revitalized"];
   const atsScoreBreakdown = buildAtsScoreBreakdown(result, score);
+
+  const baseAtsScore = result.atsOptimization?.score || result.score || 72;
+  const keywordMatchFactor = 3.5;
+  const projectedAtsScore = Math.min(100, Math.round(baseAtsScore + selectedOptimizerKeywords.length * keywordMatchFactor));
   const fileNameClean = file?.name
     ? file.name.replace(/\.[^/.]+$/, "")
     : "resume-analysis";
@@ -518,29 +523,85 @@ const AnalysisResult = ({ result, file, jobDescription, onReset }) => {
 
         {/* Right Column: Document & Metadata */}
         <div className="lg:col-span-5 space-y-6">
-           {/* Missing Keywords */}
+           {/* Missing Keywords / Keyword Optimizer */}
            <div className="bg-white dark:bg-[#121214] border border-gray-100 dark:border-white/5 rounded-3xl p-8 shadow-sm">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-yellow-50 dark:bg-yellow-500/10 rounded-xl">
-                  <Zap className="w-5 h-5 text-yellow-500" />
-                </div>
-                <h3 className="text-[15px] font-bold text-gray-900 dark:text-white">Tech Keyword Gaps</h3>
-              </div>
-              
-              <div className="flex flex-wrap gap-2">
-                {result.keywordMatch?.missingKeywords?.length > 0 ? (
-                  result.keywordMatch.missingKeywords.slice(0, 10).map((k, i) => (
-                    <span key={i} className="px-3 py-1 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-[10px] font-bold rounded-lg transition-colors">
-                      {k}
-                    </span>
-                  ))
-                ) : (
-                  <div className="w-full py-6 flex flex-col items-center text-center space-y-3">
-                    <CheckCircle2 className="w-8 h-8 text-emerald-500" />
-                    <p className="text-[11px] text-emerald-600 font-black uppercase tracking-widest">Perfect Keyword Match</p>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-yellow-50 dark:bg-yellow-500/10 rounded-xl">
+                    <Zap className="w-5 h-5 text-yellow-500" />
                   </div>
+                  <h3 className="text-[15px] font-bold text-gray-900 dark:text-white">Tech Keyword Gaps</h3>
+                </div>
+                {result.keywordMatch?.missingKeywords?.length > 0 && (
+                  <span className="px-2 py-1 bg-indigo-500/10 text-indigo-400 rounded-lg text-[9px] font-black uppercase tracking-widest border border-indigo-500/20">
+                    Live Score Optimizer
+                  </span>
                 )}
               </div>
+              
+              {result.keywordMatch?.missingKeywords?.length > 0 ? (
+                <div className="space-y-6">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Simulate adding missing keywords to see how they impact your overall ATS readability and scoring:
+                  </p>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {result.keywordMatch.missingKeywords.slice(0, 10).map((k, i) => {
+                      const isSelected = selectedOptimizerKeywords.includes(k);
+                      return (
+                        <label
+                          key={i}
+                          className={`flex items-center justify-between p-3 rounded-2xl border cursor-pointer select-none transition-all duration-300 ${
+                            isSelected
+                              ? "bg-indigo-500/10 border-indigo-500 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                              : "bg-gray-50 dark:bg-white/5 border-gray-100 dark:border-white/5 hover:border-gray-200 dark:hover:border-white/10 text-gray-700 dark:text-gray-300"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => {
+                                if (isSelected) {
+                                  setSelectedOptimizerKeywords(selectedOptimizerKeywords.filter(kw => kw !== k));
+                                } else {
+                                  setSelectedOptimizerKeywords([...selectedOptimizerKeywords, k]);
+                                }
+                              }}
+                              className="w-3.5 h-3.5 rounded accent-indigo-500 cursor-pointer"
+                            />
+                            <span className="text-xs font-bold">{k}</span>
+                          </div>
+                          <span className="text-[9px] font-bold opacity-80">+{keywordMatchFactor}%</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+
+                  {/* Projected score dial */}
+                  <div className="p-4 bg-gradient-to-br from-indigo-500/20 to-teal-500/10 border border-indigo-500/10 rounded-2xl flex items-center justify-between shadow-[0_4px_15px_rgba(99,102,241,0.05)]">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Projected ATS Score</p>
+                      <div className="flex items-baseline gap-1.5 mt-1.5">
+                        <span className="text-3xl font-black text-gray-900 dark:text-white">{projectedAtsScore}%</span>
+                        <span className="text-[11px] font-bold text-emerald-500">+{projectedAtsScore - baseAtsScore}% Increase</span>
+                      </div>
+                    </div>
+                    <div className="relative w-12 h-12 flex items-center justify-center">
+                      <svg className="w-full h-full transform -rotate-90">
+                        <circle cx="24" cy="24" r="20" fill="transparent" stroke="currentColor" strokeWidth="3" className="text-gray-200 dark:text-white/10" />
+                        <circle cx="24" cy="24" r="20" fill="transparent" stroke="currentColor" strokeWidth="3" strokeDasharray={125.6} strokeDashoffset={125.6 * (1 - projectedAtsScore / 100)} className="text-indigo-500 transition-all duration-500" />
+                      </svg>
+                      <Sparkles className="absolute w-4 h-4 text-indigo-400 animate-spin-slow" />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="w-full py-6 flex flex-col items-center text-center space-y-3">
+                  <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+                  <p className="text-[11px] text-emerald-600 font-black uppercase tracking-widest">Perfect Keyword Match</p>
+                </div>
+              )}
 
               {/* Missing Tech Standard Keywords */}
               {missingTechKeywords.length > 0 && (
@@ -552,7 +613,7 @@ const AnalysisResult = ({ result, file, jobDescription, onReset }) => {
                     {missingTechKeywords.map((item, i) => (
                       <span
                         key={i}
-                        className="px-3 py-1.5 bg-yellow-50 dark:bg-yellow-500/10 text-yellow-700 dark:text-yellow-300 text-[10px] font-bold rounded-xl capitalize"
+                        className="px-3 py-1.5 bg-yellow-50 dark:bg-yellow-500/10 text-yellow-700 dark:text-yellow-300 text-[10px] font-bold rounded-xl capitalize border border-yellow-200/20"
                         title={item.domain}
                       >
                         {item.keyword}
