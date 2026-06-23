@@ -40,7 +40,8 @@ export async function loadRoomState(roomId, session = null) {
   const state = {
     chatHistory: activeSession ? activeSession.chatHistory || [] : [],
     code: activeSession ? activeSession.codeSnapshot || "" : "",
-    whiteboard: activeSession ? activeSession.whiteboardSnapshot || [] : []
+    whiteboard: activeSession ? activeSession.whiteboardSnapshot || [] : [],
+    raiseHandQueue: []
   };
 
   roomStates.set(roomId, state);
@@ -72,7 +73,8 @@ export function getOrCreateRoomState(roomId) {
     roomStates.set(roomId, {
       chatHistory: [],
       code: "",
-      whiteboard: []
+      whiteboard: [],
+      raiseHandQueue: []
     });
   }
   return roomStates.get(roomId);
@@ -384,6 +386,10 @@ export function initClassroomSockets(io) {
             // Sync transient in-memory state back to DB archive on disconnect
             const finalState = await getRoomState(roomId);
             if (finalState) {
+              if (finalState.raiseHandQueue) {
+                finalState.raiseHandQueue = finalState.raiseHandQueue.filter((item) => item.socketId !== socket.id);
+                io.in(roomId).emit("hand-raise-queue-updated", finalState.raiseHandQueue);
+              }
               session.chatHistory = finalState.chatHistory || [];
               session.codeSnapshot = finalState.code || "";
               session.whiteboardSnapshot = finalState.whiteboard || [];

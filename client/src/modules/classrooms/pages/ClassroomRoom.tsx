@@ -62,6 +62,14 @@ export default function ClassroomRoom() {
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [isHandRaised, setIsHandRaised] = useState(false);
+  const [handRaiseQueue, setHandRaiseQueue] = useState([]);
+
+  const handleLowerStudentHand = (targetSocketId: string) => {
+    if (socketRef.current) {
+      // @ts-expect-error TODO: Fix pervasive types
+      socketRef.current.emit("lower-student-hand", { roomId, targetSocketId });
+    }
+  };
 
   const peersRef = useRef([]); // To keep track of peer connections inside callbacks
   const socketRef = useRef();
@@ -149,6 +157,15 @@ export default function ClassroomRoom() {
               if (state.chatHistory) setChatMessages(state.chatHistory);
               if (state.code) setInitialCode(state.code);
               if (state.whiteboard) setInitialWhiteboard(state.whiteboard);
+              if (state.raiseHandQueue) setHandRaiseQueue(state.raiseHandQueue);
+            });
+
+            s.on("hand-raise-queue-updated", (queue) => {
+              setHandRaiseQueue(queue || []);
+            });
+
+            s.on("hand-lowered-by-tutor", () => {
+              setIsHandRaised(false);
             });
 
             // Handle incoming user (they just joined, they will initiate the call to us)
@@ -816,6 +833,36 @@ export default function ClassroomRoom() {
               </>
             ) : (
               <div className="space-y-3 pt-2">
+                {/* Raise Hand Queue Widget */}
+                {handRaiseQueue.length > 0 && (
+                  <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl mb-4">
+                    <p className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                      <Hand size={14} className="animate-bounce" /> Raise Hand Queue ({handRaiseQueue.length})
+                    </p>
+                    <div className="space-y-2">
+                      {handRaiseQueue.map((item: any, qIdx) => {
+                        const isSelf = item.socketId === socket?.id;
+                        return (
+                          <div key={item.socketId} className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-900 border border-amber-500/10">
+                            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                              {qIdx + 1}. {item.user?.name} {isSelf && "(You)"}
+                            </span>
+                            {user?.role === "tutor" && (
+                              <button
+                                type="button"
+                                onClick={() => handleLowerStudentHand(item.socketId)}
+                                className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[10px] font-bold transition-colors"
+                              >
+                                Lower Hand
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800/80 rounded-2xl border border-gray-200 dark:border-slate-700">
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center font-bold text-sm text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30">
