@@ -42,6 +42,56 @@ const InterviewResults = () => {
   const [bookmarkError, setBookmarkError] = useState(null);
   const [bookmarkingQuestionId, setBookmarkingQuestionId] = useState(null);
   const [expandedCards, setExpandedCards] = useState({});
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoice, setSelectedVoice] = useState<string>("");
+  const [rate, setRate] = useState<number>(1);
+  const [pitch, setPitch] = useState<number>(1);
+  const [speakingId, setSpeakingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      const updateVoices = () => {
+        const availableVoices = window.speechSynthesis.getVoices();
+        setVoices(availableVoices);
+        const defaultVoice = availableVoices.find(v => v.lang.startsWith("en")) || availableVoices[0];
+        if (defaultVoice) {
+          setSelectedVoice(defaultVoice.name);
+        }
+      };
+      updateVoices();
+      window.speechSynthesis.onvoiceschanged = updateVoices;
+    }
+  }, []);
+
+  const handleSpeak = (text: string, id: string) => {
+    if (!window.speechSynthesis) return;
+
+    if (speakingId === id) {
+      window.speechSynthesis.cancel();
+      setSpeakingId(null);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    const voice = voices.find(v => v.name === selectedVoice);
+    if (voice) {
+      utterance.voice = voice;
+    }
+    utterance.rate = rate;
+    utterance.pitch = pitch;
+
+    utterance.onend = () => {
+      setSpeakingId(null);
+    };
+
+    utterance.onerror = () => {
+      setSpeakingId(null);
+    };
+
+    setSpeakingId(id);
+    window.speechSynthesis.speak(utterance);
+  };
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -344,6 +394,66 @@ const InterviewResults = () => {
         </div>
       </div>
 
+      {/* Voice Synthesis Settings Card */}
+      <div className="bg-white dark:bg-[#121214] border border-gray-100 dark:border-white/5 rounded-3xl p-6 mb-6 shadow-sm animate-[fadeInUp_0.6s_ease-out]">
+        <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white flex items-center gap-2">
+          <Sparkles size={20} className="text-indigo-500" />
+          Voice Synthesis Settings (AI Playback)
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Voice Selection</label>
+            <select
+              value={selectedVoice}
+              onChange={(e) => setSelectedVoice(e.target.value)}
+              className="rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-slate-900 px-3 py-2 text-sm text-gray-800 dark:text-slate-100 outline-none"
+            >
+              {voices.length === 0 ? (
+                <option value="">System Default Voice</option>
+              ) : (
+                voices.map((v) => (
+                  <option key={v.name} value={v.name}>
+                    {v.name} ({v.lang})
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-between items-center">
+              <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Playback Speed</label>
+              <span className="text-xs text-indigo-500 font-bold">{rate}x</span>
+            </div>
+            <input
+              type="range"
+              min="0.5"
+              max="2"
+              step="0.1"
+              value={rate}
+              onChange={(e) => setRate(parseFloat(e.target.value))}
+              className="accent-indigo-500 h-1.5 bg-gray-200 dark:bg-slate-800 rounded-lg cursor-pointer"
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-between items-center">
+              <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Pitch</label>
+              <span className="text-xs text-indigo-500 font-bold">{pitch}</span>
+            </div>
+            <input
+              type="range"
+              min="0.5"
+              max="1.5"
+              step="0.1"
+              value={pitch}
+              onChange={(e) => setPitch(parseFloat(e.target.value))}
+              className="accent-indigo-500 h-1.5 bg-gray-200 dark:bg-slate-800 rounded-lg cursor-pointer"
+            />
+          </div>
+        </div>
+      </div>
+
       {/* Weak Concepts */}
       {bookmarkError && (
         <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
@@ -374,9 +484,30 @@ const InterviewResults = () => {
       {answers.map((a, idx) => (
         <div key={idx} className="bg-white dark:bg-surface border border-border shadow-[0_10px_20px_rgba(0,0,0,0.02)] dark:shadow-none rounded-2xl overflow-hidden animate-[fadeInUp_0.7s_ease-out]">
           <div className="py-5 px-6 flex justify-between items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors" onClick={() => toggleCard(idx)}>
-            <span className="font-semibold text-text-main flex-1 pr-4">
-              Q{idx + 1}. {a.questionText}
-            </span>
+            <div className="flex items-center gap-2.5 flex-1 pr-4">
+              <span className="font-semibold text-text-main">
+                Q{idx + 1}. {a.questionText}
+              </span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSpeak(a.questionText, `q-${idx}`);
+                }}
+                className={`p-1.5 rounded-lg border transition-all ${
+                  speakingId === `q-${idx}`
+                    ? "bg-indigo-500 text-white border-indigo-500 animate-pulse"
+                    : "border-gray-200 dark:border-white/10 text-gray-500 hover:text-indigo-500 dark:hover:text-indigo-400 bg-gray-50 dark:bg-white/5"
+                }`}
+                title="Listen to question"
+              >
+                {speakingId === `q-${idx}` ? (
+                  <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                ) : (
+                  <svg className="w-3.5 h-3.5 fill-none stroke-current stroke-2" viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+                )}
+              </button>
+            </div>
             {a.bookmarked && (
               <span className="mr-3 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
                 <Bookmark size={13} fill="currentColor" />
@@ -411,10 +542,28 @@ const InterviewResults = () => {
                 <Bookmark size={16} fill={a.bookmarked ? "currentColor" : "none"} />
                 {a.bookmarked ? "Remove bookmark" : "Bookmark question"}
               </button>
-              <p className="text-text-muted leading-relaxed my-4 text-sm bg-gray-50 dark:bg-slate-900 p-4 rounded-xl">
+              <div className="text-text-muted leading-relaxed my-4 text-sm bg-gray-50 dark:bg-slate-900 p-4 rounded-xl relative group/transcript pr-12">
                 <strong className="text-text-main block mb-2">Your Answer:</strong>{" "}
                 {a.transcript || "No answer submitted"}
-              </p>
+                {a.transcript && (
+                  <button
+                    type="button"
+                    onClick={() => handleSpeak(a.transcript, `t-${idx}`)}
+                    className={`absolute top-4 right-4 p-1.5 rounded-lg border transition-all ${
+                      speakingId === `t-${idx}`
+                        ? "bg-indigo-500 text-white border-indigo-500 animate-pulse"
+                        : "border-gray-200 dark:border-white/10 text-gray-500 hover:text-indigo-500 dark:hover:text-indigo-400 bg-white dark:bg-slate-800"
+                    }`}
+                    title="Listen to answer"
+                  >
+                    {speakingId === `t-${idx}` ? (
+                      <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                    ) : (
+                      <svg className="w-3.5 h-3.5 fill-none stroke-current stroke-2" viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+                    )}
+                  </button>
+                )}
+              </div>
               <div className="flex gap-4 my-4 flex-wrap">
                 <span className="py-1.5 px-3 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-300">
                   Tech: {a.scores?.technical || 0}%
