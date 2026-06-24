@@ -2,13 +2,29 @@ import axios from "axios";
 import dns from "dns/promises";
 import ipaddr from "ipaddr.js";
 
+/**
+ * Returns true only when every octet of an IPv4 string is within 0-255.
+ * Blocks invalid addresses like 999.999.999.999 that pass digit-only regex.
+ */
+const isValidIPv4Octets = (ip) => {
+  const octets = ip.split(".");
+  return (
+    octets.length === 4 &&
+    octets.every((o) => {
+      const n = Number(o);
+      return !isNaN(n) && n >= 0 && n <= 255 && String(n) === o;
+    })
+  );
+};
+
 // Function to check if an IP is private/local
 const isPrivateIP = (ip) => {
   try {
+    if (!isValidIPv4Octets(ip)) return false;
     const parsedIp = ipaddr.parse(ip);
     const range = parsedIp.range();
     return [
-      "unspecified", "broadcast", "multicast", "linkLocal", 
+      "unspecified", "broadcast", "multicast", "linkLocal",
       "loopback", "private", "reserved"
     ].includes(range);
   } catch (err) {
