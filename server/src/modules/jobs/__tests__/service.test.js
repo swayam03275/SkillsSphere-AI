@@ -98,23 +98,23 @@ describe("Job Service", () => {
       mock.method(JobApplication, "find", () => ({
         select: async () => [{ applicant: "applicant123" }]
       }));
-      mock.method(JobApplication, "deleteMany", () => ({ deletedCount: 5 }));
+      mock.method(JobApplication, "updateMany", () => ({ modifiedCount: 5 }));
       const mockQuery = {
         select: mock.fn(() => mockQuery),
         then: function(resolve) { resolve([{ applicant: new mongoose.Types.ObjectId().toString() }]); }
       };
       mock.method(JobApplication, "find", () => mockQuery);
-      mock.method(JobPosting, "findByIdAndDelete", () => mockExistingJob);
+      mock.method(JobPosting, "findByIdAndUpdate", () => mockExistingJob);
       mock.method(Notification, "insertMany", async () => ([{}]));
 
       await jobService.deleteJob(mockJobId, mockRecruiterId);
 
       assert.equal(JobPosting.findById.mock.calls.length, 1);
       assert.equal(JobPosting.findById.mock.calls[0].arguments[0], mockJobId);
-      assert.equal(JobApplication.deleteMany.mock.calls.length, 1);
-      assert.deepEqual(JobApplication.deleteMany.mock.calls[0].arguments, [{ job: mockJobId }]);
-      assert.equal(JobPosting.findByIdAndDelete.mock.calls.length, 1);
-      assert.equal(JobPosting.findByIdAndDelete.mock.calls[0].arguments[0], mockJobId);
+      assert.equal(JobApplication.updateMany.mock.calls.length, 1);
+      assert.deepEqual(JobApplication.updateMany.mock.calls[0].arguments[0], { job: mockJobId });
+      assert.equal(JobPosting.findByIdAndUpdate.mock.calls.length, 1);
+      assert.equal(JobPosting.findByIdAndUpdate.mock.calls[0].arguments[0], mockJobId);
     });
 
     it("should throw AppError(404) if job not found for deletion", async () => {
