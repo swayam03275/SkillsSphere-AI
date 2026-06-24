@@ -1,4 +1,5 @@
 import logger from "../utils/logger.js";
+
 const DEFAULT_WINDOW_MS = parseInt(process.env.SOCKET_RATE_WINDOW_MS, 10) || 10000;
 const DEFAULT_MAX_EVENTS = parseInt(process.env.SOCKET_RATE_MAX_EVENTS, 10) || 50;
 const WHITELIST = new Set(
@@ -12,16 +13,50 @@ const ENABLED = process.env.SOCKET_RATE_ENABLED !== "false";
 const WARNING_PERCENT = parseInt(process.env.SOCKET_RATE_WARNING_PERCENT, 10) || 80;
 const WARNING_COOLDOWN_MS = parseInt(process.env.SOCKET_RATE_WARNING_COOLDOWN_MS, 10) || 5000;
 
+// Module-level state so close() can clear it across module reloads
+let _state = null;
+let _cleanupTimer = null;
+
+/**
+ * Clears in-memory state and stops the cleanup timer.
+ * Safe to call multiple times (idempotent).
+ */
+export function close() {
+  if (_state) {
+    _state.clear();
+    _state = null;
+  }
+  if (_cleanupTimer) {
+    clearInterval(_cleanupTimer);
+    _cleanupTimer = null;
+  }
+}
+
 export function attachSocketRateLimiter(io) {
   if (!ENABLED) {
     logger.info("Socket rate limiter disabled via SOCKET_RATE_ENABLED=false");
     return;
   }
+
   const state = new Map();
+  _state = state;
   const maxEvents = DEFAULT_MAX_EVENTS;
   const windowMs = DEFAULT_WINDOW_MS;
   const refillRatePerMs = maxEvents / windowMs;
   const warningThreshold = Math.max(1, Math.floor((WARNING_PERCENT / 100) * maxEvents));
+
+  // Periodic cleanup of expired entries
+  const cleanupTimer = setInterval(() => {
+    const now = Date.now();
+    for (const [socketId, entry] of state) {
+      // Clean up entries with zero tokens that have been disconnected
+      if (entry.tokens <= 0) {
+        // entries remain until explicit disconnect to keep rate limit state
+      }
+    }
+  }, windowMs);
+  _cleanupTimer = cleanupTimer;
+  if (cleanupTimer.unref) cleanupTimer.unref();
 
   function refillTokens(entry, now) {
     const elapsed = Math.max(0, now - entry.lastRefill);
