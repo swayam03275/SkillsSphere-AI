@@ -17,7 +17,7 @@ export default function gapAnalyzer({
   };
 
   // 1. Critical: Structural & ATS Gaps
-  if (atsOptimization?.score < 80) {
+  if (!atsOptimization || atsOptimization.score < 80) {
     const details = atsOptimization.details || {};
     const sectionResults = details.sectionResults || {};
     const contactResults = details.contactResults || {};
@@ -37,7 +37,7 @@ export default function gapAnalyzer({
         : missingContact.join(" and ");
       categorizedSuggestions.critical.push(`Ensure your ${items} ${verb} visible at the top of the document.`);
     }
-  } else if (atsOptimization?.score < 100) {
+  } else if (!atsOptimization || atsOptimization.score < 100) {
     categorizedSuggestions.optimization.push("Your ATS structure is excellent. Ensure you use standard, non-serif fonts to guarantee 100% parseability by legacy ATS systems.");
   }
 
