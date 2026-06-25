@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
 import {
@@ -69,7 +69,7 @@ const MyApplicationsPage = () => {
   // For Drag and Drop visual feedback
   const [activeDragCol, setActiveDragCol] = useState(null);
 
-  const fetchApplications = async (page = 1, currentView = viewMode) => {
+  const fetchApplications = useCallback(async (page = 1, currentView = viewMode) => {
     setLoading(true);
     setError(null);
     const limit = currentView === "board" ? 100 : 3;
@@ -92,11 +92,11 @@ const MyApplicationsPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, viewMode, toast]);
 
   useEffect(() => {
     fetchApplications(viewMode === "list" ? currentPage : 1, viewMode);
-  }, [token, viewMode, currentPage]);
+  }, [fetchApplications, viewMode, currentPage]);
 
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
