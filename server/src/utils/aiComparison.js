@@ -2,7 +2,7 @@
  * Generates deterministic strategic insights by comparing two resume versions.
  * No LLM/AI required - follows rule-based logic.
  */
-export const generateComparisonInsights = async (v1, v2) => {
+export const generateComparisonInsights = (v1, v2) => {
   const scoreDiff = v2.score - v1.score;
   const oldSkills = new Set(v1.skills || []);
   const newSkills = new Set(v2.skills || []);
