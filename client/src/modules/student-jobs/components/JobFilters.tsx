@@ -33,10 +33,12 @@ const JobFilters = ({ onFilterChange }) => {
     if(salaryError) return;
 
     onFilterChange({
-      ...filters,
+      minSalary: filters.minSalary,
+      maxSalary: filters.maxSalary,
+      postedWithin: filters.postedWithin,
       designation: debouncedDesignation,
     });
-  }, [ debouncedDesignation,filters.minSalary,filters.maxSalary, filters.postedWithin, salaryError,]);
+  }, [debouncedDesignation, filters.minSalary, filters.maxSalary, filters.postedWithin, salaryError, onFilterChange]);
 
 
   

@@ -67,9 +67,9 @@ const JobBoardPage = () => {
     }
   };
 
-  const handleFilterChange = (newFilters) => {
+  const handleFilterChange = useCallback((newFilters) => {
     setFilters(newFilters);
-  };
+  }, []);
 
   const handleApply = (job) => {
     setApplyModalJob(job);
