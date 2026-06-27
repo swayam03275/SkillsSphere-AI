@@ -5,6 +5,7 @@ import {
   buildSignedFileUrl,
   normalizeProtectedFilePath,
   verifySignedFileUrl,
+  parseSignedUrlExpiry,
 } from "../signedFileUrl.js";
 
 process.env.FILE_URL_SIGNING_SECRET = "test-signing-secret-that-is-long-enough-for-hmac";
@@ -97,4 +98,42 @@ test("buildSignedFileUrl throws when FILE_URL_SIGNING_SECRET is too short", () =
   );
 
   process.env.FILE_URL_SIGNING_SECRET = original;
+});
+
+test("parseSignedUrlExpiry returns expiry for valid future timestamp", () => {
+  const futureExp = Math.floor(Date.now() / 1000) + 3600;
+  const result = parseSignedUrlExpiry(`/api/files/avatars/x.png?exp=${futureExp}&sig=abc`);
+  assert.equal(result, futureExp);
+});
+
+test("parseSignedUrlExpiry returns null for expired timestamp", () => {
+  const pastExp = Math.floor(Date.now() / 1000) - 10;
+  const result = parseSignedUrlExpiry(`/api/files/avatars/x.png?exp=${pastExp}&sig=abc`);
+  assert.equal(result, null);
+});
+
+test("parseSignedUrlExpiry returns null when exp parameter is missing", () => {
+  assert.equal(parseSignedUrlExpiry("/api/files/avatars/x.png?sig=abc"), null);
+  assert.equal(parseSignedUrlExpiry("/api/files/avatars/x.png"), null);
+});
+
+test("parseSignedUrlExpiry returns null for non-numeric exp value", () => {
+  assert.equal(parseSignedUrlExpiry("/api/files/avatars/x.png?exp=not-a-number"), null);
+  assert.equal(parseSignedUrlExpiry("/api/files/avatars/x.png?exp="), null);
+  assert.equal(parseSignedUrlExpiry("/api/files/avatars/x.png?exp=0"), null);
+  assert.equal(parseSignedUrlExpiry("/api/files/avatars/x.png?exp=-10"), null);
+});
+
+test("parseSignedUrlExpiry returns null for null/undefined/empty input", () => {
+  assert.equal(parseSignedUrlExpiry(null), null);
+  assert.equal(parseSignedUrlExpiry(undefined), null);
+  assert.equal(parseSignedUrlExpiry(""), null);
+});
+
+test("parseSignedUrlExpiry handles full URLs with query strings", () => {
+  const futureExp = Math.floor(Date.now() / 1000) + 3600;
+  const result = parseSignedUrlExpiry(
+    `https://example.com/api/files/avatars/x.png?exp=${futureExp}&sig=abc&uid=user1`
+  );
+  assert.equal(result, futureExp);
 });

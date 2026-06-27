@@ -82,3 +82,34 @@ export const verifySignedFileUrl = (path, expiresAt, sig, extra = "") => {
 
   return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(sig));
 };
+
+/**
+ * Extracts and validates the expiry timestamp from a signed URL query string.
+ *
+ * @param {string} url - Full URL or path+query string containing an 'exp' parameter.
+ * @returns {number|null} Numeric expiry timestamp in seconds, or null if missing,
+ *                        invalid, or already expired.
+ */
+export const parseSignedUrlExpiry = (url) => {
+  if (!url || typeof url !== "string") return null;
+
+  let queryString = "";
+
+  if (url.includes("?")) {
+    const parts = url.split("?", 2);
+    queryString = parts[1] || "";
+  }
+
+  const params = new URLSearchParams(queryString);
+  const expValue = params.get("exp");
+
+  if (!expValue) return null;
+
+  const exp = Number(expValue);
+  if (!Number.isFinite(exp) || exp <= 0) return null;
+
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  if (exp < nowSeconds) return null;
+
+  return exp;
+};
