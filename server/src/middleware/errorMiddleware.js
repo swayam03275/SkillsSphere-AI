@@ -272,7 +272,18 @@ const globalErrorHandler = (err, req, res, next) => {
   error.statusCode = error.statusCode ?? err.statusCode ?? 500;
   error.status = error.status ?? err.status ?? "error";
 
+  // Determine a machine-readable error code for the x-error-code header.
+  // Strings are used as-is; numeric codes (e.g. Mongoose 11000) are stringified.
+  const rawCode = error.code;
+  let errorCodeString = "INTERNAL_ERROR";
+  if (typeof rawCode === "string" && rawCode.trim().length > 0) {
+    errorCodeString = rawCode.trim();
+  } else if (typeof rawCode === "number" && Number.isFinite(rawCode)) {
+    errorCodeString = String(rawCode);
+  }
+
   if (process.env.NODE_ENV === "development") {
+    res.setHeader("x-error-code", errorCodeString);
     res.status(error.statusCode).json({
       success: false,
       status: error.status,
@@ -283,6 +294,7 @@ const globalErrorHandler = (err, req, res, next) => {
   } else {
     // Production
     if (error.isOperational) {
+      res.setHeader("x-error-code", errorCodeString);
       res.status(error.statusCode).json({
         success: false,
         status: error.status,
@@ -297,6 +309,7 @@ const globalErrorHandler = (err, req, res, next) => {
       // Frontend may expect `errors` and `statusCode` consistently.
       const statusCode = 500;
 
+      res.setHeader("x-error-code", "INTERNAL_ERROR");
       res.status(statusCode).json({
         success: false,
         status: "error",
