@@ -435,38 +435,29 @@ cp .env.example .env
 
 ## 🔐 Google OAuth Setup
 
-- `JWT_SECRET=replace_with_a_long_random_secret`
-- `JWT_EXPIRES_IN=7d`
-- `EMAIL_SERVICE_MODE=console` (Use "smtp" for real emails)
-- `EMAIL_HOST=smtp.mailtrap.io`
-- `EMAIL_PORT=2525`
-- `EMAIL_USER=your_smtp_username`
-- `EMAIL_PASS=your_smtp_password`
-- `HF_API_TOKEN=hf_...` (Free — required for semantic resume matching)
+Setting up Google OAuth is required to enable the "Sign in with Google" feature. We have provided a comprehensive, step-by-step guide for configuring this in the Google Cloud Console.
 
-1. Open Google Cloud Console.
-2. Create/select your project.
-3. Configure OAuth consent screen.
-4. Go to Credentials and create OAuth 2.0 Client ID (Web application).
-5. Add Authorized redirect URI exactly as:
+📖 **Please read the complete guide here:** [docs/GOOGLE_OAUTH_SETUP.md](./docs/GOOGLE_OAUTH_SETUP.md)
 
-```text
-http://localhost:5000/api/auth/google/callback
-```
+### Quick Summary
 
-6. Copy Client ID and Client Secret into `.env`:
+1. Create a project in [Google Cloud Console](https://console.cloud.google.com/).
+2. Configure the **OAuth Consent Screen** (External, add Email & Profile scopes).
+3. Create **OAuth 2.0 Client ID** (Web application).
+   - Authorized JavaScript origin: `http://localhost:5173`
+   - Authorized redirect URI: `http://localhost:5000/api/auth/google/callback`
+4. Copy the Client ID and Client Secret into your `.env` file:
 
 ```env
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
 GOOGLE_CALLBACK_URL=http://localhost:5000/api/auth/google/callback
-FRONTEND_URL=http://localhost:5174
+FRONTEND_URL=http://localhost:5173
 ```
 
-7. Restart both backend and frontend after updating env files.
+5. Restart the server (`npm run dev`).
 
-OAuth flow summary:
-
+**OAuth Flow Summary:**
 - Frontend starts OAuth from `/api/auth/google`.
 - Google redirects to backend callback (`GOOGLE_CALLBACK_URL`).
 - Backend creates JWT and redirects to frontend callback (`FRONTEND_URL/auth/callback`).
