@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { Briefcase, Info, ArrowLeft, Sparkles, TrendingUp } from "lucide-react";
@@ -16,22 +16,37 @@ import JobCardSkeleton from "../components/JobCardSkeleton";
 import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
 import { useToast } from "../../../shared/components/toast/ToastProvider";
 
+interface Job {
+  _id?: string;
+  id?: string;
+  [key: string]: unknown;
+}
+
+interface AuthState {
+  token: string;
+  user: Record<string, unknown>;
+}
+
+interface RootState {
+  auth: AuthState;
+}
+
 const JobBoardPage = () => {
   useDocumentTitle("Job Board");
-  const { token, user } = useSelector((state: any) => state.auth);
+  const { token, user } = useSelector((state: RootState) => state.auth);
   const toast = useToast();
-  const [jobs, setJobs] = useState([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [filters, setFilters] = useState({});
-  const [appliedJobIds, setAppliedJobIds] = useState(new Set());
-  const [applyingJobId, setApplyingJobId] = useState(null);
-  const [applyModalJob, setApplyModalJob] = useState(null);
+  const [error, setError] = useState<string | null>(null);
+  const [filters, setFilters] = useState<Record<string, unknown>>({});
+  const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set());
+  const [applyingJobId, setApplyingJobId] = useState<string | null>(null);
+  const [applyModalJob, setApplyModalJob] = useState<Job | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
 
-  const fetchJobs = useCallback(async (currentFilters, page = 1) => {
+  const fetchJobs = useCallback(async (currentFilters: Record<string, unknown>, page: number = 1) => {
     setLoading(true);
     setError(null);
     try {
@@ -48,8 +63,9 @@ const JobBoardPage = () => {
       } catch {
         // Silently ignore — applied status will update after next apply
       }
-    } catch (err: any) {
-      setError(err.message || "Failed to fetch jobs. Please try again.");
+    } catch (err: unknown) {
+      const e = err as { message?: string };
+      setError(e.message || "Failed to fetch jobs. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -59,7 +75,7 @@ const JobBoardPage = () => {
     fetchJobs(filters, 1);
   }, [fetchJobs, filters]);
 
-  const handlePageChange = (newPage) => {
+  const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setCurrentPage(newPage);
       fetchJobs(filters, newPage);
@@ -67,23 +83,24 @@ const JobBoardPage = () => {
     }
   };
 
-  const handleFilterChange = useCallback((newFilters) => {
+  const handleFilterChange = useCallback((newFilters: Record<string, unknown>) => {
     setFilters(newFilters);
   }, []);
 
-  const handleApply = (job) => {
+  const handleApply = (job: Job) => {
     setApplyModalJob(job);
   };
 
-  const handleApplySubmit = async ({ resumeLink, coverNote }) => {
-    const jobId = applyModalJob._id || applyModalJob.id;
+  const handleApplySubmit = async ({ resumeLink, coverNote }: { resumeLink: string; coverNote: string }) => {
+    const jobId = applyModalJob?._id || applyModalJob?.id || "";
     setApplyingJobId(jobId);
     try {
       await applyToJob(jobId, token, { resumeLink, coverNote });
       setAppliedJobIds((prev) => new Set([...prev, jobId]));
       setApplyModalJob(null);
-    } catch (err: any) {
-      const msg = err.message || err.data?.message || "Failed to apply";
+    } catch (err: unknown) {
+      const e = err as { message?: string; data?: { message?: string } };
+      const msg = e.message || e.data?.message || "Failed to apply";
       if (msg.includes("already applied")) {
         setAppliedJobIds((prev) => new Set([...prev, jobId]));
         setApplyModalJob(null);
@@ -165,10 +182,8 @@ const JobBoardPage = () => {
                 ))}
               </div>
             ): error ? (
-              // @ts-expect-error TODO: Fix pervasive types
               <ErrorState message={error} onRetry={() => fetchJobs(filters)} />
             ) : jobs.length === 0 ? (
-              // @ts-expect-error TODO: Fix pervasive types
               <EmptyState
                 icon={<Briefcase size={64} className="text-slate-700 mb-4" />}
                 title="No Jobs Found"
@@ -181,13 +196,12 @@ const JobBoardPage = () => {
             ) : (
               <div className="grid grid-cols-1 gap-5">
                 {jobs.map((job) => (
-                  // @ts-expect-error TODO: Fix pervasive types
                   <JobViewerCard
-                    key={job._id}
+                    key={job._id || job.id}
                     job={job}
                     viewerRole="student"
                     onApply={handleApply}
-                    isApplied={appliedJobIds.has(job._id || job.id)}
+                    isApplied={appliedJobIds.has(job._id || job.id || "")}
                   />
                 ))}
               </div>
