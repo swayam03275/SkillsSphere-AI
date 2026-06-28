@@ -1,4 +1,4 @@
-import { getOrCreateRoomState, persistRoomState } from "../socket.js";
+import { getOrCreateRoomState, persistRoomState } from "../roomStateManager.js";
 
 export default function registerChatHandler(io, socket) {
   // Chat Message

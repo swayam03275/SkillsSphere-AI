@@ -1,4 +1,4 @@
-import { getOrCreateRoomState, persistRoomState } from "../socket.js";
+import { getOrCreateRoomState, persistRoomState } from "../roomStateManager.js";
 import {
   executeCode,
   validateCodeExecutionRequest,

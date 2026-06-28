@@ -1,4 +1,4 @@
-import { getOrCreateRoomState, persistRoomState } from "../socket.js";
+import { getOrCreateRoomState, persistRoomState } from "../roomStateManager.js";
 
 export const WHITEBOARD_ERROR_CODES = {
   INVALID_STROKE_PAYLOAD: "INVALID_STROKE_PAYLOAD",
@@ -124,11 +124,6 @@ export default function registerWhiteboardHandler(io, socket) {
         WHITEBOARD_ERROR_CODES.CLEAR_CANVAS_FORBIDDEN,
         "You are not allowed to clear this whiteboard.",
       );
-      return;
-    }
-
-    if (elements.length === 0 && !canClearWhiteboard(socket)) {
-      emitWhiteboardError(socket, WHITEBOARD_ERROR_CODES.CLEAR_CANVAS_FORBIDDEN, "You are not allowed to clear this whiteboard.");
       return;
     }
 
