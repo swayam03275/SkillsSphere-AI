@@ -1,8 +1,6 @@
-export default function gapAnalyzer({ 
-  skillMatch = {}, 
-  keywordMatch = {}, 
-  experienceMatch = {},
-  consistencyMatch = {},
+export default function gapAnalyzer({
+  skillMatch = {},
+  keywordMatch = {},
   readabilityMatch = {},
   impactMatch = {},
   atsOptimization = {},
