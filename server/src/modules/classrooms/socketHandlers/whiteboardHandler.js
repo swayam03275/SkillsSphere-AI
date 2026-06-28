@@ -1,4 +1,4 @@
-import { getOrCreateRoomState, persistRoomState } from "../socket.js";
+import { getOrCreateRoomState, persistRoomState } from "../roomStateManager.js";
 
 export const WHITEBOARD_ERROR_CODES = {
   INVALID_STROKE_PAYLOAD: "INVALID_STROKE_PAYLOAD",

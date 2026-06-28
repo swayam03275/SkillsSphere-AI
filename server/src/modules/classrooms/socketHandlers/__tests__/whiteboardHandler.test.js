@@ -8,7 +8,7 @@ import {
   clearRoomState,
   getOrCreateRoomState,
   getRoomState,
-} from "../../socket.js";
+} from "../../roomStateManager.js";
 
 const restoreEnvValue = (key, value) => {
   if (value === undefined) {
