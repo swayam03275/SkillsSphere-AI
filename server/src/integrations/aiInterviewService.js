@@ -173,7 +173,8 @@ const mockEvaluate = (transcript, expectedAnswer, expectedConcepts) => {
     concepts: { detected, missed },
     fillerWords: fillerCount,
     speakingSpeed: wordCount < 30 ? "slow" : wordCount > 150 ? "fast" : "normal",
-    _mock: true,
+    is_ai_evaluated: false,
+    fallback_reason: "AI service unavailable",
   };
 };
 
@@ -239,7 +240,8 @@ export const evaluateAnswer = async (
 
   if (!available) {
     logger.warn(
-      "[aiInterviewService] ⚠️ Python service unavailable, falling back to mock evaluation"
+      "[aiInterviewService] ⚠️ Python service unavailable, falling back to mock evaluation",
+      { timestamp: new Date().toISOString(), reason: "service_unreachable" }
     );
     return mockEvaluate(transcript, expectedAnswer, expectedConcepts);
   }
@@ -255,7 +257,8 @@ export const evaluateAnswer = async (
       EVAL_TIMEOUT
     );
 
-    return res.json();
+    const data = await res.json();
+    return { ...data, is_ai_evaluated: true };
   } catch (err) {
     if (
       err.message.includes("ECONNREFUSED") || 

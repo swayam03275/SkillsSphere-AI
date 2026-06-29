@@ -18,11 +18,6 @@ import AppError from "../../utils/AppError.js";
 import InterviewSession from "../../database/models/InterviewSession.js";
 import { safeDeletePhysicalFile } from "../../utils/fileUtils.js";
 
-/**
- * @desc    Start a new interview session
- * @route   POST /api/interviews/start
- * @access  Private
- */
 export const startInterview = asyncHandler(async (req, res) => {
   const { topic, difficulty, persona } = req.body;
 
@@ -53,11 +48,6 @@ export const startInterview = asyncHandler(async (req, res) => {
   });
 });
 
-/**
- * @desc    Get session details
- * @route   GET /api/interviews/:id
- * @access  Private
- */
 export const getSession = asyncHandler(async (req, res) => {
   const session = await getSessionById(req.params.id, req.user._id);
 
@@ -71,11 +61,6 @@ export const getSession = asyncHandler(async (req, res) => {
   });
 });
 
-/**
- * @desc    Submit an answer for the current question
- * @route   POST /api/interviews/:id/answer
- * @access  Private
- */
 export const submitAnswer = asyncHandler(async (req, res) => {
   const { transcript } = req.body;
   const audioFile = req.file || null;
@@ -97,15 +82,14 @@ export const submitAnswer = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     message: "Answer submitted successfully",
-    data: result,
+    data: {
+      ...result,
+      is_ai_evaluated: result.is_ai_evaluated ?? true,
+      ...(result.fallback_reason && { fallback_reason: result.fallback_reason }),
+    },
   });
 });
 
-/**
- * @desc    Complete the interview and calculate final scores
- * @route   POST /api/interviews/:id/complete
- * @access  Private
- */
 export const completeInterview = asyncHandler(async (req, res) => {
   const result = await finalizeInterview(req.params.id, req.user._id);
 
@@ -116,11 +100,6 @@ export const completeInterview = asyncHandler(async (req, res) => {
   });
 });
 
-/**
- * @desc    Get user's interview history
- * @route   GET /api/interviews/history
- * @access  Private
- */
 export const getInterviewHistory = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
@@ -133,11 +112,6 @@ export const getInterviewHistory = asyncHandler(async (req, res) => {
   });
 });
 
-/**
- * @desc    Get detailed results for a specific session
- * @route   GET /api/interviews/:id/results
- * @access  Private
- */
 export const getSessionResults = asyncHandler(async (req, res) => {
   const results = await getResults(req.params.id, req.user._id);
 
@@ -151,11 +125,6 @@ export const getSessionResults = asyncHandler(async (req, res) => {
   });
 });
 
-/**
- * @desc    Toggle or set bookmark state for an interview question
- * @route   PATCH /api/interviews/:id/questions/:questionId/bookmark
- * @access  Private
- */
 export const bookmarkQuestion = asyncHandler(async (req, res) => {
   const bookmark = await updateQuestionBookmark({
     sessionId: req.params.id,
@@ -171,11 +140,6 @@ export const bookmarkQuestion = asyncHandler(async (req, res) => {
   });
 });
 
-/**
- * @desc    Get all bookmarked interview questions for the current user
- * @route   GET /api/interviews/bookmarks
- * @access  Private
- */
 export const getInterviewBookmarks = asyncHandler(async (req, res) => {
   const bookmarks = await getBookmarkedQuestions(req.user._id);
 
@@ -185,11 +149,6 @@ export const getInterviewBookmarks = asyncHandler(async (req, res) => {
   });
 });
 
-/**
- * @desc    List available interview topics
- * @route   GET /api/interviews/topics
- * @access  Private
- */
 export const getAvailableTopics = asyncHandler(async (req, res) => {
   const topics = await listAvailableTopics();
 
@@ -199,11 +158,6 @@ export const getAvailableTopics = asyncHandler(async (req, res) => {
   });
 });
 
-/**
- * @desc    Get AI service connection status
- * @route   GET /api/interviews/ai-status
- * @access  Private
- */
 export const getAIServiceStatus = asyncHandler(async (req, res) => {
   const status = await getServiceStatus();
 
@@ -213,11 +167,6 @@ export const getAIServiceStatus = asyncHandler(async (req, res) => {
   });
 });
 
-/**
- * @desc    Tutor: Get all completed interview sessions
- * @route   GET /api/interviews/tutor/sessions
- * @access  Private (Tutor)
- */
 export const getTutorSessions = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
@@ -229,11 +178,6 @@ export const getTutorSessions = asyncHandler(async (req, res) => {
   });
 });
 
-/**
- * @desc    Tutor: Get details of a completed interview session
- * @route   GET /api/interviews/tutor/sessions/:id
- * @access  Private (Tutor)
- */
 export const getTutorSession = asyncHandler(async (req, res) => {
   const session = await getTutorSessionDetails(req.params.id, req.user._id);
 
@@ -247,11 +191,6 @@ export const getTutorSession = asyncHandler(async (req, res) => {
   });
 });
 
-/**
- * @desc    Tutor: Submit manual feedback for an interview
- * @route   POST /api/interviews/tutor/sessions/:id/feedback
- * @access  Private (Tutor)
- */
 export const submitTutorFeedback = asyncHandler(async (req, res) => {
   const session = await addTutorFeedback(req.params.id, req.user._id, req.body);
 
@@ -262,11 +201,6 @@ export const submitTutorFeedback = asyncHandler(async (req, res) => {
   });
 });
 
-/**
- * @desc    Delete an interview session and its associated audio files
- * @route   DELETE /api/interviews/:id
- * @access  Private (session owner only)
- */
 export const deleteInterviewSession = asyncHandler(async (req, res) => {
   const session = await InterviewSession.findOne({
     _id: req.params.id,
@@ -277,7 +211,6 @@ export const deleteInterviewSession = asyncHandler(async (req, res) => {
     throw new AppError("Interview session not found", 404);
   }
 
-  // Delete associated audio files from disk before removing the DB record.
   if (Array.isArray(session.answers)) {
     for (const answer of session.answers) {
       if (answer.audioPath) {

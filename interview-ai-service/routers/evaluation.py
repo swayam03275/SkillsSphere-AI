@@ -26,6 +26,7 @@ class EvaluationResponse(BaseModel):
     concepts: ConceptResult
     fillerWords: int
     speakingSpeed: str
+    is_ai_evaluated: bool = True 
 
 
 @router.post("/evaluate", response_model=EvaluationResponse)
@@ -64,4 +65,5 @@ async def evaluate_answer(request: EvaluationRequest):
         ),
         fillerWords=comm_result["fillerWords"],
         speakingSpeed=comm_result["speakingSpeed"],
+        is_ai_evaluated=True,
     )
