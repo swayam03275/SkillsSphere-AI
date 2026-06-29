@@ -15,17 +15,9 @@ import { safeDeletePhysicalFile } from "../../utils/fileUtils.js";
 
 import logger from "../../utils/logger.js";
 
-// Guards against concurrent answer submissions for the same session.
-// Since processAnswerSubmission spans async I/O (transcription, evaluation),
-// two calls can otherwise read the same currentQuestionIndex and collide.
 const pendingSubmissions = new Map();
 
-/**
- * Select random questions from the bank for a given topic and difficulty.
- * Avoids repeating questions from the user's last 3 sessions on the same topic.
- */
 const selectQuestions = async (topic, difficulty, userId, count = 5) => {
-  // Get question IDs from user's recent sessions to avoid repeats
   const recentSessions = await InterviewSession.find({
     userId,
     topic,
@@ -39,14 +31,12 @@ const selectQuestions = async (topic, difficulty, userId, count = 5) => {
     s.answers.map((a) => a.questionId)
   );
 
-  // Try to find questions excluding recent ones
   let questions = await QuestionBank.find({
     topic,
     difficulty,
     _id: { $nin: recentQuestionIds },
   });
 
-  // If not enough fresh questions, fall back to full pool
   if (questions.length < count) {
     questions = await QuestionBank.find({ topic, difficulty });
   }
@@ -58,16 +48,11 @@ const selectQuestions = async (topic, difficulty, userId, count = 5) => {
     );
   }
 
-  // Shuffle and pick 'count' questions
   const shuffled = questions.sort(() => Math.random() - 0.5);
   return shuffled.slice(0, Math.min(count, shuffled.length));
 };
 
-/**
- * Create a new interview session with pre-selected questions.
- */
 export const createSession = async ({ userId, topic, difficulty, persona }) => {
-  // Verify the topic exists in our question bank
   const topicExists = await QuestionBank.exists({ topic });
   if (!topicExists) {
     throw new AppError(`Topic "${topic}" is not available`, 400);
@@ -75,7 +60,6 @@ export const createSession = async ({ userId, topic, difficulty, persona }) => {
 
   const questions = await selectQuestions(topic, difficulty, userId);
 
-  // Pre-populate the answers array with question info (scores filled in later)
   const answers = questions.map((q) => ({
     questionId: q._id,
     questionText: q.questionText,
@@ -86,7 +70,7 @@ export const createSession = async ({ userId, topic, difficulty, persona }) => {
     },
   }));
 
- const session = await InterviewSession.create({
+  const session = await InterviewSession.create({
     userId,
     topic,
     difficulty,
@@ -95,14 +79,11 @@ export const createSession = async ({ userId, topic, difficulty, persona }) => {
     currentQuestionIndex: 0,
     startedAt: new Date(),
     ...(persona && { persona }),
-});
+  });
 
   return session;
 };
 
-/**
- * Fetch a session by ID, ensuring it belongs to the requesting user.
- */
 export const getSessionById = async (sessionId, userId) => {
   const session = await InterviewSession.findOne({
     _id: sessionId,
@@ -111,9 +92,6 @@ export const getSessionById = async (sessionId, userId) => {
   return session;
 };
 
-/**
- * Process a submitted answer — send to Python AI service for evaluation.
- */
 export const processAnswerSubmission = async ({
   sessionId,
   userId,
@@ -155,14 +133,12 @@ export const processAnswerSubmission = async ({
 
     const currentAnswer = session.answers[currentIndex];
 
-    // Get the full question details for evaluation
     const question = await QuestionBank.findById(currentAnswer.questionId);
 
     if (!question) {
       throw new AppError("Question not found in bank", 500);
     }
 
-    // Step 1: If audio file provided, transcribe it via Python service
     let finalTranscript = transcript;
     if (audioFile && !transcript) {
       try {
@@ -178,7 +154,6 @@ export const processAnswerSubmission = async ({
       throw new AppError("No transcript available for evaluation", 400);
     }
 
-    // Step 2: Evaluate the answer via Python service
     let evaluation;
     try {
       evaluation = await evaluateAnswer(
@@ -195,7 +170,22 @@ export const processAnswerSubmission = async ({
         concepts: { detected: [], missed: question.expectedConcepts },
         fillerWords: 0,
         speakingSpeed: "normal",
+        is_ai_evaluated: false,
+        fallback_reason: "Evaluation service error",
       };
+    }
+
+    // Determine if AI or mock evaluation was used
+    const isMock = evaluation._mock === true || evaluation.is_ai_evaluated === false;
+    const evaluationMode = isMock ? "mock" : "ai";
+
+    if (isMock) {
+      logger.warn("[interview] Fallback mock evaluation used", {
+        timestamp: new Date().toISOString(),
+        sessionId,
+        questionIndex: currentIndex,
+        reason: evaluation.fallback_reason || "AI service unavailable",
+      });
     }
 
     // Step 3: Update the session with the answer data
@@ -212,18 +202,20 @@ export const processAnswerSubmission = async ({
     session.answers[currentIndex].fillerWords = evaluation.fillerWords || 0;
     session.answers[currentIndex].speakingSpeed =
       evaluation.speakingSpeed || "normal";
+    session.answers[currentIndex].isAIEvaluated = !isMock;
+    session.answers[currentIndex].fallbackReason = isMock
+      ? (evaluation.fallback_reason || "AI service unavailable")
+      : null;
+    session.answers[currentIndex].evaluationMode = evaluationMode;
     session.answers[currentIndex].answeredAt = new Date();
 
     const previousAudioPath = session.answers[currentIndex].audioPath;
     const nextAudioPath = audioFile?.path || null;
 
     if (audioFile) {
-if (audioFile) {
-        session.answers[currentIndex].audioPath = nextAudioPath;
-      }
+      session.answers[currentIndex].audioPath = nextAudioPath;
     }
 
-    // Move to next question
     session.currentQuestionIndex = currentIndex + 1;
     session.lastActivityAt = new Date();
     await session.save();
@@ -232,7 +224,6 @@ if (audioFile) {
       safeDeletePhysicalFile(previousAudioPath);
     }
 
-    // Prepare response
     const isLastQuestion = currentIndex + 1 >= session.totalQuestions;
     const nextQuestion = !isLastQuestion
       ? {
@@ -249,6 +240,11 @@ if (audioFile) {
       transcript: finalTranscript,
       isLastQuestion,
       nextQuestion,
+      is_ai_evaluated: !isMock,
+      evaluation_mode: evaluationMode,
+      ...(isMock && {
+        fallback_reason: evaluation.fallback_reason || "AI service unavailable",
+      }),
     };
   } finally {
     if (useRedis) {
@@ -259,9 +255,6 @@ if (audioFile) {
   }
 };
 
-/**
- * Finalize an interview — calculate overall scores and mark as completed.
- */
 export const finalizeInterview = async (sessionId, userId) => {
   const session = await InterviewSession.findOne({
     _id: sessionId,
@@ -273,7 +266,6 @@ export const finalizeInterview = async (sessionId, userId) => {
     throw new AppError("Active interview session not found", 404);
   }
 
-  // Calculate overall scores from answered questions
   const answeredQuestions = session.answers.filter((a) => a.answeredAt);
 
   if (answeredQuestions.length === 0) {
@@ -294,14 +286,11 @@ export const finalizeInterview = async (sessionId, userId) => {
   const avgCommunication = Math.round(totalScores.communication / count);
   const avgRelevance = Math.round(totalScores.relevance / count);
 
-  // Overall score is weighted average: technical 50%, communication 25%, relevance 25%
   const overallScore = Math.round(
     avgTechnical * 0.5 + avgCommunication * 0.25 + avgRelevance * 0.25
   );
 
-  // Collect all missed concepts across all answers
   const allMissed = answeredQuestions.flatMap((a) => a.concepts.missed);
-  // Count frequency and sort by most missed
   const missedCounts = {};
   allMissed.forEach((c) => {
     missedCounts[c] = (missedCounts[c] || 0) + 1;
@@ -310,7 +299,6 @@ export const finalizeInterview = async (sessionId, userId) => {
     .sort((a, b) => b[1] - a[1])
     .map(([concept]) => concept);
 
-  // Calculate duration
   const duration = Math.round((Date.now() - session.startedAt.getTime()) / 1000);
 
   const client = mongoose.connection?.client;
@@ -331,12 +319,7 @@ export const finalizeInterview = async (sessionId, userId) => {
       session.weakConcepts = weakConcepts;
       session.duration = duration;
       session.completedAt = new Date();
-      
-      // Save within the transaction
       await session.save({ session: dbSession });
-      
-      // If future logic updates LearningProgress here, it should pass { session: dbSession }
-      
       await dbSession.commitTransaction();
     } catch (error) {
       await dbSession.abortTransaction();
@@ -351,18 +334,14 @@ export const finalizeInterview = async (sessionId, userId) => {
     session.weakConcepts = weakConcepts;
     session.duration = duration;
     session.completedAt = new Date();
-    
     await session.save();
   }
 
-  // Trigger dashboard refresh events
   try {
     const io = getIO();
     if (io) {
-      // 1. Notify student
       io.to(`user_${userId}`).emit("dashboard-refresh");
 
-      // 2. Notify tracking tutors
       const progress = await LearningProgress.findOne({ user: userId }).select("tutorsTracking").lean();
       if (progress && Array.isArray(progress.tutorsTracking)) {
         progress.tutorsTracking.forEach(tutorId => {
@@ -370,7 +349,6 @@ export const finalizeInterview = async (sessionId, userId) => {
         });
       }
 
-      // 3. Notify recruiters if high score (>= 80)
       if (overallScore >= 80) {
         io.to("role_recruiter").emit("dashboard-refresh");
       }
@@ -393,9 +371,6 @@ export const finalizeInterview = async (sessionId, userId) => {
   };
 };
 
-/**
- * Get paginated interview history for a user.
- */
 export const getUserInterviewHistory = async (userId, page, limit) => {
   const skip = (page - 1) * limit;
 
@@ -415,12 +390,12 @@ export const getUserInterviewHistory = async (userId, page, limit) => {
   ]);
 
   const scoredSessions = analyticsSessions.filter((session) =>
-    Number.isFinite(Number(session.overallScore)),
+    Number.isFinite(Number(session.overallScore))
   );
   const averageScore = scoredSessions.length
     ? Math.round(
         scoredSessions.reduce((sum, session) => sum + Number(session.overallScore), 0) /
-          scoredSessions.length,
+          scoredSessions.length
       )
     : 0;
 
@@ -469,9 +444,6 @@ export const getUserInterviewHistory = async (userId, page, limit) => {
   };
 };
 
-/**
- * Get detailed results for a completed session.
- */
 export const getSessionResults = async (sessionId, userId) => {
   const session = await InterviewSession.findOne({
     _id: sessionId,
@@ -497,7 +469,15 @@ export const getSessionResults = async (sessionId, userId) => {
       fillerWords: a.fillerWords,
       speakingSpeed: a.speakingSpeed,
       bookmarked: Boolean(a.bookmarked),
+      is_ai_evaluated: a.isAIEvaluated ?? true,
+      evaluation_mode: a.evaluationMode || "ai",
+      ...(a.fallbackReason && { fallback_reason: a.fallbackReason }),
     })),
+    evaluation_summary: {
+      total_answers: session.answers.filter((a) => a.answeredAt).length,
+      ai_evaluated: session.answers.filter((a) => a.isAIEvaluated === true).length,
+      mock_evaluated: session.answers.filter((a) => a.isAIEvaluated === false).length,
+    },
     startedAt: session.startedAt,
     completedAt: session.completedAt,
   };
@@ -519,7 +499,7 @@ export const updateQuestionBookmark = async ({
   }
 
   const answer = session.answers.find(
-    (item) => item.questionId?.toString() === questionId,
+    (item) => item.questionId?.toString() === questionId
   );
 
   if (!answer) {
@@ -566,13 +546,10 @@ export const getBookmarkedQuestions = async (userId) => {
         scores: answer.scores,
         concepts: answer.concepts,
         bookmarked: true,
-      })),
+      }))
   );
 };
 
-/**
- * List all available interview topics from the question bank.
- */
 export const listAvailableTopics = async () => {
   const CACHE_KEY = "interview_topics";
 
@@ -617,30 +594,29 @@ export const listAvailableTopics = async () => {
 export const getTutorSessionsList = async (tutorId, page, limit) => {
   const skip = (page - 1) * limit;
 
-  // Find all students assigned to this tutor
   const roadmaps = await LearningProgress.find({ tutorsTracking: tutorId }).select("user");
   const studentIds = roadmaps.map((r) => r.user);
 
   const [sessions, total] = await Promise.all([
     InterviewSession.find({ userId: { $in: studentIds }, status: "completed" })
-      .populate('userId', 'name email')
-      .select('topic difficulty status overallScore tutorOverallScore duration createdAt')
+      .populate("userId", "name email")
+      .select("topic difficulty status overallScore tutorOverallScore duration createdAt")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .lean(),
-    InterviewSession.countDocuments({ userId: { $in: studentIds }, status: 'completed' }),
+    InterviewSession.countDocuments({ userId: { $in: studentIds }, status: "completed" }),
   ]);
   return { sessions, total, page, pages: Math.ceil(total / limit) };
 };
 
 export const getTutorSessionDetails = async (sessionId, tutorId) => {
-  const session = await InterviewSession.findById(sessionId).populate('userId', 'name email').lean();
+  const session = await InterviewSession.findById(sessionId).populate("userId", "name email").lean();
   if (!session) return null;
 
   const authorizedRoadmap = await LearningProgress.findOne({
     user: session.userId._id || session.userId,
-    tutorsTracking: tutorId
+    tutorsTracking: tutorId,
   });
 
   if (!authorizedRoadmap) {
@@ -649,7 +625,7 @@ export const getTutorSessionDetails = async (sessionId, tutorId) => {
 
   return {
     id: session._id,
-    userId: session.userId || { name: 'Unknown User' },
+    userId: session.userId || { name: "Unknown User" },
     topic: session.topic,
     difficulty: session.difficulty,
     status: session.status,
@@ -671,6 +647,9 @@ export const getTutorSessionDetails = async (sessionId, tutorId) => {
       fillerWords: a.fillerWords,
       speakingSpeed: a.speakingSpeed,
       bookmarked: Boolean(a.bookmarked),
+      is_ai_evaluated: a.isAIEvaluated ?? true,
+      evaluation_mode: a.evaluationMode || "ai",
+      ...(a.fallbackReason && { fallback_reason: a.fallbackReason }),
     })),
     startedAt: session.startedAt,
     completedAt: session.completedAt,
@@ -692,11 +671,11 @@ export const addTutorFeedback = async (sessionId, tutorId, { tutorOverallScore, 
 
     try {
       const session = await InterviewSession.findById(sessionId).session(dbSession);
-      if (!session) throw new AppError('Session not found', 404);
-      
+      if (!session) throw new AppError("Session not found", 404);
+
       const authorizedRoadmap = await LearningProgress.findOne({
         user: session.userId,
-        tutorsTracking: tutorId
+        tutorsTracking: tutorId,
       }).session(dbSession);
 
       if (!authorizedRoadmap) {
@@ -705,20 +684,19 @@ export const addTutorFeedback = async (sessionId, tutorId, { tutorOverallScore, 
 
       if (tutorOverallScore !== undefined) session.tutorOverallScore = tutorOverallScore;
       if (tutorOverallFeedback !== undefined) session.tutorOverallFeedback = tutorOverallFeedback;
-      
+
       if (answersFeedback && Array.isArray(answersFeedback)) {
-        answersFeedback.forEach(fb => {
-          const answer = session.answers.find(a => a.questionId.toString() === fb.questionId);
+        answersFeedback.forEach((fb) => {
+          const answer = session.answers.find((a) => a.questionId.toString() === fb.questionId);
           if (answer) {
             if (fb.tutorScores) answer.tutorScores = fb.tutorScores;
             if (fb.tutorFeedback) answer.tutorFeedback = fb.tutorFeedback;
           }
         });
       }
-      
+
       await session.save({ session: dbSession });
 
-      // Create persistent notification in DB for student
       const [notif] = await Notification.create([{
         userId: session.userId,
         type: "interview",
@@ -733,11 +711,9 @@ export const addTutorFeedback = async (sessionId, tutorId, { tutorOverallScore, 
 
       await dbSession.commitTransaction();
 
-      // Emit real-time socket notification to the student (after commit)
       const io = getIO();
       if (io) {
-        const roomName = `user_${session.userId}`;
-        io.to(roomName).emit("new-notification", notif);
+        io.to(`user_${session.userId}`).emit("new-notification", notif);
       }
 
       return session;
@@ -750,11 +726,11 @@ export const addTutorFeedback = async (sessionId, tutorId, { tutorOverallScore, 
     }
   } else {
     const session = await InterviewSession.findById(sessionId);
-    if (!session) throw new AppError('Session not found', 404);
-    
+    if (!session) throw new AppError("Session not found", 404);
+
     const authorizedRoadmap = await LearningProgress.findOne({
       user: session.userId,
-      tutorsTracking: tutorId
+      tutorsTracking: tutorId,
     });
 
     if (!authorizedRoadmap) {
@@ -763,20 +739,19 @@ export const addTutorFeedback = async (sessionId, tutorId, { tutorOverallScore, 
 
     if (tutorOverallScore !== undefined) session.tutorOverallScore = tutorOverallScore;
     if (tutorOverallFeedback !== undefined) session.tutorOverallFeedback = tutorOverallFeedback;
-    
+
     if (answersFeedback && Array.isArray(answersFeedback)) {
-      answersFeedback.forEach(fb => {
-        const answer = session.answers.find(a => a.questionId.toString() === fb.questionId);
+      answersFeedback.forEach((fb) => {
+        const answer = session.answers.find((a) => a.questionId.toString() === fb.questionId);
         if (answer) {
           if (fb.tutorScores) answer.tutorScores = fb.tutorScores;
           if (fb.tutorFeedback) answer.tutorFeedback = fb.tutorFeedback;
         }
       });
     }
-    
+
     await session.save();
 
-    // Create persistent notification in DB for student
     const notif = await Notification.create({
       userId: session.userId,
       type: "interview",
@@ -789,22 +764,15 @@ export const addTutorFeedback = async (sessionId, tutorId, { tutorOverallScore, 
       },
     });
 
-    // Emit real-time socket notification to the student
     const io = getIO();
     if (io) {
-      const roomName = `user_${session.userId}`;
-      io.to(roomName).emit("new-notification", notif);
+      io.to(`user_${session.userId}`).emit("new-notification", notif);
     }
 
     return session;
   }
 };
 
-/**
- * Background task to clean up stale interview sessions.
- * Finds sessions that have been in_progress for more than 2 hours with no activity
- * and marks them as abandoned. Also cleans up pendingSubmissions map.
- */
 export const cleanupStaleInterviewSessions = async () => {
   try {
     const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
@@ -816,7 +784,6 @@ export const cleanupStaleInterviewSessions = async () => {
       logger.info(`[interview-sweeper] Marked ${result.modifiedCount} stale interview sessions as abandoned.`);
     }
 
-    // Also clean up stale in-memory locks
     const now = Date.now();
     for (const [sessionId, timestamp] of pendingSubmissions.entries()) {
       if (now - timestamp > 60000) {

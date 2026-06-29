@@ -47,6 +47,22 @@ const answerSchema = new mongoose.Schema(
       enum: ["slow", "normal", "fast"],
       default: "normal",
     },
+    isAIEvaluated: {
+      type: Boolean,
+      default: true,
+    },
+
+    fallbackReason: {
+      type: String,
+      default: null,
+    },
+
+    evaluationMode: {
+      type: String,
+      enum: ["ai", "mock"],
+      default: "ai",
+    },
+
 
     answeredAt: {
       type: Date,
