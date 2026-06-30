@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from "react";
-import { Search, Filter, Calendar, IndianRupee, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, Filter, X } from "lucide-react";
 import Input from "../../../shared/components/Input";
 import Select from "../../../shared/components/Select";
 
