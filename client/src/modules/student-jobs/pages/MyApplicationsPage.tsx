@@ -49,7 +49,7 @@ const BOARD_COLUMNS = ["pending", "reviewed", "shortlisted", "rejected", "withdr
 
 const MyApplicationsPage = () => {
   useDocumentTitle("My Applications");
-  const { token } = useSelector((state: any) => state.auth);
+  const { token } = useSelector((state: { auth: { token: string } }) => state.auth);
   const navigate = useNavigate();
   const toast = useToast();
   
@@ -86,9 +86,10 @@ const MyApplicationsPage = () => {
       setCurrentPage(data.currentPage || 1);
       setTotalPages(data.totalPages || 1);
       setTotalCount(data.totalCount || 0);
-    } catch (err: any) {
-      setError(err.message || "Failed to load applications.");
-      toast.error(err.message || "Failed to load applications.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to load applications.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -120,8 +121,9 @@ const MyApplicationsPage = () => {
         })
       );
       toast.success("Application successfully withdrawn.");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to withdraw application.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to withdraw application.";
+      toast.error(msg);
     } finally {
       setWithdrawingId(null);
       setConfirmJobId(null);
@@ -193,10 +195,11 @@ const MyApplicationsPage = () => {
       // Sync to database
       await updateStudentApplicationStatus(appId, columnStatus, token);
       toast.success(`Stage updated in your CRM! Note: The official status with the recruiter remains ${statusConfig[app.status]?.label || app.status}`, "Premium Personal CRM");
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Revert on failure
       setApplications(previousApplications);
-      toast.error(error.message || "Failed to update status. Please try again.");
+      const msg = error instanceof Error ? error.message : "Failed to update status. Please try again.";
+      toast.error(msg);
     }
   };
 
@@ -434,8 +437,7 @@ const MyApplicationsPage = () => {
         {/* Content */}
         {loading ? (
           <div className="min-h-[400px] flex items-center justify-center bg-white/50 dark:bg-slate-900/30 rounded-2xl border border-gray-200 dark:border-white/5">
-            {/* @ts-expect-error TODO: Fix pervasive types */}
-            <LoadingState message="Loading your applications..." />
+            <LoadingState title="Loading your applications..." />
           </div>
         ) : error ? (
           <div className="text-center p-10 bg-red-50 dark:bg-slate-900/50 rounded-2xl border border-red-500/20">

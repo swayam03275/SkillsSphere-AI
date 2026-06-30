@@ -17,7 +17,7 @@ export interface LoadingStateProps {
  * @param {React.ReactNode} icon - Custom loader icon
  * @param {string} className - Extra Tailwind classes for the container
  */
-const LoadingState = ({ 
+const LoadingState: React.FC<LoadingStateProps> = ({ 
   title = "Loading...", 
   description, 
   icon = <Loader2 className="w-16 h-16 text-brand-500 animate-spin mb-6" />,

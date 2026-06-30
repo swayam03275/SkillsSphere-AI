@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from "react";
-import { Search, Filter, Calendar, IndianRupee, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, Filter, X } from "lucide-react";
 import Input from "../../../shared/components/Input";
 import Select from "../../../shared/components/Select";
 
@@ -108,7 +108,7 @@ const JobFilters = ({ onFilterChange }) => {
           <label htmlFor="filter-designation" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
             Designation
           </label>
-          {/* @ts-expect-error TODO: Fix pervasive types */}
+
           <Input
             id="filter-designation"
             name="designation"
@@ -126,7 +126,7 @@ const JobFilters = ({ onFilterChange }) => {
             Expected Salary (₹)
           </label>
           <div className="grid grid-cols-2 gap-3">
-            {/* @ts-expect-error TODO: Fix pervasive types */}
+
             <Input
               id="filter-min-salary"
               type="number"
@@ -136,7 +136,7 @@ const JobFilters = ({ onFilterChange }) => {
               placeholder="Min"
               className="bg-white dark:bg-slate-800/50 border-gray-200 dark:border-white/5 focus:border-blue-500/50 text-gray-900 dark:text-white"
             />
-            {/* @ts-expect-error TODO: Fix pervasive types */}
+
             <Input
               id="filter-max-salary"
               type="number"
@@ -160,7 +160,7 @@ const JobFilters = ({ onFilterChange }) => {
           <label htmlFor="filter-date-posted" className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
             Date Posted
           </label>
-          {/* @ts-expect-error TODO: Fix pervasive types */}
+
           <Select
             id="filter-date-posted"
             name="postedWithin"
