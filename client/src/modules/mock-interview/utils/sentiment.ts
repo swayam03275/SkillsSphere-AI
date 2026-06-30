@@ -66,7 +66,7 @@ export const analyzeText = (text) => {
 
   // Hesitation Analysis
   const lowerText = text.toLowerCase();
-  const cleanText = lowerText.replace(/[.,!?]/g, '');
+  const cleanText = lowerText.replace(/[.,!?]/g, ' ');
   const words = lowerText.split(/\s+/);
   let hesitationCount = 0;
   
