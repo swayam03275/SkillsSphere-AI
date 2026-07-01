@@ -306,9 +306,7 @@ const Navbar = () => {
             </div>
           ) : (
             <>
-              {/* @ts-expect-error TODO: Fix pervasive types */}
               <Button variant="ghost" size="sm" to="/login">Login</Button>
-              {/* @ts-expect-error TODO: Fix pervasive types */}
               <Button variant="primary" size="sm" to="/register">Get Started</Button>
             </>
           )}
@@ -442,26 +440,21 @@ const Navbar = () => {
                     <p className="text-xs text-[var(--text-muted)] truncate">{user?.email}</p>
                   </div>
                 </div>
-                {/* @ts-expect-error TODO: Fix pervasive types */}
                 <Button variant="primary" size="lg" to="/dashboard" className="w-full justify-center">
                   Go to Dashboard
                 </Button>
-                {/* @ts-expect-error TODO: Fix pervasive types */}
                 <Button variant="outline" size="lg" to="/profile" className="w-full justify-center border-[var(--border)] text-[var(--text-main)] hover:bg-[var(--surface-hover)]">
                   <User size={20} /> View Profile
                 </Button>
-                {/* @ts-expect-error TODO: Fix pervasive types */}
                 <Button variant="ghost" size="lg" onClick={handleLogout} className="w-full justify-center text-red-400 hover:text-red-300 hover:bg-red-400/10">
                   <LogOut size={20} /> Logout
                 </Button>
               </div>
             ) : (
               <div className="flex flex-col gap-3">
-                {/* @ts-expect-error TODO: Fix pervasive types */}
                 <Button variant="secondary" size="lg" to="/login" className="w-full justify-center">
                   <LogIn size={20} /> Login
                 </Button>
-                {/* @ts-expect-error TODO: Fix pervasive types */}
                 <Button variant="primary" size="lg" to="/register" className="w-full justify-center">
                   <UserPlus size={20} /> Get Started
                 </Button>

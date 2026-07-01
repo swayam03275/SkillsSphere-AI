@@ -1,21 +1,29 @@
 
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, LinkProps } from "react-router-dom";
 
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+type CommonProps = {
   children: React.ReactNode;
   variant?: "primary" | "secondary" | "outline" | "ghost" | "danger";
   size?: "sm" | "md" | "lg";
   loading?: boolean;
   disabled?: boolean;
-  type?: "button" | "submit" | "reset";
-  onClick?: React.MouseEventHandler<HTMLButtonElement>;
   fullWidth?: boolean;
   className?: string;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
-  to?: string;
-}
+};
+
+type ButtonAsButtonProps = CommonProps & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "to"> & {
+  to?: never;
+  type?: "button" | "submit" | "reset";
+};
+
+type ButtonAsLinkProps = CommonProps & Omit<LinkProps, "to"> & {
+  to: string;
+};
+
+export type ButtonProps = ButtonAsButtonProps | ButtonAsLinkProps;
 
 
 /**
@@ -145,23 +153,24 @@ const Button: React.FC<ButtonProps> = ({
   );
 
   if (to && !isDisabled) {
+    const linkRest = rest as any;
     return (
-      <Link to={to} className={classes} {...rest}>
+      <Link to={to} className={classes} {...linkRest}>
         {content}
       </Link>
     );
   }
 
+  const buttonRest = rest as any;
   return (
     <button
-      // @ts-expect-error TODO: Fix pervasive types
       type={type}
       onClick={onClick}
       disabled={isDisabled}
       aria-busy={loading}
       aria-disabled={isDisabled}
       className={classes}
-      {...rest}
+      {...buttonRest}
     >
       {content}
     </button>
