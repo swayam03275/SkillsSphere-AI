@@ -1,6 +1,8 @@
 
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import * as authService from "../../services/authService";
+import type { RegisterPayload, LoginPayload, VerifyEmailPayload, ResendOtpPayload } from "../../services/authService";
+import type { RootState } from "../../store";
 
 const TOKEN_KEY = "skillssphere.auth.token";
 const USER_KEY = "skillssphere.auth.user";
@@ -114,14 +116,11 @@ const toErrorMessage = (error, fallback) =>
 
 export const registerUser = createAsyncThunk(
   "auth/register",
-  async (userData, thunkAPI) => {
+  async (userData: RegisterPayload, thunkAPI) => {
     try {
       const payload = {
-        // @ts-expect-error TODO: Fix pervasive types
         ...userData,
-        // @ts-expect-error TODO: Fix pervasive types
         email: normalizeEmail(userData.email),
-        // @ts-expect-error TODO: Fix pervasive types
         name: userData.name.trim(),
       };
       const data = await authService.register(payload);
@@ -140,8 +139,7 @@ export const registerUser = createAsyncThunk(
 
 export const loginUser = createAsyncThunk(
   "auth/login",
-  // @ts-expect-error TODO: Fix pervasive types
-  async ({ email, password, rememberMe = true }, thunkAPI) => {
+  async ({ email, password, rememberMe = true }: LoginPayload & { rememberMe?: boolean }, thunkAPI) => {
     try {
       const data = await authService.login({
         email: normalizeEmail(email),
@@ -160,8 +158,7 @@ export const loginUser = createAsyncThunk(
 
 export const verifyEmail = createAsyncThunk(
   "auth/verifyEmail",
-  // @ts-expect-error TODO: Fix pervasive types
-  async ({ email, otp }, thunkAPI) => {
+  async ({ email, otp }: VerifyEmailPayload, thunkAPI) => {
     try {
       const normalizedEmail = normalizeEmail(email);
       const data = await authService.verifyEmail({
@@ -183,8 +180,7 @@ export const verifyEmail = createAsyncThunk(
 
 export const resendOtp = createAsyncThunk(
   "auth/resendOtp",
-  // @ts-expect-error TODO: Fix pervasive types
-  async ({ email }, thunkAPI) => {
+  async ({ email }: ResendOtpPayload, thunkAPI) => {
     try {
       const normalizedEmail = normalizeEmail(email);
       const data = await authService.resendOtp({ email: normalizedEmail });
@@ -205,8 +201,7 @@ export const fetchCurrentUser = createAsyncThunk(
   "auth/fetchCurrentUser",
   async (_, thunkAPI) => {
     try {
-      // @ts-expect-error TODO: Fix pervasive types
-      const token = thunkAPI.getState()?.auth?.token;
+      const token = (thunkAPI.getState() as RootState)?.auth?.token;
 
       if (!token) {
         return thunkAPI.rejectWithValue("No auth token available");
@@ -225,8 +220,7 @@ export const fetchCurrentUser = createAsyncThunk(
 export const logoutUser = createAsyncThunk(
   "auth/logoutUser",
   async (_, thunkAPI) => {
-    // @ts-expect-error TODO: Fix pervasive types
-    const token = thunkAPI.getState()?.auth?.token;
+    const token = (thunkAPI.getState() as RootState)?.auth?.token;
     if (token) {
       try {
         await authService.logout(token);
