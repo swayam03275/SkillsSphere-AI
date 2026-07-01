@@ -1,6 +1,7 @@
 import express from "express";
 import * as controller from "./controller.js";
 import { protect } from "../../middleware/authMiddleware.js";
+import { resumeAnalysisLimiter } from "../../middleware/rateLimiter.js";
 import {
   parseResumeUpload,
   validateAndPersistResumeFile,
@@ -43,6 +44,7 @@ router.use(protect);
  */
 router.post(
   "/evaluate",
+  resumeAnalysisLimiter,
   parseResumeUpload,
   validateAndPersistResumeFile,
   controller.evaluate

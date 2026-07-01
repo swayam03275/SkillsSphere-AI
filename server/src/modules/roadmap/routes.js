@@ -1,6 +1,7 @@
 import express from "express";
 import * as roadmapController from "./controller.js";
 import { protect, authorizeRoles } from "../../middleware/authMiddleware.js";
+import { aiActionLimiter } from "../../middleware/rateLimiter.js";
 
 const router = express.Router();
 
@@ -33,7 +34,7 @@ router.get("/me", roadmapController.getMyProgress);
  *       200:
  *         description: Sync successful
  */
-router.post("/sync", roadmapController.syncRoadmap);
+router.post("/sync", aiActionLimiter, roadmapController.syncRoadmap);
 
 /**
  * @openapi
