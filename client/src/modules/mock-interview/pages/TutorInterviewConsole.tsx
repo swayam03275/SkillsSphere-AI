@@ -156,7 +156,6 @@ const TutorInterviewConsole = () => {
               
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-3">AI Overall Score: {session.overallScore}%</label>
-                {/* @ts-expect-error TODO: Fix pervasive types */}
                 <Input 
                   id="overallScore"
                   label="Tutor Override Score (%)"
@@ -168,7 +167,6 @@ const TutorInterviewConsole = () => {
               </div>
               
               <div>
-                {/* @ts-expect-error TODO: Fix pervasive types */}
                 <TextArea 
                   id="overallFeedback"
                   label="Tutor Summary Feedback"
@@ -226,7 +224,6 @@ const TutorInterviewConsole = () => {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between items-center">
                         <span>Technical:</span> 
-                        {/* @ts-expect-error TODO: Fix pervasive types */}
                         <Input id={`tech-${ans.questionId}`} type="number" min="0" max="100" className="w-20" 
                           value={answersFeedback[ans.questionId]?.tutorScores?.technical || ""}
                           onChange={(e) => handleAnswerFeedbackChange(ans.questionId, "tutorScores", parseInt(e.target.value) || 0, "technical")}
@@ -234,7 +231,6 @@ const TutorInterviewConsole = () => {
                       </div>
                       <div className="flex justify-between items-center">
                         <span>Communication:</span> 
-                        {/* @ts-expect-error TODO: Fix pervasive types */}
                         <Input id={`comm-${ans.questionId}`} type="number" min="0" max="100" className="w-20" 
                           value={answersFeedback[ans.questionId]?.tutorScores?.communication || ""}
                           onChange={(e) => handleAnswerFeedbackChange(ans.questionId, "tutorScores", parseInt(e.target.value) || 0, "communication")}
@@ -242,7 +238,6 @@ const TutorInterviewConsole = () => {
                       </div>
                       <div className="flex justify-between items-center">
                         <span>Relevance:</span> 
-                        {/* @ts-expect-error TODO: Fix pervasive types */}
                         <Input id={`rel-${ans.questionId}`} type="number" min="0" max="100" className="w-20" 
                           value={answersFeedback[ans.questionId]?.tutorScores?.relevance || ""}
                           onChange={(e) => handleAnswerFeedbackChange(ans.questionId, "tutorScores", parseInt(e.target.value) || 0, "relevance")}
@@ -256,7 +251,6 @@ const TutorInterviewConsole = () => {
                   <div className="mb-2 flex items-center gap-2 font-medium text-sm">
                     <MessageSquare size={16} /> Question Feedback
                   </div>
-                  {/* @ts-expect-error TODO: Fix pervasive types */}
                   <TextArea 
                     id={`feedback-${ans.questionId}`}
                     rows={2}

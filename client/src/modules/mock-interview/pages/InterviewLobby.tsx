@@ -204,7 +204,6 @@ const InterviewLobby = () => {
                   </div>
                 )}
                 
-                {/* @ts-expect-error TODO: Fix pervasive types */}
                 <Button
                   variant="primary"
                   size="lg"
