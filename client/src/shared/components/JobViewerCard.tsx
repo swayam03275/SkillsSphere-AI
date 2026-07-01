@@ -318,7 +318,7 @@ const JobViewerCard: React.FC<JobViewerCardProps> = ({
                 <Clock size={16} className="text-gray-400 dark:text-slate-500 shrink-0" />
                 <span>{getTimeAgo(createdAt)}</span>
               </div>
-              {location?.remote && (
+              {location && typeof location === "object" && location.remote && (
                 <div className="flex items-center gap-1.5">
                   <Globe size={16} className="text-emerald-500 shrink-0" />
                   <span className="text-emerald-400">Remote</span>

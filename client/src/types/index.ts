@@ -76,7 +76,10 @@ export interface JobPosting {
     email?: string;
     company?: string;
     companyWebsite?: string;
+    linkedinUrl?: string;
   };
+  type?: string;
+  openings?: number;
   createdAt: string;
   updatedAt: string;
 }
