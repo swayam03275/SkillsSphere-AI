@@ -231,7 +231,6 @@ const PreferencesSettings = ({ token }) => {
           </h3>
         </div>
         <div className="flex gap-2">
-          {/* @ts-expect-error TODO: Fix pervasive types */}
           <Button
             type="button"
             variant="outline"
@@ -242,7 +241,6 @@ const PreferencesSettings = ({ token }) => {
           >
             Reset
           </Button>
-          {/* @ts-expect-error TODO: Fix pervasive types */}
           <Button
             type="submit"
             size="sm"
