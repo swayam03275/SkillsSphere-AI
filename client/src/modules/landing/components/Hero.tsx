@@ -123,7 +123,6 @@ const Hero = () => {
           </div>
 
           <div className="mt-8 flex gap-4 max-[1050px]:justify-center">
-            {/* @ts-expect-error TODO: Fix pervasive types */}
             <Button variant="primary" size="lg" to="/register">Get Started</Button>
           </div>
         </div>

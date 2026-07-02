@@ -21,7 +21,6 @@ export default function MatcherResult({ data, onRetry }: MatcherResultProps) {
     <div className="grid md:grid-cols-3 gap-6">
       
       <div className="col-span-1 space-y-4">
-        {/* @ts-expect-error TODO: Fix pervasive types */}
         <MatchScoreCard 
           score={data.score || 0} 
           error={data.error} 
