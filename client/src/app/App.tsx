@@ -51,7 +51,7 @@ const AdminAnalyticsDashboard = lazy(() => import("../modules/analytics/pages/Ad
 import ProtectedRoute from "../shared/components/ProtectedRoute";
 import SocketNotificationListener from "../shared/components/SocketNotificationListener";
 import ScrollToTop from "../shared/components/ScrollToTop";
-import { LoadingState, ErrorBoundary } from "../shared/components";
+import { LoadingState, ErrorBoundary, NetworkStatusBanner } from "../shared/components";
 import CommandPalette from "../shared/components/CommandPalette";
 
 function App() {
@@ -80,6 +80,7 @@ function App() {
     <div className="min-h-screen bg-[var(--background)] text-[var(--text-main)] transition-colors duration-300">
       <ScrollToTop />
       <SocketNotificationListener />
+      <NetworkStatusBanner />
       <CommandPalette />
 
       <ErrorBoundary>
