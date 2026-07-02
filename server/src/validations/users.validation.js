@@ -79,3 +79,16 @@ export const updatePreferencesSchema = z.object({
   emailFrequency: z.enum(['instant', 'daily', 'weekly', 'never']).optional(),
   privacy: privacyPreferencesSchema.optional(),
 }).strict();
+
+const passwordSchema = z
+  .string({ required_error: "Password is required" })
+  .min(8, "Password must be at least 8 characters")
+  .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+  .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+  .regex(/[0-9]/, "Password must contain at least one number")
+  .regex(/[^A-Za-z0-9\s]/, "Password must contain at least one special character");
+
+export const updatePasswordSchema = z.object({
+  currentPassword: z.string({ required_error: "Current password is required" }).min(1, "Current password is required"),
+  newPassword: passwordSchema,
+});

@@ -58,3 +58,14 @@ export const deleteProfile = async (token) => {
     return { success: true, message: response.message };
   } catch (error: any) { throw handleProfileError(error); }
 };
+
+export const updateUserPassword = async (payload, token) => {
+  try {
+    const response = await apiRequest("/api/users/me/password", {
+      method: "PUT",
+      body: payload,
+      token,
+    });
+    return { success: true, message: response.message };
+  } catch (error: any) { throw handleProfileError(error); }
+};

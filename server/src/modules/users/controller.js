@@ -1,4 +1,5 @@
 import User from "../../database/models/User.js";
+import bcrypt from "bcryptjs";
 import Resume from "../../database/models/Resume.js";
 import MatchResult from "../../database/models/MatchResult.js";
 import LearningProgress from "../../database/models/LearningProgress.js";
@@ -442,5 +443,40 @@ export const deleteProfile = asyncHandler(async (req, res, next) => {
   res.status(200).json({
     success: true,
     message: "Account and all associated files/data deleted successfully (GDPR compliant)",
+  });
+});
+
+/**
+ * @desc    Update user password
+ * @route   PUT /api/users/me/password
+ * @access  Private
+ */
+export const updatePassword = asyncHandler(async (req, res, next) => {
+  const userId = req.user._id;
+  const { currentPassword, newPassword } = req.body;
+
+  const user = await User.findById(userId);
+
+  if (!user) {
+    return next(new AppError("User not found", 404));
+  }
+
+  if (user.provider !== "local") {
+    return next(new AppError("Accounts using social login cannot update password directly", 400));
+  }
+
+  const isMatch = await bcrypt.compare(currentPassword, user.password);
+  if (!isMatch) {
+    return next(new AppError("Incorrect current password", 401));
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, 12);
+  user.password = hashedPassword;
+  user.passwordChangedAt = new Date();
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Password updated successfully",
   });
 });

@@ -1,7 +1,7 @@
 import express from "express";
 import { protect } from "../../middleware/authMiddleware.js";
 import { validateBody } from "../../middleware/validation.js";
-import { onboardUserSchema, updateProfileSchema, updatePreferencesSchema } from "../../validations/users.validation.js";
+import { onboardUserSchema, updateProfileSchema, updatePreferencesSchema, updatePasswordSchema } from "../../validations/users.validation.js";
 import { uploadAvatarMiddleware } from "../../middleware/uploadAvatar.js";
 import {
   updateProfile,
@@ -11,6 +11,7 @@ import {
   getPreferences,
   updatePreferences,
   onboardUser,
+  updatePassword,
 } from "./controller.js";
 
 const router = express.Router();
@@ -114,5 +115,19 @@ router.delete("/me/avatar", removeAvatar);
  *         description: Account deleted
  */
 router.delete("/me", deleteProfile);
+
+/**
+ * @openapi
+ * /api/users/me/password:
+ *   put:
+ *     summary: Update user password
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Password updated
+ */
+router.put("/me/password", validateBody(updatePasswordSchema), updatePassword);
 
 export default router;

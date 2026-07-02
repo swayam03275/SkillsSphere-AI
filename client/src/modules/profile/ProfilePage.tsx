@@ -21,6 +21,7 @@ import {
   deleteProfile,
   uploadAvatar,
   removeAvatar,
+  updateUserPassword,
 } from "./services/profileService";
 import LoadingState from "../../shared/components/LoadingState";
 import { getSignedFileUrl } from "../../services/fileService";
@@ -262,6 +263,15 @@ const ProfilePage = () => {
   const [avatarError, setAvatarError] = useState("");
   const [avatarSrc, setAvatarSrc] = useState(null);
   const [activeTab, setActiveTab] = useState("info");
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({});
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [passwordApiError, setPasswordApiError] = useState("");
 
   const roleConfig = ROLE_CONFIG[user?.role] ?? ROLE_CONFIG.student;
 
@@ -403,6 +413,71 @@ const ProfilePage = () => {
       toast.error(err.message || "Failed to delete account");
       setIsDeleting(false);
       setShowDeleteModal(false);
+    }
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setPasswordData((prev) => ({ ...prev, [id]: value }));
+    if (passwordErrors[id]) {
+      setPasswordErrors((prev) => {
+        const copy = { ...prev };
+        delete copy[id];
+        return copy;
+      });
+    }
+  };
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordApiError("");
+    setPasswordSuccess(false);
+    
+    const newErrors: Record<string, string> = {};
+    if (!passwordData.currentPassword) {
+      newErrors.currentPassword = "Current password is required";
+    }
+    if (!passwordData.newPassword) {
+      newErrors.newPassword = "New password is required";
+    } else if (passwordData.newPassword.length < 8) {
+      newErrors.newPassword = "Password must be at least 8 characters";
+    } else if (!/[A-Z]/.test(passwordData.newPassword)) {
+      newErrors.newPassword = "Password must contain at least one uppercase letter";
+    } else if (!/[a-z]/.test(passwordData.newPassword)) {
+      newErrors.newPassword = "Password must contain at least one lowercase letter";
+    } else if (!/[0-9]/.test(passwordData.newPassword)) {
+      newErrors.newPassword = "Password must contain at least one number";
+    } else if (!/[^A-Za-z0-9\s]/.test(passwordData.newPassword)) {
+      newErrors.newPassword = "Password must contain at least one special character";
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setPasswordErrors(newErrors);
+      return;
+    }
+
+    setPasswordSaving(true);
+    try {
+      await updateUserPassword({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+      }, token);
+
+      setPasswordSuccess(true);
+      toast.success("Password updated successfully!");
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+    } catch (err: any) {
+      setPasswordApiError(err.message || "Failed to update password");
+    } finally {
+      setPasswordSaving(false);
     }
   };
 
@@ -631,21 +706,15 @@ const ProfilePage = () => {
                   </div>
                   {user.role === "recruiter" && (
                     <>
-                      {/* @ts-expect-error TODO: Fix pervasive types */}
                       <Input id="company" name="company" label="Company Name" placeholder="Enter company name" value={formData.company} onChange={handleChange} leftIcon={<Briefcase size={16} />} />
-                      {/* @ts-expect-error TODO: Fix pervasive types */}
                       <Input id="companyWebsite" name="companyWebsite" label="Company Website" placeholder="e.g. www.mycompany.com" value={formData.companyWebsite} onChange={handleChange} leftIcon={<Globe size={16} />} helperText="Link to your company's official website." />
-                      {/* @ts-expect-error TODO: Fix pervasive types */}
                       <Input id="linkedinUrl" name="linkedinUrl" label="LinkedIn Company Page" placeholder="https://linkedin.com/company/..." value={formData.linkedinUrl} onChange={handleChange} leftIcon={<Link2 size={16} />} />
-                      {/* @ts-expect-error TODO: Fix pervasive types */}
                       <Input id="credentialUrl" name="credentialUrl" label="Proof Document Link" placeholder="https://drive.google.com/..." value={formData.credentialUrl} onChange={handleChange} leftIcon={<FileText size={16} />} helperText="Link to an offer letter, ID card, or company proof (e.g. Google Drive link)." />
                     </>
                   )}
                   {user.role === "tutor" && (
                     <>
-                      {/* @ts-expect-error TODO: Fix pervasive types */}
                       <Input id="linkedinUrl" name="linkedinUrl" label="LinkedIn Profile" placeholder="https://linkedin.com/in/..." value={formData.linkedinUrl} onChange={handleChange} leftIcon={<Link2 size={16} />} />
-                      {/* @ts-expect-error TODO: Fix pervasive types */}
                       <Input id="credentialUrl" name="credentialUrl" label="Qualification Proof" placeholder="https://drive.google.com/..." value={formData.credentialUrl} onChange={handleChange} leftIcon={<FileText size={16} />} helperText="Link to your degree/certification (e.g. Google Drive link)." />
                     </>
                   )}
@@ -723,11 +792,63 @@ const ProfilePage = () => {
                     <p>Your account uses Google OAuth. Password management is handled by Google.</p>
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-3">
-                    <p className="text-sm text-slate-500 dark:text-slate-400">To change your password, use the forgot password flow.</p>
-                    {/* @ts-expect-error TODO: Fix pervasive types */}
-                    <Link to="/forgot-password"><Button variant="outline" size="sm" leftIcon={<Lock size={14} />}>Change Password</Button></Link>
-                  </div>
+                  <form onSubmit={handlePasswordSubmit} className="space-y-4 max-w-md">
+                    {passwordApiError && (
+                      <div className="flex items-start gap-2.5 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-xs font-medium text-red-600 dark:text-red-400">
+                        <AlertCircle size={15} className="shrink-0 mt-0.5" />
+                        <span>{passwordApiError}</span>
+                      </div>
+                    )}
+                    {passwordSuccess && (
+                      <div className="flex items-start gap-2.5 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                        <Check size={15} className="shrink-0 mt-0.5" />
+                        <span>Password changed successfully!</span>
+                      </div>
+                    )}
+                    <Input
+                      id="currentPassword"
+                      label="Current Password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={passwordData.currentPassword}
+                      onChange={handlePasswordChange}
+                      error={passwordErrors.currentPassword}
+                      disabled={passwordSaving}
+                      required
+                    />
+                    <Input
+                      id="newPassword"
+                      label="New Password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={passwordData.newPassword}
+                      onChange={handlePasswordChange}
+                      error={passwordErrors.newPassword}
+                      disabled={passwordSaving}
+                      required
+                    />
+                    <Input
+                      id="confirmPassword"
+                      label="Confirm New Password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={passwordData.confirmPassword}
+                      onChange={handlePasswordChange}
+                      error={passwordErrors.confirmPassword}
+                      disabled={passwordSaving}
+                      required
+                    />
+                    <div className="pt-2">
+                      <Button
+                        type="submit"
+                        variant="primary"
+                        loading={passwordSaving}
+                        disabled={passwordSaving}
+                      >
+                        Change Password
+                      </Button>
+                    </div>
+                  </form>
                 )}
               </div>
             )}
@@ -760,7 +881,6 @@ const ProfilePage = () => {
                 <div className="bg-red-50/60 dark:bg-red-950/20 rounded-2xl border border-red-200 dark:border-red-500/20 p-6">
                   <h3 className="text-xs font-bold text-red-500 uppercase tracking-widest mb-2">Danger Zone</h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Permanently delete your account and all associated data. This action cannot be undone.</p>
-                  {/* @ts-expect-error TODO: Fix pervasive types */}
                   <Button variant="danger" size="sm" leftIcon={<Trash2 size={13} />} onClick={() => setShowDeleteModal(true)}>
                     Delete Account
                   </Button>
