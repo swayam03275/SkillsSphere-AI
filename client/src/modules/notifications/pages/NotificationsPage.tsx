@@ -375,7 +375,6 @@ const NotificationsPage = () => {
 
             {hasMore && (
               <div className="flex justify-center pt-4">
-                {/* @ts-expect-error TODO: Fix pervasive types */}
                 <Button
                   onClick={loadMore}
                   loading={loading}
